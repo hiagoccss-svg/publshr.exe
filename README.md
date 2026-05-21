@@ -1,47 +1,53 @@
 # publshr
 
-Cross-platform publisher helper with a **desktop App Space** modeled after [ClickUp](https://clickup.com) — workspaces, spaces, folders, lists, tasks, and multiple views (List, Board, Calendar, Table).
+Native desktop tools for **Publshr** — a Cursor-style macOS IDE with Supabase auth, plus a **ClickUp-style App Space** for project management.
 
-| Platform | Location | Install |
-|----------|----------|---------|
-| **macOS / Linux** | [`native/publshr`](native/publshr) — Swift CLI (not `.exe`) | `./install-local.sh` on **this machine** |
-| **Windows** | [`windows/`](windows/) — `publshr.exe` from releases | Download from [Releases](https://github.com/hiagoccss-svg/publshr.exe/releases) |
+| Platform | Default install | App Space (ClickUp-style) |
+|----------|-----------------|---------------------------|
+| **macOS** | `mac/publshr` → **Publshr.app** (IDE + auth) | `native/publshr` → `./install-mac-app.sh` |
+| **Linux** | CLI via `./install.sh` | — |
+| **Windows** | [`windows/`](windows/) — `publshr.exe` from [Releases](https://github.com/hiagoccss-svg/publshr.exe/releases) | — |
 
-## macOS — real application in **Applications**
-
-**Remove the old fake app first** (if you installed it before): delete `Publshr.app` from Applications, then:
+## macOS — IDE app (main)
 
 ```bash
-cd ~/publshr.exe
-git pull
+curl -fsSL https://raw.githubusercontent.com/hiagoccss-svg/publshr.exe/main/install-publshr.sh | bash
+```
+
+Or from a clone:
+
+```bash
+./install.sh
+open /Applications/Publshr.app
+```
+
+### Features (mac/publshr)
+
+- **Cursor-matched UI** — activity bar, sidebar, editor tabs, AI chat panel, status bar
+- **Supabase Auth** — sign up, sign in, 6-digit email OTP, session persistence
+- **Profile sync** — `public.profiles` via `handle_new_user` trigger
+
+Redirect URL: `com.publshr.app://auth/callback` in [Auth URL configuration](https://supabase.com/dashboard/project/lboesdtsrqfvosznjpdy/auth/url-configuration).
+
+## macOS — App Space (ClickUp-style)
+
+Build from repo root (uses `native/publshr`, not the IDE package):
+
+```bash
 chmod +x install-mac-app.sh
 ./install-mac-app.sh
 ```
 
-This builds a **real SwiftUI app** (window UI, no Terminal). It installs **`Publshr.app`** to `~/Applications`.
+| ClickUp concept | In Publshr App Space |
+|-----------------|----------------------|
+| Workspace | Workspace + team members |
+| Space / Folder / List | Sidebar hierarchy |
+| Task | Status, priority, due date, assignees, tags, checklist, comments, subtasks |
+| Views | List, Board (drag columns), Calendar, Table |
 
-### App Space (ClickUp-style)
+Data: `~/Library/Application Support/Publshr/app-space.json`. Git sync settings: gear icon in App Space.
 
-The main window is your **App Space**:
-
-| ClickUp concept | In Publshr |
-|-----------------|------------|
-| Workspace | Workspace with team members |
-| Space | Space (sidebar sections) |
-| Folder | Folder under a space |
-| List | List with custom statuses |
-| Task | Tasks with priority, due date, assignees, tags, checklist, comments, subtasks |
-| Views | List, Board (drag between columns), Calendar, Table; Timeline/Gantt placeholders |
-
-Data is stored locally at `~/Library/Application Support/Publshr/app-space.json`. Use the gear icon for **Git sync settings** (offline toggle, pull from GitHub).
-
-- Works **offline** (toggle in app)
-- When online, **Sync from GitHub** pulls latest from git branch `cursor/add-makefile-and-install-4aa6`
-- After we push changes, open the app and tap **Sync from GitHub** (or relaunch)
-
-`install-local.sh` is CLI-only inside `.local/` — **not** the Mac app in Applications.
-
-## Linux / Mac — CLI only (inside this repo)
+## Linux / CLI
 
 ```bash
 chmod +x install-local.sh
@@ -50,21 +56,21 @@ export PATH="$(pwd)/.local/bin:$PATH"
 publshr --version
 ```
 
-## System-wide install (optional)
-
-```bash
-./install.sh
-# or: make install
-```
-
-Installs to `/opt/publshr` and `/usr/local/bin/publshr` (needs `curl` and `sudo`).
-
 ## Project layout
 
 ```
-native/publshr/   # Mac & Linux Swift CLI (canonical)
-windows/          # Windows .exe documentation (exe from releases)
-mac/              # Pointer to native/ (legacy path)
+mac/publshr/      # Canonical macOS IDE + Supabase (Publshr.app releases)
+native/publshr/   # App Space + Git sync shell (install-mac-app.sh)
+windows/          # Windows .exe from releases
+```
+
+## Build from source (IDE)
+
+```bash
+cd mac/publshr
+swift build -c release --product PublshrApp
+./scripts/build-macos-app.sh .build/release/PublshrApp 0.2.0 .
+open Publshr.app
 ```
 
 ## Make
@@ -72,6 +78,6 @@ mac/              # Pointer to native/ (legacy path)
 ```bash
 make help
 make build
-make install-local   # this machine, project .local/
-make install         # system-wide
+make install-local
+make install
 ```

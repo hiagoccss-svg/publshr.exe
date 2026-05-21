@@ -1,6 +1,6 @@
-# publshr
+# publshr (macOS)
 
-CLI matching Windows `publshr.exe`. Installs to **`/opt/publshr/<version>`** with **`/usr/local/bin/publshr`**.
+Native SwiftUI app matching **Cursor on Mac** layout and colors, backed by **Supabase Auth**.
 
 ## Install
 
@@ -8,13 +8,41 @@ CLI matching Windows `publshr.exe`. Installs to **`/opt/publshr/<version>`** wit
 ./install.sh
 ```
 
-Uses `sudo` automatically. Downloads a GitHub release when available; otherwise builds via `scripts/package-release.sh`.
+Installs **Publshr.app** to `/Applications` and the `publshr` launcher in `/usr/local/bin`.
 
-## Package a release tarball
+## Build
 
 ```bash
-chmod +x scripts/package-release.sh
-./scripts/package-release.sh 0.1.0
+swift build -c release --product PublshrApp --product publshr
+./scripts/package-release.sh 0.2.0
 ```
 
-Produces `dist/publshr-0.1.0-<os>-<arch>.tar.gz`.
+On macOS the tarball includes `Publshr.app`, `bin/PublshrApp`, and `bin/publshr` (CLI).
+
+## Auth configuration
+
+1. Supabase project `lboesdtsrqfvosznjpdy`
+2. Redirect URL: `com.publshr.app://auth/callback`
+3. Signup email template should include OTP: `{{ .Token }}` for in-app confirmation
+
+Keys are in `Sources/PublshrApp/Services/SupabaseConfig.swift` (publishable key only — safe for clients).
+
+## Layout (Cursor parity)
+
+| Region | Width | Color |
+|--------|-------|-------|
+| Activity bar | 48px | `#181818` |
+| Sidebar | 260px | `#252526` |
+| Editor | flex | `#1e1e1e` |
+| Chat panel | 380px | `#181818` / `#1e1e1e` |
+| Status bar | 22px | `#007acc` |
+
+## ClickUp-style App Space (separate build)
+
+The **App Space** project-management UI (workspaces, spaces, lists, board/list/calendar views) lives in [`native/publshr`](../../native/publshr). Install with:
+
+```bash
+./install-mac-app.sh   # from repo root
+```
+
+That build is not yet merged into this package’s `PublshrApp` target — see repo root README.

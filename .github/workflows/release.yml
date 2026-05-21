@@ -37,26 +37,17 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y -qq libncurses6 libcurl4 libxml2
 
-      - name: Package CLI (Linux)
-        if: runner.os == 'Linux'
-        working-directory: native/publshr
+      - name: Package release
+        working-directory: mac/publshr
         run: |
           chmod +x scripts/package-release.sh
           bash scripts/package-release.sh "${GITHUB_REF_NAME#v}"
-
-      - name: Package CLI + Publshr.app (macOS)
-        if: runner.os == 'macOS'
-        working-directory: native/publshr
-        run: |
-          chmod +x scripts/package-release.sh scripts/package-mac-app.sh
-          bash scripts/package-release.sh "${GITHUB_REF_NAME#v}"
-          bash scripts/package-mac-app.sh "${GITHUB_REF_NAME#v}"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: publshr-${{ matrix.asset_os }}-${{ matrix.arch }}
-          path: native/publshr/dist/*
+          path: mac/publshr/dist/*.tar.gz
 
   publish:
     needs: build
@@ -74,7 +65,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
-          mapfile -t assets < <(find artifacts \( -name '*.tar.gz' -o -name '*.zip' \) -type f)
+          mapfile -t assets < <(find artifacts -name '*.tar.gz' -type f)
           if [[ ${#assets[@]} -eq 0 ]]; then
             echo "No release tarballs found under artifacts/" >&2
             find artifacts -type f >&2 || true
@@ -83,5 +74,5 @@ jobs:
           gh release create "$GITHUB_REF_NAME" \
             --repo "${{ github.repository }}" \
             --title "publshr $VERSION" \
-            --notes "macOS: download Publshr-*-macos.app.zip, unzip, drag Publshr.app to Applications. Or clone repo and run ./install-mac-app.sh. Linux: CLI tarball. App syncs git branch cursor/add-makefile-and-install-4aa6 when online." \
+            --notes "Native macOS Publshr.app (Cursor-style UI + Supabase auth). Install: curl -fsSL https://raw.githubusercontent.com/${{ github.repository }}/main/install-publshr.sh | bash" \
             "${assets[@]}"

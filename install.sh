@@ -1,4 +1,4 @@
 #!/usr/bin/env bash
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-exec "$ROOT/native/publshr/install.sh" "$@"
+exec "$ROOT/mac/publshr/install.sh" "$@"
