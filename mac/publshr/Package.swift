@@ -21,7 +21,10 @@ let package = Package(
             dependencies: [
                 .product(name: "Supabase", package: "supabase-swift"),
             ],
-            path: "Sources/PublshrApp"
+            path: "Sources/PublshrApp",
+            linkerSettings: [
+                .linkedLibrary("sqlite3"),
+            ]
         ),
     ]
 )

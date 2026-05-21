@@ -3,11 +3,13 @@ import SwiftUI
 @main
 struct PublshrApp: App {
     @StateObject private var auth = AuthViewModel()
+    @StateObject private var chat = ChatViewModel()
 
     var body: some Scene {
         WindowGroup {
             ContentView()
                 .environmentObject(auth)
+                .environmentObject(chat)
                 .preferredColorScheme(.dark)
                 .onOpenURL { url in
                     auth.handleIncomingURL(url)
