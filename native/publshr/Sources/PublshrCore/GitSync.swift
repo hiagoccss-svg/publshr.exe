@@ -63,38 +63,36 @@ public struct GitSync: Sendable {
     }
 
     private func currentCommit() async throws -> String? {
-        let output = try await runGitCapture(["-C", AppConfig.cloneDirectory.path, "rev-parse", "--short", "HEAD"])
+        let output = try runGitCapture(["-C", AppConfig.cloneDirectory.path, "rev-parse", "--short", "HEAD"])
         return output.isEmpty ? nil : output
     }
 
     private func runGit(_ args: [String]) async throws {
-        _ = try await runGitCapture(args)
+        _ = try runGitCapture(args)
     }
 
-    private func runGitCapture(_ args: [String]) async throws -> String {
-        try await Task.detached {
-            guard FileManager.default.fileExists(atPath: "/usr/bin/git") else {
-                throw GitSyncError.gitMissing
-            }
+    private func runGitCapture(_ args: [String]) throws -> String {
+        guard FileManager.default.fileExists(atPath: "/usr/bin/git") else {
+            throw GitSyncError.gitMissing
+        }
 
-            let process = Process()
-            process.executableURL = URL(fileURLWithPath: "/usr/bin/git")
-            process.arguments = args
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/git")
+        process.arguments = args
 
-            let pipe = Pipe()
-            process.standardOutput = pipe
-            process.standardError = pipe
+        let pipe = Pipe()
+        process.standardOutput = pipe
+        process.standardError = pipe
 
-            try process.run()
-            process.waitUntilExit()
+        try process.run()
+        process.waitUntilExit()
 
-            let data = pipe.fileHandleForReading.readDataToEndOfFile()
-            let text = String(data: data, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let data = pipe.fileHandleForReading.readDataToEndOfFile()
+        let text = String(data: data, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
 
-            guard process.terminationStatus == 0 else {
-                throw GitSyncError.commandFailed(text.isEmpty ? "git failed" : text)
-            }
-            return text
-        }.value
+        guard process.terminationStatus == 0 else {
+            throw GitSyncError.commandFailed(text.isEmpty ? "git failed" : text)
+        }
+        return text
     }
 }
