@@ -20,6 +20,10 @@ swift build -c release   # release build
 .build/debug/publshr --version
 ```
 
+### Enterprise chat (mac IDE)
+
+Chat lives under `mac/publshr/Sources/PublshrApp/Chat/`. See `mac/publshr/docs/CHAT_SYSTEM.md`. Supabase migrations: `20260521180000_chat_presence_and_members.sql`, `20260521200000_chat_phases_2_4.sql`.
+
 ### Tests
 
 No automated test suite exists yet (`swift test` reports "no tests found"). If tests are added later, run them with `swift test` from `mac/publshr/`.
@@ -38,9 +42,24 @@ bash scripts/package-release.sh <version>
 
 Produces `dist/publshr-<version>-<os>-<arch>.tar.gz`.
 
+### Spaces (Electron)
+
+The enterprise **Spaces** module lives in `desktop/spaces/` (Electron + React + TypeScript + Tailwind + SQLite + Supabase).
+
+```bash
+cd desktop/spaces
+npm install
+npm run dev      # development
+npm run build    # production bundle
+npm run typecheck
+```
+
+No demo seed data on first run. Configure optional Supabase via `.env` from `.env.example`.
+
 ### Gotchas
 
 - On Ubuntu, Swift requires `libncurses6`, `libcurl4`, and `libxml2` runtime libraries. The update script installs these automatically.
 - The `@main` attribute in `main.swift` uses Swift's entry-point API; this requires Swift >= 5.3 but the package declares `swift-tools-version: 5.9`.
 - The `main` branch is mostly empty (just a README). Application code is on feature branches.
-- **Media Monitoring** desktop app: `desktop/media-monitoring/` — `npm run dev` or `make media-monitoring-dev`. Local SQLite works offline; Supabase sync when signed in.
+- **Media Monitoring** desktop app: `desktop/media-monitoring/` — `npm run dev` or `make media-monitoring-dev`. Cursor-style UI; Supabase auth + optional Touch ID on macOS.
+- **Planner module** lives in `planner/desktop/` (Electron + React + TypeScript + Tailwind + Supabase + SQLite). Run `npm run dev` from that directory after `npm install`.
