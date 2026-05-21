@@ -1,12 +1,12 @@
 # publshr
 
-Native desktop tools for **Publshr** — a Cursor-style macOS IDE with Supabase auth, plus a **ClickUp-style App Space** for project management.
+Native desktop tools for **Publshr** — a Cursor-style macOS IDE with Supabase auth, plus **Spaces** (enterprise operations hub) and a legacy Swift App Space.
 
-| Platform | Default install | App Space (ClickUp-style) |
-|----------|-----------------|---------------------------|
-| **macOS** | `mac/publshr` → **Publshr.app** (IDE + auth) | `native/publshr` → `./install-mac-app.sh` |
-| **Linux** | CLI via `./install.sh` | — |
-| **Windows** | [`windows/`](windows/) — `publshr.exe` from [Releases](https://github.com/hiagoccss-svg/publshr.exe/releases) | — |
+| Platform | Default install | Spaces (Electron) | Legacy App Space (Swift) |
+|----------|-----------------|-------------------|--------------------------|
+| **macOS** | `mac/publshr` → **Publshr.app** (IDE + auth) | `desktop/spaces` | `native/publshr` → `./install-mac-app.sh` |
+| **Linux** | CLI via `./install.sh` | `desktop/spaces` | — |
+| **Windows** | [`windows/`](windows/) — `publshr.exe` from [Releases](https://github.com/hiagoccss-svg/publshr.exe/releases) | `desktop/spaces` | — |
 
 ## macOS — IDE app (main)
 
@@ -29,7 +29,19 @@ open /Applications/Publshr.app
 
 Redirect URL: `com.publshr.app://auth/callback` in [Auth URL configuration](https://supabase.com/dashboard/project/lboesdtsrqfvosznjpdy/auth/url-configuration).
 
-## macOS — App Space (ClickUp-style)
+## Spaces — Enterprise operations module (recommended)
+
+Cross-platform **Electron** desktop app: project + operations management, local-first SQLite, optional Supabase realtime.
+
+```bash
+cd desktop/spaces
+npm install
+npm run dev
+```
+
+See [`desktop/spaces/README.md`](desktop/spaces/README.md) for architecture, Phase 1 features, and Supabase setup.
+
+## macOS — App Space (ClickUp-style, Swift legacy)
 
 Build from repo root (uses `native/publshr`, not the IDE package):
 
@@ -60,7 +72,8 @@ publshr --version
 
 ```
 mac/publshr/      # Canonical macOS IDE + Supabase (Publshr.app releases)
-native/publshr/   # App Space + Git sync shell (install-mac-app.sh)
+desktop/spaces/   # Spaces — Electron operations hub (Phase 1+)
+native/publshr/   # Legacy Swift App Space + Git sync (install-mac-app.sh)
 windows/          # Windows .exe from releases
 ```
 
