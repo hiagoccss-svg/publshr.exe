@@ -1,12 +1,13 @@
 import Foundation
 
-public struct Space: Identifiable, Codable, Hashable {
+/// Legacy offline catalog types (LocalStore). Not used by Supabase or App Space.
+public struct OfflineCatalogSpace: Identifiable, Codable, Hashable {
     public var id: UUID
     public var name: String
     public var colorHex: String
-    public var folders: [SpaceFolder]
+    public var folders: [OfflineSpaceFolder]
 
-    public init(id: UUID = UUID(), name: String, colorHex: String, folders: [SpaceFolder] = []) {
+    public init(id: UUID = UUID(), name: String, colorHex: String, folders: [OfflineSpaceFolder] = []) {
         self.id = id
         self.name = name
         self.colorHex = colorHex
@@ -14,19 +15,19 @@ public struct Space: Identifiable, Codable, Hashable {
     }
 }
 
-public struct SpaceFolder: Identifiable, Codable, Hashable {
+public struct OfflineSpaceFolder: Identifiable, Codable, Hashable {
     public var id: UUID
     public var name: String
-    public var lists: [SpaceList]
+    public var lists: [OfflineSpaceList]
 
-    public init(id: UUID = UUID(), name: String, lists: [SpaceList] = []) {
+    public init(id: UUID = UUID(), name: String, lists: [OfflineSpaceList] = []) {
         self.id = id
         self.name = name
         self.lists = lists
     }
 }
 
-public struct SpaceList: Identifiable, Codable, Hashable {
+public struct OfflineSpaceList: Identifiable, Codable, Hashable {
     public var id: UUID
     public var name: String
 
@@ -36,7 +37,7 @@ public struct SpaceList: Identifiable, Codable, Hashable {
     }
 }
 
-public struct ChatChannel: Identifiable, Codable, Hashable {
+public struct OfflineChatChannel: Identifiable, Codable, Hashable {
     public var id: UUID
     public var name: String
     public var isDM: Bool
@@ -50,7 +51,7 @@ public struct ChatChannel: Identifiable, Codable, Hashable {
     }
 }
 
-public struct ChatMessage: Identifiable, Codable, Hashable {
+public struct OfflineChatMessage: Identifiable, Codable, Hashable {
     public var id: UUID
     public var channelID: UUID
     public var author: String
@@ -67,11 +68,15 @@ public struct ChatMessage: Identifiable, Codable, Hashable {
 }
 
 public struct WorkspaceData: Codable {
-    public var spaces: [Space]
-    public var channels: [ChatChannel]
-    public var messages: [ChatMessage]
+    public var spaces: [OfflineCatalogSpace]
+    public var channels: [OfflineChatChannel]
+    public var messages: [OfflineChatMessage]
 
-    public init(spaces: [Space] = [], channels: [ChatChannel] = [], messages: [ChatMessage] = []) {
+    public init(
+        spaces: [OfflineCatalogSpace] = [],
+        channels: [OfflineChatChannel] = [],
+        messages: [OfflineChatMessage] = []
+    ) {
         self.spaces = spaces
         self.channels = channels
         self.messages = messages

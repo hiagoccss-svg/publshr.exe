@@ -29,40 +29,40 @@ public enum LocalStore {
 
         return WorkspaceData(
             spaces: [
-                Space(
+                OfflineCatalogSpace(
                     id: marketingID,
                     name: "Marketing",
                     colorHex: "7C3AED",
                     folders: [
-                        SpaceFolder(name: "Campaigns", lists: [
-                            SpaceList(name: "Q2 Launch"),
-                            SpaceList(name: "Social"),
+                        OfflineSpaceFolder(name: "Campaigns", lists: [
+                            OfflineSpaceList(name: "Q2 Launch"),
+                            OfflineSpaceList(name: "Social"),
                         ]),
-                        SpaceFolder(name: "Assets", lists: [SpaceList(name: "Brand kit")]),
+                        OfflineSpaceFolder(name: "Assets", lists: [OfflineSpaceList(name: "Brand kit")]),
                     ]
                 ),
-                Space(
+                OfflineCatalogSpace(
                     id: productID,
                     name: "Product",
                     colorHex: "2563EB",
                     folders: [
-                        SpaceFolder(name: "Roadmap", lists: [
-                            SpaceList(name: "Sprint board"),
-                            SpaceList(name: "Backlog"),
+                        OfflineSpaceFolder(name: "Roadmap", lists: [
+                            OfflineSpaceList(name: "Sprint board"),
+                            OfflineSpaceList(name: "Backlog"),
                         ]),
                     ]
                 ),
             ],
             channels: [
-                ChatChannel(id: generalID, name: "general", spaceID: marketingID),
-                ChatChannel(id: designID, name: "design", spaceID: productID),
-                ChatChannel(name: "announcements", spaceID: marketingID),
-                ChatChannel(name: "Hiago", isDM: true),
+                OfflineChatChannel(id: generalID, name: "general", spaceID: marketingID),
+                OfflineChatChannel(id: designID, name: "design", spaceID: productID),
+                OfflineChatChannel(name: "announcements", spaceID: marketingID),
+                OfflineChatChannel(name: "Hiago", isDM: true),
             ],
             messages: [
-                ChatMessage(channelID: generalID, author: "Team", body: "Welcome to Publshr Chat — ClickUp-style channels inside your Mac app.", sentAt: .now.addingTimeInterval(-3600)),
-                ChatMessage(channelID: generalID, author: "You", body: "Works offline. Messages save on this Mac.", sentAt: .now.addingTimeInterval(-1800)),
-                ChatMessage(channelID: designID, author: "Design", body: "Spaces and Chat in one Cursor-style layout.", sentAt: .now.addingTimeInterval(-900)),
+                OfflineChatMessage(channelID: generalID, author: "Team", body: "Welcome to Publshr Chat.", sentAt: .now.addingTimeInterval(-3600)),
+                OfflineChatMessage(channelID: generalID, author: "You", body: "Works offline.", sentAt: .now.addingTimeInterval(-1800)),
+                OfflineChatMessage(channelID: designID, author: "Design", body: "Spaces and Chat.", sentAt: .now.addingTimeInterval(-900)),
             ]
         )
     }
