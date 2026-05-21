@@ -30,6 +30,12 @@ let package = Package(
             name: "PublshrApp",
             dependencies: ["PublshrCore"],
             path: "Sources/PublshrApp",
+            // Supabase v0.3 uses RootView/AppShellView. App Space + legacy Git sync UI stay in-tree but are not built yet.
+            exclude: [
+                "ContentView.swift",
+                "AppSpaceModel.swift",
+                "AppSpace",
+            ],
             linkerSettings: [
                 .linkedFramework("SwiftUI", .when(platforms: [.macOS])),
                 .linkedFramework("AppKit", .when(platforms: [.macOS])),

@@ -44,3 +44,4 @@ Produces `dist/publshr-<version>-<os>-<arch>.tar.gz`.
 - The `@main` attribute in `main.swift` uses Swift's entry-point API; this requires Swift >= 5.3 but the package declares `swift-tools-version: 5.9`.
 - The `main` branch is mostly empty (just a README). Application code is on feature branches.
 - **Planner module** lives in `planner/desktop/` (Electron + React + TypeScript + Tailwind + Supabase + SQLite). Run `npm run dev` from that directory after `npm install`.
+- **Mac Supabase app** (`native/publshr`, `./install-mac-app.sh`): `PublshrApp` target excludes `Sources/PublshrApp/AppSpace/` and legacy `ContentView.swift` so it does not compile duplicate types with `AppShellView`/`RootView`. App Space sources remain for a future integrated build.

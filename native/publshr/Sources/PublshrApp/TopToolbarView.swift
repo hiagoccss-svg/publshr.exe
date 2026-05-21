@@ -26,7 +26,7 @@ struct TopToolbarView: View {
                 }
             }
 
-            if let wid = model.selectedWorkspaceId {
+            if model.selectedWorkspaceId != nil {
                 Picker("Workspace", selection: $model.selectedWorkspaceId) {
                     ForEach(model.workspaces) { w in
                         Text(w.name).tag(Optional(w.id))
