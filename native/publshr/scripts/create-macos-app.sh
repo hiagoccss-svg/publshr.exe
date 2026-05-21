@@ -55,6 +55,10 @@ chmod 755 "$OUT_APP/Contents/MacOS/Publshr"
   <true/>
   <key>NSPrincipalClass</key>
   <string>NSApplication</string>
+  <key>LSApplicationCategoryType</key>
+  <string>public.app-category.productivity</string>
+  <key>LSUIElement</key>
+  <false/>
 </dict>
 </plist>
 PLIST

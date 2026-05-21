@@ -1,64 +1,33 @@
 # publshr
 
-Cross-platform publisher helper.
+Cross-platform publisher workspace.
 
-| Platform | Location | Install |
-|----------|----------|---------|
-| **macOS / Linux** | [`native/publshr`](native/publshr) — Swift CLI (not `.exe`) | `./install-local.sh` on **this machine** |
-| **Windows** | [`windows/`](windows/) — `publshr.exe` from releases | Download from [Releases](https://github.com/hiagoccss-svg/publshr.exe/releases) |
+## macOS app (Cursor-style layout + ClickUp-style Chat & Spaces)
 
-## macOS — real application in **Applications**
-
-**Remove the old fake app first** (if you installed it before): delete `Publshr.app` from Applications, then:
+Install:
 
 ```bash
 cd ~/publshr.exe
 git pull
-chmod +x install-mac-app.sh
 ./install-mac-app.sh
 ```
 
-This installs **`Publshr.app`** to `~/Applications` — a native macOS workspace app (sidebar, editor, toolbar), not a separate updater.
+Open **Applications → Publshr**. You get:
 
-- **Main window:** drafts library + editor (like a lightweight Cursor-style workspace)
-- **Updates:** `Publshr → Settings (⌘,)` → **Updates** tab (background sync on launch)
-- **Menu:** `Check for Updates…` under the app menu
+| Area | Like |
+|------|------|
+| Dark layout, icon rail, sidebars | **Cursor** |
+| **Chat** — channels, DMs, messages, composer | **ClickUp Chat** |
+| **Spaces** — spaces → folders → lists | **ClickUp Spaces** |
 
-Do **not** use `install-publshr.sh` on Mac — that installs the CLI to `/opt`, not this app.
+- Works **offline** (data in `~/Library/Application Support/Publshr/workspace.json`)
+- **Settings (⌘,)** → Updates — Git sync when online (not a separate updater app)
 
-`install-local.sh` is CLI-only in `.local/` — not the Mac app in Applications.
+Windows: `publshr.exe` from [Releases](https://github.com/hiagoccss-svg/publshr.exe/releases).
 
-## Linux / Mac — CLI only (inside this repo)
-
-```bash
-chmod +x install-local.sh
-./install-local.sh
-export PATH="$(pwd)/.local/bin:$PATH"
-publshr --version
-```
-
-## System-wide install (optional)
-
-```bash
-./install.sh
-# or: make install
-```
-
-Installs to `/opt/publshr` and `/usr/local/bin/publshr` (needs `curl` and `sudo`).
-
-## Project layout
+## Layout
 
 ```
-native/publshr/   # Mac & Linux Swift CLI (canonical)
-windows/          # Windows .exe documentation (exe from releases)
-mac/              # Pointer to native/ (legacy path)
-```
-
-## Make
-
-```bash
-make help
-make build
-make install-local   # this machine, project .local/
-make install         # system-wide
+native/publshr/   # SwiftUI Mac app + CLI
+windows/          # Windows .exe docs
 ```
