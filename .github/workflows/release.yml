@@ -1,0 +1,78 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: macos-14
+            asset_os: macos
+            arch: aarch64
+          - os: ubuntu-22.04
+            asset_os: linux
+            arch: x86_64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode (macOS)
+        if: runner.os == 'macOS'
+        run: sudo xcode-select -s /Applications/Xcode.app
+
+      - name: Install Swift (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          curl -fsSL "https://download.swift.org/swift-5.10.1-release/ubuntu2204/swift-5.10.1-RELEASE/swift-5.10.1-RELEASE-ubuntu22.04.tar.gz" -o /tmp/swift.tar.gz
+          sudo mkdir -p /opt/swift
+          sudo tar -xzf /tmp/swift.tar.gz -C /opt/swift --strip-components=1
+          echo "/opt/swift/usr/bin" >> "$GITHUB_PATH"
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libncurses6 libcurl4 libxml2
+
+      - name: Package release
+        working-directory: mac/publshr
+        run: |
+          chmod +x scripts/package-release.sh
+          bash scripts/package-release.sh "${GITHUB_REF_NAME#v}"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: publshr-${{ matrix.asset_os }}-${{ matrix.arch }}
+          path: mac/publshr/dist/*.tar.gz
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          mapfile -t assets < <(find artifacts -name '*.tar.gz' -type f)
+          if [[ ${#assets[@]} -eq 0 ]]; then
+            echo "No release tarballs found under artifacts/" >&2
+            find artifacts -type f >&2 || true
+            exit 1
+          fi
+          gh release create "$GITHUB_REF_NAME" \
+            --repo "${{ github.repository }}" \
+            --title "publshr $VERSION" \
+            --notes "Native macOS Publshr.app (Cursor-style UI + Supabase auth). Install: curl -fsSL https://raw.githubusercontent.com/${{ github.repository }}/cursor/cursor-mac-supabase-auth-8b60/install-publshr.sh | bash" \
+            "${assets[@]}"
