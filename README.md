@@ -56,12 +56,25 @@ export PATH="$(pwd)/.local/bin:$PATH"
 publshr --version
 ```
 
+## Desktop — Media Monitoring (Electron)
+
+Enterprise media intelligence module (Phase 1 MVP):
+
+```bash
+cd desktop/media-monitoring
+npm install
+npm run dev
+```
+
+Stack: Electron, React, TypeScript, Tailwind, SQLite local cache, Supabase schema. See [`desktop/media-monitoring/README.md`](desktop/media-monitoring/README.md).
+
 ## Project layout
 
 ```
-mac/publshr/      # Canonical macOS IDE + Supabase (Publshr.app releases)
-native/publshr/   # App Space + Git sync shell (install-mac-app.sh)
-windows/          # Windows .exe from releases
+mac/publshr/                  # Canonical macOS IDE + Supabase (Publshr.app releases)
+native/publshr/               # App Space + Git sync shell (install-mac-app.sh)
+desktop/media-monitoring/     # Media Monitoring desktop module (Electron)
+windows/                      # Windows .exe from releases
 ```
 
 ## Build from source (IDE)
