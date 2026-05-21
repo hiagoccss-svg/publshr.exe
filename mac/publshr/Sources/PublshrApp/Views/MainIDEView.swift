@@ -2,8 +2,8 @@ import SwiftUI
 
 struct MainIDEView: View {
     @EnvironmentObject private var auth: AuthViewModel
+    @EnvironmentObject private var chat: ChatViewModel
     @State private var selectedActivity = 0
-    @State private var chatInput = ""
 
     var body: some View {
         VStack(spacing: 0) {
@@ -28,8 +28,10 @@ struct MainIDEView: View {
                     .fill(CursorTheme.border)
                     .frame(width: 1)
 
-                ChatPanelView(input: $chatInput)
+                EnterpriseChatView(chat: chat)
                     .frame(width: CursorTheme.chatPanelWidth)
+                    .onAppear { chat.attach(auth: auth) }
+                    .onDisappear { chat.detach() }
             }
 
             StatusBarView()

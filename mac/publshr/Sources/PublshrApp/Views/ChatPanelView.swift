@@ -1,5 +1,6 @@
 import SwiftUI
 
+/// Legacy AI assistant panel (replaced by `EnterpriseChatView` in the main IDE layout).
 struct ChatPanelView: View {
     @Binding var input: String
     @EnvironmentObject private var auth: AuthViewModel

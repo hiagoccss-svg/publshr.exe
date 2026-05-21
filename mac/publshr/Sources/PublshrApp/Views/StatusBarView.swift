@@ -2,14 +2,24 @@ import SwiftUI
 
 struct StatusBarView: View {
     @EnvironmentObject private var auth: AuthViewModel
+    @EnvironmentObject private var chat: ChatViewModel
 
     var body: some View {
         HStack(spacing: 16) {
             HStack(spacing: 6) {
-                Image(systemName: "checkmark.circle.fill")
+                Image(systemName: chat.isOffline ? "wifi.slash" : "checkmark.circle.fill")
                     .font(.system(size: 10))
-                Text("Supabase connected")
+                Text(chat.isOffline ? "Chat offline (cached)" : "Realtime chat")
                     .font(.system(size: 11))
+            }
+
+            if chat.totalUnread > 0 {
+                HStack(spacing: 4) {
+                    Image(systemName: "bubble.left.and.bubble.right.fill")
+                        .font(.system(size: 10))
+                    Text("\(chat.totalUnread) unread")
+                        .font(.system(size: 11))
+                }
             }
 
             if let profile = auth.profile {

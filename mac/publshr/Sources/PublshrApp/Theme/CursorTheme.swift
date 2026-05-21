@@ -51,7 +51,7 @@ enum CursorTheme {
     // Layout (pt) — matches Cursor chrome
     static let activityBarWidth: CGFloat = 48
     static let sideBarWidth: CGFloat = 260
-    static let chatPanelWidth: CGFloat = 380
+    static let chatPanelWidth: CGFloat = 520
     static let titleBarHeight: CGFloat = 38
     static let statusBarHeight: CGFloat = 22
     static let tabBarHeight: CGFloat = 35

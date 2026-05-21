@@ -20,6 +20,10 @@ swift build -c release   # release build
 .build/debug/publshr --version
 ```
 
+### Enterprise chat (mac IDE)
+
+Chat lives under `mac/publshr/Sources/PublshrApp/Chat/`. See `mac/publshr/docs/CHAT_SYSTEM.md`. Supabase migrations: `20260521180000_chat_presence_and_members.sql`, `20260521200000_chat_phases_2_4.sql`.
+
 ### Tests
 
 No automated test suite exists yet (`swift test` reports "no tests found"). If tests are added later, run them with `swift test` from `mac/publshr/`.
