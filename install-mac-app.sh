@@ -74,10 +74,14 @@ if [[ -x "$LSREGISTER" ]]; then
     "$LSREGISTER" -f -R -trusted "$DEST" 2>/dev/null || true
 fi
 
-if [[ ! -d "$DEST/Contents/MacOS/Publshr" ]]; then
-    echo "Error: installed app is incomplete (missing MacOS/Publshr)" >&2
+EXEC="$DEST/Contents/MacOS/Publshr"
+if [[ ! -f "$EXEC" ]]; then
+    echo "Error: installed app is incomplete (missing $EXEC)" >&2
+    echo "Contents/MacOS:" >&2
+    ls -la "$DEST/Contents/MacOS" 2>&1 >&2 || true
     exit 1
 fi
+chmod +x "$EXEC"
 
 echo ""
 echo "Publshr is installed:"
