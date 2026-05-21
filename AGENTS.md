@@ -24,6 +24,14 @@ swift build -c release   # release build
 
 Chat lives under `mac/publshr/Sources/PublshrApp/Chat/`. See `mac/publshr/docs/CHAT_SYSTEM.md`. Supabase migrations: `20260521180000_chat_presence_and_members.sql`, `20260521200000_chat_phases_2_4.sql`.
 
+### Auth (mac IDE)
+
+- **Light mode UI** matches Cursor Mac Light Modern (`CursorTheme.light`).
+- **Flow:** sign in / sign up → email OTP (if required) → **workspace picker** → IDE.
+- **Touch ID:** Keychain session + `BiometricAuthService` (enable toggle on sign-in).
+- **Profile fix:** loads `profiles` by `auth.uid()`, upserts if trigger missed.
+- **Permissions:** `WorkspaceMembership.chatPermissions()` merges `workspaces.settings.chat` with role (owner/admin/member/viewer).
+
 ### Tests
 
 No automated test suite exists yet (`swift test` reports "no tests found"). If tests are added later, run them with `swift test` from `mac/publshr/`.

@@ -10,7 +10,7 @@ struct PublshrApp: App {
             ContentView()
                 .environmentObject(auth)
                 .environmentObject(chat)
-                .preferredColorScheme(.dark)
+                .preferredColorScheme(.light)
                 .onOpenURL { url in
                     auth.handleIncomingURL(url)
                 }

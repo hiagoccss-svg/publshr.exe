@@ -64,6 +64,32 @@ final class ChatViewModel: ObservableObject {
         Task { await bootstrap() }
     }
 
+    /// Called when user picks a workspace — uses that workspace + role permissions.
+    func applyWorkspaceContext(workspace: Workspace?, permissions: ChatWorkspacePermissions, auth: AuthViewModel) {
+        self.auth = auth
+        if service == nil {
+            service = ChatService(client: auth.client)
+        }
+        self.permissions = permissions
+        if let workspace {
+            self.workspace = workspace
+            service?.localStore().setMeta("last_workspace_id", value: workspace.id.uuidString)
+            Task { await reloadWorkspace(workspaceId: workspace.id) }
+        }
+    }
+
+    private func reloadWorkspace(workspaceId: UUID) async {
+        guard let service, let userId = currentUserId else { return }
+        channels = []
+        directMessages = []
+        messages = []
+        selectedChannel = nil
+        await loadWorkspaceData(workspaceId: workspaceId, userId: userId)
+        startRealtime(workspaceId: workspaceId)
+        startPresenceHeartbeat(workspaceId: workspaceId, userId: userId)
+        setupTyping(workspaceId: workspaceId)
+    }
+
     func detach() {
         presenceHeartbeat?.cancel()
         draftSaveTask?.cancel()
@@ -78,6 +104,18 @@ final class ChatViewModel: ObservableObject {
         defer { isLoading = false }
 
         await ChatNotificationService.shared.requestAuthorization()
+
+        if let ws = auth.selectedWorkspace {
+            workspace = ws
+            permissions = auth.workspaceChatPermissions
+            await loadWorkspaceData(workspaceId: ws.id, userId: userId)
+            startRealtime(workspaceId: ws.id)
+            startPresenceHeartbeat(workspaceId: ws.id, userId: userId)
+            setupTyping(workspaceId: ws.id)
+            wireNotificationDeepLinks(auth: auth)
+            isOffline = false
+            return
+        }
 
         do {
             var workspaces = try await service?.fetchMemberWorkspaces(userId: userId) ?? []
