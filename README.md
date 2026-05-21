@@ -56,11 +56,22 @@ export PATH="$(pwd)/.local/bin:$PATH"
 publshr --version
 ```
 
+## Planner (communications OS)
+
+Electron desktop module for PR, media, and editorial teams — timeline, board, calendar, editor windows, Supabase + SQLite local-first sync.
+
+```bash
+cd planner/desktop && npm install && npm run dev
+```
+
+See [planner/README.md](planner/README.md).
+
 ## Project layout
 
 ```
 mac/publshr/      # Canonical macOS IDE + Supabase (Publshr.app releases)
 native/publshr/   # App Space + Git sync shell (install-mac-app.sh)
+planner/desktop/  # Communications Planner (Electron + React)
 windows/          # Windows .exe from releases
 ```
 
