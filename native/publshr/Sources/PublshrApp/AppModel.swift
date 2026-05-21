@@ -1,6 +1,8 @@
 import Foundation
 import PublshrCore
 
+// PublshrCore: ChatChannel, ChatMessage, Space, LocalStore
+
 enum MainSection: String, CaseIterable, Identifiable {
     case chat = "Chat"
     case spaces = "Spaces"

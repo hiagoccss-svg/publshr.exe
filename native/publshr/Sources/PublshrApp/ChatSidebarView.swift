@@ -1,4 +1,5 @@
 import SwiftUI
+import PublshrCore
 
 struct ChatSidebarView: View {
     @EnvironmentObject private var model: AppModel

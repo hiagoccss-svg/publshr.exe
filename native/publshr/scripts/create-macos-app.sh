@@ -50,7 +50,7 @@ chmod 755 "$OUT_APP/Contents/MacOS/Publshr"
   <key>CFBundleVersion</key>
   <string>__VERSION__</string>
   <key>LSMinimumSystemVersion</key>
-  <string>13.0</string>
+  <string>14.0</string>
   <key>NSHighResolutionCapable</key>
   <true/>
   <key>NSPrincipalClass</key>

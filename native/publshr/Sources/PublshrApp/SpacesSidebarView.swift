@@ -31,7 +31,6 @@ struct SpacesSidebarView: View {
                             DisclosureGroup(folder.name) {
                                 ForEach(folder.lists) { list in
                                     Text(list.name)
-                                        .tag(Optional(list.id))
                                         .onTapGesture { model.selectedListID = list.id }
                                 }
                             }
