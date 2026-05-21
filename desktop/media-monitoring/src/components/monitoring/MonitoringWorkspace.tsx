@@ -1,10 +1,9 @@
-import { MonitorList } from './MonitorList'
 import { ArticleFeed } from './ArticleFeed'
 import { MonitorCreatePanel } from './MonitorCreatePanel'
 import { PublicationsView } from './PublicationsView'
 import { DashboardView } from './DashboardView'
 import { CoverageView } from './CoverageView'
-import { FilterBar } from './FilterBar'
+import { SettingsPanel } from '@/components/settings/SettingsPanel'
 import { useMonitoringStore } from '@/store/monitoringStore'
 import { useMonitoringBootstrap } from '@/hooks/useMonitoring'
 
@@ -15,15 +14,10 @@ export function MonitoringWorkspace() {
   return (
     <main className="flex-1 flex flex-col min-w-0 relative bg-surface-editor">
       {section === 'dashboard' && <DashboardView />}
-      {section === 'monitoring' && (
-        <>
-          <MonitorList />
-          <FilterBar />
-          <ArticleFeed />
-        </>
-      )}
+      {section === 'monitoring' && <ArticleFeed />}
       {section === 'coverage' && <CoverageView />}
       {section === 'publications' && <PublicationsView />}
+      {section === 'settings' && <SettingsPanel />}
       {![
         'dashboard',
         'monitoring',

@@ -33,7 +33,10 @@ export function ContextPanel() {
 
   if (!article) {
     return (
-      <aside className="w-context bg-surface-panel border-l border-border flex flex-col shrink-0">
+      <aside
+        className="flex flex-col shrink-0 border-l"
+        style={{ width: 380, backgroundColor: '#181818', borderColor: '#2B2B2B' }}
+      >
         <div className="p-4 text-center text-content-dim text-sm mt-12">
           <p>Select coverage to view metadata, tags, and actions.</p>
         </div>
@@ -51,7 +54,10 @@ export function ContextPanel() {
   }
 
   return (
-    <aside className="w-context bg-surface-panel border-l border-border flex flex-col shrink-0 overflow-hidden">
+    <aside
+      className="flex flex-col shrink-0 border-l overflow-hidden"
+      style={{ width: 380, backgroundColor: '#181818', borderColor: '#2B2B2B' }}
+    >
       <div className="px-4 py-3 border-b border-border">
         <h2 className="text-sm font-medium text-content line-clamp-2">{article.title}</h2>
         <p className="text-xs text-content-muted mt-1">{article.publication_name}</p>

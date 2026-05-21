@@ -5,6 +5,13 @@ import type { MonitoringEngine } from '../monitoring/engine'
 import type { SyncService } from '../supabase/sync-service'
 import { getDatabase, getDbPath } from '../db'
 import { LOCAL_WORKSPACE_ID } from '../config'
+import {
+  getBiometricStatus,
+  promptBiometric,
+  storeBiometricSession,
+  loadBiometricRefreshToken,
+  clearBiometricSession
+} from '../auth/biometric'
 
 export function registerIpcHandlers(engine: MonitoringEngine, sync: SyncService): void {
   const db = () => getDatabase()
@@ -12,8 +19,40 @@ export function registerIpcHandlers(engine: MonitoringEngine, sync: SyncService)
   // Auth & sync
   ipcMain.handle('auth:restore', () => sync.restoreSession())
   ipcMain.handle('auth:sign-in', (_, email: string, password: string) => sync.signIn(email, password))
-  ipcMain.handle('auth:sign-out', () => sync.signOut())
+  ipcMain.handle('auth:sign-up', (_, email: string, password: string, displayName: string) =>
+    sync.signUp(email, password, displayName)
+  )
+  ipcMain.handle('auth:verify-otp', (_, email: string, token: string) => sync.verifyEmailOtp(email, token))
+  ipcMain.handle('auth:resend-otp', (_, email: string) => sync.resendSignupOtp(email))
+  ipcMain.handle('auth:sign-out', async () => {
+    clearBiometricSession()
+    await sync.signOut()
+  })
   ipcMain.handle('auth:get-state', () => sync.getAuthState())
+  ipcMain.handle('auth:get-profile', () => sync.loadProfile())
+  ipcMain.handle('auth:biometric-status', () => getBiometricStatus())
+  ipcMain.handle('auth:biometric-enable', async () => {
+    const state = sync.getAuthState()
+    const refresh = state.session?.refresh_token
+    if (!refresh) throw new Error('Sign in with password first')
+    const ok = await promptBiometric('Enable Touch ID for Publshr Media Monitoring')
+    if (!ok) throw new Error('Biometric verification cancelled')
+    if (!storeBiometricSession(refresh)) throw new Error('Secure storage unavailable')
+    return { ok: true }
+  })
+  ipcMain.handle('auth:biometric-unlock', async () => {
+    const status = getBiometricStatus()
+    if (!status.enabled) throw new Error('Biometric unlock is not enabled')
+    const ok = await promptBiometric('Unlock Publshr Media Monitoring')
+    if (!ok) throw new Error('Biometric verification failed')
+    const refresh = loadBiometricRefreshToken()
+    if (!refresh) throw new Error('No stored session')
+    return sync.refreshSessionFromToken(refresh)
+  })
+  ipcMain.handle('auth:biometric-disable', () => {
+    clearBiometricSession()
+    return { ok: true }
+  })
   ipcMain.handle('sync:pull', () => sync.pullAll())
   ipcMain.handle('sync:status', () => sync.getStatus())
 

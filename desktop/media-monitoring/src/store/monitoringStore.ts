@@ -23,6 +23,7 @@ interface MonitoringState {
   syncStatus: 'synced' | 'syncing' | 'offline' | 'error'
   workspaceName: string | null
   userEmail: string | null
+  displayName: string | null
   setSection: (s: SidebarSection) => void
   toggleSidebar: () => void
   setTopBarMode: (m: TopBarMode) => void
@@ -38,6 +39,7 @@ interface MonitoringState {
   setFilters: (f: Partial<FeedFilters>) => void
   setSyncStatus: (s: MonitoringState['syncStatus']) => void
   setAuthInfo: (email: string | null, workspace: string | null) => void
+  setDisplayName: (name: string | null) => void
   handleStreamEvent: (e: StreamEvent) => void
 }
 
@@ -57,6 +59,7 @@ export const useMonitoringStore = create<MonitoringState>((set, get) => ({
   syncStatus: 'offline',
   workspaceName: null,
   userEmail: null,
+  displayName: null,
 
   setSection: (section) => set({ section, topBarMode: section === 'monitoring' ? 'live' : 'default' }),
   toggleSidebar: () => set((s) => ({ sidebarCollapsed: !s.sidebarCollapsed })),
@@ -77,6 +80,7 @@ export const useMonitoringStore = create<MonitoringState>((set, get) => ({
   setFilters: (f) => set((s) => ({ filters: { ...s.filters, ...f } })),
   setSyncStatus: (syncStatus) => set({ syncStatus }),
   setAuthInfo: (userEmail, workspaceName) => set({ userEmail, workspaceName }),
+  setDisplayName: (displayName) => set({ displayName }),
   handleStreamEvent: (e) => {
     const { activeMonitorId } = get()
     if (e.monitorId !== activeMonitorId) return

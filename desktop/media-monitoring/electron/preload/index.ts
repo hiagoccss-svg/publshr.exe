@@ -20,11 +20,19 @@ export interface ResultFilterOptions {
 }
 
 const api = {
-  // Auth & sync
   restoreSession: () => ipcRenderer.invoke('auth:restore'),
   signIn: (email: string, password: string) => ipcRenderer.invoke('auth:sign-in', email, password),
+  signUp: (email: string, password: string, displayName: string) =>
+    ipcRenderer.invoke('auth:sign-up', email, password, displayName),
+  verifyOtp: (email: string, token: string) => ipcRenderer.invoke('auth:verify-otp', email, token),
+  resendOtp: (email: string) => ipcRenderer.invoke('auth:resend-otp', email),
   signOut: () => ipcRenderer.invoke('auth:sign-out'),
   getAuthState: () => ipcRenderer.invoke('auth:get-state'),
+  getProfile: () => ipcRenderer.invoke('auth:get-profile'),
+  biometricStatus: () => ipcRenderer.invoke('auth:biometric-status'),
+  biometricEnable: () => ipcRenderer.invoke('auth:biometric-enable'),
+  biometricUnlock: () => ipcRenderer.invoke('auth:biometric-unlock'),
+  biometricDisable: () => ipcRenderer.invoke('auth:biometric-disable'),
   pullSync: () => ipcRenderer.invoke('sync:pull'),
   getSyncStatus: () => ipcRenderer.invoke('sync:status'),
   onSyncStatus: (callback: (payload: unknown) => void) => {
@@ -41,8 +49,6 @@ const api = {
       ipcRenderer.removeListener('sync:remote-article', handler)
     }
   },
-
-  // Data
   getPublications: (filters?: { region?: string; language?: string }) =>
     ipcRenderer.invoke('db:get-publications', filters),
   getMonitors: () => ipcRenderer.invoke('db:get-monitors'),

@@ -1,54 +1,94 @@
 import { useEffect, useState } from 'react'
 import { HashRouter, Routes, Route } from 'react-router-dom'
-import { TopBar } from '@/components/layout/TopBar'
-import { Sidebar } from '@/components/layout/Sidebar'
-import { ContextPanel } from '@/components/layout/ContextPanel'
-import { SyncBanner } from '@/components/layout/SyncBanner'
-import { MonitoringWorkspace } from '@/components/monitoring/MonitoringWorkspace'
+import { AuthScreen } from '@/components/auth/AuthScreen'
+import { BiometricUnlock } from '@/components/auth/BiometricUnlock'
+import { CursorShell } from '@/components/layout/CursorShell'
 import { ArticleDetailView } from '@/views/ArticleDetailView'
-import { SignInModal } from '@/components/auth/SignInModal'
 import { useMonitoringStore } from '@/store/monitoringStore'
+import { Loader2 } from 'lucide-react'
 
-function MainShell() {
-  const [signInOpen, setSignInOpen] = useState(false)
-  const { setAuthInfo, setSyncStatus } = useMonitoringStore()
+type BootPhase = 'loading' | 'biometric' | 'auth' | 'app'
+
+export default function App() {
+  const [phase, setPhase] = useState<BootPhase>('loading')
+  const { setAuthInfo, setSyncStatus, setDisplayName } = useMonitoringStore()
+
+  const enterApp = (state: {
+    email?: string | null
+    workspaceName?: string | null
+    displayName?: string | null
+    session?: unknown
+  }) => {
+    setAuthInfo(state.email ?? null, state.workspaceName ?? null)
+    setDisplayName(state.displayName ?? null)
+    setSyncStatus(state.session ? 'synced' : 'offline')
+    setPhase('app')
+  }
 
   useEffect(() => {
-    window.publshr.restoreSession().then((state: { email?: string; workspaceName?: string; session?: unknown }) => {
-      setAuthInfo(state.email ?? null, state.workspaceName ?? null)
-      setSyncStatus(state.session ? 'synced' : 'offline')
-    })
+    const boot = async () => {
+      const bio = await window.publshr.biometricStatus()
+      if (bio.enabled && bio.available) {
+        setPhase('biometric')
+        return
+      }
+      const state = await window.publshr.restoreSession()
+      if (state.session) {
+        enterApp(state)
+      } else {
+        setPhase('auth')
+      }
+    }
+    void boot()
+
     return window.publshr.onSyncStatus((payload: unknown) => {
       const p = payload as {
         status?: string
-        auth?: { email?: string; workspaceName?: string; session?: unknown }
+        auth?: {
+          email?: string
+          workspaceName?: string
+          displayName?: string
+          session?: unknown
+        }
       }
       if (p.status) setSyncStatus(p.status as 'synced' | 'syncing' | 'offline' | 'error')
-      if (p.auth) {
+      if (p.auth?.session) {
         setAuthInfo(p.auth.email ?? null, p.auth.workspaceName ?? null)
+        setDisplayName(p.auth.displayName ?? null)
       }
     })
-  }, [setAuthInfo, setSyncStatus])
+  }, [setAuthInfo, setSyncStatus, setDisplayName])
 
-  return (
-    <div className="h-full flex flex-col">
-      <TopBar onSignIn={() => setSignInOpen(true)} />
-      <SyncBanner onSignIn={() => setSignInOpen(true)} />
-      <div className="flex-1 flex min-h-0">
-        <Sidebar />
-        <MonitoringWorkspace />
-        <ContextPanel />
+  if (phase === 'loading') {
+    return (
+      <div className="h-full flex items-center justify-center bg-surface-title text-content-muted gap-2">
+        <Loader2 size={18} className="animate-spin" />
+        <span className="text-sm">Loading…</span>
       </div>
-      <SignInModal open={signInOpen} onClose={() => setSignInOpen(false)} />
-    </div>
-  )
-}
+    )
+  }
 
-export default function App() {
+  if (phase === 'biometric') {
+    return (
+      <BiometricUnlock
+        onUnlocked={() => void window.publshr.biometricUnlock().then(enterApp)}
+        onUsePassword={() => setPhase('auth')}
+      />
+    )
+  }
+
+  if (phase === 'auth') {
+    return (
+      <AuthScreen
+        onAuthenticated={() => void window.publshr.getAuthState().then(enterApp)}
+      />
+    )
+  }
+
   return (
     <HashRouter>
       <Routes>
-        <Route path="/" element={<MainShell />} />
+        <Route path="/" element={<CursorShell />} />
         <Route path="/article/:id" element={<ArticleDetailView />} />
       </Routes>
     </HashRouter>

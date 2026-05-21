@@ -1,5 +1,9 @@
+import { RefreshCw } from 'lucide-react'
+import clsx from 'clsx'
 import { useMonitoringStore } from '@/store/monitoringStore'
+import { useActiveMonitor } from '@/hooks/useMonitoring'
 import type { Sentiment } from '@/types'
+import { cursor } from '@/theme/cursor'
 
 const SENTIMENTS: { value: Sentiment | ''; label: string }[] = [
   { value: '', label: 'All sentiment' },
@@ -18,10 +22,26 @@ const SORTS = [
 ]
 
 export function FilterBar() {
-  const { filters, setFilters } = useMonitoringStore()
+  const { filters, setFilters, isMonitoring, activeMonitorId } = useMonitoringStore()
+  const { startLive, stopLive } = useActiveMonitor()
 
   return (
-    <div className="flex flex-wrap items-center gap-2 px-4 py-2 border-b border-border bg-surface-editor shrink-0">
+    <div
+      className="flex flex-wrap items-center gap-2 px-3 py-1.5 border-b shrink-0"
+      style={{ backgroundColor: cursor.editor, borderColor: cursor.border }}
+    >
+      <button
+        type="button"
+        className={clsx(
+          'flex items-center gap-1 text-[11px] px-2 py-1 rounded border app-no-drag',
+          isMonitoring ? 'text-accent border-accent/40' : 'text-content-muted border-border'
+        )}
+        disabled={!activeMonitorId}
+        onClick={() => (isMonitoring ? stopLive() : startLive())}
+      >
+        <RefreshCw size={12} className={clsx(isMonitoring && 'animate-spin')} />
+        {isMonitoring ? 'Stop live' : 'Start live'}
+      </button>
       <select
         className="input-field w-auto text-xs py-1"
         value={filters.sentiment}

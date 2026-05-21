@@ -14,12 +14,21 @@ function createSupabaseClient(): SupabaseClient {
 
 export type SyncStatus = 'offline' | 'syncing' | 'synced' | 'error'
 
+export interface UserProfile {
+  id: string
+  email: string
+  display_name: string | null
+  avatar_url: string | null
+}
+
 export interface AuthState {
   session: Session | null
   email: string | null
   userId: string | null
   workspaceId: string | null
   workspaceName: string | null
+  displayName: string | null
+  profile: UserProfile | null
 }
 
 export class SyncService {
@@ -30,6 +39,7 @@ export class SyncService {
   private status: SyncStatus = 'offline'
   private lastError: string | null = null
   private realtimeChannel: RealtimeChannel | null = null
+  private profile: UserProfile | null = null
 
   constructor(private db: Database.Database) {
     this.client = createSupabaseClient()
@@ -52,10 +62,15 @@ export class SyncService {
     const cloud = this.isAuthenticated()
     return {
       session: this.session,
-      email: this.session?.user?.email ?? null,
+      email: this.session?.user?.email ?? this.profile?.email ?? null,
       userId: this.session?.user?.id ?? null,
       workspaceId: cloud ? this.workspaceId : LOCAL_WORKSPACE_ID,
-      workspaceName: cloud ? this.workspaceName : LOCAL_WORKSPACE_NAME
+      workspaceName: cloud ? this.workspaceName : LOCAL_WORKSPACE_NAME,
+      displayName:
+        this.profile?.display_name ??
+        (this.session?.user?.user_metadata?.display_name as string | undefined) ??
+        null,
+      profile: this.profile
     }
   }
 
@@ -84,6 +99,7 @@ export class SyncService {
       refresh_token: session.refresh_token
     })
     saveSession(session)
+    await this.loadProfile()
     await this.ensureWorkspace()
     await this.pullAll()
     this.subscribeRealtime()
@@ -102,11 +118,81 @@ export class SyncService {
     return this.getAuthState()
   }
 
+  async signUp(
+    email: string,
+    password: string,
+    displayName: string
+  ): Promise<{ needsConfirmation: boolean }> {
+    const { data, error } = await this.client.auth.signUp({
+      email: email.trim(),
+      password,
+      options: {
+        data: {
+          display_name: displayName.trim() || email.split('@')[0]
+        }
+      }
+    })
+    if (error) throw error
+    if (data.session) {
+      await this.applySession(data.session)
+      return { needsConfirmation: false }
+    }
+    return { needsConfirmation: true }
+  }
+
+  async verifyEmailOtp(email: string, token: string): Promise<AuthState> {
+    const { data, error } = await this.client.auth.verifyOtp({
+      email: email.trim(),
+      token: token.trim(),
+      type: 'signup'
+    })
+    if (error) throw error
+    if (!data.session) throw new Error('Verification succeeded but no session was returned')
+    await this.applySession(data.session)
+    return this.getAuthState()
+  }
+
+  async resendSignupOtp(email: string): Promise<void> {
+    const { error } = await this.client.auth.resend({
+      type: 'signup',
+      email: email.trim()
+    })
+    if (error) throw error
+  }
+
+  async loadProfile(): Promise<UserProfile | null> {
+    if (!this.session) return null
+    const { data, error } = await this.client
+      .from('profiles')
+      .select('id, email, display_name, avatar_url')
+      .eq('id', this.session.user.id)
+      .maybeSingle()
+    if (error || !data) {
+      this.profile = {
+        id: this.session.user.id,
+        email: this.session.user.email ?? '',
+        display_name: (this.session.user.user_metadata?.display_name as string) ?? null,
+        avatar_url: null
+      }
+      return this.profile
+    }
+    this.profile = data as UserProfile
+    return this.profile
+  }
+
+  async refreshSessionFromToken(refreshToken: string): Promise<AuthState> {
+    const { data, error } = await this.client.auth.refreshSession({ refresh_token: refreshToken })
+    if (error || !data.session) throw error ?? new Error('Could not refresh session')
+    await this.applySession(data.session)
+    return this.getAuthState()
+  }
+
   async signOut(): Promise<void> {
     await this.client.auth.signOut()
     this.realtimeChannel?.unsubscribe()
     this.realtimeChannel = null
     this.session = null
+    this.profile = null
     this.workspaceId = null
     this.workspaceName = null
     saveSession(null)

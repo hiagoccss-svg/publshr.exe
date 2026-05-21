@@ -44,8 +44,14 @@ export function useMonitoringBootstrap() {
   useEffect(() => {
     void loadMonitors()
 
-    window.publshr.restoreSession().then((state: { email?: string; workspaceName?: string; session?: unknown }) => {
+    window.publshr.restoreSession().then((state: {
+      email?: string
+      workspaceName?: string
+      displayName?: string
+      session?: unknown
+    }) => {
       setAuthInfo(state.email ?? null, state.workspaceName ?? null)
+      useMonitoringStore.getState().setDisplayName(state.displayName ?? null)
       if (state.session) setSyncStatus('synced')
     })
 
