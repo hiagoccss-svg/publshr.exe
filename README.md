@@ -1,10 +1,10 @@
 # publshr
 
-Cross-platform publisher workspace.
+Enterprise desktop publisher — **Supabase backend**, native macOS app.
 
-## macOS app (Cursor-style layout + ClickUp-style Chat & Spaces)
+## macOS app (v0.3)
 
-Install:
+Light **Cursor-style 3-column** UI · **ClickUp-style Chat & Spaces** · real data on Supabase (no ClickUp API).
 
 ```bash
 cd ~/publshr.exe
@@ -12,22 +12,14 @@ git pull
 ./install-mac-app.sh
 ```
 
-Open **Applications → Publshr**. You get:
+| Column 1 | Column 2 | Column 3 |
+|----------|------------|----------|
+| Spaces | Channels or Tasks | Chat thread or Project tasks |
 
-| Area | Like |
-|------|------|
-| Dark layout, icon rail, sidebars | **Cursor** |
-| **Chat** — channels, DMs, messages, composer | **ClickUp Chat** |
-| **Spaces** — spaces → folders → lists | **ClickUp Spaces** |
+**Top bar:** workspace picker, Chat/Projects mode, New Channel / Space / Task, search, account.
 
-- Works **offline** (data in `~/Library/Application Support/Publshr/workspace.json`)
-- **Settings (⌘,)** → Updates — Git sync when online (not a separate updater app)
+**Auth:** email sign-up / sign-in via Supabase · optional **Touch ID** unlock on this Mac.
+
+**Backend:** project `publshr.exe` on Supabase — see [supabase/README.md](supabase/README.md).
 
 Windows: `publshr.exe` from [Releases](https://github.com/hiagoccss-svg/publshr.exe/releases).
-
-## Layout
-
-```
-native/publshr/   # SwiftUI Mac app + CLI
-windows/          # Windows .exe docs
-```

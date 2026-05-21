@@ -1,129 +1,105 @@
 import Foundation
 import PublshrCore
 
-enum MainSection: String, CaseIterable, Identifiable {
+enum WorkspaceMode: String, CaseIterable, Hashable {
     case chat = "Chat"
-    case spaces = "Spaces"
-
-    var id: String { rawValue }
-    var icon: String {
-        switch self {
-        case .chat: return "bubble.left.and.bubble.right.fill"
-        case .spaces: return "square.grid.2x2.fill"
-        }
-    }
+    case projects = "Projects"
 }
 
 @MainActor
 final class AppModel: ObservableObject {
-    @Published var section: MainSection = .chat
-    @Published var workspace: WorkspaceData
-    @Published var selectedChannelID: UUID?
-    @Published var selectedSpaceID: UUID?
-    @Published var selectedListID: UUID?
-    @Published var chatInput: String = ""
-    @Published var sidebarSearch: String = ""
-    @Published var preferOffline = false
-    @Published var statusMessage = "Ready"
-    @Published var lastCommit = "—"
-    @Published var isSyncing = false
-    @Published var settingsUpdateNote = ""
+    @Published var mode: WorkspaceMode = .chat
+    @Published var workspaces: [WorkspaceRow] = []
+    @Published var spaces: [SpaceRow] = []
+    @Published var channels: [ChatChannelRow] = []
+    @Published var messages: [ChatMessageRow] = []
+    @Published var tasks: [TaskRow] = []
+    @Published var selectedWorkspaceId: UUID?
+    @Published var selectedSpaceId: UUID?
+    @Published var selectedChannelId: UUID?
+    @Published var chatInput = ""
+    @Published var searchText = ""
+    @Published var errorMessage: String?
+    @Published var isLoading = false
 
-    private let git = GitSync()
+    let supabase = SupabaseService.shared
 
-    init() {
-        workspace = LocalStore.load()
-        if workspace.spaces.isEmpty && workspace.channels.isEmpty {
-            workspace = LocalStore.defaultWorkspace()
-            persist()
-        }
-        selectedChannelID = workspace.channels.first?.id
-        selectedSpaceID = workspace.spaces.first?.id
-        Task { await syncInBackground() }
-    }
-
-    var filteredChannels: [ChatChannel] {
-        let q = sidebarSearch.trimmingCharacters(in: .whitespaces).lowercased()
-        guard !q.isEmpty else { return workspace.channels }
-        return workspace.channels.filter { $0.name.lowercased().contains(q) }
-    }
-
-    var channelMessages: [ChatMessage] {
-        guard let id = selectedChannelID else { return [] }
-        return workspace.messages
-            .filter { $0.channelID == id }
-            .sorted { $0.sentAt < $1.sentAt }
-    }
-
-    var selectedChannel: ChatChannel? {
-        workspace.channels.first { $0.id == selectedChannelID }
-    }
-
-    var selectedSpace: Space? {
-        workspace.spaces.first { $0.id == selectedSpaceID }
-    }
-
-    func persist() {
-        LocalStore.save(workspace)
-    }
-
-    func sendMessage() {
-        let text = chatInput.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !text.isEmpty, let channelID = selectedChannelID else { return }
-        let msg = ChatMessage(channelID: channelID, author: "You", body: text)
-        workspace.messages.append(msg)
-        chatInput = ""
-        persist()
-    }
-
-    func createChannel() {
-        let ch = ChatChannel(name: "new-channel", spaceID: selectedSpaceID)
-        workspace.channels.append(ch)
-        selectedChannelID = ch.id
-        section = .chat
-        persist()
-    }
-
-    func createSpace() {
-        let space = Space(name: "New Space", colorHex: "10B981", folders: [])
-        workspace.spaces.append(space)
-        selectedSpaceID = space.id
-        section = .spaces
-        persist()
-    }
-
-    func syncFromSettings() async { await performSync(showInSettings: true) }
-    func checkForUpdatesFromMenu() async { await performSync(showInSettings: true) }
-
-    func syncInBackground() async { await performSync(showInSettings: false) }
-
-    private func performSync(showInSettings: Bool) async {
-        isSyncing = true
-        statusMessage = "Syncing…"
-        let networkAvailable = await isNetworkAvailable()
-        let offline = preferOffline || !networkAvailable
-        let result = await git.sync(offline: offline)
-        switch result {
-        case .success(let sync):
-            lastCommit = sync.commit ?? "—"
-            statusMessage = sync.updated ? "Synced" : "Ready"
-            settingsUpdateNote = sync.message
-        case .failure(let error):
-            statusMessage = "Ready"
-            settingsUpdateNote = error.localizedDescription
-        }
-        isSyncing = false
-    }
-
-    private func isNetworkAvailable() async -> Bool {
-        guard let url = URL(string: "https://github.com") else { return false }
-        var request = URLRequest(url: url)
-        request.httpMethod = "HEAD"
-        request.timeoutInterval = 4
+    func bootstrapAfterLogin() async {
+        isLoading = true
+        defer { isLoading = false }
         do {
-            let (_, response) = try await URLSession.shared.data(for: request)
-            guard let http = response as? HTTPURLResponse else { return false }
-            return (200...399).contains(http.statusCode)
-        } catch { return false }
+            workspaces = try await supabase.fetchWorkspaces()
+            if selectedWorkspaceId == nil { selectedWorkspaceId = workspaces.first?.id }
+            await reloadWorkspaceData()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func reloadWorkspaceData() async {
+        guard let wid = selectedWorkspaceId else { return }
+        do {
+            spaces = try await supabase.fetchSpaces(workspaceId: wid)
+            channels = try await supabase.fetchChannels(workspaceId: wid)
+            if selectedChannelId == nil { selectedChannelId = channels.first?.id }
+            if selectedSpaceId == nil { selectedSpaceId = spaces.first?.id }
+            if mode == .chat { await loadMessages() }
+            else { await loadTasks() }
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func loadMessages() async {
+        guard let cid = selectedChannelId else { messages = []; return }
+        do {
+            messages = try await supabase.fetchMessages(channelId: cid)
+        } catch { errorMessage = error.localizedDescription }
+    }
+
+    func loadTasks() async {
+        guard let wid = selectedWorkspaceId else { tasks = []; return }
+        do {
+            tasks = try await supabase.fetchTasks(workspaceId: wid, spaceId: selectedSpaceId)
+        } catch { errorMessage = error.localizedDescription }
+    }
+
+    func sendMessage() async {
+        let text = chatInput.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty, let cid = selectedChannelId else { return }
+        do {
+            let row = try await supabase.sendMessage(channelId: cid, body: text)
+            messages.append(row)
+            chatInput = ""
+        } catch { errorMessage = error.localizedDescription }
+    }
+
+    func newChannel() async {
+        guard let wid = selectedWorkspaceId else { return }
+        do {
+            let ch = try await supabase.createChannel(workspaceId: wid, name: "channel-\(Int.random(in: 1000...9999))")
+            channels.append(ch)
+            selectedChannelId = ch.id
+            mode = .chat
+            await loadMessages()
+        } catch { errorMessage = error.localizedDescription }
+    }
+
+    func newSpace() async {
+        guard let wid = selectedWorkspaceId else { return }
+        do {
+            let sp = try await supabase.createSpace(workspaceId: wid, name: "New space", parentId: nil)
+            spaces.append(sp)
+            selectedSpaceId = sp.id
+            mode = .projects
+        } catch { errorMessage = error.localizedDescription }
+    }
+
+    func newTask() async {
+        guard let wid = selectedWorkspaceId else { return }
+        do {
+            let t = try await supabase.createTask(workspaceId: wid, spaceId: selectedSpaceId, title: "New task")
+            tasks.append(t)
+        } catch { errorMessage = error.localizedDescription }
     }
 }

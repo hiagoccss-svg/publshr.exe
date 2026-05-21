@@ -9,7 +9,7 @@ fi
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$ROOT/native/publshr"
-VERSION="${PUBLSHR_VERSION:-0.2.0}"
+VERSION="${PUBLSHR_VERSION:-0.3.0}"
 APP_NAME="Publshr.app"
 TARGET="${PUBLSHR_APP_DIR:-$HOME/Applications}"
 

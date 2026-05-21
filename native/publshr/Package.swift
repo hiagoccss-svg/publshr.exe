@@ -10,6 +10,9 @@ let package = Package(
         .executable(name: "publshr", targets: ["publshr"]),
         .executable(name: "Publshr", targets: ["PublshrApp"]),
     ],
+    dependencies: [
+        .package(url: "https://github.com/supabase/supabase-swift.git", from: "2.20.0"),
+    ],
     targets: [
         .executableTarget(
             name: "publshr",
@@ -17,7 +20,11 @@ let package = Package(
         ),
         .target(
             name: "PublshrCore",
-            path: "Sources/PublshrCore"
+            dependencies: [
+                .product(name: "Supabase", package: "supabase-swift"),
+            ],
+            path: "Sources/PublshrCore",
+            resources: [.process("Resources")]
         ),
         .executableTarget(
             name: "PublshrApp",
@@ -26,6 +33,7 @@ let package = Package(
             linkerSettings: [
                 .linkedFramework("SwiftUI", .when(platforms: [.macOS])),
                 .linkedFramework("AppKit", .when(platforms: [.macOS])),
+                .linkedFramework("LocalAuthentication", .when(platforms: [.macOS])),
             ]
         ),
     ]

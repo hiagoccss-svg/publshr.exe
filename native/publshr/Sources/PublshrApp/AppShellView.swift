@@ -1,101 +1,239 @@
 import SwiftUI
+import PublshrCore
 
+/// Cursor-style light layout: Spaces | Context (channels/tasks) | Main
 struct AppShellView: View {
     @EnvironmentObject private var model: AppModel
-    @Environment(\.openSettings) private var openSettings
 
     var body: some View {
-        HStack(spacing: 0) {
-            IconRailView()
-                .frame(width: PublshrTheme.railWidth)
-
-            Rectangle()
-                .fill(PublshrTheme.border)
-                .frame(width: 1)
-
-            secondarySidebar
-
-            Rectangle()
-                .fill(PublshrTheme.border)
-                .frame(width: 1)
-
-            mainPanel
+        VStack(spacing: 0) {
+            TopToolbarView()
+            HStack(spacing: 0) {
+                ProjectsColumnView()
+                    .frame(width: PublshrTheme.sidebarWidth)
+                Divider().overlay(PublshrTheme.border)
+                ContextColumnView()
+                    .frame(width: PublshrTheme.contextWidth)
+                Divider().overlay(PublshrTheme.border)
+                MainColumnView()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
         }
         .background(PublshrTheme.bg)
-        .preferredColorScheme(.dark)
-    }
-
-    @ViewBuilder
-    private var secondarySidebar: some View {
-        Group {
-            switch model.section {
-            case .chat:
-                ChatSidebarView()
-            case .spaces:
-                SpacesSidebarView()
-            }
+        .preferredColorScheme(.light)
+        .task { await model.bootstrapAfterLogin() }
+        .alert("Error", isPresented: Binding(
+            get: { model.errorMessage != nil },
+            set: { if !$0 { model.errorMessage = nil } }
+        )) {
+            Button("OK") { model.errorMessage = nil }
+        } message: {
+            Text(model.errorMessage ?? "")
         }
-        .frame(width: PublshrTheme.sidebarWidth)
+    }
+}
+
+struct ProjectsColumnView: View {
+    @EnvironmentObject private var model: AppModel
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text("Spaces")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(PublshrTheme.textSecondary)
+                .padding(.horizontal, 12)
+                .padding(.top, 12)
+
+            List(selection: $model.selectedSpaceId) {
+                ForEach(model.spaces) { space in
+                    HStack(spacing: 8) {
+                        Circle()
+                            .fill(Color(hex: space.color ?? "3B82F6") ?? PublshrTheme.accent)
+                            .frame(width: 8, height: 8)
+                        Text(space.name)
+                    }
+                    .tag(Optional(space.id))
+                    .onTapGesture {
+                        model.selectedSpaceId = space.id
+                        model.mode = .projects
+                        Task { await model.loadTasks() }
+                    }
+                }
+            }
+            .listStyle(.sidebar)
+            .scrollContentBackground(.hidden)
+        }
         .background(PublshrTheme.sidebar)
     }
+}
 
-    @ViewBuilder
-    private var mainPanel: some View {
+struct ContextColumnView: View {
+    @EnvironmentObject private var model: AppModel
+
+    var body: some View {
         Group {
-            switch model.section {
-            case .chat:
-                ChatMainView()
-            case .spaces:
-                SpacesMainView()
+            if model.mode == .chat {
+                ChatChannelsColumn()
+            } else {
+                TasksContextColumn()
             }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(PublshrTheme.sidebar)
+    }
+}
+
+struct ChatChannelsColumn: View {
+    @EnvironmentObject private var model: AppModel
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text("Channels")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(PublshrTheme.textSecondary)
+                .padding(12)
+            List(selection: $model.selectedChannelId) {
+                ForEach(model.channels) { ch in
+                    Text("#\(ch.name)")
+                        .tag(Optional(ch.id))
+                        .onTapGesture {
+                            model.selectedChannelId = ch.id
+                            Task { await model.loadMessages() }
+                        }
+                }
+            }
+            .listStyle(.plain)
+            .scrollContentBackground(.hidden)
+        }
+    }
+}
+
+struct TasksContextColumn: View {
+    @EnvironmentObject private var model: AppModel
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text("Tasks")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(PublshrTheme.textSecondary)
+                .padding(12)
+            List {
+                ForEach(model.tasks) { task in
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(task.title).font(.subheadline.weight(.medium))
+                        Text(task.status ?? "open")
+                            .font(.caption2)
+                            .foregroundStyle(PublshrTheme.textSecondary)
+                    }
+                }
+            }
+            .listStyle(.plain)
+            .scrollContentBackground(.hidden)
+        }
+    }
+}
+
+struct MainColumnView: View {
+    @EnvironmentObject private var model: AppModel
+
+    var body: some View {
+        Group {
+            if model.mode == .chat {
+                ChatMainPanel()
+            } else {
+                ProjectsMainPanel()
+            }
+        }
         .background(PublshrTheme.panel)
     }
 }
 
-struct IconRailView: View {
+struct ChatMainPanel: View {
     @EnvironmentObject private var model: AppModel
-    @Environment(\.openSettings) private var openSettings
 
     var body: some View {
-        VStack(spacing: 8) {
-            VStack(spacing: 2) {
-                Text("P")
-                    .font(.system(size: 18, weight: .bold, design: .rounded))
-                    .foregroundStyle(PublshrTheme.accent)
-                Text("v\(AppVersionLabel.current)")
-                    .font(.system(size: 9, weight: .medium, design: .monospaced))
-                    .foregroundStyle(PublshrTheme.textSecondary)
+        VStack(spacing: 0) {
+            if let ch = model.channels.first(where: { $0.id == model.selectedChannelId }) {
+                Text("#\(ch.name)")
+                    .font(.title3.bold())
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding()
             }
-            .padding(.top, 10)
-
-            ForEach(MainSection.allCases) { item in
-                Button {
-                    model.section = item
-                } label: {
-                    Image(systemName: item.icon)
-                        .font(.system(size: 18))
-                        .frame(width: 36, height: 36)
-                        .background(model.section == item ? PublshrTheme.accent.opacity(0.25) : Color.clear)
+            Divider()
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: 12) {
+                    ForEach(model.messages) { msg in
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(msg.createdAt ?? .now, style: .time)
+                                .font(.caption2)
+                                .foregroundStyle(PublshrTheme.textSecondary)
+                            Text(msg.body)
+                                .textSelection(.enabled)
+                        }
+                        .padding(10)
+                        .background(PublshrTheme.sidebar)
                         .clipShape(RoundedRectangle(cornerRadius: 8))
+                    }
                 }
-                .buttonStyle(.plain)
-                .foregroundStyle(model.section == item ? PublshrTheme.accent : PublshrTheme.textSecondary)
-                .help(item.rawValue)
+                .padding()
             }
-
-            Spacer()
-
-            Button { openSettings() } label: {
-                Image(systemName: "gearshape.fill")
-                    .font(.system(size: 16))
+            Divider()
+            HStack {
+                TextField("Message…", text: $model.chatInput, axis: .vertical)
+                    .textFieldStyle(.roundedBorder)
+                    .lineLimit(1...4)
+                Button("Send") { Task { await model.sendMessage() } }
+                    .buttonStyle(.borderedProminent)
+                    .tint(PublshrTheme.accent)
             }
-            .buttonStyle(.plain)
-            .foregroundStyle(PublshrTheme.textSecondary)
-            .padding(.bottom, 12)
+            .padding(12)
         }
-        .frame(maxHeight: .infinity)
-        .background(PublshrTheme.sidebar)
+    }
+}
+
+struct ProjectsMainPanel: View {
+    @EnvironmentObject private var model: AppModel
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text(model.spaces.first(where: { $0.id == model.selectedSpaceId })?.name ?? "Project")
+                .font(.title.bold())
+            Text("ClickUp-style tasks backed by Supabase on your desktop.")
+                .foregroundStyle(PublshrTheme.textSecondary)
+            if model.tasks.isEmpty {
+                Text("No tasks — click **Task** in the top bar.")
+                    .foregroundStyle(PublshrTheme.textSecondary)
+            } else {
+                ForEach(model.tasks) { task in
+                    HStack {
+                        Image(systemName: "circle")
+                            .foregroundStyle(PublshrTheme.accent)
+                        Text(task.title)
+                        Spacer()
+                        Text(task.status ?? "open")
+                            .font(.caption)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(PublshrTheme.sidebar)
+                            .clipShape(Capsule())
+                    }
+                    .padding(.vertical, 6)
+                }
+            }
+            Spacer()
+        }
+        .padding(24)
+    }
+}
+
+extension Color {
+    init?(hex: String) {
+        var s = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
+        if s.count == 6 { s = "FF" + s }
+        guard let v = UInt64(s, radix: 16) else { return nil }
+        self.init(
+            red: Double((v >> 16) & 0xFF) / 255,
+            green: Double((v >> 8) & 0xFF) / 255,
+            blue: Double(v & 0xFF) / 255
+        )
     }
 }
