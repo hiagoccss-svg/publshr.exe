@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build publshr and pack a self-contained release tarball (bin + Swift runtime libs).
+# Build publshr CLI + PublshrApp and pack a release tarball.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -24,22 +24,30 @@ case "$(uname -m)" in
 esac
 
 echo "Building publshr $VERSION ($os-$arch) ..." >&2
-swift build -c release
 
-BIN="$SCRIPT_DIR/.build/release/publshr"
+if [[ "$os" == "macos" ]]; then
+    swift build -c release --product publshr --product PublshrApp
+else
+    swift build -c release --product publshr
+fi
+
 STAGE="$SCRIPT_DIR/dist/publshr-${VERSION}-${os}-${arch}"
 rm -rf "$STAGE"
 mkdir -p "$STAGE/bin" "$STAGE/lib"
 
-cp "$BIN" "$STAGE/bin/publshr"
+CLI_BIN="$SCRIPT_DIR/.build/release/publshr"
+cp "$CLI_BIN" "$STAGE/bin/publshr"
 chmod 755 "$STAGE/bin/publshr"
 
 if [[ "$os" == "macos" ]]; then
-    bash "$SCRIPT_DIR/build-macos-app.sh" "$BIN" "$VERSION" "$STAGE"
+    APP_BIN="$SCRIPT_DIR/.build/release/PublshrApp"
+    cp "$APP_BIN" "$STAGE/bin/PublshrApp"
+    chmod 755 "$STAGE/bin/PublshrApp"
+    bash "$SCRIPT_DIR/scripts/build-macos-app.sh" "$APP_BIN" "$VERSION" "$STAGE"
 fi
 
 if [[ "$os" == "linux" ]]; then
-    mapfile -t swift_libs < <(ldd "$BIN" | awk '/libswift|libdispatch|libBlocksRuntime/ {print $3}' | sort -u)
+    mapfile -t swift_libs < <(ldd "$CLI_BIN" | awk '/libswift|libdispatch|libBlocksRuntime/ {print $3}' | sort -u)
     for lib in "${swift_libs[@]}"; do
         [[ -n "$lib" && -f "$lib" ]] && cp -L "$lib" "$STAGE/lib/"
     done

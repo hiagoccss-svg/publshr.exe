@@ -1,47 +1,51 @@
 # publshr
 
-Cross-platform publisher helper.
+A native macOS IDE styled like **Cursor**, with **Supabase** account creation, email confirmation, and profile sync.
 
 | Platform | Install |
 |----------|---------|
-| Windows | `publshr.exe` (release assets) |
-| macOS / Linux | `./install.sh` → `/opt/publshr` + `/usr/local/bin/publshr` |
+| macOS | `curl -fsSL …/install-publshr.sh \| bash` → **Publshr.app** in Applications |
+| Linux | `./install.sh` → CLI at `/usr/local/bin/publshr` |
 
-## Install
+## Features
 
-From **any directory** (Mac or Linux, requires `curl` and `sudo`):
+- **Cursor-matched UI** — activity bar, sidebar, editor tabs, AI chat panel, status bar (`#181818` / `#252526` / `#1e1e1e` palette)
+- **Supabase Auth** — sign up, sign in, 6-digit email OTP confirmation, session persistence
+- **Profile auto-create** — `handle_new_user` trigger writes to `public.profiles` on signup
 
-```bash
-curl -fsSL https://raw.githubusercontent.com/hiagoccss-svg/publshr.exe/cursor/add-mac-publshr-9411/install-publshr.sh | bash
-```
-
-Or clone the repo and run:
+## Quick install (macOS)
 
 ```bash
-git clone https://github.com/hiagoccss-svg/publshr.exe.git
-cd publshr.exe
-git checkout cursor/add-mac-publshr-9411
-./install.sh
+curl -fsSL https://raw.githubusercontent.com/hiagoccss-svg/publshr.exe/cursor/cursor-mac-supabase-auth-8b60/install-publshr.sh | bash
 ```
 
-1. Downloads the matching release from GitHub (`publshr-VERSION-{macos|linux}-{arch}.tar.gz`)
-2. If no release exists, builds from source
-3. Installs to `/opt/publshr/VERSION` and `/usr/local/bin/publshr`
+Then open **Finder → Applications → Publshr**.
 
-Verify:
+## Account creation flow
+
+1. **Create account** — email, name, password (min 8 chars)
+2. **Confirm email** — enter the 6-digit code from Supabase (enable `{{ .Token }}` in your [email template](https://supabase.com/dashboard/project/lboesdtsrqfvosznjpdy/auth/templates))
+3. **Sign in** — access the IDE; profile loads from `profiles`
+
+### Supabase project
+
+- Project: `publshr.exe` (`lboesdtsrqfvosznjpdy`)
+- URL: `https://lboesdtsrqfvosznjpdy.supabase.co`
+- Add redirect URL: `com.publshr.app://auth/callback` in [Auth URL configuration](https://supabase.com/dashboard/project/lboesdtsrqfvosznjpdy/auth/url-configuration)
+
+## Build from source (macOS)
 
 ```bash
-publshr --version
+cd mac/publshr
+swift build -c release --product PublshrApp
+./scripts/build-macos-app.sh .build/release/PublshrApp 0.2.0 .
+open Publshr.app
 ```
 
-**macOS:** Open **Finder → Applications → Publshr** (also in Launchpad). The installer is not a `.dmg` wizard — it is a command-line installer that places `Publshr.app` in Applications and will prompt for your Mac password.
-
-Uninstall:
+## Verify auth (API)
 
 ```bash
-./install.sh --uninstall
+./scripts/verify-auth.sh
 ```
-
-## macOS app source
 
 Swift package: [`mac/publshr`](mac/publshr)

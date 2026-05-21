@@ -87,7 +87,12 @@ install_macos_app() {
 
     if [[ ! -d "$app_src" ]]; then
         echo "Building Publshr.app from binary ..." >&2
-        bash "$SCRIPT_DIR/scripts/build-macos-app.sh" "${tree}/bin/publshr" "$VERSION" "$tree"
+        local app_bin="${tree}/bin/PublshrApp"
+        if [[ ! -f "$app_bin" ]]; then
+            echo "PublshrApp binary missing in release. Rebuild with scripts/package-release.sh on macOS." >&2
+            exit 1
+        fi
+        bash "$SCRIPT_DIR/scripts/build-macos-app.sh" "$app_bin" "$VERSION" "$tree"
         app_src="${tree}/Publshr.app"
     fi
 
@@ -98,15 +103,14 @@ install_macos_app() {
 
     mkdir -p "$(dirname "$BIN_LINK")"
     rm -f "$BIN_LINK"
-    ln -sf "$MAC_APP/Contents/MacOS/publshr-bin" "$BIN_LINK"
+    ln -sf "$MAC_APP/Contents/MacOS/publshr" "$BIN_LINK"
 
     echo "" >&2
     echo "Installed Publshr $VERSION" >&2
     echo "  App (Launchpad / Applications): $MAC_APP" >&2
     echo "  Terminal command:               $BIN_LINK" >&2
     echo "" >&2
-    echo "Open Finder → Applications → Publshr, or run: publshr --help" >&2
-    "$BIN_LINK" --version
+    echo "Open Finder → Applications → Publshr to sign in and start coding." >&2
 }
 
 install_linux_tree() {

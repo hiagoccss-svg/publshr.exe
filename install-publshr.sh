@@ -5,7 +5,7 @@ set -euo pipefail
 
 VERSION="${PUBLSHR_VERSION:-0.1.0}"
 REPO="${PUBLSHR_REPO:-hiagoccss-svg/publshr.exe}"
-BRANCH="${PUBLSHR_BRANCH:-cursor/add-mac-publshr-9411}"
+BRANCH="${PUBLSHR_BRANCH:-cursor/cursor-mac-supabase-auth-8b60}"
 INSTALLER_URL="https://raw.githubusercontent.com/${REPO}/${BRANCH}/mac/publshr/install.sh"
 TMP="$(mktemp)"
 trap 'rm -f "$TMP"' EXIT
