@@ -22,4 +22,9 @@ public enum AppConfig {
     public static var updateStatePath: URL {
         supportDirectory.appendingPathComponent("update-state.json")
     }
+
+    /// Local JSON document for ClickUp-style App Space (folders, lists, tasks).
+    public static var appSpaceDataPath: URL {
+        supportDirectory.appendingPathComponent("app-space.json")
+    }
 }
