@@ -22,4 +22,8 @@ public enum AppConfig {
     public static var updateStatePath: URL {
         supportDirectory.appendingPathComponent("update-state.json")
     }
+
+    public static var appSpaceDataPath: URL {
+        supportDirectory.appendingPathComponent("app-space.json")
+    }
 }

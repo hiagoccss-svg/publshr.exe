@@ -6,12 +6,21 @@ struct PublshrApplication: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            AppSpaceRootView()
                 .environmentObject(model)
-                .frame(minWidth: 480, minHeight: 360)
         }
         .commands {
-            CommandGroup(replacing: .newItem) {}
+            CommandGroup(replacing: .newItem) {
+                Button("New Task") {
+                    NotificationCenter.default.post(name: .publshrNewTask, object: nil)
+                }
+                .keyboardShortcut("n", modifiers: .command)
+            }
         }
+        .defaultSize(width: 1280, height: 800)
     }
+}
+
+extension Notification.Name {
+    static let publshrNewTask = Notification.Name("publshr.newTask")
 }

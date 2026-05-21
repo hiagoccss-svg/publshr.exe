@@ -1,6 +1,6 @@
 # publshr
 
-Cross-platform publisher helper.
+Cross-platform publisher helper with a **desktop App Space** modeled after [ClickUp](https://clickup.com) — workspaces, spaces, folders, lists, tasks, and multiple views (List, Board, Calendar, Table).
 
 | Platform | Location | Install |
 |----------|----------|---------|
@@ -19,6 +19,21 @@ chmod +x install-mac-app.sh
 ```
 
 This builds a **real SwiftUI app** (window UI, no Terminal). It installs **`Publshr.app`** to `~/Applications`.
+
+### App Space (ClickUp-style)
+
+The main window is your **App Space**:
+
+| ClickUp concept | In Publshr |
+|-----------------|------------|
+| Workspace | Workspace with team members |
+| Space | Space (sidebar sections) |
+| Folder | Folder under a space |
+| List | List with custom statuses |
+| Task | Tasks with priority, due date, assignees, tags, checklist, comments, subtasks |
+| Views | List, Board (drag between columns), Calendar, Table; Timeline/Gantt placeholders |
+
+Data is stored locally at `~/Library/Application Support/Publshr/app-space.json`. Use the gear icon for **Git sync settings** (offline toggle, pull from GitHub).
 
 - Works **offline** (toggle in app)
 - When online, **Sync from GitHub** pulls latest from git branch `cursor/add-makefile-and-install-4aa6`
