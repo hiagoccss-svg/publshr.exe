@@ -7,4 +7,10 @@ Cross-platform publisher helper.
 | Windows | Repository root (see release assets) | `publshr.exe` |
 | macOS | [`mac/publshr`](mac/publshr) | Swift package → `publshr` binary |
 
-The macOS app lives in **`mac/publshr`**: a Swift package you can build with `swift build -c release` on a Mac. It exposes the same CLI shape as the Windows tool (`--help`, `--version`); extend `Sources/publshr/main.swift` when you add shared behavior.
+The macOS app lives in **`mac/publshr`**. Install on Mac or Linux:
+
+```bash
+./install.sh
+```
+
+The installer downloads a release asset when available, otherwise builds from source and installs to `~/.local/bin/publshr`. Same CLI as Windows (`--help`, `--version`).

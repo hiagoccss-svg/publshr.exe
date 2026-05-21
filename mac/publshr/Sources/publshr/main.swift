@@ -1,4 +1,8 @@
+#if canImport(Darwin)
 import Darwin
+#elseif canImport(Glibc)
+import Glibc
+#endif
 
 private let version = "0.1.0"
 
@@ -17,7 +21,7 @@ private func printUsage() {
           -h, --help     Show this message
           -v, --version  Print version
 
-        This macOS build mirrors the Windows publshr.exe CLI. Add subcommands here as the tool grows.
+        Cross-platform CLI matching Windows publshr.exe. Add subcommands here as the tool grows.
         """
     )
 }
