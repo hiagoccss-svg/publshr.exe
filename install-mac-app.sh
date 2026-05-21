@@ -39,6 +39,38 @@ if ! git rev-parse HEAD >/dev/null 2>&1; then
     echo "Warning: not a git checkout — pull latest main branch code first." >&2
 fi
 
+# Swift may create Package.resolved locally before it is tracked; that blocks `git pull`.
+RESOLVED="$PROJECT_DIR/Package.resolved"
+if [[ -f "$RESOLVED" ]] && ! git ls-files --error-unmatch "$RESOLVED" &>/dev/null 2>&1; then
+    BRANCH="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")"
+    if [[ -n "$BRANCH" ]] && git fetch origin "$BRANCH" 2>/dev/null \
+        && git cat-file -e "origin/$BRANCH:native/publshr/Package.resolved" 2>/dev/null; then
+        echo "Removing untracked Package.resolved (tracked on origin — safe to replace via git pull)."
+        rm -f "$RESOLVED"
+    fi
+fi
+
+if git rev-parse HEAD >/dev/null 2>&1; then
+    BRANCH="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")"
+    if [[ -n "$BRANCH" ]] && git fetch origin "$BRANCH" 2>/dev/null; then
+        LOCAL="$(git rev-parse HEAD)"
+        REMOTE="$(git rev-parse "origin/$BRANCH" 2>/dev/null || true)"
+        if [[ -n "$REMOTE" && "$LOCAL" != "$REMOTE" ]]; then
+            echo "Error: branch is behind origin/$BRANCH ($(git rev-parse --short HEAD) vs $(git rev-parse --short "$REMOTE"))." >&2
+            echo "Run: git pull origin $BRANCH" >&2
+            echo "If pull fails on Package.resolved: rm -f native/publshr/Package.resolved && git pull origin $BRANCH" >&2
+            exit 1
+        fi
+    fi
+fi
+
+if [[ ! -f "$PROJECT_DIR/Sources/PublshrCore/AppConfig.swift" ]] \
+    || ! grep -q 'appSpaceDataPath' "$PROJECT_DIR/Sources/PublshrCore/AppConfig.swift"; then
+    echo "Error: missing AppConfig.appSpaceDataPath (need commit ed8edff or newer)." >&2
+    echo "Run: rm -f native/publshr/Package.resolved && git pull origin cursor/add-makefile-and-install-4aa6" >&2
+    exit 1
+fi
+
 echo "Quitting any running Publshr …"
 osascript -e 'tell application "Publshr" to quit' 2>/dev/null || true
 sleep 1
