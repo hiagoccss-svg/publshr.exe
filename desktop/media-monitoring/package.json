@@ -8,7 +8,11 @@
   "scripts": {
     "dev": "electron-vite dev",
     "build": "electron-vite build",
+    "start": "electron .",
     "preview": "electron-vite preview",
+    "dist": "npm run build && electron-builder --config electron-builder.yml",
+    "smoke": "node scripts/smoke-test.mjs",
+    "verify:cloud": "node scripts/verify-supabase.mjs",
     "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.node.json",
     "postinstall": "electron-builder install-app-deps"
   },
@@ -22,6 +26,7 @@
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.30.3",
     "uuid": "^11.0.5",
+    "ws": "^8.20.1",
     "zustand": "^5.0.3"
   },
   "devDependencies": {

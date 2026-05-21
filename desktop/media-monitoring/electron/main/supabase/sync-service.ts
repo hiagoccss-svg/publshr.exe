@@ -1,8 +1,16 @@
 import { createClient, type SupabaseClient, type Session, type RealtimeChannel } from '@supabase/supabase-js'
 import type Database from 'better-sqlite3'
 import { BrowserWindow } from 'electron'
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from '../config'
+import WebSocket from 'ws'
+import { SUPABASE_URL, SUPABASE_ANON_KEY, LOCAL_WORKSPACE_ID, LOCAL_WORKSPACE_NAME } from '../config'
 import { loadSession, saveSession } from './session-store'
+
+function createSupabaseClient(): SupabaseClient {
+  return createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: { persistSession: false, autoRefreshToken: true },
+    realtime: { transport: WebSocket as unknown as typeof WebSocket }
+  })
+}
 
 export type SyncStatus = 'offline' | 'syncing' | 'synced' | 'error'
 
@@ -24,22 +32,30 @@ export class SyncService {
   private realtimeChannel: RealtimeChannel | null = null
 
   constructor(private db: Database.Database) {
-    this.client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-      auth: { persistSession: false, autoRefreshToken: true }
-    })
+    this.client = createSupabaseClient()
     this.session = loadSession()
     if (this.session) {
-      void this.applySession(this.session)
+      void this.applySession(this.session).catch((err) => {
+        console.error('Failed to restore session on startup:', err)
+        this.setStatus('offline', err instanceof Error ? err.message : 'Session restore failed')
+      })
+    } else {
+      this.setStatus('offline')
     }
   }
 
+  isAuthenticated(): boolean {
+    return this.session !== null && this.workspaceId !== null
+  }
+
   getAuthState(): AuthState {
+    const cloud = this.isAuthenticated()
     return {
       session: this.session,
       email: this.session?.user?.email ?? null,
       userId: this.session?.user?.id ?? null,
-      workspaceId: this.workspaceId,
-      workspaceName: this.workspaceName
+      workspaceId: cloud ? this.workspaceId : LOCAL_WORKSPACE_ID,
+      workspaceName: cloud ? this.workspaceName : LOCAL_WORKSPACE_NAME
     }
   }
 
@@ -62,10 +78,7 @@ export class SyncService {
 
   private async applySession(session: Session): Promise<void> {
     this.session = session
-    this.client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-      global: { headers: { Authorization: `Bearer ${session.access_token}` } },
-      auth: { persistSession: false, autoRefreshToken: true }
-    })
+    this.client = createSupabaseClient()
     await this.client.auth.setSession({
       access_token: session.access_token,
       refresh_token: session.refresh_token
@@ -161,25 +174,30 @@ export class SyncService {
       return
     }
 
-    const slug = `workspace-${userId.slice(0, 8)}`
+    const slug = `media-${userId.slice(0, 8)}`
+    const { data: rpcId, error: rpcErr } = await this.client.rpc('create_workspace', {
+      p_name: 'Media Monitoring',
+      p_slug: slug
+    })
+
+    if (!rpcErr && rpcId) {
+      this.workspaceId = rpcId as string
+      this.workspaceName = 'Media Monitoring'
+      return
+    }
+
     const { data: created, error } = await this.client
       .from('workspaces')
       .insert({
         name: 'Media Monitoring',
-        slug,
+        slug: `${slug}-${Date.now()}`,
         owner_id: userId,
         plan_id: 'free'
       })
       .select('id, name')
       .single()
 
-    if (error) throw error
-
-    await this.client.from('workspace_members').insert({
-      workspace_id: created.id,
-      user_id: userId,
-      role: 'owner'
-    })
+    if (error) throw new Error(rpcErr?.message ?? error.message)
 
     this.workspaceId = created.id
     this.workspaceName = created.name

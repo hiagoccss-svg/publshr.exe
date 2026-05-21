@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from 'uuid'
 import type { MonitoringEngine } from '../monitoring/engine'
 import type { SyncService } from '../supabase/sync-service'
 import { getDatabase, getDbPath } from '../db'
+import { LOCAL_WORKSPACE_ID } from '../config'
 
 export function registerIpcHandlers(engine: MonitoringEngine, sync: SyncService): void {
   const db = () => getDatabase()
@@ -43,8 +44,9 @@ export function registerIpcHandlers(engine: MonitoringEngine, sync: SyncService)
   })
 
   ipcMain.handle('db:create-monitor', async (_, input: Record<string, unknown>) => {
-    const auth = sync.getAuthState()
-    const workspaceId = auth.workspaceId ?? 'local-offline'
+    const workspaceId = sync.isAuthenticated()
+      ? sync.getAuthState().workspaceId!
+      : LOCAL_WORKSPACE_ID
     const id = uuidv4()
     const stmt = db().prepare(`
       INSERT INTO monitor_profiles (
@@ -67,7 +69,7 @@ export function registerIpcHandlers(engine: MonitoringEngine, sync: SyncService)
       alert_settings: input.alert_settings ? JSON.stringify(input.alert_settings) : null,
       linked_client: input.linked_client ?? null,
       linked_campaign: input.linked_campaign ?? null,
-      created_by: auth.userId ?? 'local-user'
+      created_by: sync.getAuthState().userId ?? 'local-user'
     })
     const profile = db().prepare('SELECT * FROM monitor_profiles WHERE id = ?').get(id) as Record<
       string,
@@ -185,8 +187,9 @@ export function registerIpcHandlers(engine: MonitoringEngine, sync: SyncService)
   })
 
   ipcMain.handle('db:save-coverage', async (_, resultId: string, data?: { notes?: string; tags?: string[] }) => {
-    const auth = sync.getAuthState()
-    const workspaceId = auth.workspaceId ?? 'local-offline'
+    const workspaceId = sync.isAuthenticated()
+      ? sync.getAuthState().workspaceId!
+      : LOCAL_WORKSPACE_ID
     const existing = db().prepare('SELECT id FROM saved_coverage WHERE monitor_result_id = ?').get(resultId)
     if (existing) {
       db()

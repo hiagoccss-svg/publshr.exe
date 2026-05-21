@@ -43,3 +43,4 @@ Produces `dist/publshr-<version>-<os>-<arch>.tar.gz`.
 - On Ubuntu, Swift requires `libncurses6`, `libcurl4`, and `libxml2` runtime libraries. The update script installs these automatically.
 - The `@main` attribute in `main.swift` uses Swift's entry-point API; this requires Swift >= 5.3 but the package declares `swift-tools-version: 5.9`.
 - The `main` branch is mostly empty (just a README). Application code is on feature branches.
+- **Media Monitoring** desktop app: `desktop/media-monitoring/` — `npm run dev` or `make media-monitoring-dev`. Local SQLite works offline; Supabase sync when signed in.

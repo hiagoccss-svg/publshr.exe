@@ -13,7 +13,11 @@ import clsx from 'clsx'
 import { useMonitoringStore } from '@/store/monitoringStore'
 import { useActiveMonitor } from '@/hooks/useMonitoring'
 
-export function TopBar() {
+interface Props {
+  onSignIn?: () => void
+}
+
+export function TopBar({ onSignIn }: Props) {
   const {
     searchQuery,
     setSearchQuery,
@@ -107,12 +111,20 @@ export function TopBar() {
         <button type="button" className="btn-ghost p-1.5 text-accent" aria-label="AI assistant">
           <Sparkles size={14} />
         </button>
-        <span className="hidden lg:inline text-2xs text-content-dim max-w-[120px] truncate" title={userEmail ?? ''}>
-          {userEmail}
-        </span>
-        <button type="button" className="btn-ghost p-1.5" onClick={() => void handleSignOut()} title="Sign out">
-          <LogOut size={14} />
-        </button>
+        {userEmail ? (
+          <>
+            <span className="hidden lg:inline text-2xs text-content-dim max-w-[120px] truncate" title={userEmail}>
+              {userEmail}
+            </span>
+            <button type="button" className="btn-ghost p-1.5" onClick={() => void handleSignOut()} title="Sign out">
+              <LogOut size={14} />
+            </button>
+          </>
+        ) : (
+          <button type="button" className="btn-ghost text-2xs px-2" onClick={onSignIn}>
+            Sign in
+          </button>
+        )}
       </div>
     </header>
   )

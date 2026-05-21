@@ -1,4 +1,4 @@
-import { app, BrowserWindow, shell } from 'electron'
+import { app, BrowserWindow, shell, Notification } from 'electron'
 import { join } from 'path'
 import { initDatabase, closeDatabase } from './db'
 import { MonitoringEngine } from './monitoring/engine'
@@ -30,6 +30,7 @@ function createWindow(): void {
 
   mainWindow.on('ready-to-show', () => {
     mainWindow?.show()
+    mainWindow?.focus()
   })
 
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
@@ -45,12 +46,20 @@ function createWindow(): void {
 }
 
 app.whenReady().then(() => {
+  if (process.platform === 'linux' && !process.env.DISPLAY) {
+    process.env.DISPLAY = ':99'
+  }
+
   const db = initDatabase()
   engine = new MonitoringEngine(db)
   syncService = new SyncService(db)
   registerIpcHandlers(engine, syncService)
-  void syncService.restoreSession()
+  void syncService.restoreSession().catch((err) => console.error('Session restore:', err))
   createWindow()
+
+  if (Notification.isSupported()) {
+    console.log('Desktop notifications enabled')
+  }
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()

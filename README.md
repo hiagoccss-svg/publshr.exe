@@ -63,8 +63,12 @@ Enterprise media intelligence module (Phase 1 MVP):
 ```bash
 cd desktop/media-monitoring
 npm install
-npm run dev
+npm run dev          # hot reload
+# OR: npm run build && npm run start
+make media-monitoring-start   # from repo root
 ```
+
+Works **immediately in local mode** (no sign-in). Sign in to enable Supabase cloud sync.
 
 Stack: Electron, React, TypeScript, Tailwind, SQLite local cache, Supabase schema. See [`desktop/media-monitoring/README.md`](desktop/media-monitoring/README.md).
 

@@ -2,82 +2,75 @@
 
 Enterprise desktop media intelligence and coverage monitoring for communications teams, PR agencies, and brands.
 
-## Stack
-
-- **Electron** — desktop shell, multi-window, native notifications
-- **React + TypeScript + Tailwind** — UI matching Publshr Planner/Editor aesthetic
-- **SQLite** (`better-sqlite3`) — local-first cache, offline viewing
-- **Supabase** — cloud schema and sync (migrations in `supabase/migrations/`)
-
-## Phase 1 (MVP)
-
-- Desktop module shell (top bar, sidebar, workspace, context panel)
-- Monitor profile creation (side panel, boolean keywords, regions, languages)
-- Progressive live article feed from approved publications only
-- Publication database (15 seeded verified sources)
-- SQLite local cache
-
-## Quick start
+## Quick start (ready to run)
 
 ```bash
 cd desktop/media-monitoring
 npm install
-npm run dev
+npm run dev          # development with hot reload
+# OR
+npm run build && npm run start   # production build
+# OR from repo root:
+make media-monitoring-dev
+make media-monitoring-start
 ```
 
-## Build
+The app opens immediately in **local enterprise mode** — no sign-in required. Create a monitor, start live tracking, save coverage, filter results, and export-ready metadata all work offline on SQLite.
+
+**Connect cloud** (optional): click **Sign in** or **Connect cloud** to sync with Supabase (same account as Publshr macOS IDE).
+
+## Verify installation
 
 ```bash
-npm run build
+npm run smoke          # SQLite schema + seed test
+npm run build          # compile main + renderer
+npm run typecheck      # TypeScript
+```
+
+## Stack
+
+| Layer | Technology |
+|-------|------------|
+| Desktop | Electron 34 |
+| UI | React 18, TypeScript, Tailwind |
+| Local cache | SQLite (`better-sqlite3`) |
+| Cloud | Supabase (`publshr.exe` project) |
+
+## Enterprise features (working)
+
+- **Live monitoring** — progressive article feed from 15+ approved publications
+- **Monitor profiles** — boolean keywords, exclusions, regions, languages
+- **Media value / PR value** — authority + traffic based (not random)
+- **Saved coverage** — notes, tags, sentiment override
+- **Dashboard** — monitors, articles, PR totals
+- **Coverage library** — saved articles view
+- **Publication database** — verified sources only
+- **Filters** — sentiment, sort, saved-only, search
+- **Article detail** — full panel + external URL
+- **Native notifications** — new coverage alerts
+- **Cloud sync** — monitors, results, saved coverage (when signed in)
+- **Realtime** — remote inserts via Supabase Realtime
+
+## Supabase
+
+Schema deployed on project `lboesdtsrqfvosznjpdy`. Tables: `publication_sources`, `monitor_profiles`, `monitor_results`, `saved_coverage`, `coverage_activity`.
+
+```bash
+npm run verify:cloud you@email.com your-password
+```
+
+Env (optional): copy `.env.example` → set `SUPABASE_URL`, `SUPABASE_ANON_KEY`.
+
+## Package for distribution
+
+```bash
+npm run dist    # electron-builder → release/
 ```
 
 ## Architecture
 
 ```
-electron/main/     Main process — SQLite, monitoring engine, IPC
-electron/preload/  Secure bridge to renderer
+electron/main/     SQLite, monitoring engine, Supabase sync, IPC
+electron/preload/  Secure window.publshr API
 src/               React UI
-supabase/          Cloud migrations
 ```
-
-### Monitoring engine
-
-When a profile is started, articles stream in progressively (400–800ms intervals) from the **approved publication database** only — not random web search. Media value uses publication authority and traffic estimates.
-
-### Local database
-
-Stored at `{userData}/media-monitoring.db` with tables: `publication_sources`, `monitor_profiles`, `monitor_results`, `saved_coverage`, `monitoring_sessions`.
-
-## Supabase sync
-
-Schema is deployed to the **publshr.exe** Supabase project (`lboesdtsrqfvosznjpdy`). Tables:
-
-- `publication_sources` (15 verified outlets seeded)
-- `monitor_profiles`, `monitor_results`, `saved_coverage`
-- `coverage_comments`, `coverage_activity`
-
-**Sign in** with your Publshr email/password. On login the app:
-
-1. Creates or loads your workspace
-2. Pulls publications and monitors from Supabase → SQLite
-3. Pushes new monitors, live results, and saved coverage to the cloud
-4. Subscribes to realtime `monitor_results` inserts
-
-Verify cloud connectivity:
-
-```bash
-node scripts/verify-supabase.mjs
-# With auth:
-node scripts/verify-supabase.mjs you@example.com your-password
-```
-
-Optional env (see `.env.example`): `SUPABASE_URL`, `SUPABASE_ANON_KEY`
-
-## Roadmap
-
-| Phase | Features |
-|-------|----------|
-| 2 | Article detail, screenshots, filtering, saved coverage, realtime Supabase sync |
-| 3 | Sentiment, media/PR value tuning, duplicates, relevance |
-| 4 | Reports, exports, competitor tracking, AI summaries |
-| 5 | Advanced AI insights, trends, predictive alerts |
