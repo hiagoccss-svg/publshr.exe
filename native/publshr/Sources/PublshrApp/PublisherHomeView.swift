@@ -25,7 +25,7 @@ struct PublisherHomeView: View {
                         model.isInstalledInApplications ? "Installed in Applications" : "Running from build folder",
                         systemImage: model.isInstalledInApplications ? "checkmark.seal.fill" : "exclamationmark.triangle"
                     )
-                    .foregroundStyle(model.isInstalledInApplications ? .primary : .orange)
+                    .foregroundStyle(model.isInstalledInApplications ? Color.primary : Color.orange)
 
                     Text(model.installPath)
                         .font(.system(.caption, design: .monospaced))
