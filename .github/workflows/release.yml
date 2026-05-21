@@ -44,7 +44,14 @@ jobs:
           chmod +x scripts/package-release.sh
           bash scripts/package-release.sh "${GITHUB_REF_NAME#v}"
 
-      - name: Package CLI + Publshr.app (macOS)
+      - name: Package mac IDE (macOS)
+        if: runner.os == 'macOS'
+        working-directory: mac/publshr
+        run: |
+          chmod +x scripts/package-release.sh scripts/build-macos-app.sh 2>/dev/null || true
+          bash scripts/package-release.sh "${GITHUB_REF_NAME#v}" || true
+
+      - name: Package native Publshr.app (macOS)
         if: runner.os == 'macOS'
         working-directory: native/publshr
         run: |
@@ -56,7 +63,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: publshr-${{ matrix.asset_os }}-${{ matrix.arch }}
-          path: native/publshr/dist/*
+          path: |
+            native/publshr/dist/*
+            mac/publshr/dist/*
 
   publish:
     needs: build
@@ -76,12 +85,12 @@ jobs:
           VERSION="${GITHUB_REF_NAME#v}"
           mapfile -t assets < <(find artifacts \( -name '*.tar.gz' -o -name '*.zip' \) -type f)
           if [[ ${#assets[@]} -eq 0 ]]; then
-            echo "No release tarballs found under artifacts/" >&2
+            echo "No release assets found under artifacts/" >&2
             find artifacts -type f >&2 || true
             exit 1
           fi
           gh release create "$GITHUB_REF_NAME" \
             --repo "${{ github.repository }}" \
             --title "publshr $VERSION" \
-            --notes "macOS: download Publshr-*-macos.app.zip, unzip, drag Publshr.app to Applications. Or clone repo and run ./install-mac-app.sh. Linux: CLI tarball. App syncs git branch cursor/add-makefile-and-install-4aa6 when online." \
+            --notes "macOS: ./install-mac-app.sh (Supabase Chat + Spaces) or install-publshr.sh (IDE). Linux: CLI tarball." \
             "${assets[@]}"
