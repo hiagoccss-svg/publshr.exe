@@ -2,65 +2,57 @@
 
 Cross-platform publisher helper.
 
-| Platform | Install |
-|----------|---------|
-| Windows | `publshr.exe` (release assets) |
-| macOS / Linux | `./install.sh` → `/opt/publshr` + `/usr/local/bin/publshr` |
+| Platform | Location | Install |
+|----------|----------|---------|
+| **macOS / Linux** | [`native/publshr`](native/publshr) — Swift CLI (not `.exe`) | `./install-local.sh` on **this machine** |
+| **Windows** | [`windows/`](windows/) — `publshr.exe` from releases | Download from [Releases](https://github.com/hiagoccss-svg/publshr.exe/releases) |
 
-## Install on your computer (macOS / Linux)
+## Install on this Linux / Mac machine (in this repo)
 
-No clone required — downloads the release and installs to `/opt/publshr` and `/usr/local/bin/publshr` (needs `curl` and `sudo`):
+No sudo. Builds the native app and installs under `.local/` in the project:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/hiagoccss-svg/publshr.exe/cursor/add-mac-publshr-9411/install-publshr.sh | bash
+chmod +x install-local.sh
+./install-local.sh
 ```
 
-Verify:
+Use it in your shell:
 
 ```bash
+export PATH="$(pwd)/.local/bin:$PATH"
 publshr --version
 ```
 
-## Install from a git clone
+Or:
 
 ```bash
-git clone https://github.com/hiagoccss-svg/publshr.exe.git
-cd publshr.exe
-git checkout cursor/add-mac-publshr-9411   # branch with mac app + Makefile
+make install-local
+export PATH="$(pwd)/.local/bin:$PATH"
+publshr --help
+```
+
+## System-wide install (optional)
+
+```bash
 ./install.sh
+# or: make install
 ```
 
-Or with Make (requires [Swift](https://www.swift.org/install/) if the release download fails):
+Installs to `/opt/publshr` and `/usr/local/bin/publshr` (needs `curl` and `sudo`).
 
-```bash
-make install
+## Project layout
+
+```
+native/publshr/   # Mac & Linux Swift CLI (canonical)
+windows/          # Windows .exe documentation (exe from releases)
+mac/              # Pointer to native/ (legacy path)
 ```
 
-`./install.sh` will:
-
-1. Download the matching release from GitHub (`publshr-VERSION-{macos|linux}-{arch}.tar.gz`)
-2. If no release exists, build from source under `mac/publshr`
-3. Install to `/opt/publshr/VERSION` and `/usr/local/bin/publshr`
-
-Uninstall:
+## Make
 
 ```bash
-./install.sh --uninstall
-```
-
-## Windows
-
-Use `publshr.exe` from [GitHub Releases](https://github.com/hiagoccss-svg/publshr.exe/releases) (the `.exe` is not removed from this repo).
-
-## macOS app source
-
-Swift package: [`mac/publshr`](mac/publshr)
-
-## Make targets
-
-```bash
-make help        # list targets
-make build       # debug build
-make install     # package + install system-wide
-make clean       # remove build artifacts
+make help
+make build
+make install-local   # this machine, project .local/
+make install         # system-wide
 ```

@@ -38,7 +38,7 @@ jobs:
           sudo apt-get install -y -qq libncurses6 libcurl4 libxml2
 
       - name: Package release
-        working-directory: mac/publshr
+        working-directory: native/publshr
         run: |
           chmod +x scripts/package-release.sh
           bash scripts/package-release.sh "${GITHUB_REF_NAME#v}"
@@ -47,7 +47,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: publshr-${{ matrix.asset_os }}-${{ matrix.arch }}
-          path: mac/publshr/dist/*.tar.gz
+          path: native/publshr/dist/*.tar.gz
 
   publish:
     needs: build

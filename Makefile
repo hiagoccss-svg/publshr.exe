@@ -1,15 +1,16 @@
-PROJECT_DIR := mac/publshr
+PROJECT_DIR := native/publshr
 BUILD_DIR   := $(PROJECT_DIR)/.build
 VERSION     ?= 0.1.0
+LOCAL_BIN   := $(CURDIR)/.local/bin
 
-.PHONY: all build release test clean install uninstall package check-folder help
+.PHONY: all build release test clean install install-local uninstall package check-folder help
 
 help: ## Show available targets
 	@grep -E '^[a-zA-Z_-]+:.*##' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*##"}; {printf "  %-15s %s\n", $$1, $$2}'
 
 all: check-folder build ## Default: verify folder + debug build
 
-check-folder: ## Verify mac/publshr folder exists
+check-folder: ## Verify native/publshr folder exists
 	@if [ ! -d "$(PROJECT_DIR)" ]; then \
 		echo "Error: $(PROJECT_DIR) directory not found."; \
 		exit 1; \
@@ -28,7 +29,10 @@ test: check-folder ## Run swift tests (if any)
 package: check-folder ## Package release tarball
 	cd $(PROJECT_DIR) && chmod +x scripts/package-release.sh && bash scripts/package-release.sh $(VERSION)
 
-install: check-folder package ## Build release and install system-wide to /opt/publshr
+install-local: check-folder ## Install into repo .local/ (this machine, no sudo)
+	chmod +x install-local.sh && ./install-local.sh
+
+install: check-folder package ## Install system-wide to /opt/publshr (sudo)
 	@ASSET=$$(cd $(PROJECT_DIR)/dist && ls -d publshr-$(VERSION)-* 2>/dev/null | grep -v '.tar.gz$$' | head -1); \
 	if [ -z "$$ASSET" ]; then echo "Error: no packaged release found. Run 'make package' first."; exit 1; fi; \
 	DEST=/opt/publshr/$(VERSION); \
@@ -50,12 +54,16 @@ install: check-folder package ## Build release and install system-wide to /opt/p
 uninstall: ## Remove system installation
 	cd $(PROJECT_DIR) && chmod +x install.sh && ./install.sh --uninstall
 
-clean: ## Remove build artifacts
+clean: ## Remove build artifacts and local install
 	rm -rf $(BUILD_DIR)
 	rm -rf $(PROJECT_DIR)/dist
+	rm -rf .local
 
 run: build ## Build and run with default args (shows help)
 	$(BUILD_DIR)/debug/publshr
 
 version: build ## Print version from built binary
 	$(BUILD_DIR)/debug/publshr --version
+
+run-local: install-local ## Install locally and run help
+	$(LOCAL_BIN)/publshr

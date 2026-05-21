@@ -6,7 +6,7 @@ set -euo pipefail
 VERSION="${PUBLSHR_VERSION:-0.1.0}"
 REPO="${PUBLSHR_REPO:-hiagoccss-svg/publshr.exe}"
 BRANCH="${PUBLSHR_BRANCH:-cursor/add-mac-publshr-9411}"
-INSTALLER_URL="https://raw.githubusercontent.com/${REPO}/${BRANCH}/mac/publshr/install.sh"
+INSTALLER_URL="https://raw.githubusercontent.com/${REPO}/${BRANCH}/native/publshr/install.sh"
 TMP="$(mktemp)"
 trap 'rm -f "$TMP"' EXIT
 
