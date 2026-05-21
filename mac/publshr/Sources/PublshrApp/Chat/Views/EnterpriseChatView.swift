@@ -61,9 +61,10 @@ struct EnterpriseChatView: View {
                 Task { await chat.loadPlannerTasks() }
                 showPlannerShare = true
             }
-            toolbarIcon("rectangle.portrait.on.rectangle.portrait") {
+            toolbarIcon("arrow.up.left.and.arrow.down.right") {
                 chat.popOutCurrentChannel(auth: auth)
             }
+            .help("Open in dedicated window (⌘⇧O)")
             toolbarIcon("gearshape") { chat.showPermissionsSheet = true }
             statusMenu
         }

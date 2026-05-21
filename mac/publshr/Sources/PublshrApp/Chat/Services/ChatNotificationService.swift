@@ -6,6 +6,9 @@ import UserNotifications
 final class ChatNotificationService: NSObject, UNUserNotificationCenterDelegate {
     static let shared = ChatNotificationService()
 
+    /// Opens the channel in a dedicated window when user clicks a notification.
+    var onOpenChannel: ((UUID) -> Void)?
+
     private override init() {
         super.init()
         UNUserNotificationCenter.current().delegate = self
@@ -51,6 +54,16 @@ final class ChatNotificationService: NSObject, UNUserNotificationCenterDelegate 
         willPresent notification: UNNotification
     ) async -> UNNotificationPresentationOptions {
         [.banner, .sound, .badge]
+    }
+
+    func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        didReceive response: UNNotificationResponse
+    ) async {
+        let userInfo = response.notification.request.content.userInfo
+        guard let idStr = userInfo["channelId"] as? String,
+              let channelId = UUID(uuidString: idStr) else { return }
+        onOpenChannel?(channelId)
     }
 }
 

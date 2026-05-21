@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct ChatSidebarView: View {
+    @EnvironmentObject private var auth: AuthViewModel
     @ObservedObject var chat: ChatViewModel
     @Binding var showNewChannel: Bool
     @Binding var showNewDM: Bool
@@ -105,12 +106,20 @@ struct ChatSidebarView: View {
         }
         .buttonStyle(.plain)
         .padding(.horizontal, 6)
+        .simultaneousGesture(TapGesture(count: 2).onEnded {
+            chat.openChannelInWindow(channel, auth: auth)
+        })
+        .contextMenu {
+            Button("Open in new window") {
+                chat.openChannelInWindow(channel, auth: auth)
+            }
+            Button("Open in panel") {
+                chat.selectChannel(channel)
+            }
+        }
     }
 
     private func dmTitle(_ channel: ChatChannel) -> String {
-        if channel.kind == .dm {
-            return channel.description?.replacingOccurrences(of: "Direct message with ", with: "") ?? "Direct Message"
-        }
-        return channel.displayTitle
+        chat.dmDisplayName(for: channel)
     }
 }

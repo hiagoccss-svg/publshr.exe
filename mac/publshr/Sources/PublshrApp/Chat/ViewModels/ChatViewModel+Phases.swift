@@ -368,24 +368,22 @@ extension ChatViewModel {
 
     func popOutCurrentChannel(auth: AuthViewModel) {
         guard let channel = selectedChannel else { return }
-        ChatWindowManager.shared.openChannel(channel, chat: self, auth: auth)
+        openChannelInWindow(channel, auth: auth)
+    }
+
+    func openChannelInWindow(_ channel: ChatChannel, auth: AuthViewModel) {
+        ChatWindowManager.shared.openChannel(channel, auth: auth, shared: self)
     }
 
     // MARK: - Permissions persistence
 
     func savePermissionsToWorkspace() async {
-        guard var ws = workspace else { return }
-        var chatSettings: [String: JSONValue] = [:]
-        chatSettings["can_create_channels"] = .bool(permissions.canCreateChannels)
-        chatSettings["can_dm"] = .bool(permissions.canDM)
-        chatSettings["can_use_voice_notes"] = .bool(permissions.canUseVoiceNotes)
-        chatSettings["read_receipts_enabled"] = .bool(permissions.readReceiptsEnabled)
-        chatSettings["can_upload_files"] = .bool(permissions.canUploadFiles)
-        chatSettings["can_pin_messages"] = .bool(permissions.canPinMessages)
-        chatSettings["can_export_chats"] = .bool(permissions.canExportChats)
-        var settings = ws.settings ?? [:]
-        settings["chat"] = .object(chatSettings)
-        ws.settings = settings
-        workspace = ws
+        guard let ws = workspace, let service else { return }
+        do {
+            let updated = try await service.updateWorkspaceChatSettings(workspaceId: ws.id, permissions: permissions)
+            workspace = updated
+        } catch {
+            errorMessage = error.localizedDescription
+        }
     }
 }
