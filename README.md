@@ -1,39 +1,70 @@
 # publshr
 
-A native macOS IDE styled like **Cursor**, with **Supabase** account creation, email confirmation, and profile sync.
+Native desktop tools for **Publshr** — a Cursor-style macOS IDE with Supabase auth, plus a **ClickUp-style App Space** for project management.
 
-| Platform | Install |
-|----------|---------|
-| macOS | `curl -fsSL …/install-publshr.sh \| bash` → **Publshr.app** in Applications |
-| Linux | `./install.sh` → CLI at `/usr/local/bin/publshr` |
+| Platform | Default install | App Space (ClickUp-style) |
+|----------|-----------------|---------------------------|
+| **macOS** | `mac/publshr` → **Publshr.app** (IDE + auth) | `native/publshr` → `./install-mac-app.sh` |
+| **Linux** | CLI via `./install.sh` | — |
+| **Windows** | [`windows/`](windows/) — `publshr.exe` from [Releases](https://github.com/hiagoccss-svg/publshr.exe/releases) | — |
 
-## Features
-
-- **Cursor-matched UI** — activity bar, sidebar, editor tabs, AI chat panel, status bar (`#181818` / `#252526` / `#1e1e1e` palette)
-- **Supabase Auth** — sign up, sign in, 6-digit email OTP confirmation, session persistence
-- **Profile auto-create** — `handle_new_user` trigger writes to `public.profiles` on signup
-
-## Quick install (macOS)
+## macOS — IDE app (main)
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/hiagoccss-svg/publshr.exe/cursor/cursor-mac-supabase-auth-8b60/install-publshr.sh | bash
+curl -fsSL https://raw.githubusercontent.com/hiagoccss-svg/publshr.exe/main/install-publshr.sh | bash
 ```
 
-Then open **Finder → Applications → Publshr**.
+Or from a clone:
 
-## Account creation flow
+```bash
+./install.sh
+open /Applications/Publshr.app
+```
 
-1. **Create account** — email, name, password (min 8 chars)
-2. **Confirm email** — enter the 6-digit code from Supabase (enable `{{ .Token }}` in your [email template](https://supabase.com/dashboard/project/lboesdtsrqfvosznjpdy/auth/templates))
-3. **Sign in** — access the IDE; profile loads from `profiles`
+### Features (mac/publshr)
 
-### Supabase project
+- **Cursor-matched UI** — activity bar, sidebar, editor tabs, AI chat panel, status bar
+- **Supabase Auth** — sign up, sign in, 6-digit email OTP, session persistence
+- **Profile sync** — `public.profiles` via `handle_new_user` trigger
 
-- Project: `publshr.exe` (`lboesdtsrqfvosznjpdy`)
-- URL: `https://lboesdtsrqfvosznjpdy.supabase.co`
-- Add redirect URL: `com.publshr.app://auth/callback` in [Auth URL configuration](https://supabase.com/dashboard/project/lboesdtsrqfvosznjpdy/auth/url-configuration)
+Redirect URL: `com.publshr.app://auth/callback` in [Auth URL configuration](https://supabase.com/dashboard/project/lboesdtsrqfvosznjpdy/auth/url-configuration).
 
-## Build from source (macOS)
+## macOS — App Space (ClickUp-style)
+
+Build from repo root (uses `native/publshr`, not the IDE package):
+
+```bash
+chmod +x install-mac-app.sh
+./install-mac-app.sh
+```
+
+| ClickUp concept | In Publshr App Space |
+|-----------------|----------------------|
+| Workspace | Workspace + team members |
+| Space / Folder / List | Sidebar hierarchy |
+| Task | Status, priority, due date, assignees, tags, checklist, comments, subtasks |
+| Views | List, Board (drag columns), Calendar, Table |
+
+Data: `~/Library/Application Support/Publshr/app-space.json`. Git sync settings: gear icon in App Space.
+
+## Linux / CLI
+
+```bash
+chmod +x install-local.sh
+./install-local.sh
+export PATH="$(pwd)/.local/bin:$PATH"
+publshr --version
+```
+
+## Project layout
+
+```
+mac/publshr/      # Canonical macOS IDE + Supabase (Publshr.app releases)
+native/publshr/   # App Space + Git sync shell (install-mac-app.sh)
+windows/          # Windows .exe from releases
+```
+
+## Build from source (IDE)
 
 ```bash
 cd mac/publshr
@@ -42,10 +73,11 @@ swift build -c release --product PublshrApp
 open Publshr.app
 ```
 
-## Verify auth (API)
+## Make
 
 ```bash
-./scripts/verify-auth.sh
+make help
+make build
+make install-local
+make install
 ```
-
-Swift package: [`mac/publshr`](mac/publshr)

@@ -36,3 +36,13 @@ Keys are in `Sources/PublshrApp/Services/SupabaseConfig.swift` (publishable key 
 | Editor | flex | `#1e1e1e` |
 | Chat panel | 380px | `#181818` / `#1e1e1e` |
 | Status bar | 22px | `#007acc` |
+
+## ClickUp-style App Space (separate build)
+
+The **App Space** project-management UI (workspaces, spaces, lists, board/list/calendar views) lives in [`native/publshr`](../../native/publshr). Install with:
+
+```bash
+./install-mac-app.sh   # from repo root
+```
+
+That build is not yet merged into this package’s `PublshrApp` target — see repo root README.

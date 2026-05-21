@@ -74,5 +74,5 @@ jobs:
           gh release create "$GITHUB_REF_NAME" \
             --repo "${{ github.repository }}" \
             --title "publshr $VERSION" \
-            --notes "Native macOS Publshr.app (Cursor-style UI + Supabase auth). Install: curl -fsSL https://raw.githubusercontent.com/${{ github.repository }}/cursor/cursor-mac-supabase-auth-8b60/install-publshr.sh | bash" \
+            --notes "Native macOS Publshr.app (Cursor-style UI + Supabase auth). Install: curl -fsSL https://raw.githubusercontent.com/${{ github.repository }}/main/install-publshr.sh | bash" \
             "${assets[@]}"

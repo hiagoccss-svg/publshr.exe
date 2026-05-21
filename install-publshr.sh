@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # Install publshr from anywhere (no git clone required).
-# Usage: curl -fsSL https://raw.githubusercontent.com/hiagoccss-svg/publshr.exe/cursor/add-mac-publshr-9411/install-publshr.sh | bash
+# Usage: curl -fsSL https://raw.githubusercontent.com/hiagoccss-svg/publshr.exe/main/install-publshr.sh | bash
 set -euo pipefail
 
-VERSION="${PUBLSHR_VERSION:-0.1.0}"
+VERSION="${PUBLSHR_VERSION:-0.2.0}"
 REPO="${PUBLSHR_REPO:-hiagoccss-svg/publshr.exe}"
-BRANCH="${PUBLSHR_BRANCH:-cursor/cursor-mac-supabase-auth-8b60}"
+BRANCH="${PUBLSHR_BRANCH:-main}"
 INSTALLER_URL="https://raw.githubusercontent.com/${REPO}/${BRANCH}/mac/publshr/install.sh"
 TMP="$(mktemp)"
 trap 'rm -f "$TMP"' EXIT

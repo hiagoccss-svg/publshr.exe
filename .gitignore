@@ -1,1 +1,6 @@
 .DS_Store
+.local/
+native/publshr/.build/
+native/publshr/dist/
+mac/publshr/.build/
+mac/publshr/dist/
