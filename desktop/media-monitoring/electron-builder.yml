@@ -1,0 +1,19 @@
+appId: com.publshr.media-monitoring
+productName: Publshr Media Monitoring
+directories:
+  output: release
+files:
+  - out/**/*
+  - package.json
+linux:
+  target:
+    - AppImage
+    - deb
+  category: Office
+mac:
+  target:
+    - dmg
+  category: public.app-category.business
+win:
+  target:
+    - nsis

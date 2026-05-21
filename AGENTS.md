@@ -61,4 +61,5 @@ No demo seed data on first run. Configure optional Supabase via `.env` from `.en
 - On Ubuntu, Swift requires `libncurses6`, `libcurl4`, and `libxml2` runtime libraries. The update script installs these automatically.
 - The `@main` attribute in `main.swift` uses Swift's entry-point API; this requires Swift >= 5.3 but the package declares `swift-tools-version: 5.9`.
 - The `main` branch is mostly empty (just a README). Application code is on feature branches.
+- **Media Monitoring** desktop app: `desktop/media-monitoring/` — `npm run dev` or `make media-monitoring-dev`. Cursor-style UI; Supabase auth + optional Touch ID on macOS.
 - **Planner module** lives in `planner/desktop/` (Electron + React + TypeScript + Tailwind + Supabase + SQLite). Run `npm run dev` from that directory after `npm install`.
