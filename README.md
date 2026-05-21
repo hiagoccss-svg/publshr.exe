@@ -7,28 +7,30 @@ Cross-platform publisher helper.
 | **macOS / Linux** | [`native/publshr`](native/publshr) — Swift CLI (not `.exe`) | `./install-local.sh` on **this machine** |
 | **Windows** | [`windows/`](windows/) — `publshr.exe` from releases | Download from [Releases](https://github.com/hiagoccss-svg/publshr.exe/releases) |
 
-## Install on this Linux / Mac machine (in this repo)
+## macOS — install in **Applications** (shows in Apps / Spotlight)
 
-No sudo. Builds the native app and installs under `.local/` in the project:
+`install-local.sh` only puts the CLI inside the project folder (`.local/`). It does **not** appear in Applications.
+
+On your Mac, run:
+
+```bash
+chmod +x install-mac-app.sh
+./install-mac-app.sh
+```
+
+That installs **`Publshr.app`** to `~/Applications` (or use `--applications` for `/Applications` with sudo). Then open **Finder → Applications** or press **Cmd+Space** and type **Publshr**.
+
+```bash
+open ~/Applications/Publshr.app
+```
+
+## Linux / Mac — CLI only (inside this repo)
 
 ```bash
 chmod +x install-local.sh
 ./install-local.sh
-```
-
-Use it in your shell:
-
-```bash
 export PATH="$(pwd)/.local/bin:$PATH"
 publshr --version
-```
-
-Or:
-
-```bash
-make install-local
-export PATH="$(pwd)/.local/bin:$PATH"
-publshr --help
 ```
 
 ## System-wide install (optional)

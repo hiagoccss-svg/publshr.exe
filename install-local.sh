@@ -47,10 +47,16 @@ else
 fi
 
 echo ""
-echo "Installed publshr $VERSION on this machine:"
+echo "Installed publshr $VERSION (command-line, project folder):"
 echo "  App:     $INSTALL_DIR/bin/publshr"
 echo "  Command: $BIN_DIR/publshr"
 echo ""
+if [[ "$(uname -s)" == "Darwin" ]]; then
+    echo "This is NOT in Applications yet. To install Publshr.app (Finder / Launchpad):"
+    echo "  ./install-mac-app.sh"
+    echo "  # or system-wide: ./install-mac-app.sh --applications"
+    echo ""
+fi
 echo "Add to your shell (copy once):"
 echo "  export PATH=\"$BIN_DIR:\$PATH\""
 echo ""

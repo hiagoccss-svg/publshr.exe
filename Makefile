@@ -3,7 +3,7 @@ BUILD_DIR   := $(PROJECT_DIR)/.build
 VERSION     ?= 0.1.0
 LOCAL_BIN   := $(CURDIR)/.local/bin
 
-.PHONY: all build release test clean install install-local uninstall package check-folder help
+.PHONY: all build release test clean install install-local install-mac-app uninstall package check-folder help
 
 help: ## Show available targets
 	@grep -E '^[a-zA-Z_-]+:.*##' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*##"}; {printf "  %-15s %s\n", $$1, $$2}'
@@ -31,6 +31,9 @@ package: check-folder ## Package release tarball
 
 install-local: check-folder ## Install into repo .local/ (this machine, no sudo)
 	chmod +x install-local.sh && ./install-local.sh
+
+install-mac-app: check-folder ## macOS: install Publshr.app into ~/Applications
+	chmod +x install-mac-app.sh && ./install-mac-app.sh
 
 install: check-folder package ## Install system-wide to /opt/publshr (sudo)
 	@ASSET=$$(cd $(PROJECT_DIR)/dist && ls -d publshr-$(VERSION)-* 2>/dev/null | grep -v '.tar.gz$$' | head -1); \
