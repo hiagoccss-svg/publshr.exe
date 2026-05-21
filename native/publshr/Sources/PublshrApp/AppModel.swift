@@ -29,7 +29,8 @@ final class AppModel: ObservableObject {
             statusLine = "Checking GitHub…"
         }
 
-        let offline = preferOffline || !(await isNetworkAvailable())
+        let networkAvailable = await isNetworkAvailable()
+        let offline = preferOffline || !networkAvailable
         let result = await git.sync(offline: offline)
 
         switch result {
