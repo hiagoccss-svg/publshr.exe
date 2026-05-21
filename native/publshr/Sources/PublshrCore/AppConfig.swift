@@ -1,7 +1,7 @@
 import Foundation
 
 public enum AppConfig {
-    public static let appVersion = "0.1.0"
+    public static let appVersion = "0.2.0"
     public static let repoOwner = "hiagoccss-svg"
     public static let repoName = "publshr.exe"
     public static let defaultBranch = "cursor/add-makefile-and-install-4aa6"

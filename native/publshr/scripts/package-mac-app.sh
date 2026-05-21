@@ -17,6 +17,8 @@ if ! command -v swift >/dev/null 2>&1; then
 fi
 
 echo "Building Publshr (SwiftUI) $VERSION ..." >&2
+echo "Git: $(git -C "$SCRIPT_DIR/../.." rev-parse --short HEAD 2>/dev/null || echo unknown)" >&2
+swift package clean 2>/dev/null || rm -rf "$SCRIPT_DIR/.build"
 swift build -c release --product Publshr
 
 BIN="$SCRIPT_DIR/.build/release/Publshr"

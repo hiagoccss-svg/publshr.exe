@@ -60,10 +60,15 @@ struct IconRailView: View {
 
     var body: some View {
         VStack(spacing: 8) {
-            Text("P")
-                .font(.system(size: 18, weight: .bold, design: .rounded))
-                .foregroundStyle(PublshrTheme.accent)
-                .padding(.top, 12)
+            VStack(spacing: 2) {
+                Text("P")
+                    .font(.system(size: 18, weight: .bold, design: .rounded))
+                    .foregroundStyle(PublshrTheme.accent)
+                Text("v\(AppVersionLabel.current)")
+                    .font(.system(size: 9, weight: .medium, design: .monospaced))
+                    .foregroundStyle(PublshrTheme.textSecondary)
+            }
+            .padding(.top, 10)
 
             ForEach(MainSection.allCases) { item in
                 Button {

@@ -1,5 +1,11 @@
 import SwiftUI
 
+enum AppVersionLabel {
+    static var current: String {
+        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.2.0"
+    }
+}
+
 enum PublshrTheme {
     static let railWidth: CGFloat = 52
     static let sidebarWidth: CGFloat = 260

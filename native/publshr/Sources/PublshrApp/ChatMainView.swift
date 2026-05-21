@@ -36,7 +36,7 @@ struct ChatMainView: View {
                     }
                     .padding(16)
                 }
-                .onChange(of: model.channelMessages.count) { _ in
+                .onChange(of: model.channelMessages.count) { _, _ in
                     if let last = model.channelMessages.last?.id {
                         proxy.scrollTo(last, anchor: .bottom)
                     }

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# macOS: build and install the real Publshr.app (workspace app — updates live in Settings).
+# macOS: clean-build and install Publshr.app (Chat + Spaces — NOT the old sync-only UI).
 set -euo pipefail
 
 if [[ "$(uname -s)" != "Darwin" ]]; then
@@ -9,7 +9,7 @@ fi
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$ROOT/native/publshr"
-VERSION="${PUBLSHR_VERSION:-0.1.0}"
+VERSION="${PUBLSHR_VERSION:-0.2.0}"
 APP_NAME="Publshr.app"
 TARGET="${PUBLSHR_APP_DIR:-$HOME/Applications}"
 
@@ -17,8 +17,7 @@ usage() {
     cat <<EOF
 Usage: $0 [options]
 
-Installs the Publshr macOS application (publisher workspace).
-Updates: Publshr menu → Settings → Updates (not a separate app).
+Installs Publshr (Cursor-style layout + ClickUp-style Chat & Spaces).
 
 Options:
   --applications    Install to /Applications (sudo)
@@ -34,12 +33,24 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-echo "Removing old Publshr installs (including previous updater-style builds) …"
+cd "$ROOT"
+echo "Repo commit: $(git rev-parse --short HEAD 2>/dev/null || echo '?')"
+if ! git rev-parse HEAD >/dev/null 2>&1; then
+    echo "Warning: not a git checkout — pull latest main branch code first." >&2
+fi
+
+echo "Quitting any running Publshr …"
+osascript -e 'tell application "Publshr" to quit' 2>/dev/null || true
+sleep 1
+
+echo "Removing old Publshr.app …"
 rm -rf "$HOME/Applications/$APP_NAME" "/Applications/$APP_NAME" 2>/dev/null || true
 sudo rm -rf "/Applications/$APP_NAME" 2>/dev/null || true
+rm -rf "$PROJECT_DIR/.build" "$PROJECT_DIR/dist/$APP_NAME"
 
-if [[ ! -d "$PROJECT_DIR" ]]; then
-    echo "Error: $PROJECT_DIR not found." >&2
+if [[ ! -f "$PROJECT_DIR/Sources/PublshrApp/AppShellView.swift" ]]; then
+    echo "Error: this checkout is too old (missing AppShellView.swift)." >&2
+    echo "Run: git pull origin cursor/add-makefile-and-install-4aa6" >&2
     exit 1
 fi
 
@@ -48,7 +59,7 @@ if ! command -v swift >/dev/null 2>&1; then
     exit 1
 fi
 
-echo "Building Publshr.app …"
+echo "Clean build Publshr.app …"
 chmod +x "$PROJECT_DIR/scripts/package-mac-app.sh"
 bash "$PROJECT_DIR/scripts/package-mac-app.sh" "$VERSION"
 
@@ -87,11 +98,15 @@ if [[ -x "$LSREGISTER" ]]; then
     "$LSREGISTER" -f -R -trusted "$DEST" 2>/dev/null || true
 fi
 
+PLIST_VERSION=$(/usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" "$DEST/Contents/Info.plist" 2>/dev/null || echo "?")
 echo ""
-echo "Installed: $DEST"
+echo "Installed: $DEST (version $PLIST_VERSION)"
 echo ""
-echo "This is the publisher app (drafts + workspace)."
-echo "  Updates: Publshr → Settings (⌘,) → Updates tab"
-echo "  Not a separate updater program."
+echo "CORRECT app looks like:"
+echo "  • Dark window, icon rail on the left (Chat / Spaces)"
+echo "  • Chat: #channels + messages + Send"
+echo "  • WRONG: single screen with only 'Sync from GitHub' — that is an OLD build"
+echo ""
+echo "If you see the old UI: git pull && ./install-mac-app.sh again"
 echo ""
 open -a "$DEST"
