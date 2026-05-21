@@ -1,33 +1,20 @@
-# publshr (macOS / Linux)
+# publshr
 
-Swift package for the macOS counterpart to Windows `publshr.exe` (also builds on Linux).
+CLI matching Windows `publshr.exe`. Installs to **`/opt/publshr/<version>`** with **`/usr/local/bin/publshr`**.
 
-## Install (recommended)
-
-From this directory:
+## Install
 
 ```bash
 ./install.sh
 ```
 
-This tries to **download** a release binary from GitHub first, then **builds from source** if no release exists. The binary is installed to `~/.local/bin/publshr` by default. Override the location:
+Uses `sudo` automatically. Downloads a GitHub release when available; otherwise builds via `scripts/package-release.sh`.
+
+## Package a release tarball
 
 ```bash
-PREFIX=/usr/local/bin ./install.sh
+chmod +x scripts/package-release.sh
+./scripts/package-release.sh 0.1.0
 ```
 
-Requires [Swift](https://www.swift.org/install/) 5.9+ when building from source (Xcode on Mac).
-
-## Build only
-
-```bash
-swift build -c release
-```
-
-Binary: `.build/release/publshr`
-
-## Run without installing
-
-```bash
-swift run publshr --version
-```
+Produces `dist/publshr-0.1.0-<os>-<arch>.tar.gz`.

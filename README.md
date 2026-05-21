@@ -2,15 +2,35 @@
 
 Cross-platform publisher helper.
 
-| Platform | Location | Artifact |
-|----------|----------|----------|
-| Windows | Repository root (see release assets) | `publshr.exe` |
-| macOS | [`mac/publshr`](mac/publshr) | Swift package → `publshr` binary |
+| Platform | Install |
+|----------|---------|
+| Windows | `publshr.exe` (release assets) |
+| macOS / Linux | `./install.sh` → `/opt/publshr` + `/usr/local/bin/publshr` |
 
-The macOS app lives in **`mac/publshr`**. Install on Mac or Linux:
+## Install
+
+Requires `curl` and `sudo` (installs system-wide):
 
 ```bash
 ./install.sh
 ```
 
-The installer downloads a release asset when available, otherwise builds from source and installs to `~/.local/bin/publshr`. Same CLI as Windows (`--help`, `--version`).
+1. Downloads the matching release from GitHub (`publshr-VERSION-{macos|linux}-{arch}.tar.gz`)
+2. If no release exists, builds from source
+3. Installs to `/opt/publshr/VERSION` and `/usr/local/bin/publshr`
+
+Verify:
+
+```bash
+publshr --version
+```
+
+Uninstall:
+
+```bash
+./install.sh --uninstall
+```
+
+## macOS app source
+
+Swift package: [`mac/publshr`](mac/publshr)
