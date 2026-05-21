@@ -24,7 +24,7 @@ open /Applications/Publshr.app
 ### Features (mac/publshr)
 
 - **Cursor-matched UI** — activity bar, sidebar, editor tabs, enterprise chat panel, status bar
-- **Enterprise chat (Phase 1)** — channels, DMs, realtime Supabase messages, presence, macOS notifications, SQLite cache
+- **Enterprise chat (Phases 1–4)** — channels, DMs, threads, reactions, files, voice notes, pins, AI summaries, search, planner shares, multi-window, permissions
 - **Supabase Auth** — sign up, sign in, 6-digit email OTP, session persistence
 - **Profile sync** — `public.profiles` via `handle_new_user` trigger
 

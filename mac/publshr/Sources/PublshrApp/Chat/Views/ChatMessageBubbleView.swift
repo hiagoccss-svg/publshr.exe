@@ -5,7 +5,18 @@ struct ChatMessageBubbleView: View {
     let authorName: String
     let isOwn: Bool
     let showAvatar: Bool
+    var reactions: [ChatReactionSummary] = []
+    var links: [ChatMessageLink] = []
+    var threadReplyCount: Int = 0
+    var voiceTranscript: String?
     var onRetry: (() -> Void)?
+    var onReaction: ((String) -> Void)?
+    var onThread: (() -> Void)?
+    var onPin: (() -> Void)?
+    var onEdit: (() -> Void)?
+    var onDelete: (() -> Void)?
+
+    @State private var showReactionPicker = false
 
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
@@ -15,38 +26,103 @@ struct ChatMessageBubbleView: View {
                 Color.clear.frame(width: 32, height: 32)
             }
 
-            VStack(alignment: .leading, spacing: 4) {
-                HStack(spacing: 8) {
-                    Text(authorName)
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundStyle(CursorTheme.foreground)
-                    Text(message.createdAt, style: .time)
-                        .font(.system(size: 11))
-                        .foregroundStyle(CursorTheme.foregroundDim)
-                    if message.isEdited {
-                        Text("(edited)")
-                            .font(.system(size: 10))
-                            .foregroundStyle(CursorTheme.foregroundDim)
-                    }
-                    Spacer(minLength: 0)
-                    statusIndicator
+            VStack(alignment: .leading, spacing: 6) {
+                headerRow
+                contentBody
+                ForEach(links) { link in
+                    ChatLinkPreviewCard(link: link)
                 }
-
-                if message.isDeleted {
-                    Text("Message deleted")
-                        .font(.system(size: 13))
-                        .italic()
-                        .foregroundStyle(CursorTheme.foregroundDim)
-                } else {
-                    Text(message.body ?? "")
-                        .font(.system(size: 13))
-                        .foregroundStyle(CursorTheme.foreground)
-                        .textSelection(.enabled)
-                        .fixedSize(horizontal: false, vertical: true)
+                if let voice = voiceAttachment {
+                    ChatVoicePlaybackRow(durationMs: voice.voiceNoteDurationMs ?? 0, transcript: voiceTranscript)
+                }
+                ChatReactionBarView(summaries: reactions) { emoji in
+                    onReaction?(emoji)
+                }
+                if threadReplyCount > 0 {
+                    Button {
+                        onThread?()
+                    } label: {
+                        Text("\(threadReplyCount) \(threadReplyCount == 1 ? "reply" : "replies")")
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundStyle(CursorTheme.accent)
+                    }
+                    .buttonStyle(.plain)
                 }
             }
         }
         .padding(.vertical, 2)
+        .contextMenu {
+            Button("Reply in thread") { onThread?() }
+            Menu("React") {
+                ForEach(ChatQuickReaction.allCases, id: \.rawValue) { r in
+                    Button(r.rawValue) { onReaction?(r.rawValue) }
+                }
+            }
+            Button("Pin") { onPin?() }
+            if isOwn {
+                Button("Edit") { onEdit?() }
+                Button("Delete", role: .destructive) { onDelete?() }
+            }
+        }
+    }
+
+    private var voiceAttachment: ChatAttachment? {
+        message.attachments.first { $0.type == "voice" }
+    }
+
+    private var headerRow: some View {
+        HStack(spacing: 8) {
+            Text(authorName)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(CursorTheme.foreground)
+            Text(message.createdAt, style: .time)
+                .font(.system(size: 11))
+                .foregroundStyle(CursorTheme.foregroundDim)
+            if message.isEdited {
+                Text("(edited)")
+                    .font(.system(size: 10))
+                    .foregroundStyle(CursorTheme.foregroundDim)
+            }
+            Spacer(minLength: 0)
+            statusIndicator
+        }
+    }
+
+    @ViewBuilder
+    private var contentBody: some View {
+        if message.isDeleted {
+            Text("Message deleted")
+                .font(.system(size: 13))
+                .italic()
+                .foregroundStyle(CursorTheme.foregroundDim)
+        } else if let body = message.body, !body.isEmpty {
+            Text(attributedBody(body))
+                .font(.system(size: 13))
+                .textSelection(.enabled)
+                .fixedSize(horizontal: false, vertical: true)
+        } else if !message.attachments.isEmpty, voiceAttachment == nil {
+            attachmentLabel
+        }
+    }
+
+    private var attachmentLabel: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "paperclip")
+            Text(message.attachments.first?.name ?? "Attachment")
+        }
+        .font(.system(size: 13))
+        .foregroundStyle(CursorTheme.foregroundMuted)
+    }
+
+    private func attributedBody(_ body: String) -> AttributedString {
+        var result = AttributedString(body)
+        for (range, isMention) in ChatMentionParser.highlightRanges(in: body) {
+            if isMention, let attrRange = Range(range, in: result) {
+                result[attrRange].foregroundColor = .init(CursorTheme.accent)
+                result[attrRange].font = .system(size: 13, weight: .semibold)
+            }
+        }
+        return result
     }
 
     private var avatar: some View {

@@ -20,6 +20,32 @@ final class ChatViewModel: ObservableObject {
     @Published var permissions = ChatWorkspacePermissions.default
     @Published var isOffline = false
 
+    // Phase 2
+    @Published var reactions: [UUID: [ChatReactionSummary]] = [:]
+    @Published var links: [UUID: [ChatMessageLink]] = [:]
+    @Published var pinnedItems: [ChatPinnedItem] = []
+    @Published var threadCounts: [UUID: Int] = [:]
+    @Published var activeThreadParent: ChatMessage?
+    @Published var threadMessages: [ChatMessage] = []
+    @Published var threadComposerText = ""
+    @Published var showThreadPanel = false
+    @Published var showPinnedPanel = false
+    @Published var uploadProgress: Double?
+    @Published var editingMessageId: UUID?
+
+    // Phase 3
+    @Published var plannerTasks: [PlannerTask] = []
+    @Published var showPermissionsSheet = false
+    @Published var voiceTranscripts: [UUID: String] = [:]
+
+    // Phase 4
+    @Published var showSearchSheet = false
+    @Published var showAISheet = false
+    @Published var globalSearchQuery = ""
+    @Published var searchResults: [ChatSearchHit] = []
+    @Published var aiResult: ChatAIResult?
+    @Published var isAILoading = false
+
     private var auth: AuthViewModel?
     private var service: ChatService?
     private var draftSaveTask: Task<Void, Never>?
@@ -89,8 +115,21 @@ final class ChatViewModel: ObservableObject {
 
     private func parsePermissions(from ws: Workspace) {
         guard let chat = ws.settings?["chat"], case .object(let obj) = chat else { return }
-        if case .bool(let v) = obj["read_receipts_enabled"] { permissions.readReceiptsEnabled = v }
-        if case .bool(let v) = obj["can_use_voice_notes"] { permissions.canUseVoiceNotes = v }
+        func bool(_ key: String, _ path: WritableKeyPath<ChatWorkspacePermissions, Bool>) {
+            if case .bool(let v) = obj[key] { permissions[keyPath: path] = v }
+        }
+        bool("can_create_channels", \.canCreateChannels)
+        bool("can_create_group_chats", \.canCreateGroupChats)
+        bool("can_dm", \.canDM)
+        bool("can_invite_users", \.canInviteUsers)
+        bool("can_add_guests", \.canAddGuests)
+        bool("can_delete_messages", \.canDeleteMessages)
+        bool("can_edit_messages", \.canEditMessages)
+        bool("can_pin_messages", \.canPinMessages)
+        bool("can_upload_files", \.canUploadFiles)
+        bool("can_use_voice_notes", \.canUseVoiceNotes)
+        bool("can_export_chats", \.canExportChats)
+        bool("read_receipts_enabled", \.readReceiptsEnabled)
     }
 
     private func loadWorkspaceData(workspaceId: UUID, userId: UUID) async {
@@ -146,7 +185,9 @@ final class ChatViewModel: ObservableObject {
         let cached = service.cachedMessages(channelId: channel.id)
         if !cached.isEmpty { messages = cached }
         do {
-            messages = try await service.fetchMessages(channelId: channel.id, workspaceId: workspace.id)
+            messages = try await service.fetchMainChannelMessages(channelId: channel.id, workspaceId: workspace.id)
+            await loadChannelExtras()
+            await markMessagesSeen()
         } catch if messages.isEmpty {
             errorMessage = error.localizedDescription
         }
@@ -180,7 +221,7 @@ final class ChatViewModel: ObservableObject {
         service.localStore().saveDraft(ChatDraft(channelId: channel.id, body: "", updatedAt: Date()))
 
         do {
-            let sent = try await service.sendMessage(
+            let sent = try await service.sendMessageExtended(
                 workspaceId: workspace.id,
                 channelId: channel.id,
                 userId: userId,
@@ -311,6 +352,11 @@ final class ChatViewModel: ObservableObject {
                 self?.presence[record.userId] = record
             }
         }
+        service?.subscribeReactions(workspaceId: workspaceId) { [weak self] in
+            Task { @MainActor in
+                await self?.loadChannelExtras()
+            }
+        }
     }
 
     private func handleIncomingMessage(_ message: ChatMessage) {
@@ -318,6 +364,13 @@ final class ChatViewModel: ObservableObject {
             if !messages.contains(where: { $0.id == message.id }) {
                 messages.append(message)
             }
+            if let parent = message.threadParentId {
+                threadCounts[parent, default: 0] += 1
+                if activeThreadParent?.id == parent, !threadMessages.contains(where: { $0.id == message.id }) {
+                    threadMessages.append(message)
+                }
+            }
+            Task { await loadChannelExtras() }
         } else {
             let count = (unreadByChannel[message.channelId] ?? 0) + 1
             unreadByChannel[message.channelId] = count

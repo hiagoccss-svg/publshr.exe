@@ -19,6 +19,21 @@ struct PublshrApp: App {
         .defaultSize(width: 1280, height: 800)
         .commands {
             CommandGroup(replacing: .newItem) {}
+            CommandMenu("Chat") {
+                Button("Search…") {
+                    chat.showSearchSheet = true
+                }
+                .keyboardShortcut("f", modifiers: [.command, .shift])
+                Button("AI Assistant") {
+                    chat.showAISheet = true
+                }
+                Button("Pop Out Channel") {
+                    if auth.isAuthenticated {
+                        chat.popOutCurrentChannel(auth: auth)
+                    }
+                }
+                .keyboardShortcut("o", modifiers: [.command, .shift])
+            }
         }
     }
 }

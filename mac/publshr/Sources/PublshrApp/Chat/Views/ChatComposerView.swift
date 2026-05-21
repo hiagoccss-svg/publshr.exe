@@ -3,6 +3,8 @@ import SwiftUI
 struct ChatComposerView: View {
     @ObservedObject var chat: ChatViewModel
     var canSendVoiceNotes: Bool = false
+    var onAttachFile: (() -> Void)?
+    var onVoiceNote: (() -> Void)?
 
     var body: some View {
         VStack(spacing: 8) {
@@ -14,18 +16,25 @@ struct ChatComposerView: View {
             }
 
             HStack(alignment: .bottom, spacing: 8) {
+                if chat.permissions.canUploadFiles {
+                    Button(action: { onAttachFile?() }) {
+                        Image(systemName: "paperclip")
+                            .font(.system(size: 15))
+                            .foregroundStyle(CursorTheme.foregroundDim)
+                    }
+                    .buttonStyle(.plain)
+                }
+
                 if canSendVoiceNotes {
-                    Button {} label: {
+                    Button(action: { onVoiceNote?() }) {
                         Image(systemName: "mic")
                             .font(.system(size: 15))
                             .foregroundStyle(CursorTheme.foregroundDim)
                     }
                     .buttonStyle(.plain)
-                    .help("Voice notes — Phase 3")
-                    .disabled(true)
                 }
 
-                TextField("Message… Use @ to mention", text: $chat.composerText, axis: .vertical)
+                TextField("Message… @mention", text: $chat.composerText, axis: .vertical)
                     .textFieldStyle(.plain)
                     .font(.system(size: 13))
                     .foregroundStyle(CursorTheme.foreground)

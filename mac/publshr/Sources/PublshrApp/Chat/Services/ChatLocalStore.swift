@@ -62,7 +62,39 @@ final class ChatLocalStore {
             key TEXT PRIMARY KEY,
             value TEXT NOT NULL
         );
+        CREATE TABLE IF NOT EXISTS search_index (
+            message_id TEXT PRIMARY KEY,
+            channel_id TEXT NOT NULL,
+            channel_name TEXT NOT NULL,
+            snippet TEXT NOT NULL
+        );
         """)
+    }
+
+    struct LocalSearchRow {
+        let messageId: String
+        let channelId: UUID
+        let channelName: String
+        let snippet: String
+    }
+
+    func indexMessageForSearch(messageId: UUID, channelId: UUID, channelName: String, body: String) {
+        let snippet = String(body.prefix(200))
+        exec(
+            "INSERT OR REPLACE INTO search_index (message_id, channel_id, channel_name, snippet) VALUES (?, ?, ?, ?);",
+            messageId.uuidString, channelId.uuidString, channelName, snippet
+        )
+    }
+
+    func searchMessages(query: String) -> [LocalSearchRow] {
+        let q = "%\(query.lowercased())%"
+        return query("SELECT message_id, channel_id, channel_name, snippet FROM search_index WHERE LOWER(snippet) LIKE ? LIMIT 50;", q)
+            .compactMap { row -> LocalSearchRow? in
+                guard let mid = row["message_id"],
+                      let cid = row["channel_id"], let uuid = UUID(uuidString: cid),
+                      let name = row["channel_name"], let snippet = row["snippet"] else { return nil }
+                return LocalSearchRow(messageId: mid, channelId: uuid, channelName: name, snippet: snippet)
+            }
     }
 
     func cacheChannels(_ channels: [ChatChannel]) {
@@ -83,7 +115,7 @@ final class ChatLocalStore {
         return rows.compactMap { decode(ChatChannel.self, from: $0["payload"]) }
     }
 
-    func cacheMessages(_ messages: [ChatMessage], channelId: UUID) {
+    func cacheMessages(_ messages: [ChatMessage], channelId: UUID, channelName: String = "") {
         for msg in messages {
             guard let json = encode(msg) else { continue }
             exec(
@@ -93,6 +125,14 @@ final class ChatLocalStore {
                 """,
                 msg.id.uuidString, channelId.uuidString, msg.workspaceId.uuidString, json, msg.createdAt.timeIntervalSince1970
             )
+            if let body = msg.body, !body.isEmpty {
+                indexMessageForSearch(
+                    messageId: msg.id,
+                    channelId: channelId,
+                    channelName: channelName.isEmpty ? channelId.uuidString : channelName,
+                    body: body
+                )
+            }
         }
     }
 

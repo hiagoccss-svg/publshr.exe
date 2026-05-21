@@ -1,13 +1,13 @@
 import SwiftUI
 
-/// Enterprise team chat panel — channels, DMs, realtime, presence, local cache.
+/// Enterprise team chat — Phases 1–4 integrated.
 struct EnterpriseChatView: View {
     @EnvironmentObject private var auth: AuthViewModel
     @ObservedObject var chat: ChatViewModel
     @State private var showNewChannel = false
     @State private var showNewDM = false
+    @State private var showPlannerShare = false
     @State private var newChannelName = ""
-    @State private var showStatusMenu = false
 
     var body: some View {
         HStack(spacing: 0) {
@@ -25,6 +25,10 @@ struct EnterpriseChatView: View {
         .background(CursorTheme.panelBackground)
         .sheet(isPresented: $showNewChannel) { newChannelSheet }
         .sheet(isPresented: $showNewDM) { newDMSheet }
+        .sheet(isPresented: $chat.showSearchSheet) { ChatSearchSheet(chat: chat) }
+        .sheet(isPresented: $chat.showAISheet) { ChatAISheet(chat: chat) }
+        .sheet(isPresented: $chat.showPermissionsSheet) { ChatPermissionsSheet(chat: chat) }
+        .sheet(isPresented: $showPlannerShare) { plannerShareSheet }
         .onAppear {
             if chat.currentUserId == nil {
                 chat.attach(auth: auth)
@@ -33,10 +37,12 @@ struct EnterpriseChatView: View {
     }
 
     private var chatToolbar: some View {
-        HStack(spacing: 12) {
-            Text(workspaceTitle)
+        HStack(spacing: 8) {
+            Text(chat.workspace?.name ?? "Workspace")
                 .font(.system(size: 12, weight: .semibold))
                 .foregroundStyle(CursorTheme.foreground)
+                .lineLimit(1)
+
             if chat.totalUnread > 0 {
                 Text("\(chat.totalUnread)")
                     .font(.system(size: 10, weight: .bold))
@@ -46,16 +52,22 @@ struct EnterpriseChatView: View {
                     .background(CursorTheme.accent)
                     .clipShape(Capsule())
             }
+
             Spacer()
-            statusMenu
-            if let err = chat.errorMessage {
-                Text(err)
-                    .font(.system(size: 10))
-                    .foregroundStyle(CursorTheme.error)
-                    .lineLimit(1)
+
+            toolbarIcon("magnifyingglass") { chat.showSearchSheet = true }
+            toolbarIcon("sparkles") { chat.showAISheet = true }
+            toolbarIcon("checklist") {
+                Task { await chat.loadPlannerTasks() }
+                showPlannerShare = true
             }
+            toolbarIcon("rectangle.portrait.on.rectangle.portrait") {
+                chat.popOutCurrentChannel(auth: auth)
+            }
+            toolbarIcon("gearshape") { chat.showPermissionsSheet = true }
+            statusMenu
         }
-        .padding(.horizontal, 12)
+        .padding(.horizontal, 10)
         .padding(.vertical, 8)
         .background(CursorTheme.panelBackground)
         .overlay(alignment: .bottom) {
@@ -63,8 +75,14 @@ struct EnterpriseChatView: View {
         }
     }
 
-    private var workspaceTitle: String {
-        chat.workspace?.name ?? "Workspace"
+    private func toolbarIcon(_ systemName: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: systemName)
+                .font(.system(size: 12))
+                .foregroundStyle(CursorTheme.foregroundMuted)
+        }
+        .buttonStyle(.plain)
+        .help(systemName)
     }
 
     private var statusMenu: some View {
@@ -77,11 +95,11 @@ struct EnterpriseChatView: View {
                 }
             }
         } label: {
-            HStack(spacing: 6) {
+            HStack(spacing: 4) {
                 ChatPresenceDot(status: chat.myStatus, size: 8)
-                Text(chat.myStatus.label)
-                    .font(.system(size: 11))
-                    .foregroundStyle(CursorTheme.foregroundMuted)
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 8))
+                    .foregroundStyle(CursorTheme.foregroundDim)
             }
         }
         .menuStyle(.borderlessButton)
@@ -89,9 +107,8 @@ struct EnterpriseChatView: View {
 
     private var newChannelSheet: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Create Channel")
-                .font(.headline)
-            TextField("Channel name (e.g. editorial)", text: $newChannelName)
+            Text("Create Channel").font(.headline)
+            TextField("Channel name", text: $newChannelName)
                 .textFieldStyle(.roundedBorder)
             HStack {
                 Spacer()
@@ -103,7 +120,6 @@ struct EnterpriseChatView: View {
                         newChannelName = ""
                     }
                 }
-                .keyboardShortcut(.defaultAction)
             }
         }
         .padding(24)
@@ -112,11 +128,7 @@ struct EnterpriseChatView: View {
 
     private var newDMSheet: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("New Message")
-                .font(.headline)
-            Text("Select a teammate")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
+            Text("New Message").font(.headline)
             List(Array(chat.profiles.values).sorted { ($0.displayName ?? $0.email) < ($1.displayName ?? $1.email) }) { profile in
                 if profile.id != chat.currentUserId {
                     Button {
@@ -128,7 +140,6 @@ struct EnterpriseChatView: View {
                         HStack {
                             ChatPresenceDot(status: chat.presence(for: profile.id))
                             Text(profile.displayName ?? profile.email)
-                            Spacer()
                         }
                     }
                     .buttonStyle(.plain)
@@ -136,9 +147,38 @@ struct EnterpriseChatView: View {
             }
             .frame(minHeight: 200)
             Button("Close") { showNewDM = false }
-                .frame(maxWidth: .infinity, alignment: .trailing)
         }
         .padding(20)
         .frame(width: 320, height: 360)
+    }
+
+    private var plannerShareSheet: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Share planner item").font(.headline)
+            if chat.plannerTasks.isEmpty {
+                Text("No tasks in workspace yet.")
+                    .foregroundStyle(.secondary)
+            } else {
+                List(chat.plannerTasks) { task in
+                    Button {
+                        Task {
+                            await chat.sharePlannerTask(task)
+                            showPlannerShare = false
+                        }
+                    } label: {
+                        VStack(alignment: .leading) {
+                            Text(task.title)
+                            Text(task.status)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            Button("Close") { showPlannerShare = false }
+        }
+        .padding(20)
+        .frame(width: 360, height: 400)
     }
 }

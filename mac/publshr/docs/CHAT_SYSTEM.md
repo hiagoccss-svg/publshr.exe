@@ -2,63 +2,71 @@
 
 Real-time workspace communication integrated into the Publshr macOS IDE.
 
-## Phase 1 (implemented)
+## Phase 1
 
-- **Channels** — public/private workspace channels with default seeds (`#editorial`, `#approvals`, `#campaign-launch`)
-- **Direct messages** — 1:1 DMs via `chat_channels.kind = dm` + `chat_channel_members`
-- **Realtime messages** — Supabase Realtime on `chat_messages`
-- **Online status** — `chat_presence` with heartbeat (online, away, busy, in meeting, offline, invisible)
-- **Desktop notifications** — macOS Notification Center for messages in non-active channels
-- **SQLite local cache** — `~/Library/Application Support/Publshr/chat-cache.sqlite` for channels, messages, drafts, unread, presence
+- Channels, DMs, realtime messages, presence, notifications, SQLite cache
+
+## Phase 2
+
+- **File uploads** — `workspace-files` bucket + `files` table; drag/drop and paperclip
+- **Reactions** — `chat_reactions` with quick emoji picker and realtime sync
+- **Pinned messages** — `chat_pinned_items` panel per channel
+- **Edit / delete** — soft delete; edit with indicator
+- **@mentions** — highlighted in composer; parser for @user / @here / @channel
+- **Threading** — `thread_parent_id`; side thread panel with reply count
+
+## Phase 3
+
+- **Voice notes** — `AVAudioRecorder`, waveform preview, upload + `chat_voice_transcripts`
+- **Multi-window** — `ChatWindowManager` pops channel into `NSWindow`
+- **Permissions UI** — workspace `settings.chat` toggles (local + model)
+- **Planner integration** — share `tasks` into chat with link preview cards
+
+## Phase 4
+
+- **AI assistant** — local summarization, reply suggestions, action items (`ChatAIService`; swap for AI SDK later)
+- **Transcription-ready** — `chat_voice_transcripts` with `pending` → `ready` pipeline
+- **Search** — `search_workspace` RPC + local SQLite `search_index`
+- **Automations** — deadline / action-item extraction from AI heuristics
 
 ## Supabase tables
 
-| Table | Purpose |
-|-------|---------|
-| `chat_channels` | Channels, DMs, groups, threads |
-| `chat_messages` | Message bodies, threads, attachments JSON |
-| `chat_channel_members` | Membership, notification level, last read |
-| `chat_presence` | Per-workspace user status |
+| Table | Phase |
+|-------|-------|
+| `chat_channels`, `chat_messages`, `chat_presence`, `chat_channel_members` | 1 |
+| `chat_reactions`, `chat_pinned_items`, `chat_read_receipts`, `chat_message_links` | 2 |
+| `chat_voice_transcripts` | 3–4 |
 
-Migration: `supabase/migrations/20260521180000_chat_presence_and_members.sql`
+Migrations:
+
+- `supabase/migrations/20260521180000_chat_presence_and_members.sql`
+- `supabase/migrations/20260521200000_chat_phases_2_4.sql`
 
 ## Architecture
 
 ```
 EnterpriseChatView
-├── ChatSidebarView (DMs, channels, search, unread)
-└── ChatConversationView
-    ├── ChatMessageBubbleView
-    └── ChatComposerView
+├── ChatSidebarView
+├── ChatConversationView
+│   ├── ChatThreadPanelView (Phase 2)
+│   ├── ChatPinnedPanelView
+│   └── ChatMessageBubbleView + reactions + links + voice
+├── ChatSearchSheet (Phase 4)
+├── ChatAISheet (Phase 4)
+├── ChatPermissionsSheet (Phase 3)
+└── ChatVoiceRecorderSheet (Phase 3)
 
-ChatViewModel ←→ ChatService (Supabase + Realtime)
-              ←→ ChatLocalStore (SQLite)
-              ←→ ChatNotificationService (UNUserNotificationCenter)
+ChatViewModel + ChatViewModel+Phases
+ChatService + ChatService+Phases
+ChatLocalStore (SQLite + search index)
+ChatWindowManager (pop-out windows)
+ChatAIService (summaries / suggestions)
+ChatVoiceRecorder (microphone)
 ```
 
-## MVP roadmap
+## Keyboard shortcuts
 
-| Phase | Features |
-|-------|----------|
-| **2** | File uploads, reactions, pins, edit/delete, @mentions, threading |
-| **3** | Voice notes, multi-window chat, advanced permissions, planner hooks |
-| **4** | AI summaries, transcription, advanced search, automations |
-
-## Permissions (workspace `settings.chat`)
-
-Defaults are permissive; override in `workspaces.settings` JSON:
-
-```json
-{
-  "chat": {
-    "can_create_channels": true,
-    "can_dm": true,
-    "can_use_voice_notes": true,
-    "read_receipts_enabled": false
-  }
-}
-```
-
-## Client-safe mode
-
-Use `chat_channels.visibility = client_safe` for client-visible channels. Internal channels use `internal` or `private`.
+| Shortcut | Action |
+|----------|--------|
+| ⌘⇧F | Chat search |
+| ⌘⇧O | Pop out channel window |

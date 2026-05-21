@@ -216,3 +216,245 @@ struct ChatDraft: Codable, Equatable {
     var body: String
     var updatedAt: Date
 }
+
+// MARK: - Phase 2: Reactions
+
+struct ChatReaction: Codable, Identifiable, Equatable {
+    let id: UUID
+    let workspaceId: UUID
+    let messageId: UUID
+    let userId: UUID
+    let emoji: String
+    let createdAt: Date
+
+    enum CodingKeys: String, CodingKey {
+        case id, emoji
+        case workspaceId = "workspace_id"
+        case messageId = "message_id"
+        case userId = "user_id"
+        case createdAt = "created_at"
+    }
+}
+
+struct ChatReactionSummary: Equatable {
+    let emoji: String
+    let count: Int
+    let userIds: [UUID]
+    var includesMe: Bool = false
+}
+
+// MARK: - Phase 2: Pinned
+
+struct ChatPinnedItem: Codable, Identifiable, Equatable {
+    let id: UUID
+    let workspaceId: UUID
+    let channelId: UUID
+    let messageId: UUID?
+    let fileId: UUID?
+    let pinnedBy: UUID
+    var sortOrder: Int
+    var note: String?
+    let createdAt: Date
+
+    enum CodingKeys: String, CodingKey {
+        case id, note
+        case workspaceId = "workspace_id"
+        case channelId = "channel_id"
+        case messageId = "message_id"
+        case fileId = "file_id"
+        case pinnedBy = "pinned_by"
+        case sortOrder = "sort_order"
+        case createdAt = "created_at"
+    }
+}
+
+// MARK: - Phase 2: Read receipts
+
+struct ChatReadReceipt: Codable, Equatable {
+    let messageId: UUID
+    let workspaceId: UUID
+    let userId: UUID
+    let seenAt: Date
+
+    enum CodingKeys: String, CodingKey {
+        case messageId = "message_id"
+        case workspaceId = "workspace_id"
+        case userId = "user_id"
+        case seenAt = "seen_at"
+    }
+}
+
+// MARK: - Phase 2/3: Message links
+
+enum ChatLinkType: String, Codable {
+    case task
+    case plannerItem = "planner_item"
+    case campaign
+    case document
+    case report
+    case coverage
+    case approval
+    case file
+}
+
+struct ChatMessageLink: Codable, Identifiable, Equatable {
+    let id: UUID
+    let workspaceId: UUID
+    let messageId: UUID
+    let linkType: ChatLinkType
+    let linkId: UUID
+    var preview: ChatLinkPreview
+    let createdAt: Date
+
+    enum CodingKeys: String, CodingKey {
+        case id, preview
+        case workspaceId = "workspace_id"
+        case messageId = "message_id"
+        case linkType = "link_type"
+        case linkId = "link_id"
+        case createdAt = "created_at"
+    }
+}
+
+struct ChatLinkPreview: Codable, Equatable {
+    var title: String?
+    var status: String?
+    var dueDate: String?
+    var owner: String?
+    var subtitle: String?
+
+    init(title: String? = nil, status: String? = nil, dueDate: String? = nil, owner: String? = nil, subtitle: String? = nil) {
+        self.title = title
+        self.status = status
+        self.dueDate = dueDate
+        self.owner = owner
+        self.subtitle = subtitle
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.singleValueContainer()
+        if let dict = try? c.decode([String: JSONValue].self) {
+            title = dict["title"]?.stringValue
+            status = dict["status"]?.stringValue
+            dueDate = dict["due_date"]?.stringValue ?? dict["dueDate"]?.stringValue
+            owner = dict["owner"]?.stringValue
+            subtitle = dict["subtitle"]?.stringValue
+        } else {
+            title = nil; status = nil; dueDate = nil; owner = nil; subtitle = nil
+        }
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.singleValueContainer()
+        var dict: [String: String] = [:]
+        if let title { dict["title"] = title }
+        if let status { dict["status"] = status }
+        if let dueDate { dict["due_date"] = dueDate }
+        if let owner { dict["owner"] = owner }
+        if let subtitle { dict["subtitle"] = subtitle }
+        try c.encode(dict)
+    }
+}
+
+private extension JSONValue {
+    var stringValue: String? {
+        if case .string(let s) = self { return s }
+        return nil
+    }
+}
+
+// MARK: - Phase 3: Voice
+
+enum ChatTranscriptStatus: String, Codable {
+    case pending, processing, ready, failed
+}
+
+struct ChatVoiceTranscript: Codable, Identifiable, Equatable {
+    let id: UUID
+    let workspaceId: UUID
+    let messageId: UUID
+    let storagePath: String
+    var durationMs: Int
+    var waveform: [Double]
+    var transcript: String?
+    var transcriptStatus: ChatTranscriptStatus
+    var segments: [ChatTranscriptSegment]
+    let createdAt: Date
+    var updatedAt: Date
+
+    enum CodingKeys: String, CodingKey {
+        case id, transcript, segments
+        case workspaceId = "workspace_id"
+        case messageId = "message_id"
+        case storagePath = "storage_path"
+        case durationMs = "duration_ms"
+        case waveform, transcriptStatus = "transcript_status"
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+    }
+}
+
+struct ChatTranscriptSegment: Codable, Equatable {
+    var startMs: Int
+    var endMs: Int
+    var text: String
+}
+
+// MARK: - Phase 4: Search & AI
+
+struct ChatSearchHit: Identifiable, Equatable {
+    let id: String
+    let kind: ChatSearchKind
+    let title: String
+    let subtitle: String
+    let channelId: UUID?
+    let messageId: UUID?
+    let createdAt: Date?
+}
+
+enum ChatSearchKind: String {
+    case message, file, voice, user, channel, task
+}
+
+struct ChatAIResult: Equatable {
+    let title: String
+    let body: String
+    let actionItems: [String]
+    let deadlines: [String]
+}
+
+// MARK: - Planner task (for integration)
+
+struct PlannerTask: Codable, Identifiable, Equatable {
+    let id: UUID
+    let workspaceId: UUID
+    let title: String
+    var status: String
+    var dueDate: Date?
+    var assigneeId: UUID?
+
+    enum CodingKeys: String, CodingKey {
+        case id, title, status
+        case workspaceId = "workspace_id"
+        case dueDate = "due_date"
+        case assigneeId = "assignee_id"
+    }
+}
+
+// MARK: - Mention parsing
+
+struct ChatMentionToken: Equatable {
+    let type: MentionType
+    let raw: String
+    let userId: UUID?
+
+    enum MentionType { case user, channel, here, team }
+}
+
+enum ChatQuickReaction: String, CaseIterable {
+    case thumbsUp = "👍"
+    case heart = "❤️"
+    case laugh = "😄"
+    case eyes = "👀"
+    case check = "✅"
+}
