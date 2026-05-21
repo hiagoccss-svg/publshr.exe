@@ -8,7 +8,8 @@ import { loadSession, saveSession } from './session-store'
 function createSupabaseClient(): SupabaseClient {
   return createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     auth: { persistSession: false, autoRefreshToken: true },
-    realtime: { transport: WebSocket as unknown as typeof WebSocket }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    realtime: { transport: WebSocket as any }
   })
 }
 
