@@ -35,6 +35,16 @@ Features: activity bar, sidebar, editor, chat panel, OTP sign-in, `public.profil
 
 ClickUp-style board/list/calendar using local `app-space.json` (also under `native/publshr` on `main`). Build with `./install-mac-app.sh` when using the merged branch that includes `AppSpace/` sources.
 
+## Planner (communications OS)
+
+Electron desktop module for PR, media, and editorial teams — timeline, board, calendar, editor windows, Supabase + SQLite local-first sync.
+
+```bash
+cd planner/desktop && npm install && npm run dev
+```
+
+See [planner/README.md](planner/README.md).
+
 ## Linux / CLI
 
 ```bash
@@ -44,11 +54,12 @@ export PATH="$(pwd)/.local/bin:$PATH"
 publshr --version
 ```
 
-## Layout
+## Project layout
 
 ```
-native/publshr/   # Supabase Mac app + CLI
+native/publshr/   # Supabase Mac app + App Space + CLI
 mac/publshr/      # IDE + auth (Cursor-style)
+planner/desktop/  # Communications Planner (Electron + React)
 windows/          # publshr.exe releases
 AGENTS.md         # Cloud agent notes
 ```
