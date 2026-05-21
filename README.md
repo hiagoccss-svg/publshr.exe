@@ -7,22 +7,24 @@ Cross-platform publisher helper.
 | **macOS / Linux** | [`native/publshr`](native/publshr) — Swift CLI (not `.exe`) | `./install-local.sh` on **this machine** |
 | **Windows** | [`windows/`](windows/) — `publshr.exe` from releases | Download from [Releases](https://github.com/hiagoccss-svg/publshr.exe/releases) |
 
-## macOS — install in **Applications** (shows in Apps / Spotlight)
+## macOS — real application in **Applications**
 
-`install-local.sh` only puts the CLI inside the project folder (`.local/`). It does **not** appear in Applications.
-
-On your Mac, run:
+**Remove the old fake app first** (if you installed it before): delete `Publshr.app` from Applications, then:
 
 ```bash
+cd ~/publshr.exe
+git pull
 chmod +x install-mac-app.sh
 ./install-mac-app.sh
 ```
 
-That installs **`Publshr.app`** to `~/Applications` (or use `--applications` for `/Applications` with sudo). Then open **Finder → Applications** or press **Cmd+Space** and type **Publshr**.
+This builds a **real SwiftUI app** (window UI, no Terminal). It installs **`Publshr.app`** to `~/Applications`.
 
-```bash
-open ~/Applications/Publshr.app
-```
+- Works **offline** (toggle in app)
+- When online, **Sync from GitHub** pulls latest from git branch `cursor/add-makefile-and-install-4aa6`
+- After we push changes, open the app and tap **Sync from GitHub** (or relaunch)
+
+`install-local.sh` is CLI-only inside `.local/` — **not** the Mac app in Applications.
 
 ## Linux / Mac — CLI only (inside this repo)
 

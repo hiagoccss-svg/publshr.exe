@@ -52,9 +52,9 @@ echo "  App:     $INSTALL_DIR/bin/publshr"
 echo "  Command: $BIN_DIR/publshr"
 echo ""
 if [[ "$(uname -s)" == "Darwin" ]]; then
-    echo "This is NOT in Applications yet. To install Publshr.app (Finder / Launchpad):"
-    echo "  ./install-mac-app.sh"
-    echo "  # or system-wide: ./install-mac-app.sh --applications"
+    echo "CLI only — NOT the Mac app in Applications."
+    echo "For the real app (SwiftUI window): ./install-mac-app.sh"
+    echo "Delete any old Publshr.app from Applications first if it opened Terminal."
     echo ""
 fi
 echo "Add to your shell (copy once):"
