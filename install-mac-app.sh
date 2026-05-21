@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# macOS: build real SwiftUI Publshr.app and install to Applications.
+# macOS: build Publshr.app (Publisher + in-app Updates) and install to Applications.
 set -euo pipefail
 
 if [[ "$(uname -s)" != "Darwin" ]]; then
@@ -12,20 +12,18 @@ PROJECT_DIR="$ROOT/native/publshr"
 VERSION="${PUBLSHR_VERSION:-0.1.0}"
 APP_NAME="Publshr.app"
 TARGET="${PUBLSHR_APP_DIR:-$HOME/Applications}"
-BRANCH="${PUBLSHR_BRANCH:-cursor/add-makefile-and-install-4aa6}"
 
 usage() {
     cat <<EOF
 Usage: $0 [options]
 
-Builds a real macOS application (SwiftUI window — not a Terminal script).
-Installs to Applications. Syncs from Git branch: $BRANCH
+Installs Publshr (publisher app with Updates inside the app — not a separate updater).
 
 Options:
   --applications    Install to /Applications (sudo)
   -h, --help        Show help
 
-After install: Finder → Applications → Publshr
+Default install location: ~/Applications/Publshr.app
 EOF
 }
 
@@ -47,37 +45,49 @@ if ! command -v swift >/dev/null 2>&1; then
     exit 1
 fi
 
-echo "Building real Publshr.app (SwiftUI) ..."
+echo "Building Publshr.app …"
 chmod +x "$PROJECT_DIR/scripts/package-mac-app.sh"
 bash "$PROJECT_DIR/scripts/package-mac-app.sh" "$VERSION"
 
+BUILT_APP="$PROJECT_DIR/dist/$APP_NAME"
 DEST="$TARGET/$APP_NAME"
-echo "Installing to $DEST ..."
 
+if [[ ! -d "$BUILT_APP" ]]; then
+    echo "Error: build did not produce $BUILT_APP" >&2
+    exit 1
+fi
+
+echo "Installing to: $DEST"
 if [[ "$TARGET" == "/Applications" ]]; then
     sudo rm -rf "$DEST"
-    sudo cp -R "$PROJECT_DIR/dist/Publshr.app" "$DEST"
+    sudo ditto "$BUILT_APP" "$DEST"
     sudo chmod -R 755 "$DEST"
 else
     mkdir -p "$TARGET"
     rm -rf "$DEST"
-    cp -R "$PROJECT_DIR/dist/Publshr.app" "$DEST"
+    ditto "$BUILT_APP" "$DEST"
 fi
 
-# CLI helper (optional)
-CLI="$(find "$PROJECT_DIR/dist" -maxdepth 2 -path '*/bin/publshr' 2>/dev/null | head -1)"
-if [[ -n "$CLI" && -f "$CLI" ]]; then
-    if command -v sudo >/dev/null 2>&1; then
-        sudo ln -sf "$CLI" /usr/local/bin/publshr 2>/dev/null || true
-    fi
+# Register with Launch Services so it appears in Applications / Spotlight
+LSREGISTER="/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister"
+if [[ -x "$LSREGISTER" ]]; then
+    "$LSREGISTER" -f -R -trusted "$DEST" 2>/dev/null || true
+fi
+
+if [[ ! -d "$DEST/Contents/MacOS/Publshr" ]]; then
+    echo "Error: installed app is incomplete (missing MacOS/Publshr)" >&2
+    exit 1
 fi
 
 echo ""
-echo "Installed real Mac app:"
+echo "Publshr is installed:"
 echo "  $DEST"
 echo ""
-echo "Open: open \"$DEST\""
-echo "Or Spotlight → Publshr"
+echo "Open from Finder → Applications, or:"
+echo "  open -a \"$DEST\""
 echo ""
-echo "Auto-sync branch: $BRANCH (when online, use Sync from GitHub in the app)"
-open "$DEST" 2>/dev/null || true
+echo "Updates: open the app → sidebar → Updates (not a separate program)."
+echo ""
+
+# Open the installed copy only (not the build folder copy)
+open -a "$DEST"

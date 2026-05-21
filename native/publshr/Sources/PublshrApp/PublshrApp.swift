@@ -8,7 +8,7 @@ struct PublshrApplication: App {
         WindowGroup {
             ContentView()
                 .environmentObject(model)
-                .frame(minWidth: 480, minHeight: 360)
+                .frame(minWidth: 560, minHeight: 420)
         }
         .commands {
             CommandGroup(replacing: .newItem) {}
