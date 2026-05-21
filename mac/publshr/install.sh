@@ -103,14 +103,21 @@ install_macos_app() {
 
     mkdir -p "$(dirname "$BIN_LINK")"
     rm -f "$BIN_LINK"
-    ln -sf "$MAC_APP/Contents/MacOS/publshr" "$BIN_LINK"
+    if [[ -f "${tree}/bin/publshr" ]]; then
+        ln -sf "${tree}/bin/publshr" "$BIN_LINK"
+    else
+        ln -sf "$MAC_APP/Contents/MacOS/Publshr" "$BIN_LINK"
+    fi
 
     echo "" >&2
     echo "Installed Publshr $VERSION" >&2
     echo "  App (Launchpad / Applications): $MAC_APP" >&2
     echo "  Terminal command:               $BIN_LINK" >&2
     echo "" >&2
-    echo "Open Finder → Applications → Publshr to sign in and start coding." >&2
+    echo "Open Finder → Applications → Publshr, or run: publshr --help" >&2
+    if [[ -x "$BIN_LINK" ]]; then
+        "$BIN_LINK" --version
+    fi
 }
 
 install_linux_tree() {

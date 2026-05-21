@@ -20,20 +20,30 @@ git pull
 **Auth:** email + password · optional **Touch ID** unlock.  
 **Backend:** [supabase/README.md](supabase/README.md) (`publshr.exe` project).
 
+Opens **Finder → Applications → Publshr** (Launchpad). The installer may ask for your Mac password.
+
 ## macOS — IDE app (`mac/publshr`)
 
-Cursor-matched IDE with Supabase auth (from `main`):
+Cursor-matched IDE with Supabase auth:
 
 ```bash
 ./install-publshr.sh
-# or: ./install.sh && open /Applications/Publshr.app
+# IDE + release tarball path (not the Supabase shell above):
+PUBLSHR_INSTALL=mac-ide ./install-publshr.sh
+# or from repo: cd mac/publshr && ./install.sh
+```
+
+One-line curl (uses branch `cursor/add-makefile-and-install-4aa6`):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/hiagoccss-svg/publshr.exe/cursor/add-makefile-and-install-4aa6/install-publshr.sh | bash
 ```
 
 Features: activity bar, sidebar, editor, chat panel, OTP sign-in, `public.profiles` sync.
 
 ## macOS — App Space (local JSON, `native/publshr`)
 
-ClickUp-style board/list/calendar using local `app-space.json` (also under `native/publshr` on `main`). Build with `./install-mac-app.sh` when using the merged branch that includes `AppSpace/` sources.
+ClickUp-style board/list/calendar using local `app-space.json` (sources under `native/publshr`; not built into the default Supabase app target yet). Build with `./install-mac-app.sh` on branches that ship `AppSpace/` sources.
 
 ## Planner (communications OS)
 

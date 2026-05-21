@@ -1,12 +1,18 @@
 #!/usr/bin/env bash
-# Install publshr CLI (Linux) or redirect macOS users to the real .app installer.
+# Install publshr: macOS Supabase app (default) or mac/publshr IDE + CLI (PUBLSHR_INSTALL=mac-ide).
 set -euo pipefail
 
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd || echo ".")"
+
 if [[ "$(uname -s)" == "Darwin" ]]; then
-    ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd || echo ".")"
+    if [[ "${PUBLSHR_INSTALL:-}" == "mac-ide" && -f "$ROOT/mac/publshr/install.sh" ]]; then
+        echo "Installing mac/publshr IDE to /Applications …"
+        exec "$ROOT/mac/publshr/install.sh" "$@"
+    fi
     if [[ -f "$ROOT/install-mac-app.sh" ]]; then
-        echo "On macOS, install the application (not the CLI updater) with:"
-        echo "  cd \"$ROOT\" && ./install-mac-app.sh"
+        echo ""
+        echo "Installing Publshr (Supabase Chat & Spaces) to ~/Applications or /Applications."
+        echo "For the Cursor-style IDE instead: PUBLSHR_INSTALL=mac-ide ./install-publshr.sh"
         echo ""
         exec "$ROOT/install-mac-app.sh" "$@"
     fi
@@ -22,5 +28,12 @@ trap 'rm -f "$TMP"' EXIT
 echo "Fetching CLI installer …"
 curl -fsSL "$INSTALLER_URL" -o "$TMP"
 chmod +x "$TMP"
+
+if [[ "$(uname -s)" == "Darwin" ]]; then
+    echo ""
+    echo "This installs the publshr CLI (Linux-style path). For the Mac .app use ./install-mac-app.sh"
+    echo ""
+fi
+
 echo "Installing publshr CLI ${VERSION} (requires sudo) …"
 exec sudo env PUBLSHR_VERSION="$VERSION" PUBLSHR_REPO="$REPO" "$TMP" "$@"
