@@ -41,7 +41,7 @@ jobs:
         working-directory: mac/publshr
         run: |
           chmod +x scripts/package-release.sh
-          VERSION="${GITHUB_REF_NAME#v}" bash scripts/package-release.sh "$VERSION"
+          bash scripts/package-release.sh "${GITHUB_REF_NAME#v}"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -65,8 +65,14 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
+          mapfile -t assets < <(find artifacts -name '*.tar.gz' -type f)
+          if [[ ${#assets[@]} -eq 0 ]]; then
+            echo "No release tarballs found under artifacts/" >&2
+            find artifacts -type f >&2 || true
+            exit 1
+          fi
           gh release create "$GITHUB_REF_NAME" \
             --repo "${{ github.repository }}" \
             --title "publshr $VERSION" \
-            --notes "Prebuilt installers for macOS and Linux. Run ./install.sh from the repo (or extract and use /opt layout)." \
-            artifacts/**/*.tar.gz
+            --notes "Prebuilt macOS (Apple Silicon) and Linux x86_64. Install from anywhere: curl -fsSL https://raw.githubusercontent.com/${{ github.repository }}/cursor/add-mac-publshr-9411/install-publshr.sh | bash" \
+            "${assets[@]}"
