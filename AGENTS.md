@@ -42,6 +42,20 @@ bash scripts/package-release.sh <version>
 
 Produces `dist/publshr-<version>-<os>-<arch>.tar.gz`.
 
+### Spaces (Electron)
+
+The enterprise **Spaces** module lives in `desktop/spaces/` (Electron + React + TypeScript + Tailwind + SQLite + Supabase).
+
+```bash
+cd desktop/spaces
+npm install
+npm run dev      # development
+npm run build    # production bundle
+npm run typecheck
+```
+
+No demo seed data on first run. Configure optional Supabase via `.env` from `.env.example`.
+
 ### Gotchas
 
 - On Ubuntu, Swift requires `libncurses6`, `libcurl4`, and `libxml2` runtime libraries. The update script installs these automatically.
