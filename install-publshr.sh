@@ -13,5 +13,12 @@ trap 'rm -f "$TMP"' EXIT
 echo "Fetching installer ..."
 curl -fsSL "$INSTALLER_URL" -o "$TMP"
 chmod +x "$TMP"
-echo "Installing publshr ${VERSION} (requires sudo) ..."
-exec sudo env PUBLSHR_VERSION="$VERSION" PUBLSHR_REPO="$REPO" "$TMP" "$@"
+
+if [[ "$(uname -s)" == "Darwin" ]]; then
+    echo ""
+    echo "This installs Publshr to /Applications (Launchpad + Finder → Applications)"
+    echo "and adds the publshr command for Terminal."
+    echo ""
+fi
+
+exec env PUBLSHR_VERSION="$VERSION" PUBLSHR_REPO="$REPO" "$TMP" "$@"

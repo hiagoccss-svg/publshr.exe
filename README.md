@@ -9,9 +9,18 @@ Cross-platform publisher helper.
 
 ## Install
 
-Requires `curl` and `sudo` (installs system-wide):
+From **any directory** (Mac or Linux, requires `curl` and `sudo`):
 
 ```bash
+curl -fsSL https://raw.githubusercontent.com/hiagoccss-svg/publshr.exe/cursor/add-mac-publshr-9411/install-publshr.sh | bash
+```
+
+Or clone the repo and run:
+
+```bash
+git clone https://github.com/hiagoccss-svg/publshr.exe.git
+cd publshr.exe
+git checkout cursor/add-mac-publshr-9411
 ./install.sh
 ```
 
@@ -24,6 +33,8 @@ Verify:
 ```bash
 publshr --version
 ```
+
+**macOS:** Open **Finder → Applications → Publshr** (also in Launchpad). The installer is not a `.dmg` wizard — it is a command-line installer that places `Publshr.app` in Applications and will prompt for your Mac password.
 
 Uninstall:
 

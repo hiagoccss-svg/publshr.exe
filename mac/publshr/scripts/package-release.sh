@@ -34,6 +34,10 @@ mkdir -p "$STAGE/bin" "$STAGE/lib"
 cp "$BIN" "$STAGE/bin/publshr"
 chmod 755 "$STAGE/bin/publshr"
 
+if [[ "$os" == "macos" ]]; then
+    bash "$SCRIPT_DIR/build-macos-app.sh" "$BIN" "$VERSION" "$STAGE"
+fi
+
 if [[ "$os" == "linux" ]]; then
     mapfile -t swift_libs < <(ldd "$BIN" | awk '/libswift|libdispatch|libBlocksRuntime/ {print $3}' | sort -u)
     for lib in "${swift_libs[@]}"; do

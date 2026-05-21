@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Download (or build) publshr and install system-wide under /opt/publshr with /usr/local/bin entry.
+# Download (or build) publshr and install to /Applications (macOS) or /opt (Linux).
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -7,33 +7,50 @@ VERSION="${PUBLSHR_VERSION:-0.1.0}"
 REPO="${PUBLSHR_REPO:-hiagoccss-svg/publshr.exe}"
 INSTALL_ROOT="${PUBLSHR_INSTALL_ROOT:-/opt/publshr}"
 BIN_LINK="${PUBLSHR_BIN_LINK:-/usr/local/bin/publshr}"
+MAC_APP="${PUBLSHR_MAC_APP:-/Applications/Publshr.app}"
 
 usage() {
     cat <<EOF
 Usage: $0 [options]
 
-Install publshr to $INSTALL_ROOT/$VERSION and $BIN_LINK
+macOS: installs Publshr.app to $MAC_APP (shows in Applications / Launchpad)
+       and publshr command at $BIN_LINK
+
+Linux: installs to $INSTALL_ROOT/$VERSION and $BIN_LINK
 
 Options:
   --download-only   Only download from GitHub releases (fail if missing)
   --build-only      Build from source and install (no download)
   --uninstall       Remove installation
   -h, --help        Show this help
-
-Environment:
-  PUBLSHR_VERSION         Release version (default: $VERSION)
-  PUBLSHR_INSTALL_ROOT    Install root (default: $INSTALL_ROOT)
-  PUBLSHR_BIN_LINK        Symlink/wrapper path (default: $BIN_LINK)
 EOF
+}
+
+confirm_install() {
+    if [[ "$(uname -s)" != "Darwin" ]]; then
+        return 0
+    fi
+    if [[ ! -t 0 ]]; then
+        return 0
+    fi
+    echo ""
+    echo "Publshr will be installed to:"
+    echo "  • Applications: $MAC_APP  (find it in Launchpad / Finder → Applications)"
+    echo "  • Terminal command: $BIN_LINK"
+    echo ""
+    echo "macOS will ask for your administrator password next."
+    read -r -p "Press Enter to install, or Ctrl+C to cancel... " _
 }
 
 require_root() {
     if [[ "$(id -u)" -ne 0 ]]; then
+        confirm_install
         exec sudo -E env \
             PUBLSHR_VERSION="$VERSION" \
             PUBLSHR_REPO="$REPO" \
             PUBLSHR_INSTALL_ROOT="$INSTALL_ROOT" \
             PUBLSHR_BIN_LINK="$BIN_LINK" \
+            PUBLSHR_MAC_APP="$MAC_APP" \
             "$0" "$@"
     fi
 }
@@ -54,7 +71,7 @@ platform_asset() {
 }
 
 download_release() {
-    local asset url tmp root
+    local asset url tmp
     asset="$(platform_asset)"
     url="https://github.com/${REPO}/releases/download/v${VERSION}/${asset}"
     tmp="$(mktemp -d)"
@@ -64,7 +81,35 @@ download_release() {
     echo "$tmp/$(basename "$asset" .tar.gz)"
 }
 
-install_tree() {
+install_macos_app() {
+    local tree="$1"
+    local app_src="${tree}/Publshr.app"
+
+    if [[ ! -d "$app_src" ]]; then
+        echo "Building Publshr.app from binary ..." >&2
+        bash "$SCRIPT_DIR/scripts/build-macos-app.sh" "${tree}/bin/publshr" "$VERSION" "$tree"
+        app_src="${tree}/Publshr.app"
+    fi
+
+    rm -rf "$MAC_APP"
+    cp -a "$app_src" "$MAC_APP"
+    chmod -R 755 "$MAC_APP"
+    /usr/bin/touch "$MAC_APP"
+
+    mkdir -p "$(dirname "$BIN_LINK")"
+    rm -f "$BIN_LINK"
+    ln -sf "$MAC_APP/Contents/MacOS/publshr-bin" "$BIN_LINK"
+
+    echo "" >&2
+    echo "Installed Publshr $VERSION" >&2
+    echo "  App (Launchpad / Applications): $MAC_APP" >&2
+    echo "  Terminal command:               $BIN_LINK" >&2
+    echo "" >&2
+    echo "Open Finder → Applications → Publshr, or run: publshr --help" >&2
+    "$BIN_LINK" --version
+}
+
+install_linux_tree() {
     local tree="$1"
     local dest="$INSTALL_ROOT/$VERSION"
 
@@ -93,9 +138,18 @@ WRAP
     "$BIN_LINK" --version
 }
 
+install_tree() {
+    local tree="$1"
+    if [[ "$(uname -s)" == "Darwin" ]]; then
+        install_macos_app "$tree"
+    else
+        install_linux_tree "$tree"
+    fi
+}
+
 build_tree() {
     if ! command -v swift >/dev/null 2>&1; then
-        echo "Swift not found. Install Xcode (macOS) or https://www.swift.org/install/ (Linux)." >&2
+        echo "Swift not found. Install Xcode from the App Store, then run: xcode-select --install" >&2
         exit 1
     fi
     bash "$SCRIPT_DIR/scripts/package-release.sh" "$VERSION" >&2
@@ -108,7 +162,8 @@ uninstall() {
     require_root "$@"
     rm -rf "$INSTALL_ROOT/$VERSION"
     rm -f "$BIN_LINK"
-    echo "Removed publshr $VERSION from $INSTALL_ROOT and $BIN_LINK"
+    rm -rf "$MAC_APP"
+    echo "Removed Publshr $VERSION"
 }
 
 main() {
