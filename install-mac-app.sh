@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# macOS: build Publshr.app (Publisher + in-app Updates) and install to Applications.
+# macOS: build and install the real Publshr.app (workspace app — updates live in Settings).
 set -euo pipefail
 
 if [[ "$(uname -s)" != "Darwin" ]]; then
-    echo "install-mac-app.sh is for macOS only. On Linux use: ./install-local.sh" >&2
+    echo "install-mac-app.sh is for macOS only." >&2
     exit 1
 fi
 
@@ -17,13 +17,12 @@ usage() {
     cat <<EOF
 Usage: $0 [options]
 
-Installs Publshr (publisher app with Updates inside the app — not a separate updater).
+Installs the Publshr macOS application (publisher workspace).
+Updates: Publshr menu → Settings → Updates (not a separate app).
 
 Options:
   --applications    Install to /Applications (sudo)
-  -h, --help        Show help
-
-Default install location: ~/Applications/Publshr.app
+  -h, --help
 EOF
 }
 
@@ -34,6 +33,10 @@ while [[ $# -gt 0 ]]; do
         *) echo "Unknown option: $1" >&2; usage; exit 2 ;;
     esac
 done
+
+echo "Removing old Publshr installs (including previous updater-style builds) …"
+rm -rf "$HOME/Applications/$APP_NAME" "/Applications/$APP_NAME" 2>/dev/null || true
+sudo rm -rf "/Applications/$APP_NAME" 2>/dev/null || true
 
 if [[ ! -d "$PROJECT_DIR" ]]; then
     echo "Error: $PROJECT_DIR not found." >&2
@@ -58,40 +61,37 @@ if [[ ! -d "$BUILT_APP" ]]; then
 fi
 
 echo "Installing to: $DEST"
+mkdir -p "$TARGET"
+rm -rf "$DEST"
 if [[ "$TARGET" == "/Applications" ]]; then
-    sudo rm -rf "$DEST"
     sudo ditto "$BUILT_APP" "$DEST"
     sudo chmod -R 755 "$DEST"
 else
-    mkdir -p "$TARGET"
-    rm -rf "$DEST"
     ditto "$BUILT_APP" "$DEST"
 fi
 
-# Register with Launch Services so it appears in Applications / Spotlight
+EXEC="$DEST/Contents/MacOS/Publshr"
+if [[ ! -f "$EXEC" ]]; then
+    echo "Error: missing $EXEC" >&2
+    ls -la "$DEST/Contents/MacOS" >&2 || true
+    exit 1
+fi
+chmod +x "$EXEC"
+
+if command -v codesign >/dev/null 2>&1; then
+    codesign --force --deep --sign - "$DEST" 2>/dev/null || true
+fi
+
 LSREGISTER="/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister"
 if [[ -x "$LSREGISTER" ]]; then
     "$LSREGISTER" -f -R -trusted "$DEST" 2>/dev/null || true
 fi
 
-EXEC="$DEST/Contents/MacOS/Publshr"
-if [[ ! -f "$EXEC" ]]; then
-    echo "Error: installed app is incomplete (missing $EXEC)" >&2
-    echo "Contents/MacOS:" >&2
-    ls -la "$DEST/Contents/MacOS" 2>&1 >&2 || true
-    exit 1
-fi
-chmod +x "$EXEC"
-
 echo ""
-echo "Publshr is installed:"
-echo "  $DEST"
+echo "Installed: $DEST"
 echo ""
-echo "Open from Finder → Applications, or:"
-echo "  open -a \"$DEST\""
+echo "This is the publisher app (drafts + workspace)."
+echo "  Updates: Publshr → Settings (⌘,) → Updates tab"
+echo "  Not a separate updater program."
 echo ""
-echo "Updates: open the app → sidebar → Updates (not a separate program)."
-echo ""
-
-# Open the installed copy only (not the build folder copy)
 open -a "$DEST"

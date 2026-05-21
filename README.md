@@ -18,13 +18,15 @@ chmod +x install-mac-app.sh
 ./install-mac-app.sh
 ```
 
-This builds a **real SwiftUI app** (window UI, no Terminal). It installs **`Publshr.app`** to `~/Applications`.
+This installs **`Publshr.app`** to `~/Applications` — a native macOS workspace app (sidebar, editor, toolbar), not a separate updater.
 
-- Works **offline** (toggle in app)
-- When online, **Sync from GitHub** pulls latest from git branch `cursor/add-makefile-and-install-4aa6`
-- After we push changes, open the app and tap **Sync from GitHub** (or relaunch)
+- **Main window:** drafts library + editor (like a lightweight Cursor-style workspace)
+- **Updates:** `Publshr → Settings (⌘,)` → **Updates** tab (background sync on launch)
+- **Menu:** `Check for Updates…` under the app menu
 
-`install-local.sh` is CLI-only inside `.local/` — **not** the Mac app in Applications.
+Do **not** use `install-publshr.sh` on Mac — that installs the CLI to `/opt`, not this app.
+
+`install-local.sh` is CLI-only in `.local/` — not the Mac app in Applications.
 
 ## Linux / Mac — CLI only (inside this repo)
 

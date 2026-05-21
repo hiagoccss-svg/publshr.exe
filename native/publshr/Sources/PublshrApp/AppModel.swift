@@ -1,66 +1,71 @@
 import Foundation
 import PublshrCore
 
-enum AppSection: String, CaseIterable, Identifiable {
-    case publisher = "Publisher"
-    case updates = "Updates"
-
-    var id: String { rawValue }
-
-    var icon: String {
-        switch self {
-        case .publisher: return "square.and.arrow.up.on.square.fill"
-        case .updates: return "arrow.triangle.2.circlepath"
-        }
-    }
+struct DraftItem: Identifiable, Hashable {
+    let id: UUID
+    var title: String
+    var subtitle: String
+    var updatedAt: Date
 }
 
 @MainActor
 final class AppModel: ObservableObject {
-    @Published var selectedSection: AppSection = .publisher
+    @Published var drafts: [DraftItem] = [
+        DraftItem(id: UUID(), title: "Welcome", subtitle: "Start publishing from your Mac", updatedAt: .now),
+    ]
+    @Published var selectedDraftID: DraftItem.ID?
+    @Published var editorText: String = """
+    # Welcome to Publshr
 
-    @Published var installPath: String = ""
-    @Published var isInstalledInApplications = false
+    Your publisher workspace on macOS — the same role as publshr.exe on Windows.
 
-    @Published var statusLine = "Ready"
-    @Published var detailText = "Updates run inside Publshr when you are online."
-    @Published var commitLabel = "—"
-    @Published var isSyncing = false
+    Use the sidebar to manage drafts. Publishing tools will connect here as the app grows.
+    """
+
+    @Published var statusMessage: String = "Ready"
     @Published var preferOffline = false
-    @Published var updateAvailable = false
+    @Published var lastCommit: String = "—"
+    @Published var isSyncing = false
+    @Published var settingsUpdateNote: String = ""
 
     private let git = GitSync()
 
     init() {
-        refreshInstallStatus()
-        Task { await checkForUpdatesInBackground() }
+        selectedDraftID = drafts.first?.id
+        Task { await syncInBackground() }
     }
 
-    func refreshInstallStatus() {
-        let bundle = Bundle.main.bundlePath
-        installPath = bundle
-        isInstalledInApplications =
-            bundle.contains("/Applications/") || bundle.contains("/applications/")
+    var selectedDraft: DraftItem? {
+        drafts.first { $0.id == selectedDraftID }
     }
 
-    func checkForUpdatesInBackground() async {
-        await performSync(silent: true)
+    func createDraft() {
+        let draft = DraftItem(
+            id: UUID(),
+            title: "Untitled draft",
+            subtitle: "New",
+            updatedAt: .now
+        )
+        drafts.insert(draft, at: 0)
+        selectedDraftID = draft.id
+        editorText = ""
     }
 
-    func checkForUpdatesNow() async {
-        selectedSection = .updates
-        await performSync(silent: false)
+    func checkForUpdatesFromMenu() async {
+        await performSync(showInSettings: true)
     }
 
-    func syncNow() async {
-        await performSync(silent: false)
+    func syncInBackground() async {
+        await performSync(showInSettings: false)
     }
 
-    private func performSync(silent: Bool) async {
+    func syncFromSettings() async {
+        await performSync(showInSettings: true)
+    }
+
+    private func performSync(showInSettings: Bool) async {
         isSyncing = true
-        if !silent {
-            statusLine = "Checking for updates…"
-        }
+        statusMessage = "Syncing…"
 
         let networkAvailable = await isNetworkAvailable()
         let offline = preferOffline || !networkAvailable
@@ -68,17 +73,15 @@ final class AppModel: ObservableObject {
 
         switch result {
         case .success(let sync):
-            updateAvailable = sync.updated
-            statusLine = sync.updated ? "Update synced" : "Up to date"
-            detailText = sync.message
-            commitLabel = sync.commit ?? "—"
-            if sync.updated && !silent {
-                detailText += "\n\nRepo synced to Application Support. To refresh this app binary after a release, run ./install-mac-app.sh again."
+            lastCommit = sync.commit ?? "—"
+            statusMessage = sync.updated ? "Synced with GitHub" : "Ready"
+            settingsUpdateNote = sync.message
+            if showInSettings && sync.updated {
+                settingsUpdateNote += "\nProject files updated in Application Support."
             }
         case .failure(let error):
-            statusLine = "Update check failed"
-            detailText = error.localizedDescription
-            updateAvailable = false
+            statusMessage = "Ready (offline)"
+            settingsUpdateNote = error.localizedDescription
         }
 
         isSyncing = false
