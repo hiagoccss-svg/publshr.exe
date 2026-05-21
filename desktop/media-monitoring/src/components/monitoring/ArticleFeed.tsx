@@ -3,18 +3,8 @@ import { useMonitoringStore } from '@/store/monitoringStore'
 import { Radio, Plus } from 'lucide-react'
 
 export function ArticleFeed() {
-  const { results, isMonitoring, searchQuery, setShowCreatePanel, activeMonitorId, monitors } =
+  const { results, isMonitoring, setShowCreatePanel, activeMonitorId, monitors } =
     useMonitoringStore()
-
-  const filtered = results.filter((r) => {
-    if (!searchQuery.trim()) return true
-    const q = searchQuery.toLowerCase()
-    return (
-      r.title.toLowerCase().includes(q) ||
-      (r.publication_name?.toLowerCase().includes(q) ?? false) ||
-      (r.author?.toLowerCase().includes(q) ?? false)
-    )
-  })
 
   if (!activeMonitorId && monitors.length === 0) {
     return <EmptyState onCreate={() => setShowCreatePanel(true)} />
@@ -28,7 +18,7 @@ export function ArticleFeed() {
     )
   }
 
-  if (filtered.length === 0 && !isMonitoring) {
+  if (results.length === 0 && !isMonitoring) {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-4 px-8 text-center">
         <Radio size={32} className="text-content-dim" />
@@ -53,7 +43,7 @@ export function ArticleFeed() {
           Discovering coverage from approved sources…
         </div>
       )}
-      {filtered.map((article, i) => (
+      {results.map((article, i) => (
         <ArticleCard key={article.id} article={article} index={i} />
       ))}
     </div>

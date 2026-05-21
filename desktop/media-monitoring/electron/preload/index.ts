@@ -10,7 +10,39 @@ export interface MonitorCreateInput {
   linked_campaign?: string
 }
 
+export interface ResultFilterOptions {
+  limit?: number
+  offset?: number
+  sentiment?: string
+  savedOnly?: boolean
+  search?: string
+  sort?: string
+}
+
 const api = {
+  // Auth & sync
+  restoreSession: () => ipcRenderer.invoke('auth:restore'),
+  signIn: (email: string, password: string) => ipcRenderer.invoke('auth:sign-in', email, password),
+  signOut: () => ipcRenderer.invoke('auth:sign-out'),
+  getAuthState: () => ipcRenderer.invoke('auth:get-state'),
+  pullSync: () => ipcRenderer.invoke('sync:pull'),
+  getSyncStatus: () => ipcRenderer.invoke('sync:status'),
+  onSyncStatus: (callback: (payload: unknown) => void) => {
+    const handler = (_: unknown, payload: unknown) => callback(payload)
+    ipcRenderer.on('sync:status', handler)
+    return () => {
+      ipcRenderer.removeListener('sync:status', handler)
+    }
+  },
+  onRemoteArticle: (callback: (row: unknown) => void) => {
+    const handler = (_: unknown, row: unknown) => callback(row)
+    ipcRenderer.on('sync:remote-article', handler)
+    return () => {
+      ipcRenderer.removeListener('sync:remote-article', handler)
+    }
+  },
+
+  // Data
   getPublications: (filters?: { region?: string; language?: string }) =>
     ipcRenderer.invoke('db:get-publications', filters),
   getMonitors: () => ipcRenderer.invoke('db:get-monitors'),
@@ -18,18 +50,26 @@ const api = {
   updateMonitor: (id: string, updates: Record<string, unknown>) =>
     ipcRenderer.invoke('db:update-monitor', id, updates),
   deleteMonitor: (id: string) => ipcRenderer.invoke('db:delete-monitor', id),
-  getResults: (monitorId: string, options?: { limit?: number; offset?: number }) =>
+  getResults: (monitorId: string, options?: ResultFilterOptions) =>
     ipcRenderer.invoke('db:get-results', monitorId, options),
+  getSavedCoverage: () => ipcRenderer.invoke('db:get-saved-coverage'),
+  getArticle: (id: string) => ipcRenderer.invoke('db:get-article', id),
+  getStats: () => ipcRenderer.invoke('db:get-stats'),
   saveCoverage: (resultId: string, data?: { notes?: string; tags?: string[] }) =>
     ipcRenderer.invoke('db:save-coverage', resultId, data),
+  updateSentiment: (resultId: string, sentiment: string) =>
+    ipcRenderer.invoke('db:update-sentiment', resultId, sentiment),
   startMonitoring: (monitorId: string) => ipcRenderer.invoke('monitoring:start', monitorId),
   stopMonitoring: (monitorId: string) => ipcRenderer.invoke('monitoring:stop', monitorId),
   getSession: (monitorId: string) => ipcRenderer.invoke('monitoring:session', monitorId),
   openArticleWindow: (articleId: string) => ipcRenderer.invoke('window:open-article', articleId),
+  openExternal: (url: string) => ipcRenderer.invoke('app:open-external', url),
   onMonitoringStream: (callback: (event: unknown) => void) => {
     const handler = (_: unknown, event: unknown) => callback(event)
     ipcRenderer.on('monitoring:stream', handler)
-    return () => ipcRenderer.removeListener('monitoring:stream', handler)
+    return () => {
+      ipcRenderer.removeListener('monitoring:stream', handler)
+    }
   }
 }
 

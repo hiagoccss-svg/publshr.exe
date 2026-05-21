@@ -1,9 +1,12 @@
+import { HashRouter, Routes, Route } from 'react-router-dom'
+import { AuthGate } from '@/components/auth/AuthGate'
 import { TopBar } from '@/components/layout/TopBar'
 import { Sidebar } from '@/components/layout/Sidebar'
 import { ContextPanel } from '@/components/layout/ContextPanel'
 import { MonitoringWorkspace } from '@/components/monitoring/MonitoringWorkspace'
+import { ArticleDetailView } from '@/views/ArticleDetailView'
 
-export default function App() {
+function MainShell() {
   return (
     <div className="h-full flex flex-col">
       <TopBar />
@@ -13,5 +16,18 @@ export default function App() {
         <ContextPanel />
       </div>
     </div>
+  )
+}
+
+export default function App() {
+  return (
+    <AuthGate>
+      <HashRouter>
+        <Routes>
+          <Route path="/" element={<MainShell />} />
+          <Route path="/article/:id" element={<ArticleDetailView />} />
+        </Routes>
+      </HashRouter>
+    </AuthGate>
   )
 }

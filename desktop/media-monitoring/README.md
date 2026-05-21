@@ -48,9 +48,30 @@ When a profile is started, articles stream in progressively (400–800ms interva
 
 Stored at `{userData}/media-monitoring.db` with tables: `publication_sources`, `monitor_profiles`, `monitor_results`, `saved_coverage`, `monitoring_sessions`.
 
-## Supabase
+## Supabase sync
 
-Apply `supabase/migrations/20250521000000_media_monitoring.sql` to your project. Configure env in renderer when enabling cloud sync (Phase 2).
+Schema is deployed to the **publshr.exe** Supabase project (`lboesdtsrqfvosznjpdy`). Tables:
+
+- `publication_sources` (15 verified outlets seeded)
+- `monitor_profiles`, `monitor_results`, `saved_coverage`
+- `coverage_comments`, `coverage_activity`
+
+**Sign in** with your Publshr email/password. On login the app:
+
+1. Creates or loads your workspace
+2. Pulls publications and monitors from Supabase → SQLite
+3. Pushes new monitors, live results, and saved coverage to the cloud
+4. Subscribes to realtime `monitor_results` inserts
+
+Verify cloud connectivity:
+
+```bash
+node scripts/verify-supabase.mjs
+# With auth:
+node scripts/verify-supabase.mjs you@example.com your-password
+```
+
+Optional env (see `.env.example`): `SUPABASE_URL`, `SUPABASE_ANON_KEY`
 
 ## Roadmap
 

@@ -2,6 +2,9 @@ import { MonitorList } from './MonitorList'
 import { ArticleFeed } from './ArticleFeed'
 import { MonitorCreatePanel } from './MonitorCreatePanel'
 import { PublicationsView } from './PublicationsView'
+import { DashboardView } from './DashboardView'
+import { CoverageView } from './CoverageView'
+import { FilterBar } from './FilterBar'
 import { useMonitoringStore } from '@/store/monitoringStore'
 import { useMonitoringBootstrap } from '@/hooks/useMonitoring'
 
@@ -11,25 +14,32 @@ export function MonitoringWorkspace() {
 
   return (
     <main className="flex-1 flex flex-col min-w-0 relative bg-surface-editor">
+      {section === 'dashboard' && <DashboardView />}
       {section === 'monitoring' && (
         <>
           <MonitorList />
+          <FilterBar />
           <ArticleFeed />
         </>
       )}
+      {section === 'coverage' && <CoverageView />}
       {section === 'publications' && <PublicationsView />}
-      {section !== 'monitoring' && section !== 'publications' && <PlaceholderSection name={section} />}
+      {![
+        'dashboard',
+        'monitoring',
+        'coverage',
+        'publications'
+      ].includes(section) && <ComingSoon name={section} />}
       {showCreatePanel && <MonitorCreatePanel onCreated={() => void loadMonitors()} />}
     </main>
   )
 }
 
-function PlaceholderSection({ name }: { name: string }) {
-  const label = name.replace(/-/g, ' ')
+function ComingSoon({ name }: { name: string }) {
   return (
     <div className="flex flex-col items-center justify-center h-full text-content-dim text-sm px-8 text-center">
-      <p className="text-content capitalize">{label}</p>
-      <p className="text-xs mt-2 max-w-sm">This section is scaffolded for Phase 2+ integration with reports, alerts, and competitor tracking.</p>
+      <p className="text-content capitalize">{name.replace(/-/g, ' ')}</p>
+      <p className="text-xs mt-2 max-w-sm">Coming in Phase 2 — reports, alerts, and competitor charts.</p>
     </div>
   )
 }

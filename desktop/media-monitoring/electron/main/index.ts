@@ -3,10 +3,12 @@ import { join } from 'path'
 import { initDatabase, closeDatabase } from './db'
 import { MonitoringEngine } from './monitoring/engine'
 import { registerIpcHandlers } from './ipc/handlers'
+import { SyncService } from './supabase/sync-service'
 
 const isDev = !app.isPackaged
 let mainWindow: BrowserWindow | null = null
 let engine: MonitoringEngine | null = null
+let syncService: SyncService | null = null
 
 function createWindow(): void {
   mainWindow = new BrowserWindow({
@@ -45,7 +47,9 @@ function createWindow(): void {
 app.whenReady().then(() => {
   const db = initDatabase()
   engine = new MonitoringEngine(db)
-  registerIpcHandlers(engine)
+  syncService = new SyncService(db)
+  registerIpcHandlers(engine, syncService)
+  void syncService.restoreSession()
   createWindow()
 
   app.on('activate', () => {

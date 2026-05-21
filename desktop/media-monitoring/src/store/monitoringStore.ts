@@ -1,6 +1,12 @@
 import { create } from 'zustand'
 import type { MonitorProfile, MonitorResult, SidebarSection, TopBarMode, StreamEvent } from '@/types'
 
+export interface FeedFilters {
+  sentiment: string
+  sort: string
+  savedOnly: boolean
+}
+
 interface MonitoringState {
   section: SidebarSection
   sidebarCollapsed: boolean
@@ -13,8 +19,10 @@ interface MonitoringState {
   streamCount: number
   showCreatePanel: boolean
   searchQuery: string
-  dateRange: { from: string; to: string }
-  syncStatus: 'synced' | 'syncing' | 'offline'
+  filters: FeedFilters
+  syncStatus: 'synced' | 'syncing' | 'offline' | 'error'
+  workspaceName: string | null
+  userEmail: string | null
   setSection: (s: SidebarSection) => void
   toggleSidebar: () => void
   setTopBarMode: (m: TopBarMode) => void
@@ -27,6 +35,9 @@ interface MonitoringState {
   setStreamCount: (n: number) => void
   setShowCreatePanel: (v: boolean) => void
   setSearchQuery: (q: string) => void
+  setFilters: (f: Partial<FeedFilters>) => void
+  setSyncStatus: (s: MonitoringState['syncStatus']) => void
+  setAuthInfo: (email: string | null, workspace: string | null) => void
   handleStreamEvent: (e: StreamEvent) => void
 }
 
@@ -42,15 +53,17 @@ export const useMonitoringStore = create<MonitoringState>((set, get) => ({
   streamCount: 0,
   showCreatePanel: false,
   searchQuery: '',
-  dateRange: { from: '', to: '' },
-  syncStatus: 'synced',
+  filters: { sentiment: '', sort: 'newest', savedOnly: false },
+  syncStatus: 'offline',
+  workspaceName: null,
+  userEmail: null,
 
   setSection: (section) => set({ section, topBarMode: section === 'monitoring' ? 'live' : 'default' }),
   toggleSidebar: () => set((s) => ({ sidebarCollapsed: !s.sidebarCollapsed })),
   setTopBarMode: (topBarMode) => set({ topBarMode }),
   setMonitors: (monitors) => set({ monitors }),
   setActiveMonitor: (activeMonitorId) => set({ activeMonitorId, results: [], streamCount: 0 }),
-  setResults: (results) => set({ results }),
+  setResults: (results) => set({ results, streamCount: results.length }),
   prependResult: (r) =>
     set((s) => ({
       results: [r, ...s.results.filter((x) => x.id !== r.id)],
@@ -61,6 +74,9 @@ export const useMonitoringStore = create<MonitoringState>((set, get) => ({
   setStreamCount: (streamCount) => set({ streamCount }),
   setShowCreatePanel: (showCreatePanel) => set({ showCreatePanel }),
   setSearchQuery: (searchQuery) => set({ searchQuery }),
+  setFilters: (f) => set((s) => ({ filters: { ...s.filters, ...f } })),
+  setSyncStatus: (syncStatus) => set({ syncStatus }),
+  setAuthInfo: (userEmail, workspaceName) => set({ userEmail, workspaceName }),
   handleStreamEvent: (e) => {
     const { activeMonitorId } = get()
     if (e.monitorId !== activeMonitorId) return

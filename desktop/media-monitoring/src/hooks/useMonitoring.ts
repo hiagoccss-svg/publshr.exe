@@ -2,54 +2,102 @@ import { useEffect, useCallback } from 'react'
 import { useMonitoringStore } from '@/store/monitoringStore'
 import type { MonitorProfile, MonitorResult } from '@/types'
 
+export function useLoadResults() {
+  const { setResults, filters, searchQuery } = useMonitoringStore()
+
+  return useCallback(
+    async (monitorId: string) => {
+      const results = (await window.publshr.getResults(monitorId, {
+        sentiment: filters.sentiment || undefined,
+        savedOnly: filters.savedOnly,
+        search: searchQuery || undefined,
+        sort: filters.sort
+      })) as MonitorResult[]
+      setResults(results)
+    },
+    [filters, searchQuery, setResults]
+  )
+}
+
 export function useMonitoringBootstrap() {
-  const { setMonitors, setActiveMonitor, setResults, handleStreamEvent } = useMonitoringStore()
+  const {
+    setMonitors,
+    setActiveMonitor,
+    handleStreamEvent,
+    setSyncStatus,
+    setAuthInfo,
+    activeMonitorId
+  } = useMonitoringStore()
+  const loadResults = useLoadResults()
 
   const loadMonitors = useCallback(async () => {
     const monitors = (await window.publshr.getMonitors()) as MonitorProfile[]
     setMonitors(monitors)
-    if (monitors.length && !useMonitoringStore.getState().activeMonitorId) {
-      setActiveMonitor(monitors[0].id)
-      const results = (await window.publshr.getResults(monitors[0].id)) as MonitorResult[]
-      setResults(results)
-      useMonitoringStore.setState({ streamCount: results.length })
+    const active = useMonitoringStore.getState().activeMonitorId
+    const target = active && monitors.some((m) => m.id === active) ? active : monitors[0]?.id
+    if (target) {
+      setActiveMonitor(target)
+      await loadResults(target)
     }
-  }, [setMonitors, setActiveMonitor, setResults])
+  }, [setMonitors, setActiveMonitor, loadResults])
 
   useEffect(() => {
-    loadMonitors()
-    const unsub = window.publshr.onMonitoringStream((event) => {
+    void loadMonitors()
+
+    window.publshr.restoreSession().then((state: { email?: string; workspaceName?: string; session?: unknown }) => {
+      setAuthInfo(state.email ?? null, state.workspaceName ?? null)
+      if (state.session) setSyncStatus('synced')
+    })
+
+    const unsubStream = window.publshr.onMonitoringStream((event) => {
       handleStreamEvent(event as Parameters<typeof handleStreamEvent>[0])
     })
-    return () => {
-      unsub()
-    }
-  }, [loadMonitors, handleStreamEvent])
 
-  return { loadMonitors }
+    const unsubSync = window.publshr.onSyncStatus((payload: unknown) => {
+      const p = payload as { status?: string; auth?: { email?: string; workspaceName?: string } }
+      if (p.status) setSyncStatus(p.status as 'synced' | 'syncing' | 'offline' | 'error')
+      if (p.auth) setAuthInfo(p.auth.email ?? null, p.auth.workspaceName ?? null)
+    })
+
+    const unsubRemote = window.publshr.onRemoteArticle(() => {
+      const id = useMonitoringStore.getState().activeMonitorId
+      if (id) void loadResults(id)
+    })
+
+    return () => {
+      unsubStream()
+      unsubSync()
+      unsubRemote()
+    }
+  }, [loadMonitors, handleStreamEvent, setSyncStatus, setAuthInfo, loadResults])
+
+  useEffect(() => {
+    if (activeMonitorId) void loadResults(activeMonitorId)
+  }, [activeMonitorId, loadResults])
+
+  return { loadMonitors, loadResults }
 }
 
 export function useActiveMonitor() {
-  const { monitors, activeMonitorId, setResults, setMonitoring, setStreamCount } = useMonitoringStore()
+  const { monitors, activeMonitorId, setMonitoring } = useMonitoringStore()
+  const loadResults = useLoadResults()
 
   const activeMonitor = monitors.find((m) => m.id === activeMonitorId) ?? null
 
   const selectMonitor = useCallback(
     async (id: string) => {
       useMonitoringStore.getState().setActiveMonitor(id)
-      const results = (await window.publshr.getResults(id)) as MonitorResult[]
-      setResults(results)
-      setStreamCount(results.length)
+      await loadResults(id)
       const session = await window.publshr.getSession(id)
       setMonitoring(session?.status === 'running')
     },
-    [setResults, setMonitoring, setStreamCount]
+    [loadResults, setMonitoring]
   )
 
   const startLive = useCallback(async () => {
     if (!activeMonitorId) return
     setMonitoring(true)
-    useMonitoringStore.setState({ syncStatus: 'syncing' })
+    useMonitoringStore.getState().setSyncStatus('syncing')
     await window.publshr.startMonitoring(activeMonitorId)
   }, [activeMonitorId, setMonitoring])
 
@@ -57,7 +105,7 @@ export function useActiveMonitor() {
     if (!activeMonitorId) return
     await window.publshr.stopMonitoring(activeMonitorId)
     setMonitoring(false)
-    useMonitoringStore.setState({ syncStatus: 'synced' })
+    useMonitoringStore.getState().setSyncStatus('synced')
   }, [activeMonitorId, setMonitoring])
 
   return { activeMonitor, selectMonitor, startLive, stopLive }

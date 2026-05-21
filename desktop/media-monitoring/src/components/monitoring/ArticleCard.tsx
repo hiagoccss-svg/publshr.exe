@@ -58,7 +58,7 @@ export function ArticleCard({ article, index }: Props) {
               </h3>
             </div>
             <div className="opacity-0 group-hover:opacity-100 flex items-center gap-0.5 transition-opacity shrink-0">
-              <IconBtn icon={ExternalLink} label="Open" onClick={(e) => { e.stopPropagation(); article.url && window.open(article.url) }} />
+              <IconBtn icon={ExternalLink} label="Open" onClick={(e) => { e.stopPropagation(); article.url && void window.publshr.openExternal(article.url) }} />
               <IconBtn icon={Bookmark} label="Save" onClick={(e) => { e.stopPropagation(); void window.publshr.saveCoverage(article.id) }} />
               <IconBtn icon={FilePlus2} label="Report" onClick={(e) => e.stopPropagation()} />
               <IconBtn icon={MoreHorizontal} label="More" onClick={(e) => e.stopPropagation()} />

@@ -88,5 +88,15 @@ CREATE TABLE IF NOT EXISTS monitoring_sessions (
 
 CREATE INDEX IF NOT EXISTS idx_monitor_results_profile ON monitor_results(monitor_profile_id);
 CREATE INDEX IF NOT EXISTS idx_monitor_results_published ON monitor_results(published_at DESC);
+CREATE TABLE IF NOT EXISTS coverage_activity_local (
+  id TEXT PRIMARY KEY,
+  monitor_result_id TEXT NOT NULL,
+  action TEXT NOT NULL,
+  metadata TEXT,
+  created_at TEXT DEFAULT (datetime('now')),
+  FOREIGN KEY (monitor_result_id) REFERENCES monitor_results(id) ON DELETE CASCADE
+);
+
 CREATE INDEX IF NOT EXISTS idx_publication_region ON publication_sources(region);
+CREATE INDEX IF NOT EXISTS idx_monitor_results_saved ON monitor_results(is_saved);
 `;
