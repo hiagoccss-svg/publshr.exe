@@ -14,7 +14,8 @@ import {
   Settings,
   ChevronLeft,
   ChevronRight,
-  Pin
+  Pin,
+  Plus
 } from 'lucide-react'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { usePlannerStore } from '@/stores/plannerStore'
@@ -39,14 +40,24 @@ export default function Sidebar() {
   const [collapsed, setCollapsed] = useState(false)
   const workspace = useWorkspaceStore((s) => s.currentWorkspace)
   const setView = usePlannerStore((s) => s.setView)
+  const setCreatePanelOpen = usePlannerStore((s) => s.setCreatePanelOpen)
 
   return (
     <aside
       className={cn(
-        'flex shrink-0 flex-col border-r border-surface-border bg-surface-raised/60 transition-all duration-200',
-        collapsed ? 'w-[52px]' : 'w-[220px]'
+        'glass-sidebar flex shrink-0 flex-col transition-all duration-200',
+        collapsed ? 'w-[52px] !bg-surface-raised/90' : ''
       )}
     >
+      {!collapsed && (
+        <div className="px-3 pt-3 pb-2">
+          <button type="button" onClick={() => setCreatePanelOpen(true)} className="library-cta-pill w-full justify-center">
+            <Plus className="h-4 w-4" />
+            New item
+          </button>
+        </div>
+      )}
+
       <div className={cn('flex items-center gap-2 px-3 py-3', collapsed && 'justify-center')}>
         {!collapsed && (
           <div className="min-w-0 flex-1">
@@ -77,11 +88,9 @@ export default function Sidebar() {
                 if (item.id === 'approvals') setView('approvals')
               }}
               className={cn(
-                'no-drag group flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-sm transition',
-                active
-                  ? 'bg-accent-soft text-accent font-medium'
-                  : 'text-ink-secondary hover:bg-surface-muted hover:text-ink',
-                collapsed && 'justify-center px-2'
+                'library-nav-row no-drag text-sm',
+                active && 'library-nav-row-active',
+                collapsed && 'justify-center !px-2'
               )}
               title={collapsed ? item.label : undefined}
             >

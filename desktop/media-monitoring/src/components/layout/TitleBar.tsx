@@ -7,12 +7,8 @@ export function TitleBar() {
 
   return (
     <header
-      className="flex items-center gap-3 px-3 shrink-0 border-b app-drag"
-      style={{
-        height: shell.titleBarHeight,
-        backgroundColor: shell.titleBar,
-        borderColor: shell.border
-      }}
+      className="glass-toolbar-dark flex shrink-0 items-center gap-3 border-b px-3 app-drag"
+      style={{ height: shell.titleBarHeight }}
     >
       <div className="w-[70px] shrink-0 app-no-drag" />
       <div

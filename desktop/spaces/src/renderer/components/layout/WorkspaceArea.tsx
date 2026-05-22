@@ -34,7 +34,7 @@ export function WorkspaceArea(): React.ReactElement {
   }
 
   return (
-    <main className="flex min-w-0 flex-1 flex-col overflow-hidden">
+    <main className="glass-workspace flex min-w-0 flex-1 flex-col overflow-hidden">
       <div className="flex shrink-0 flex-wrap items-center gap-3 border-b border-surface-border px-4 py-2">
         <SpacesBreadcrumb />
         <div className="ml-auto flex items-center gap-2">
@@ -59,7 +59,7 @@ export function WorkspaceArea(): React.ReactElement {
         ))}
       </div>
 
-      <div className="min-h-0 flex-1 overflow-auto p-4">
+      <div className="library-workspace-pad min-h-0 flex-1 overflow-auto">
         {taskView === 'overview' && <SpaceOverview />}
         {taskView === 'list' && <TaskListView />}
         {taskView === 'board' && <TaskBoardView />}

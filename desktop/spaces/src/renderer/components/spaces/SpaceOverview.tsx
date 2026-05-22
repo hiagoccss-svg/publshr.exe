@@ -27,7 +27,7 @@ export function SpaceOverview(): React.ReactElement {
   if (!space) return <p className="text-sm text-ink-muted">Select a Space.</p>
 
   return (
-    <div className="animate-fade-in space-y-4">
+    <div className="animate-fade-in space-y-lib-margin">
       <header className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-xl font-semibold tracking-tight text-ink">{space.name}</h1>
@@ -48,15 +48,16 @@ export function SpaceOverview(): React.ReactElement {
         </button>
       </header>
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <MetricCard label="Open tasks" value={openTasks.length} icon={CheckCircle2} />
-        <MetricCard label="Overdue" value={overdue.length} icon={AlertCircle} warn={overdue.length > 0} />
-        <MetricCard label="Approvals waiting" value={pendingApprovals.length} icon={Clock} />
-        <MetricCard label="Team" value={members.length} icon={Users} />
+      <div className="library-masonry library-masonry-responsive">
+        <div className="library-masonry-item"><MetricCard label="Open tasks" value={openTasks.length} icon={CheckCircle2} /></div>
+        <div className="library-masonry-item"><MetricCard label="Overdue" value={overdue.length} icon={AlertCircle} warn={overdue.length > 0} /></div>
+        <div className="library-masonry-item"><MetricCard label="Approvals waiting" value={pendingApprovals.length} icon={Clock} /></div>
+        <div className="library-masonry-item"><MetricCard label="Team" value={members.length} icon={Users} /></div>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-3">
-        <Panel title="Key deadlines" className="lg:col-span-1">
+      <div className="library-masonry library-masonry-3">
+        <div className="library-masonry-item">
+        <Panel title="Key deadlines">
           {upcoming.length === 0 ? (
             <p className="text-xs text-ink-muted">No upcoming deadlines.</p>
           ) : (
@@ -81,8 +82,10 @@ export function SpaceOverview(): React.ReactElement {
             </ul>
           )}
         </Panel>
+        </div>
 
-        <Panel title="Active tasks" className="lg:col-span-1">
+        <div className="library-masonry-item">
+        <Panel title="Active tasks">
           {openTasks.slice(0, 6).map((t) => (
             <button
               key={t.id}
@@ -95,8 +98,10 @@ export function SpaceOverview(): React.ReactElement {
           ))}
           {openTasks.length === 0 && <p className="text-xs text-ink-muted">No active tasks.</p>}
         </Panel>
+        </div>
 
-        <Panel title="Latest activity" className="lg:col-span-1">
+        <div className="library-masonry-item">
+        <Panel title="Latest activity">
           {activity.slice(0, 6).map((a) => (
             <p key={a.id} className="mb-1 text-xs text-ink-secondary">
               <span className="font-medium text-ink">{a.userName}</span> {a.action}
@@ -107,9 +112,11 @@ export function SpaceOverview(): React.ReactElement {
           ))}
           {activity.length === 0 && <p className="text-xs text-ink-muted">No activity yet.</p>}
         </Panel>
+        </div>
       </div>
 
-      <div className="grid gap-3 md:grid-cols-2">
+      <div className="library-masonry library-masonry-2">
+        <div className="library-masonry-item">
         <Panel title="Documents" icon={FileText}>
           {documents.length === 0 ? (
             <p className="text-xs text-ink-muted">No documents yet.</p>
@@ -126,6 +133,8 @@ export function SpaceOverview(): React.ReactElement {
             ))
           )}
         </Panel>
+        </div>
+        <div className="library-masonry-item">
         <Panel title="Recent files">
           {files.length === 0 ? (
             <p className="text-xs text-ink-muted">No files uploaded.</p>
@@ -137,6 +146,7 @@ export function SpaceOverview(): React.ReactElement {
             ))
           )}
         </Panel>
+        </div>
       </div>
     </div>
   )
@@ -154,7 +164,7 @@ function MetricCard({
   warn?: boolean
 }): React.ReactElement {
   return (
-    <div className="rounded-xl border border-surface-border bg-surface-raised p-3 shadow-card">
+    <div className="library-card">
       <div className="flex items-center justify-between">
         <span className="text-[11px] font-medium uppercase tracking-wide text-ink-muted">{label}</span>
         <Icon className={`h-4 w-4 ${warn ? 'text-status-blocked' : 'text-ink-muted'}`} />
@@ -176,7 +186,7 @@ function Panel({
   icon?: React.ComponentType<{ className?: string }>
 }): React.ReactElement {
   return (
-    <section className={`rounded-xl border border-surface-border bg-surface-raised p-4 shadow-card ${className ?? ''}`}>
+    <section className={`library-card ${className ?? ''}`}>
       <h2 className="mb-3 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-ink-muted">
         {Icon && <Icon className="h-3.5 w-3.5" />}
         {title}

@@ -39,7 +39,7 @@ export function TopBar(): React.ReactElement {
   const onlineCount = members.filter((m) => m.isOnline).length
 
   return (
-    <header className="drag-region flex h-12 shrink-0 items-center gap-3 border-b border-surface-border bg-surface-raised/80 px-4 backdrop-blur-sm">
+    <header className="glass-toolbar drag-region flex h-12 shrink-0 items-center gap-3 px-4">
       <div className="no-drag flex min-w-0 items-center gap-3">
         <div className="flex h-7 w-7 items-center justify-center rounded-md bg-accent text-xs font-semibold text-white">
           {(workspace?.name ?? 'P')[0]}
@@ -69,7 +69,7 @@ export function TopBar(): React.ReactElement {
         <button
           type="button"
           onClick={() => void createTask('New task')}
-          className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-accent px-3 text-xs font-medium text-white hover:bg-accent-hover"
+          className="library-cta-pill h-8 text-xs"
         >
           <Plus className="h-3.5 w-3.5" />
           Create

@@ -17,14 +17,14 @@ export default function WorkloadView() {
   }, [items])
 
   return (
-    <div className="h-full overflow-auto p-6">
+    <div className="library-workspace-pad h-full overflow-auto">
       <h2 className="text-sm font-semibold text-ink">Team workload</h2>
-      <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="library-masonry library-masonry-responsive mt-6">
         {[...byOwner.entries()].map(([owner, ownerItems]) => {
           const overdue = ownerItems.filter(isOverdue).length
           const level = ownerItems.length > 8 ? 'high' : ownerItems.length > 4 ? 'medium' : 'light'
           return (
-            <article key={owner} className="rounded-xl border border-surface-border bg-surface-raised p-4">
+            <article key={owner} className="library-masonry-item library-card">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-medium text-ink">{owner === 'unassigned' ? 'Unassigned' : owner.slice(0, 8)}</span>
                 <span

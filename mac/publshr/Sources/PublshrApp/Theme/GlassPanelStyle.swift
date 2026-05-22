@@ -2,7 +2,7 @@ import SwiftUI
 
 /// Frosted glass panels — desktop shows through subtly (ClickUp / Windows 11 style).
 struct GlassPanelStyle: ViewModifier {
-    var cornerRadius: CGFloat = 16
+    var cornerRadius: CGFloat = LibraryGlassDesign.cardRadius
     var opacity: Double = 0.72
 
     func body(content: Content) -> some View {
@@ -34,7 +34,7 @@ struct GlassPanelStyle: ViewModifier {
 }
 
 extension View {
-    func glassPanel(cornerRadius: CGFloat = 16, opacity: Double = 0.72) -> some View {
+    func glassPanel(cornerRadius: CGFloat = LibraryGlassDesign.cardRadius, opacity: Double = 0.72) -> some View {
         modifier(GlassPanelStyle(cornerRadius: cornerRadius, opacity: opacity))
     }
 }
