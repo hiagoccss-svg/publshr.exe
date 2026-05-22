@@ -39,6 +39,10 @@ enum MainWindowChrome {
 
         window.backgroundColor = .clear
         window.isOpaque = false
+        window.hasShadow = true
+        if #available(macOS 14.0, *) {
+            window.toolbar = nil
+        }
 
         if window.responds(to: #selector(setter: NSWindow.titlebarAppearsTransparent)) {
             window.titlebarAppearsTransparent = true

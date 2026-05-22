@@ -1,5 +1,6 @@
 import SwiftUI
 
+/// Signed-in root — delegates to `LibraryShellView` (Pinterest / library glass reference).
 struct MainIDEView: View {
     @EnvironmentObject private var auth: AuthViewModel
     @EnvironmentObject private var chat: ChatViewModel
@@ -14,65 +15,16 @@ struct MainIDEView: View {
     @State private var showNewChannel = false
     @State private var showNewDM = false
 
-    private var sidebarHidden: Bool {
-        !tabStore.sidebarExpanded
-            || (module == .chat && chat.chatFocusMode)
-            || (module == .spaces && spaces.spacesFocusMode)
-    }
-
     var body: some View {
-        GeometryReader { geometry in
-            let topSafe = geometry.safeAreaInsets.top
-            ZStack {
-                WorkspaceDesktopBackdrop()
-
-                VStack(spacing: 0) {
-                    WorkspaceHeaderView(
-                        spaces: spaces,
-                        module: $module,
-                        safeAreaTop: topSafe
-                    )
-
-                    HStack(alignment: .top, spacing: 0) {
-                        if !sidebarHidden {
-                            leftRail
-                        }
-
-                        mainColumn
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                }
-                .frame(width: geometry.size.width, height: geometry.size.height)
-            }
-        }
-        .ignoresSafeArea(.container, edges: .top)
+        LibraryShellView(
+            module: $module,
+            showNewChannel: $showNewChannel,
+            showNewDM: $showNewDM
+        )
         .background(WindowChromeConfigurator())
-        .onAppear {
-            _ = AppShellIdentity.distributionTag
-            if let restored = AppModule(rawValue: storedModule), restored != .settings {
-                module = restored
-            } else if storedModule == AppModule.settings.rawValue {
-                module = .chat
-                storedModule = AppModule.chat.rawValue
-            }
-            tabStore.removeSettingsTabs()
-            tabStore.ensureDefaultTabs(module: module)
-            tabStore.openFromModule(module, activate: true)
-            chat.attach(auth: auth)
-            spaces.attach(auth: auth)
-        }
+        .onAppear(perform: onShellAppear)
         .onChange(of: module) { _, newModule in
-            guard newModule != .settings else {
-                module = .chat
-                return
-            }
-            storedModule = newModule.rawValue
-            if newModule != .chat { chat.chatFocusMode = false }
-            if newModule != .spaces { spaces.spacesFocusMode = false }
-            if newModule == .chat { chat.attach(auth: auth) }
-            if newModule == .spaces { spaces.attach(auth: auth) }
-            tabStore.openFromModule(newModule, activate: true)
+            onModuleChange(newModule)
         }
         .onChange(of: tabStore.selectedTabId) { _, _ in
             tabStore.applySelection(module: &module, chat: chat, spaces: spaces)
@@ -89,12 +41,8 @@ struct MainIDEView: View {
             tabStore.syncTabMetadata(chat: chat, spaces: spaces)
         }
         .onChange(of: auth.selectedMembership?.workspace.id) { _, _ in
-            if module == .spaces {
-                spaces.attach(auth: auth)
-            }
-            if module == .chat {
-                chat.attach(auth: auth)
-            }
+            if module == .spaces { spaces.attach(auth: auth) }
+            if module == .chat { chat.attach(auth: auth) }
         }
         .sheet(isPresented: $showNewChannel) { newChannelSheet }
         .sheet(isPresented: $showNewDM) { newDMSheet }
@@ -111,71 +59,33 @@ struct MainIDEView: View {
         }
     }
 
-    private var leftRail: some View {
-        HStack(spacing: 0) {
-            ActivityBarView(
-                module: $module,
-                showNewChannel: $showNewChannel,
-                showNewDM: $showNewDM
-            )
-
-            AppSecondarySidebar(
-                module: module,
-                chat: chat,
-                spaces: spaces,
-                showNewChannel: $showNewChannel,
-                showNewDM: $showNewDM
-            )
+    private func onShellAppear() {
+        _ = AppShellIdentity.distributionTag
+        if let restored = AppModule(rawValue: storedModule), restored != .settings {
+            module = restored
+        } else {
+            module = .chat
+            storedModule = AppModule.chat.rawValue
         }
-        .frame(maxHeight: .infinity)
+        tabStore.removeSettingsTabs()
+        tabStore.ensureDefaultTabs(module: module)
+        tabStore.openFromModule(module, activate: true)
+        tabStore.sidebarExpanded = true
+        chat.attach(auth: auth)
+        spaces.attach(auth: auth)
     }
 
-    private var mainColumn: some View {
-        VStack(spacing: 0) {
-            moduleMainContent
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .libraryFloatingPanel()
-                .padding(.horizontal, LibraryGlassDesign.outerMargin)
-                .padding(.top, 10)
-                .padding(.bottom, 6)
-
-            ContentStatusFooter(module: module)
-                .frame(height: LibraryGlassDesign.statusBarHeight)
-                .padding(.horizontal, LibraryGlassDesign.outerMargin)
-                .padding(.bottom, 8)
+    private func onModuleChange(_: AppModule, newModule: AppModule) {
+        guard newModule != .settings else {
+            module = .chat
+            return
         }
-        .frame(maxHeight: .infinity)
-        .background(Color.clear)
-    }
-
-    @ViewBuilder
-    private var moduleMainContent: some View {
-        switch module {
-        case .chat:
-            if subscription.canUseChat(workspace: auth.selectedWorkspace) {
-                EnterpriseChatView(chat: chat, topInset: 0)
-                    .onAppear { chat.attach(auth: auth) }
-            } else {
-                EnterpriseModuleGate(
-                    moduleName: "Chat",
-                    planName: subscription.features.planName
-                )
-            }
-        case .spaces:
-            if subscription.canUseSpaces(workspace: auth.selectedWorkspace) {
-                SpacesRootView(spaces: spaces, topInset: 0)
-            } else {
-                EnterpriseModuleGate(
-                    moduleName: "Spaces",
-                    planName: subscription.features.planName
-                )
-            }
-        case .settings:
-            EnterpriseModuleGate(
-                moduleName: "Settings",
-                planName: subscription.features.planName
-            )
-        }
+        storedModule = newModule.rawValue
+        if newModule != .chat { chat.chatFocusMode = false }
+        if newModule != .spaces { spaces.spacesFocusMode = false }
+        if newModule == .chat { chat.attach(auth: auth) }
+        if newModule == .spaces { spaces.attach(auth: auth) }
+        tabStore.openFromModule(newModule, activate: true)
     }
 
     private var newChannelSheet: some View {
@@ -187,7 +97,7 @@ struct MainIDEView: View {
     }
 }
 
-// MARK: - Sheets (shared with sidebar actions)
+// MARK: - Sheets
 
 private struct NewChannelSheet: View {
     @ObservedObject var chat: ChatViewModel

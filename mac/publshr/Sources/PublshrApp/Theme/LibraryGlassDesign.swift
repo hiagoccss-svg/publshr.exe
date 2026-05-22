@@ -29,7 +29,7 @@ enum LibraryGlassDesign {
     static let barMenuRowHeight: CGFloat = 34
 
     // Chrome
-    static let headerHeight: CGFloat = 38
+    static let headerHeight: CGFloat = 40
     static let statusBarHeight: CGFloat = 22
     static let ctaPillHeight: CGFloat = 36
     static let ctaPillHorizontal: CGFloat = 16

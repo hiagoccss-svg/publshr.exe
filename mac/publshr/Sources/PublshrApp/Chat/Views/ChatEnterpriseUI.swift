@@ -21,7 +21,8 @@ struct ChatTypingIndicatorView: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 6)
-        .background(Color.white)
+        .background(LibraryGlassDesign.cardGlassFill.opacity(0.85))
+        .background(.ultraThinMaterial)
         .clipShape(Capsule())
         .overlay(Capsule().strokeBorder(CursorTheme.borderSubtle, lineWidth: 1))
         .onAppear {

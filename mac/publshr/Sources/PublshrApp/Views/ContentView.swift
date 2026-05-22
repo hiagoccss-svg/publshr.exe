@@ -23,9 +23,9 @@ struct ContentView: View {
                 MainIDEView()
             }
         }
-        .frame(minWidth: 1100, minHeight: 700)
-        .background(CursorTheme.editorBackground)
-        .preferredColorScheme(CursorTheme.appearance == .light ? .light : .dark)
+        .frame(minWidth: 1280, minHeight: 760)
+        .background(Color.clear)
+        .preferredColorScheme(.light)
         .onAppear {
             applyAppearance()
             syncEnterpriseData()

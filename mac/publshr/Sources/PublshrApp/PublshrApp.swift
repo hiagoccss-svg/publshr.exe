@@ -163,7 +163,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             window.setFrame(frame, display: true)
         }
         DispatchQueue.main.async {
-            MainWindowChrome.applyWithRetries(to: NSApp.mainWindow ?? NSApp.windows.first)
+            for window in NSApp.windows {
+                MainWindowChrome.applyWithRetries(to: window)
+            }
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            for window in NSApp.windows {
+                MainWindowChrome.applyWithRetries(to: window)
+            }
         }
         NotificationCenter.default.post(name: .publshrPerformLiveSync, object: nil)
     }

@@ -64,7 +64,7 @@ struct ChatThreadPanelView: View {
             .background(CursorTheme.panelBackground)
         }
         .frame(width: 280)
-        .background(CursorTheme.chatBackground)
+        .background(Color.clear)
         .overlay(alignment: .leading) {
             Rectangle().fill(CursorTheme.borderSubtle.opacity(0.8)).frame(width: 1)
         }
