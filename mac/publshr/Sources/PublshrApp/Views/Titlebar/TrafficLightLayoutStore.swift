@@ -63,6 +63,9 @@ final class TrafficLightLayoutStore: ObservableObject {
         var rowHeight: CGFloat
     }
 
+    /// Prevents a bad measure from pushing the whole shell to the bottom of the window.
+    private static let maxTitlebarTopPadding: CGFloat = 18
+
     private static func measureTrafficLights(in window: NSWindow, contentView: NSView) -> TrafficMetrics? {
         guard let close = window.standardWindowButton(.closeButton),
               let container = close.superview else { return nil }
@@ -96,9 +99,21 @@ final class TrafficLightLayoutStore: ObservableObject {
             clusterHeight + AppWindowChromeMetrics.trafficLightVerticalPad * 2
         )
 
-        let contentHeight = contentView.bounds.height
-        let midYFromTop = contentHeight - closeRect.midY
-        let topPad = max(0, midYFromTop - row * 0.5)
+        let contentHeight = max(contentView.bounds.height, 1)
+        let clusterCenterFromTop: CGFloat
+        if contentView.isFlipped {
+            // SwiftUI NSHostingView — origin top-left.
+            clusterCenterFromTop = (clusterMinY + clusterMaxY) * 0.5
+        } else {
+            clusterCenterFromTop = contentHeight - (clusterMinY + clusterMaxY) * 0.5
+        }
+
+        guard clusterCenterFromTop.isFinite,
+              clusterCenterFromTop >= 0,
+              clusterCenterFromTop <= contentHeight * 0.25
+        else { return nil }
+
+        let topPad = min(max(0, clusterCenterFromTop - row * 0.5), maxTitlebarTopPadding)
 
         return TrafficMetrics(
             leadingInset: max(trailingX, AppWindowChromeMetrics.trafficLightLeadingInset),
