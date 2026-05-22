@@ -1,20 +1,35 @@
 import SwiftUI
 
+/// Content-area header only (not over activity bar or nav sidebar).
 struct TitleBarView: View {
     @EnvironmentObject private var auth: AuthViewModel
+    @EnvironmentObject private var chat: ChatViewModel
     var module: AppModule
 
     var body: some View {
         HStack(spacing: 12) {
-            Color.clear.frame(width: 70, height: 1)
-
-            Text("Publshr")
+            Text(module.label)
                 .font(.system(size: 13, weight: .semibold))
                 .foregroundStyle(CursorTheme.foreground)
+                .frame(minWidth: 72, alignment: .leading)
 
-            Text(module.label)
-                .font(.system(size: 12))
-                .foregroundStyle(CursorTheme.foregroundDim)
+            HStack(spacing: 6) {
+                Image(systemName: "magnifyingglass")
+                    .font(.system(size: 12))
+                    .foregroundStyle(CursorTheme.foregroundDim)
+                TextField(searchPlaceholder, text: searchBinding)
+                    .textFieldStyle(.plain)
+                    .font(.system(size: 12))
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(CursorTheme.inputBackground)
+            .overlay(
+                RoundedRectangle(cornerRadius: 6)
+                    .stroke(CursorTheme.borderSubtle, lineWidth: 1)
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 6))
+            .frame(maxWidth: 420)
 
             Spacer()
 
@@ -56,10 +71,31 @@ struct TitleBarView: View {
             .buttonStyle(.plain)
             .help("Sign out")
         }
+        .padding(.leading, 12)
         .padding(.trailing, 12)
         .background(CursorTheme.titleBar)
         .overlay(alignment: .bottom) {
-            Rectangle().fill(CursorTheme.border).frame(height: 1)
+            Rectangle().fill(CursorTheme.borderSubtle).frame(height: 1)
+        }
+    }
+
+    private var searchPlaceholder: String {
+        switch module {
+        case .chat: return "Search channels, DMs, and messages"
+        case .spaces: return "Search spaces and tasks"
+        case .settings: return "Search settings"
+        }
+    }
+
+    private var searchBinding: Binding<String> {
+        switch module {
+        case .chat:
+            return Binding(
+                get: { chat.searchQuery },
+                set: { chat.searchQuery = $0 }
+            )
+        case .spaces, .settings:
+            return .constant("")
         }
     }
 }

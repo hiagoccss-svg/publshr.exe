@@ -5,7 +5,7 @@ struct SpacesNavSidebar: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("SPACES")
+            Text("Projects")
                 .font(.system(size: 10, weight: .semibold))
                 .foregroundStyle(CursorTheme.foregroundDim)
                 .tracking(0.6)
@@ -22,7 +22,7 @@ struct SpacesNavSidebar: View {
                 .padding(.horizontal, 6)
             }
 
-            Divider().overlay(CursorTheme.border)
+            Divider().overlay(CursorTheme.borderSubtle)
 
             HStack(spacing: 6) {
                 TextField("New space", text: $spaces.newSpaceName)
@@ -42,10 +42,6 @@ struct SpacesNavSidebar: View {
                 .disabled(spaces.newSpaceName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
             .padding(10)
-        }
-        .background(CursorTheme.sideBar)
-        .overlay(alignment: .trailing) {
-            Rectangle().fill(CursorTheme.border).frame(width: 1)
         }
     }
 

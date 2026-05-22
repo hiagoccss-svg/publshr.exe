@@ -1,30 +1,17 @@
 import SwiftUI
 
-/// Enterprise team chat — Phases 1–4 integrated.
+/// Enterprise team chat — main content column only (nav lives in AppSecondarySidebar).
 struct EnterpriseChatView: View {
     @EnvironmentObject private var auth: AuthViewModel
     @ObservedObject var chat: ChatViewModel
-    @State private var showNewChannel = false
-    @State private var showNewDM = false
     @State private var showPlannerShare = false
-    @State private var newChannelName = ""
 
     var body: some View {
-        HStack(spacing: 0) {
-            ChatSidebarView(
-                chat: chat,
-                showNewChannel: $showNewChannel,
-                showNewDM: $showNewDM
-            )
-
-            VStack(spacing: 0) {
-                chatToolbar
-                ChatConversationView(chat: chat)
-            }
+        VStack(spacing: 0) {
+            chatToolbar
+            ChatConversationView(chat: chat)
         }
-        .background(CursorTheme.panelBackground)
-        .sheet(isPresented: $showNewChannel) { newChannelSheet }
-        .sheet(isPresented: $showNewDM) { newDMSheet }
+        .background(CursorTheme.chatBackground)
         .sheet(isPresented: $chat.showSearchSheet) { ChatSearchSheet(chat: chat) }
         .sheet(isPresented: $chat.showAISheet) { ChatAISheet(chat: chat) }
         .sheet(isPresented: $chat.showPermissionsSheet) { ChatPermissionsSheet(chat: chat) }
@@ -38,10 +25,16 @@ struct EnterpriseChatView: View {
 
     private var chatToolbar: some View {
         HStack(spacing: 8) {
-            Text(chat.workspace?.name ?? "Workspace")
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(CursorTheme.foreground)
-                .lineLimit(1)
+            if let channel = chat.selectedChannel {
+                Text(channel.displayTitle)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(CursorTheme.foreground)
+                    .lineLimit(1)
+            } else {
+                Text("Select a channel")
+                    .font(.system(size: 13))
+                    .foregroundStyle(CursorTheme.foregroundDim)
+            }
 
             if chat.totalUnread > 0 {
                 Text("\(chat.totalUnread)")
@@ -67,11 +60,11 @@ struct EnterpriseChatView: View {
             toolbarIcon("gearshape") { chat.showPermissionsSheet = true }
             statusMenu
         }
-        .padding(.horizontal, 10)
+        .padding(.horizontal, 12)
         .padding(.vertical, 8)
-        .background(CursorTheme.panelBackground)
+        .background(CursorTheme.titleBar)
         .overlay(alignment: .bottom) {
-            Rectangle().fill(CursorTheme.border).frame(height: 1)
+            Rectangle().fill(CursorTheme.borderSubtle).frame(height: 1)
         }
     }
 
@@ -103,53 +96,6 @@ struct EnterpriseChatView: View {
             }
         }
         .menuStyle(.borderlessButton)
-    }
-
-    private var newChannelSheet: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("Create Channel").font(.headline)
-            TextField("Channel name", text: $newChannelName)
-                .textFieldStyle(.roundedBorder)
-            HStack {
-                Spacer()
-                Button("Cancel") { showNewChannel = false }
-                Button("Create") {
-                    Task {
-                        await chat.createChannel(name: newChannelName)
-                        showNewChannel = false
-                        newChannelName = ""
-                    }
-                }
-            }
-        }
-        .padding(24)
-        .frame(width: 360)
-    }
-
-    private var newDMSheet: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("New Message").font(.headline)
-            List(Array(chat.profiles.values).sorted { ($0.displayName ?? $0.email) < ($1.displayName ?? $1.email) }) { profile in
-                if profile.id != chat.currentUserId {
-                    Button {
-                        Task {
-                            await chat.openDM(with: profile)
-                            showNewDM = false
-                        }
-                    } label: {
-                        HStack {
-                            ChatPresenceDot(status: chat.presence(for: profile.id))
-                            Text(profile.displayName ?? profile.email)
-                        }
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-            .frame(minHeight: 200)
-            Button("Close") { showNewDM = false }
-        }
-        .padding(20)
-        .frame(width: 320, height: 360)
     }
 
     private var plannerShareSheet: some View {

@@ -446,6 +446,24 @@ final class ChatViewModel: ObservableObject {
         filter(directMessages)
     }
 
+    /// Recently active chats — shown under Favorites in the nav sidebar.
+    var favoriteChannels: [ChatChannel] {
+        let combined = channels + directMessages
+        let sorted = combined.sorted {
+            ($0.lastMessageAt ?? .distantPast) > ($1.lastMessageAt ?? .distantPast)
+        }
+        let recent = Array(sorted.prefix(8))
+        return filter(recent)
+    }
+
+    var filteredProjects: [PlannerTask] {
+        let q = searchQuery.trimmingCharacters(in: .whitespaces).lowercased()
+        guard !q.isEmpty else { return plannerTasks }
+        return plannerTasks.filter {
+            $0.title.lowercased().contains(q) || $0.status.lowercased().contains(q)
+        }
+    }
+
     private func filter(_ list: [ChatChannel]) -> [ChatChannel] {
         let q = searchQuery.trimmingCharacters(in: .whitespaces).lowercased()
         guard !q.isEmpty else { return list }

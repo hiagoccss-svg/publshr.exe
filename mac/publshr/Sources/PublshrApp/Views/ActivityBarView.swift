@@ -4,7 +4,10 @@ struct ActivityBarView: View {
     @Binding var module: AppModule
 
     var body: some View {
-        VStack(spacing: 4) {
+        VStack(spacing: 2) {
+            Color.clear
+                .frame(height: CursorTheme.titleBarHeight)
+
             ForEach(AppModule.mainStrip) { item in
                 moduleButton(item)
             }
@@ -13,25 +16,35 @@ struct ActivityBarView: View {
 
             moduleButton(.settings)
         }
+        .frame(maxHeight: .infinity)
         .background(CursorTheme.activityBar)
         .overlay(alignment: .trailing) {
-            Rectangle().fill(CursorTheme.border).frame(width: 1)
+            Rectangle().fill(CursorTheme.borderSubtle).frame(width: 1)
         }
     }
 
     private func moduleButton(_ item: AppModule) -> some View {
-        Button {
+        let selected = module == item
+        return Button {
             module = item
         } label: {
             Image(systemName: item.systemImage)
-                .font(.system(size: item == .settings ? 16 : 18))
-                .frame(width: 48, height: 48)
-                .foregroundStyle(module == item ? CursorTheme.foreground : CursorTheme.foregroundDim)
+                .font(.system(size: item == .settings ? 17 : 19))
+                .symbolRenderingMode(.hierarchical)
+                .frame(width: CursorTheme.activityBarWidth, height: 44)
+                .foregroundStyle(selected ? CursorTheme.foreground : CursorTheme.foregroundDim)
                 .background(
-                    module == item
-                        ? CursorTheme.sideBar.opacity(0.5)
+                    selected
+                        ? CursorTheme.navSidebar.opacity(CursorTheme.appearance == .light ? 0.85 : 0.35)
                         : Color.clear
                 )
+                .overlay(alignment: .leading) {
+                    if selected {
+                        Rectangle()
+                            .fill(CursorTheme.accent)
+                            .frame(width: 2)
+                    }
+                }
         }
         .buttonStyle(.plain)
         .help(item.label)
