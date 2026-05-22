@@ -554,7 +554,7 @@ final class CallSignalingService: ObservableObject {
         guard let client, useCloudDiscovery else { return }
         realtimeTask?.cancel()
         realtimeTask = Task { @MainActor [weak self] in
-            guard let self, let client else { return }
+            guard let self else { return }
             let channel = await client.channel("call-\(roomId.uuidString)")
             let stream = await channel.postgresChange(
                 InsertAction.self,
