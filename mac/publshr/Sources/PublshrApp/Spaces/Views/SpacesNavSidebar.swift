@@ -45,8 +45,8 @@ struct SpacesNavSidebar: View {
             .foregroundStyle(CursorTheme.foregroundDim)
             .tracking(0.5)
             .padding(.horizontal, 12)
-            .padding(.top, 10)
-            .padding(.bottom, 5)
+            .padding(.top, 6)
+            .padding(.bottom, 4)
     }
 
     private func subsectionLabel(_ title: String) -> some View {
