@@ -20,14 +20,18 @@ curl -fsSL "https://raw.githubusercontent.com/hiagoccss-svg/publshr.exe/refs/hea
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│  Auth → Workspace picker → MainIDEView (activity bar)      │
-├──────────┬──────────────────────────────────────────────┤
-│ Activity │  Module content (Chat / Spaces / Settings)    │
-│   bar    │  + module chrome (ChatWorkspaceChrome, etc.)  │
-├──────────┴──────────────────────────────────────────────┤
-│  Status footer · background live update sync             │
+│  Auth → Workspace picker → MainIDEView                     │
+│  Desktop wallpaper → glass shell → floating library cards  │
+├──────────┬──────────────┬────────────────────────────────┤
+│ Bar menu │  Universal   │  Glass main content (Chat /     │
+│ (compact │  submenu     │  Spaces) + disconnected footer  │
+│ or wide) │  (module nav)│  actions at column bottom       │
+├──────────┴──────────────┴────────────────────────────────┤
+│  Unified header (tabs) · thin status line (main column)  │
 └─────────────────────────────────────────────────────────┘
 ```
+
+Bar menu: `ActivityBarView` — toggle **compact** (48px icons) vs **expanded** labels (`publshr.barMenuExpanded`). Universal submenu: `LibraryUniversalSubmenu` + `AppSecondarySidebar`. Glass: `WorkspaceDesktopBackdrop`, `glassMainContent()`, `.libraryCard(glass:)`.
 
 | Layer | Files |
 |-------|--------|

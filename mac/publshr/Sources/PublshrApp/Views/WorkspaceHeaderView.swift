@@ -54,7 +54,7 @@ struct WorkspaceHeaderView: View {
         .background {
             Rectangle()
                 .fill(.ultraThinMaterial)
-                .background(Color.white.opacity(0.78))
+                .background(LibraryGlassDesign.headerGlass)
         }
         .overlay(alignment: .bottom) {
             Rectangle()

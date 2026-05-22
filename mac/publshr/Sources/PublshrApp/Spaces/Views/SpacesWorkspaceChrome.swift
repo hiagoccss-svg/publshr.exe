@@ -18,6 +18,6 @@ struct SpacesWorkspaceChrome<Content: View>: View {
             }
             content()
         }
-        .background(CursorTheme.editorBackground)
+        .background(Color.clear)
     }
 }

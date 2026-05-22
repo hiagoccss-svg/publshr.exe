@@ -10,71 +10,75 @@ struct ChatSidebarView: View {
     @Binding var showNewDM: Bool
 
     var body: some View {
-        VStack(spacing: 0) {
-            Button {
-                showNewChannel = true
-            } label: {
-                Label("New message", systemImage: "plus")
-            }
-            .buttonStyle(LibraryPrimaryPillButtonStyle())
-            .padding(.horizontal, LibraryGlassDesign.sidebarRowHorizontal)
-            .padding(.top, 12)
-            .padding(.bottom, 8)
-
-            ScrollView {
-                VStack(alignment: .leading, spacing: 0) {
-                    sidebarSection("Favorites", items: chat.favoriteChannels, onAdd: nil)
-                    NavSidebarDivider()
-                    sidebarSection("Channels", items: chat.filteredChannels, onAdd: { showNewChannel = true })
-                    NavSidebarDivider()
-                    sidebarSection("Direct Messages", items: chat.filteredDMs, onAdd: { showNewDM = true })
-                    NavSidebarDivider()
-                    projectsSection
+        LibraryUniversalSubmenuContainer {
+            VStack(spacing: 0) {
+                Button {
+                    showNewChannel = true
+                } label: {
+                    Label("New message", systemImage: "plus")
                 }
-                .padding(.vertical, 8)
-                .padding(.horizontal, 4)
+                .buttonStyle(LibraryPrimaryPillButtonStyle())
+                .padding(.horizontal, LibraryGlassDesign.sidebarRowHorizontal)
+                .padding(.top, 12)
+                .padding(.bottom, 8)
+
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 0) {
+                        sidebarSection("Favorites", items: chat.favoriteChannels, onAdd: nil)
+                        LibraryUniversalSubmenu.sectionDivider()
+                        sidebarSection("Channels", items: chat.filteredChannels, onAdd: { showNewChannel = true })
+                        LibraryUniversalSubmenu.sectionDivider()
+                        sidebarSection("Direct Messages", items: chat.filteredDMs, onAdd: { showNewDM = true })
+                        LibraryUniversalSubmenu.sectionDivider()
+                        projectsSection
+                    }
+                    .padding(.vertical, 4)
+                }
+            }
+        } footer: {
+            HStack {
+                Button {
+                    chat.showSearchSheet = true
+                } label: {
+                    Image(systemName: "magnifyingglass")
+                        .font(.system(size: 13))
+                        .foregroundStyle(LibraryGlassDesign.inkSecondary)
+                }
+                .buttonStyle(.plain)
+                .help("Search")
+
+                Spacer()
+
+                if chat.totalUnread > 0 {
+                    Text("\(chat.totalUnread) unread")
+                        .font(.system(size: 10))
+                        .foregroundStyle(LibraryGlassDesign.inkMuted)
+                }
             }
         }
-        .frame(maxHeight: .infinity)
         .preferredColorScheme(.light)
     }
 
     private var projectsSection: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            sectionHeader("Projects", onAdd: nil)
+        VStack(alignment: .leading, spacing: 0) {
+            LibraryUniversalSubmenu.sectionHeader("Projects")
 
             if chat.filteredProjects.isEmpty {
                 Text("No planner tasks")
                     .font(.system(size: 11))
-                    .foregroundStyle(CursorTheme.foregroundDim)
+                    .foregroundStyle(LibraryGlassDesign.inkMuted)
                     .padding(.horizontal, 16)
                     .padding(.vertical, 6)
             } else {
                 ForEach(chat.filteredProjects) { task in
-                    Button {
+                    LibraryUniversalSubmenu.row(
+                        title: task.title,
+                        icon: "folder",
+                        trailing: task.status,
+                        selected: false
+                    ) {
                         Task { await chat.sharePlannerTask(task) }
-                    } label: {
-                        HStack(spacing: 8) {
-                            Image(systemName: "folder")
-                                .font(.system(size: 11, weight: .medium))
-                                .foregroundStyle(CursorTheme.foregroundMuted)
-                                .frame(width: SpacesClickUpDesign.sidebarIconWidth)
-                            VStack(alignment: .leading, spacing: 1) {
-                                Text(task.title)
-                                    .font(SpacesClickUpDesign.treeRowFont)
-                                    .foregroundStyle(CursorTheme.foregroundMuted)
-                                    .lineLimit(1)
-                                Text(task.status)
-                                    .font(.system(size: 10))
-                                    .foregroundStyle(CursorTheme.foregroundDim)
-                            }
-                            Spacer(minLength: 0)
-                        }
-                        .frame(height: SpacesClickUpDesign.sidebarRowHeight)
-                        .padding(.horizontal, 10)
                     }
-                    .buttonStyle(.plain)
-                    .padding(.horizontal, 6)
                 }
             }
         }
@@ -85,13 +89,13 @@ struct ChatSidebarView: View {
         items: [ChatChannel],
         onAdd: (() -> Void)?
     ) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            sectionHeader(title, onAdd: onAdd)
+        VStack(alignment: .leading, spacing: 0) {
+            LibraryUniversalSubmenu.sectionHeader(title, onAdd: onAdd)
 
             if items.isEmpty {
                 Text("None yet")
                     .font(.system(size: 11))
-                    .foregroundStyle(CursorTheme.foregroundDim)
+                    .foregroundStyle(LibraryGlassDesign.inkMuted)
                     .padding(.horizontal, 16)
                     .padding(.vertical, 6)
             } else {
@@ -102,31 +106,11 @@ struct ChatSidebarView: View {
         }
     }
 
-    private func sectionHeader(_ title: String, onAdd: (() -> Void)?) -> some View {
-        HStack {
-            Text(title.uppercased())
-                .font(SpacesClickUpDesign.sectionLabelFont)
-                .foregroundStyle(CursorTheme.foregroundDim)
-                .tracking(0.5)
-            Spacer()
-            if let onAdd {
-                Button(action: onAdd) {
-                    Image(systemName: "plus")
-                        .font(.system(size: 10, weight: .medium))
-                        .foregroundStyle(CursorTheme.foregroundMuted)
-                        .frame(width: 20, height: 20)
-                }
-                .buttonStyle(.plain)
-            }
-        }
-        .padding(.horizontal, SpacesClickUpDesign.sidebarHorizontalPadding + 2)
-        .padding(.top, SpacesClickUpDesign.sidebarSectionTop)
-        .padding(.bottom, SpacesClickUpDesign.sidebarSectionBottom)
-    }
-
     private func channelRow(_ channel: ChatChannel) -> some View {
         let selected = chat.selectedChannel?.id == channel.id
         let unread = chat.unreadByChannel[channel.id] ?? 0
+        let trailing = LibraryRelativeTime.string(since: channel.lastMessageAt)
+
         return HStack(spacing: 0) {
             Button {
                 tabStore.openFromChannel(channel)
@@ -135,8 +119,8 @@ struct ChatSidebarView: View {
                 HStack(spacing: 8) {
                     ChatChannelIconView(channel: channel, size: SpacesClickUpDesign.sidebarIconWidth)
                     Text(channel.sidebarTitle)
-                        .font(selected ? SpacesClickUpDesign.treeRowSelectedFont : SpacesClickUpDesign.treeRowFont)
-                        .foregroundStyle(selected ? CursorTheme.foreground : CursorTheme.foregroundMuted)
+                        .font(.system(size: 13, weight: selected ? .semibold : .regular))
+                        .foregroundStyle(selected ? LibraryGlassDesign.ink : LibraryGlassDesign.inkSecondary)
                         .lineLimit(1)
                     Spacer(minLength: 0)
                     if let live = calls.liveCall(for: channel.id), !calls.isInCall(on: channel.id) {
@@ -149,20 +133,24 @@ struct ChatSidebarView: View {
                             .padding(.vertical, 2)
                             .background(LibraryGlassDesign.primaryCTA)
                             .clipShape(Capsule())
+                    } else if let trailing {
+                        Text(trailing)
+                            .font(.system(size: 11))
+                            .foregroundStyle(LibraryGlassDesign.inkMuted)
                     }
                 }
-                .frame(height: SpacesClickUpDesign.sidebarRowHeight)
-                .padding(.horizontal, 10)
+                .padding(.horizontal, LibraryGlassDesign.sidebarRowHorizontal)
+                .padding(.vertical, LibraryGlassDesign.sidebarRowVertical + 1)
                 .background(
-                    RoundedRectangle(cornerRadius: SpacesClickUpDesign.sidebarRowRadius, style: .continuous)
-                        .fill(selected ? LibraryGlassDesign.primaryCTA.opacity(0.08) : Color.clear)
+                    RoundedRectangle(cornerRadius: LibraryGlassDesign.sidebarRowRadius, style: .continuous)
+                        .fill(selected ? LibraryGlassDesign.sidebarSelection : Color.clear)
                 )
             }
             .buttonStyle(.plain)
+            .padding(.horizontal, 6)
 
             channelRowMenu(channel)
         }
-        .padding(.horizontal, 6)
         .contextMenu {
             ChatChannelActionsMenu(chat: chat, channel: channel) {
                 tabStore.openFromChannel(channel)
@@ -178,7 +166,7 @@ struct ChatSidebarView: View {
         } label: {
             Image(systemName: "ellipsis")
                 .font(.system(size: 11))
-                .foregroundStyle(CursorTheme.foregroundDim)
+                .foregroundStyle(LibraryGlassDesign.inkMuted)
                 .frame(width: 24, height: SpacesClickUpDesign.sidebarRowHeight)
         }
         .menuStyle(.borderlessButton)

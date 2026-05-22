@@ -61,7 +61,7 @@ struct ChatComposerView: View {
             .padding(.bottom, 10)
             .padding(.top, 6)
         }
-        .background(CursorTheme.chatBackground)
+        .glassDisconnectedFooter()
         .overlay(alignment: .top) {
             Rectangle()
                 .fill(CursorTheme.hairline)

@@ -6,6 +6,9 @@ enum LibraryGlassDesign {
     static let sidebarWidth: CGFloat = 260
     static let sidebarWidthWide: CGFloat = 272
     static let activityBarWidth: CGFloat = 48
+    /// Labeled bar menu (reference: Daily Note, Inbox, Notes…).
+    static let activityBarExpandedWidth: CGFloat = 88
+    static let sidebarSelection = Color(hex: 0xE8E6E1).opacity(0.9)
 
     // Spacing (reference image)
     static let outerMargin: CGFloat = 24
@@ -30,7 +33,8 @@ enum LibraryGlassDesign {
 
     // Colors (warm off-white shell)
     static let shellBackground = Color(hex: 0xF3F2EF)
-    static let workspaceGlass = Color.white.opacity(0.42)
+    static let workspaceGlass = Color.white.opacity(0.38)
+    static let headerGlass = Color.white.opacity(0.72)
     static let cardBackground = Color.white
     static let cardGlassFill = Color.white.opacity(0.72)
     static let primaryCTA = Color(hex: 0x1A1917)

@@ -31,13 +31,7 @@ struct ChatLinkPreviewCard: View {
             }
             .foregroundStyle(CursorTheme.foregroundDim)
         }
-        .padding(10)
-        .background(CursorTheme.inputBackground.opacity(0.6))
-        .clipShape(RoundedRectangle(cornerRadius: 8))
-        .overlay(
-            RoundedRectangle(cornerRadius: 8)
-                .stroke(CursorTheme.borderSubtle, lineWidth: 1)
-        )
+        .libraryCard(glass: true, padding: 12)
     }
 
     private var iconName: String {

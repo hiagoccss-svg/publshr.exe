@@ -23,24 +23,28 @@ struct MainIDEView: View {
     var body: some View {
         GeometryReader { geometry in
             let topSafe = geometry.safeAreaInsets.top
-            VStack(spacing: 0) {
-                WorkspaceHeaderView(
-                    spaces: spaces,
-                    module: $module,
-                    safeAreaTop: topSafe
-                )
+            ZStack {
+                WorkspaceDesktopBackdrop()
 
-                HStack(alignment: .top, spacing: 0) {
-                    if !sidebarHidden {
-                        leftRail
+                VStack(spacing: 0) {
+                    WorkspaceHeaderView(
+                        spaces: spaces,
+                        module: $module,
+                        safeAreaTop: topSafe
+                    )
+
+                    HStack(alignment: .top, spacing: 0) {
+                        if !sidebarHidden {
+                            leftRail
+                        }
+
+                        mainColumn
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
                     }
-
-                    mainColumn
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .frame(width: geometry.size.width, height: geometry.size.height)
             }
-            .frame(width: geometry.size.width, height: geometry.size.height)
         }
         .ignoresSafeArea(.container, edges: .top)
         .glassWorkspace()
@@ -127,12 +131,16 @@ struct MainIDEView: View {
         VStack(spacing: 0) {
             moduleMainContent
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .padding(.horizontal, LibraryGlassDesign.outerMargin)
+                .padding(.top, 8)
+                .padding(.bottom, 4)
+                .glassMainContent()
 
             ContentStatusFooter(module: module)
                 .frame(height: CursorTheme.statusBarHeight)
+                .glassDisconnectedFooter()
         }
         .frame(maxHeight: .infinity)
-        .background(module == .chat ? CursorTheme.chatBackground : CursorTheme.editorBackground)
     }
 
     @ViewBuilder

@@ -43,10 +43,16 @@ struct GlassSidebarBackground: ViewModifier {
 }
 
 struct GlassWorkspaceBackground: ViewModifier {
+    /// When false, shell is fully transparent so `WorkspaceDesktopBackdrop` shows through.
+    var tintShell: Bool = false
+
     func body(content: Content) -> some View {
         content
-            .background(LibraryGlassDesign.shellBackground)
             .background {
+                if tintShell {
+                    Rectangle()
+                        .fill(LibraryGlassDesign.shellBackground.opacity(0.35))
+                }
                 Rectangle()
                     .fill(LibraryGlassDesign.workspaceGlass)
                     .background(.thinMaterial)
@@ -80,7 +86,7 @@ extension View {
         modifier(GlassSidebarBackground())
     }
 
-    func glassWorkspace() -> some View {
-        modifier(GlassWorkspaceBackground())
+    func glassWorkspace(tintShell: Bool = false) -> some View {
+        modifier(GlassWorkspaceBackground(tintShell: tintShell))
     }
 }

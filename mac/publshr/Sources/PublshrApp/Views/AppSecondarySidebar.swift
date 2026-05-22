@@ -24,7 +24,6 @@ struct AppSecondarySidebar: View {
             }
         }
         .frame(maxHeight: .infinity)
-        .frame(width: module == .spaces ? SpacesClickUpDesign.sidebarWidth : CursorTheme.navSidebarWidth)
-        .glassSidebar()
+        .frame(width: LibraryUniversalSubmenu.width)
     }
 }

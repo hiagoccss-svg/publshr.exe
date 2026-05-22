@@ -13,18 +13,18 @@ struct EnterpriseSidebarRow: View {
                 Image(systemName: icon)
                     .font(.system(size: 11, weight: .medium))
                     .symbolRenderingMode(.monochrome)
-                    .foregroundStyle(selected ? Color.white : CursorTheme.foregroundMuted)
+                    .foregroundStyle(selected ? LibraryGlassDesign.ink : CursorTheme.foregroundMuted)
                     .frame(width: 14, alignment: .center)
                 Text(title)
                     .font(.system(size: 12, weight: selected ? .semibold : .regular))
-                    .foregroundStyle(selected ? Color.white : CursorTheme.foreground)
+                    .foregroundStyle(selected ? LibraryGlassDesign.ink : CursorTheme.foreground)
                 Spacer(minLength: 0)
             }
             .padding(.horizontal, LibraryGlassDesign.sidebarRowHorizontal)
             .padding(.vertical, LibraryGlassDesign.sidebarRowVertical)
             .background(
                 RoundedRectangle(cornerRadius: LibraryGlassDesign.sidebarRowRadius, style: .continuous)
-                    .fill(selected ? LibraryGlassDesign.primaryCTA : Color.clear)
+                    .fill(selected ? LibraryGlassDesign.sidebarSelection : Color.clear)
             )
             .contentShape(RoundedRectangle(cornerRadius: LibraryGlassDesign.sidebarRowRadius, style: .continuous))
         }
