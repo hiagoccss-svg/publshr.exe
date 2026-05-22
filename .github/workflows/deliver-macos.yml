@@ -118,3 +118,18 @@ jobs:
           fi
 
           echo "Published ${TAG} and live → Publshr-macos-aarch64.tar.gz, Publshr-Install-macos.zip"
+
+      - name: Verify live channel metadata
+        run: |
+          REMOTE="$(curl -fsSL "https://github.com/${{ github.repository }}/releases/download/live/VERSION.txt")"
+          EXPECT="${{ steps.ver.outputs.full }}"
+          BUILD="${{ steps.ver.outputs.build }}"
+          REMOTE_VER="$(echo "$REMOTE" | sed -n '1p' | tr -d '[:space:]')"
+          REMOTE_BUILD="$(echo "$REMOTE" | sed -n '2p' | tr -d '[:space:]')"
+          echo "Remote VERSION.txt: ${REMOTE_VER} build ${REMOTE_BUILD}"
+          test "$REMOTE_VER" = "$EXPECT"
+          test "$REMOTE_BUILD" = "$BUILD"
+          API_JSON="$(curl -fsSL -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${{ github.repository }}/releases/tags/live")"
+          echo "$API_JSON" | grep -q "build_number: ${BUILD}"
+          echo "Live channel verified for build ${BUILD}"

@@ -17,12 +17,14 @@ flowchart LR
   A[git push main] --> B[GitHub Actions]
   B --> C[live release asset]
   C --> D[Publshr.app checks every 10 min]
-  D --> E[Download + Install + Restart]
+  D --> E[Download + Install + Restart every 2 min]
 ```
 
 1. Every push to **`main`** runs `.github/workflows/deliver-macos.yml`.
 2. CI builds `Publshr.app` and uploads to the **`live`** release (same filenames every time).
-3. Your installed app checks the `live` release every **3 minutes** (and when the app becomes active or wakes from sleep), compares **build numbers**, downloads, installs to `/Applications/Publshr.app`, and **restarts automatically**. No status-bar clicks and no Terminal reinstall.
+3. Your installed app checks the `live` release every **2 minutes** (and when the app becomes active or wakes from sleep), compares **build numbers**, downloads, installs to `/Applications/Publshr.app`, and **restarts automatically**. Auto-sync and auto-install are always enabled.
+4. **Settings** (bottom panel): **Download and install latest** runs the same full check → download → install → restart flow manually.
+5. CI runs **macOS compile check** on every PR touching `mac/publshr/` so broken builds do not block the `live` channel.
 
 Chat and Spaces data load from Supabase on sign-in and refresh every 5 minutes (plus on wake/network restore).
 
