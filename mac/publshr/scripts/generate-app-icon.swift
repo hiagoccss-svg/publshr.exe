@@ -26,7 +26,7 @@ func drawPremiumIconBackground(in rect: NSRect) {
         width: rect.width * 0.84,
         height: rect.height * 0.72
     )
-    spotlight.draw(in: spotRect, relativeCenterPosition: NSPoint(x: 0.5, y: 0.62), angle: 90)
+    spotlight.draw(in: spotRect, relativeCenterPosition: NSPoint(x: 0.5, y: 0.62))
 }
 
 func sourceHasTransparentPixels(_ image: NSImage, sample: Int = 48) -> Bool {
