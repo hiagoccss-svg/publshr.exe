@@ -5,6 +5,11 @@ struct PublshrApp: App {
     @StateObject private var auth = AuthViewModel()
     @StateObject private var chat = ChatViewModel()
     @StateObject private var updates = AppUpdateViewModel()
+    @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
+
+    init() {
+        AppCrashReporter.install()
+    }
 
     var body: some Scene {
         WindowGroup {
@@ -17,6 +22,7 @@ struct PublshrApp: App {
                     auth.handleIncomingURL(url)
                 }
                 .task {
+                    configureLifecycle()
                     updates.startAutomaticChecks()
                 }
         }
@@ -49,5 +55,43 @@ struct PublshrApp: App {
                 .keyboardShortcut("o", modifiers: [.command, .shift])
             }
         }
+    }
+
+    private func configureLifecycle() {
+        ChatNotificationService.shared.onNotificationTap = { channelId in
+            guard auth.isAuthenticated else { return }
+            chat.selectChannelById(channelId)
+            NSApp.activate(ignoringOtherApps: true)
+            if let channel = chat.selectedChannel {
+                ChatWindowManager.shared.openChannel(channel, chat: chat, auth: auth)
+            }
+        }
+        ChatWindowManager.shared.onSelectChannelInIDE = { channelId in
+            chat.selectChannelById(channelId)
+        }
+        AppLifecycleService.shared.onWake = {
+            Task { await chat.refreshAfterReconnect() }
+        }
+        AppLifecycleService.shared.onNetworkRestored = {
+            Task { await chat.refreshAfterReconnect() }
+        }
+        AppLifecycleService.shared.start()
+    }
+}
+
+final class AppDelegate: NSObject, NSApplicationDelegate {
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        if let frame = AppWindowStateStore.loadMainWindowFrame(),
+           let window = NSApp.windows.first {
+            window.setFrame(frame, display: true)
+        }
+    }
+
+    func applicationWillTerminate(_ notification: Notification) {
+        if let window = NSApp.mainWindow ?? NSApp.windows.first {
+            AppWindowStateStore.saveMainWindowFrame(window.frame)
+        }
+        ChatWindowManager.shared.closeAll()
+        AppLifecycleService.shared.stop()
     }
 }

@@ -52,6 +52,20 @@ final class ChatNotificationService: NSObject, UNUserNotificationCenterDelegate 
     ) async -> UNNotificationPresentationOptions {
         [.banner, .sound, .badge]
     }
+
+    func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        didReceive response: UNNotificationResponse
+    ) async {
+        let info = response.notification.request.content.userInfo
+        guard let raw = info["channelId"] as? String, let channelId = UUID(uuidString: raw) else { return }
+        await MainActor.run {
+            onNotificationTap?(channelId)
+        }
+    }
+
+    /// Set from app bootstrap to route notification clicks to chat.
+    var onNotificationTap: ((UUID) -> Void)?
 }
 
 enum ChatNotificationCategory: String {

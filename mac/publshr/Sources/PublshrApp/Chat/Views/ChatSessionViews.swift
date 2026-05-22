@@ -1,6 +1,25 @@
 import SwiftUI
 import UniformTypeIdentifiers
 
+/// Root view for an isolated chat pop-out window.
+struct SessionPopOutRootView: View {
+    @ObservedObject var session: ChatChannelSession
+    @State private var showVoice = false
+
+    var body: some View {
+        HStack(spacing: 0) {
+            SessionConversationView(session: session, showVoice: $showVoice)
+            if session.showThreadPanel {
+                SessionThreadPanel(session: session)
+            }
+        }
+        .background(CursorTheme.chatBackground)
+        .sheet(isPresented: $showVoice) {
+            ChatVoiceRecorderSheetForSession(session: session)
+        }
+    }
+}
+
 /// Conversation surface for dedicated pop-out windows (`ChatChannelSession`).
 struct SessionConversationView: View {
     @ObservedObject var session: ChatChannelSession

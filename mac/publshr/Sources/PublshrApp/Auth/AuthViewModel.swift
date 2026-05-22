@@ -88,12 +88,17 @@ final class AuthViewModel: ObservableObject {
                 flowState = .signedOut
                 return
             }
+            if let restored = await restoreSessionFromKeychain() {
+                session = restored
+            }
         }
 
-        do {
-            session = try await client.auth.session
-        } catch {
-            session = nil
+        if session == nil {
+            do {
+                session = try await client.auth.session
+            } catch {
+                session = nil
+            }
         }
 
         if session != nil {
@@ -221,6 +226,19 @@ final class AuthViewModel: ObservableObject {
         )
         _ = AuthKeychain.save(stored)
         prefersBiometricUnlock = true
+    }
+
+    /// Restores Supabase session from Keychain tokens after biometric unlock (no localStorage).
+    private func restoreSessionFromKeychain() async -> Session? {
+        guard let stored = AuthKeychain.load() else { return nil }
+        do {
+            try await client.auth.setSession(accessToken: stored.accessToken, refreshToken: stored.refreshToken)
+            let current = try await client.auth.session
+            persistSessionToKeychain()
+            return current
+        } catch {
+            return nil
+        }
     }
 
     private func saveLastWorkspaceSelection() {
