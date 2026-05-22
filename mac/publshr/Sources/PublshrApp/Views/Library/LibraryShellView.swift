@@ -113,6 +113,7 @@ struct LibraryShellView: View {
                         appliesSidebarChrome: true
                     ) {
                         AppSecondarySidebar(
+                            submenuWidth: subW,
                             module: module,
                             chat: chat,
                             spaces: spaces,
