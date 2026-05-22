@@ -13,6 +13,7 @@
   body,
   #root {
     @apply h-full overflow-hidden;
+    background: transparent;
   }
 
   body {

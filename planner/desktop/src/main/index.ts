@@ -3,28 +3,32 @@ import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import { initDatabase, closeDatabase } from './database'
 import { registerIpcHandlers } from './ipc'
+import {
+  configureGlassWindow,
+  glassWindowOptions
+} from '../../../../shared/electron/glass-window'
 
 let mainWindow: BrowserWindow | null = null
 const editorWindows = new Map<string, BrowserWindow>()
 
 function createMainWindow(): BrowserWindow {
-  const win = new BrowserWindow({
-    width: 1440,
-    height: 900,
-    minWidth: 1100,
-    minHeight: 700,
-    show: false,
-    titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
-    trafficLightPosition: { x: 14, y: 14 },
-    backgroundColor: '#f7f6f4',
-    webPreferences: {
-      preload: join(__dirname, '../preload/index.mjs'),
-      sandbox: false,
-      contextIsolation: true,
-      nodeIntegration: false
-    }
-  })
+  const win = new BrowserWindow(
+    glassWindowOptions('light', {
+      width: 1440,
+      height: 900,
+      minWidth: 1100,
+      minHeight: 700,
+      trafficLightPosition: { x: 14, y: 14 },
+      webPreferences: {
+        preload: join(__dirname, '../preload/index.mjs'),
+        sandbox: false,
+        contextIsolation: true,
+        nodeIntegration: false
+      }
+    })
+  )
 
+  configureGlassWindow(win, 'light')
   win.on('ready-to-show', () => win.show())
 
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
@@ -43,26 +47,27 @@ function createEditorWindow(documentId: string, plannerItemId: string): BrowserW
     return existing
   }
 
-  const win = new BrowserWindow({
-    width: 1200,
-    height: 820,
-    minWidth: 900,
-    minHeight: 600,
-    show: false,
-    titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
-    trafficLightPosition: { x: 14, y: 14 },
-    backgroundColor: '#faf9f7',
-    webPreferences: {
-      preload: join(__dirname, '../preload/index.mjs'),
-      sandbox: false,
-      contextIsolation: true,
-      nodeIntegration: false,
-      additionalArguments: [
-        `--editor-document-id=${documentId}`,
-        `--planner-item-id=${plannerItemId}`
-      ]
-    }
-  })
+  const win = new BrowserWindow(
+    glassWindowOptions('light', {
+      width: 1200,
+      height: 820,
+      minWidth: 900,
+      minHeight: 600,
+      trafficLightPosition: { x: 14, y: 14 },
+      webPreferences: {
+        preload: join(__dirname, '../preload/index.mjs'),
+        sandbox: false,
+        contextIsolation: true,
+        nodeIntegration: false,
+        additionalArguments: [
+          `--editor-document-id=${documentId}`,
+          `--planner-item-id=${plannerItemId}`
+        ]
+      }
+    })
+  )
+
+  configureGlassWindow(win, 'light')
 
   const hash = `#/editor/${documentId}?plannerItem=${plannerItemId}`
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {

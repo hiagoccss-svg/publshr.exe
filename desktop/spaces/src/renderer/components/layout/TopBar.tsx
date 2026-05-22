@@ -60,7 +60,7 @@ export function TopBar(): React.ReactElement {
             onChange={(e) => setSearchQuery(e.target.value)}
             onFocus={() => setCommandOpen(true)}
             placeholder="Search tasks, docs, files…"
-            className="h-8 w-full rounded-lg border border-surface-border bg-surface pl-8 pr-16 text-sm text-ink placeholder:text-ink-muted focus:border-accent/40 focus:outline-none focus:ring-2 focus:ring-accent/10"
+            className="dt-content-input h-8 w-full rounded-lg pl-8 pr-16 text-sm text-ink placeholder:text-ink-muted focus:border-accent/40 focus:outline-none focus:ring-2 focus:ring-accent/10"
           />
           <kbd className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 rounded border border-surface-border bg-surface-raised px-1.5 text-[10px] text-ink-muted">
             ⌘K
@@ -78,7 +78,7 @@ export function TopBar(): React.ReactElement {
 
       <div className="no-drag flex items-center gap-2">
         <ViewContextControls view={taskView} />
-        <div className="flex items-center gap-1 rounded-lg border border-surface-border bg-surface px-2 py-1 text-[11px] text-ink-secondary">
+        <div className="dt-content-surface-muted flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] text-ink-secondary">
           {syncStatus === 'online' ? (
             <Cloud className="h-3.5 w-3.5 text-status-approved" />
           ) : (
