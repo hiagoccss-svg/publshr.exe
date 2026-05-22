@@ -102,6 +102,7 @@ final class AppUpdateViewModel: ObservableObject {
     }
 
     func startAutomaticChecks() {
+        AppReleaseConfig.reconcileAppliedManifestWithBundle()
         checkTask?.cancel()
         checkTask = Task {
             await performLiveSync()
@@ -128,8 +129,6 @@ final class AppUpdateViewModel: ObservableObject {
 
         await checkForUpdates(silent: true)
         if case .failed = phase {
-            phase = .upToDate
-            lastSyncLine = "Up to date · will retry sync"
             return
         }
 
@@ -137,8 +136,6 @@ final class AppUpdateViewModel: ObservableObject {
             await downloadUpdate(silent: true)
         }
         if case .failed = phase {
-            phase = .upToDate
-            lastSyncLine = "Up to date · will retry sync"
             return
         }
 
@@ -257,7 +254,6 @@ final class AppUpdateViewModel: ObservableObject {
                 .appendingPathComponent("Publshr/updates", isDirectory: true)
             let staging = updatesRoot.appendingPathComponent("staging-\(update.version)", isDirectory: true)
             try service.applyUpdate(treeURL: staging, parentPID: ProcessInfo.processInfo.processIdentifier)
-            service.recordAppliedLiveManifest(update)
             NSApplication.shared.terminate(nil)
         } catch {
             setFailure(error, silent: false)
@@ -267,14 +263,9 @@ final class AppUpdateViewModel: ObservableObject {
     private func setFailure(_ error: Error, silent: Bool) {
         let detail = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
         service.appendSyncLog("sync: \(detail)")
-        if let err = error as? AppUpdateError, case .applyScriptMissing = err {
-            phase = .failed(detail)
-            lastSyncLine = detail
-            return
-        }
-        phase = .upToDate
+        phase = .failed(detail)
         if silent {
-            lastSyncLine = "Up to date · will retry sync (\(detail))"
+            lastSyncLine = "Update check failed · will retry (\(detail))"
         } else {
             lastSyncLine = detail
         }
