@@ -11,9 +11,6 @@ struct EnterpriseChatView: View {
         ChatWorkspaceChrome(topInset: topInset, embedInPopOut: embedInPopOut) {
             VStack(spacing: 0) {
                 chatStatusBanner
-                if !embedInPopOut, chat.selectedChannel != nil {
-                    ChatChannelStatusBar(chat: chat)
-                }
                 ChatConversationView(chat: chat)
             }
         }

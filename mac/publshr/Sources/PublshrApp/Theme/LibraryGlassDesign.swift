@@ -14,6 +14,15 @@ enum LibraryGlassDesign {
     /// Selected sidebar row (reference: warm beige pill on Chat).
     static let sidebarSelection = Color(hex: 0xE8E4DC)
     static let sidebarGlassFill = Color(hex: 0xF7F6F3).opacity(0.88)
+
+    /// Primary bar menu (first column) — lighter glass, softer selection.
+    static let barMenuGlassTop = Color(hex: 0xFFFCF8).opacity(0.42)
+    static let barMenuGlassBottom = Color(hex: 0xF3EFE8).opacity(0.28)
+    static let barMenuSelection = Color(hex: 0xEDE8E0).opacity(0.62)
+    static let barMenuHairline = Color(hex: 0xE6E3DC).opacity(0.38)
+    static let barMenuInk = Color(hex: 0x3D3B36)
+    static let barMenuInkSecondary = Color(hex: 0x6F6C65)
+    static let barMenuInkMuted = Color(hex: 0x9A968E)
     /// Main chat/spaces floating panel — near-opaque white card on gray shell.
     static let panelGlassFill = Color.white.opacity(0.96)
 

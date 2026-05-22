@@ -51,52 +51,60 @@ struct LibraryShellView: View {
     }
 
     private var titlebarOverlay: some View {
-        LibraryShellHeaderView(
-            spaces: spaces,
-            module: $module,
-            showNewChannel: $showNewChannel,
-            showNewDM: $showNewDM,
-            showCommandPalette: $showCommandPalette,
-            showNotificationsPanel: $showNotificationsPanel,
-            reservesTrafficLightLeadingInset: false
-        )
+        HStack(alignment: .top, spacing: 0) {
+            Color.clear
+                .frame(width: LibraryGlassDesign.barMenuWidth)
+            if !submenuHidden {
+                Color.clear
+                    .frame(width: LibraryUniversalSubmenu.width)
+            }
+            LibraryShellHeaderView(
+                spaces: spaces,
+                module: $module,
+                showNewChannel: $showNewChannel,
+                showNewDM: $showNewDM,
+                showCommandPalette: $showCommandPalette,
+                showNotificationsPanel: $showNotificationsPanel,
+                reservesTrafficLightLeadingInset: false
+            )
+            .frame(maxWidth: .infinity)
+        }
         .frame(height: AppWindowChromeMetrics.unifiedTitlebarRowHeight)
         .frame(maxWidth: .infinity, alignment: .top)
     }
 
     private var shellBody: some View {
-        VStack(spacing: 0) {
-            Color.clear
-                .frame(height: AppWindowChromeMetrics.unifiedTitlebarRowHeight)
-                .accessibilityHidden(true)
+        HStack(alignment: .top, spacing: 0) {
+            LibraryBarMenuColumn(
+                module: $module,
+                showNewChannel: $showNewChannel
+            )
 
-            HStack(alignment: .top, spacing: 0) {
-                LibraryBarMenuColumn(
-                    module: $module,
+            if !submenuHidden {
+                AppSecondarySidebar(
+                    module: module,
+                    chat: chat,
+                    spaces: spaces,
                     showNewChannel: $showNewChannel,
                     showNewDM: $showNewDM
                 )
                 .cursorColumnDividerTrailing()
+                .transition(.move(edge: .leading).combined(with: .opacity))
+            }
 
-                if !submenuHidden {
-                    AppSecondarySidebar(
-                        module: module,
-                        chat: chat,
-                        spaces: spaces,
-                        showNewChannel: $showNewChannel,
-                        showNewDM: $showNewDM
-                    )
-                    .cursorColumnDividerTrailing()
-                    .transition(.move(edge: .leading).combined(with: .opacity))
-                }
+            VStack(spacing: 0) {
+                Color.clear
+                    .frame(height: AppWindowChromeMetrics.unifiedTitlebarRowHeight)
+                    .accessibilityHidden(true)
 
                 mainStage
                     .frame(minWidth: 420, maxWidth: .infinity, maxHeight: .infinity)
                     .layoutPriority(0)
             }
-            .frame(maxWidth: .infinity, minHeight: 0, maxHeight: .infinity)
-            .animation(.easeInOut(duration: 0.15), value: submenuHidden)
+            .frame(minWidth: 420, maxWidth: .infinity, maxHeight: .infinity)
         }
+        .frame(maxWidth: .infinity, minHeight: 0, maxHeight: .infinity)
+        .animation(.easeInOut(duration: 0.15), value: submenuHidden)
     }
 
     private var mainStage: some View {

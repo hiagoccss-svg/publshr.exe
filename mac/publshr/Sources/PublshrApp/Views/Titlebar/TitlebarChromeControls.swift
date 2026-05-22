@@ -104,8 +104,6 @@ struct TitlebarChromeMenuLabel: View {
             Text(title)
                 .font(.system(size: 11, weight: .semibold))
                 .lineLimit(1)
-            Image(systemName: "chevron.down")
-                .font(.system(size: 8, weight: .bold))
         }
         .foregroundStyle(isActive || isHovered ? LibraryGlassDesign.ink : LibraryGlassDesign.inkSecondary)
         .padding(.horizontal, 8)

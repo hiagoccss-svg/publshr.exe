@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Cursor-style titlebar actions — search, command palette, and profile only.
+/// Cursor-style titlebar actions — channel tools, command palette, and profile (far right).
 struct TitlebarChromeActionBar: View {
     @EnvironmentObject private var auth: AuthViewModel
     @EnvironmentObject private var chat: ChatViewModel
@@ -25,13 +25,20 @@ struct TitlebarChromeActionBar: View {
     }
 
     private var trailingCluster: some View {
-        HStack(alignment: .center, spacing: CursorMacShellDesign.titlebarActionSpacing) {
+        HStack(alignment: .center, spacing: AppWindowChromeMetrics.trailingClusterSpacing) {
+            if module == .chat, let channel = chat.selectedChannel {
+                channelActionGroup(channel)
+                TitlebarChromeDivider()
+            }
+
             TitlebarChromeIconButton(
                 systemName: "magnifyingglass",
-                help: TitlebarShortcutHint.tooltip("Search", shortcut: TitlebarShortcutHint.search),
+                help: searchHelp,
                 isEnabled: module == .chat
             ) {
-                if module == .chat { chat.openWorkspaceSearch(scope: .workspace) }
+                guard module == .chat else { return }
+                let scope: ChatSearchScope = chat.selectedChannel != nil ? .channel : .workspace
+                chat.openWorkspaceSearch(scope: scope)
             }
 
             TitlebarChromeIconButton(
@@ -42,6 +49,34 @@ struct TitlebarChromeActionBar: View {
             }
 
             profileMenu
+        }
+    }
+
+    private var searchHelp: String {
+        if chat.selectedChannel != nil {
+            return TitlebarShortcutHint.tooltip("Search in channel", shortcut: TitlebarShortcutHint.search)
+        }
+        return TitlebarShortcutHint.tooltip("Search workspace", shortcut: TitlebarShortcutHint.search)
+    }
+
+    private func channelActionGroup(_ channel: ChatChannel) -> some View {
+        HStack(alignment: .center, spacing: CursorMacShellDesign.titlebarActionSpacing) {
+            TitlebarChromeIconButton(
+                systemName: chat.showPinnedPanel ? "pin.fill" : "pin",
+                help: "Pinned messages",
+                isActive: chat.showPinnedPanel
+            ) {
+                chat.showPinnedPanel.toggle()
+            }
+
+            Menu {
+                ChatChannelActionsMenu(chat: chat, channel: channel)
+            } label: {
+                TitlebarChromeIconButtonLabel(systemName: "ellipsis")
+            }
+            .menuStyle(.borderlessButton)
+            .menuIndicator(.hidden)
+            .help("Channel options")
         }
     }
 
@@ -66,23 +101,45 @@ struct TitlebarChromeActionBar: View {
                 Task { await auth.signOut() }
             }
         } label: {
-            TitlebarChromeMenuLabel(title: profileShortTitle)
+            ChatProfileAvatar(
+                profile: auth.profile,
+                displayName: auth.profile?.displayName ?? auth.profile?.email ?? "Account",
+                size: AppWindowChromeMetrics.controlSize,
+                presence: module == .chat ? chat.myStatus : nil
+            )
+            .overlay(
+                Circle()
+                    .strokeBorder(CursorMacShellDesign.borderSubtle, lineWidth: 0.5)
+            )
         }
         .menuStyle(.borderlessButton)
         .help("Account")
     }
+}
 
-    private var profileShortTitle: String {
-        if let name = auth.profile?.displayName?.trimmingCharacters(in: .whitespacesAndNewlines), !name.isEmpty {
-            let parts = name.split(separator: " ")
-            if let first = parts.first {
-                return String(first)
-            }
-        }
-        if let email = auth.profile?.email.split(separator: "@").first {
-            return String(email)
-        }
-        return "Account"
+/// Icon-only label for menus that wrap `TitlebarChromeIconButton` styling.
+private struct TitlebarChromeIconButtonLabel: View {
+    let systemName: String
+    @State private var isHovered = false
+
+    var body: some View {
+        Image(systemName: systemName)
+            .font(.system(size: AppWindowChromeMetrics.controlIconSize, weight: .medium))
+            .symbolRenderingMode(.monochrome)
+            .foregroundStyle(isHovered ? LibraryGlassDesign.ink : LibraryGlassDesign.inkSecondary)
+            .frame(
+                width: AppWindowChromeMetrics.controlSize,
+                height: AppWindowChromeMetrics.controlSize
+            )
+            .background(
+                RoundedRectangle(cornerRadius: AppWindowChromeMetrics.controlCornerRadius, style: .continuous)
+                    .fill(isHovered ? Color.white.opacity(0.55) : Color.white.opacity(0.32))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: AppWindowChromeMetrics.controlCornerRadius, style: .continuous)
+                    .strokeBorder(CursorMacShellDesign.borderSubtle, lineWidth: 0.5)
+            )
+            .onHover { isHovered = $0 }
     }
 }
 

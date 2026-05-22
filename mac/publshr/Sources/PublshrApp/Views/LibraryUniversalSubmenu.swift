@@ -6,32 +6,33 @@ enum LibraryUniversalSubmenu {
 
     static func sectionHeader(_ title: String, onAdd: (() -> Void)? = nil) -> some View {
         HStack(spacing: 4) {
-            Text(title.uppercased())
-                .font(.system(size: 10, weight: .semibold))
+            Text(title)
+                .font(.system(size: 11, weight: .semibold))
                 .foregroundStyle(LibraryGlassDesign.inkMuted)
-                .tracking(0.6)
             Spacer(minLength: 0)
             if let onAdd {
                 Button(action: onAdd) {
                     Image(systemName: "plus")
-                        .font(.system(size: 10, weight: .medium))
+                        .font(.system(size: 11, weight: .medium))
                         .foregroundStyle(LibraryGlassDesign.inkSecondary)
-                        .frame(width: 20, height: 20)
+                        .frame(width: 22, height: 22)
+                        .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
+                .help("Add \(title.lowercased())")
             }
         }
         .padding(.horizontal, LibraryGlassDesign.sidebarRowHorizontal + 2)
-        .padding(.top, LibraryGlassDesign.sectionLabelTop + 4)
-        .padding(.bottom, LibraryGlassDesign.sectionLabelBottom)
+        .padding(.top, 8)
+        .padding(.bottom, 3)
     }
 
     static func sectionDivider() -> some View {
         Rectangle()
             .fill(LibraryGlassDesign.hairline)
             .frame(height: 1)
-            .padding(.horizontal, 14)
-            .padding(.vertical, 10)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 4)
     }
 }
 
@@ -57,9 +58,9 @@ struct LibraryUniversalSubmenuContainer<Content: View, Footer: View>: View {
                 .frame(minHeight: 0, maxHeight: .infinity)
 
             footer()
-                .padding(.horizontal, LibraryGlassDesign.sidebarRowHorizontal)
-                .padding(.top, 8)
-                .padding(.bottom, 14)
+                .padding(.horizontal, 10)
+                .padding(.top, 6)
+                .padding(.bottom, 10)
         }
         .frame(width: width)
         .frame(minHeight: 0, maxHeight: .infinity)

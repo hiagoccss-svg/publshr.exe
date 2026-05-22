@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Cursor Mac titlebar — center context title; trailing search, command, profile only.
+/// Cursor Mac titlebar — channel/space context on the left; search, actions, and profile on the right.
 struct LibraryShellHeaderView: View {
     @EnvironmentObject private var auth: AuthViewModel
     @EnvironmentObject private var chat: ChatViewModel
@@ -35,14 +35,13 @@ struct LibraryShellHeaderView: View {
                     .frame(width: AppWindowChromeMetrics.trafficLightLeadingInset)
             }
 
-            Spacer(minLength: 8)
+            leadingContext
+                .frame(maxWidth: .infinity, alignment: .leading)
 
-            Text(centerTitle)
-                .font(CursorMacShellDesign.centerTitleFont)
-                .foregroundStyle(CursorMacShellDesign.centerTitleColor)
-                .lineLimit(1)
-
-            Spacer(minLength: 8)
+            if module == .chat, !chat.typingUsers.isEmpty {
+                ChatTypingIndicatorView(label: chat.typingSummary)
+                    .fixedSize()
+            }
 
             TitlebarChromeActionBar(
                 module: $module,
@@ -51,20 +50,75 @@ struct LibraryShellHeaderView: View {
                 placement: .trailing
             )
         }
+        .padding(.leading, reservesTrafficLightLeadingInset ? 0 : 14)
         .padding(.trailing, 14)
     }
 
-    private var centerTitle: String {
+    @ViewBuilder
+    private var leadingContext: some View {
         switch module {
         case .chat:
-            if let channel = chat.selectedChannel {
-                return channel.displayTitle
-            }
-            return auth.selectedWorkspace?.name ?? "Chat"
+            chatLeadingContext
         case .spaces:
-            return spaces.selectedSpace?.name ?? "Spaces"
+            spacesLeadingContext
         case .settings:
-            return "Settings"
+            Text("Settings")
+                .font(CursorMacShellDesign.centerTitleFont)
+                .foregroundStyle(CursorMacShellDesign.centerTitleColor)
+                .lineLimit(1)
         }
+    }
+
+    @ViewBuilder
+    private var chatLeadingContext: some View {
+        if let channel = chat.selectedChannel {
+            HStack(spacing: 8) {
+                ChatChannelIconView(channel: channel, size: 18)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(channel.displayTitle)
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(CursorMacShellDesign.centerTitleColor)
+                        .lineLimit(1)
+                    Text(chatChannelSubtitle(channel))
+                        .font(.system(size: 11))
+                        .foregroundStyle(LibraryGlassDesign.inkMuted)
+                        .lineLimit(1)
+                }
+            }
+        } else {
+            Text(auth.selectedWorkspace?.name ?? "Chat")
+                .font(CursorMacShellDesign.centerTitleFont)
+                .foregroundStyle(CursorMacShellDesign.centerTitleColor)
+                .lineLimit(1)
+        }
+    }
+
+    @ViewBuilder
+    private var spacesLeadingContext: some View {
+        if let space = spaces.selectedSpace {
+            VStack(alignment: .leading, spacing: 1) {
+                Text(space.name)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(CursorMacShellDesign.centerTitleColor)
+                    .lineLimit(1)
+                Text(spaces.spaceSubtitle(space))
+                    .font(.system(size: 11))
+                    .foregroundStyle(LibraryGlassDesign.inkMuted)
+                    .lineLimit(1)
+            }
+        } else {
+            Text("Spaces")
+                .font(CursorMacShellDesign.centerTitleFont)
+                .foregroundStyle(CursorMacShellDesign.centerTitleColor)
+                .lineLimit(1)
+        }
+    }
+
+    private func chatChannelSubtitle(_ channel: ChatChannel) -> String {
+        if let desc = channel.description, !desc.isEmpty {
+            return desc
+        }
+        let count = chat.channelMemberCount(for: channel)
+        return count == 1 ? "1 member" : "\(count) members"
     }
 }

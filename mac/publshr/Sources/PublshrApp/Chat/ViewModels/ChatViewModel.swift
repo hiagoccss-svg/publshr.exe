@@ -765,14 +765,20 @@ final class ChatViewModel: ObservableObject {
         return sidebarChannelsList(sorted)
     }
 
-    /// User-starred conversations (Slack-style); persisted per workspace.
+    /// User-starred conversations (Slack-style); persisted per workspace; respects sidebar filter/search.
     var starredChannels: [ChatChannel] {
         let combined = channels + directMessages
-        return combined
-            .filter { starredChannelIds.contains($0.id) }
-            .sorted {
-                $0.sidebarTitle.localizedCaseInsensitiveCompare($1.sidebarTitle) == .orderedAscending
-            }
+        return sidebarChannelsList(combined.filter { starredChannelIds.contains($0.id) })
+    }
+
+    /// Channels list for organized layout — excludes pinned rows shown above.
+    var organizedSidebarChannels: [ChatChannel] {
+        filteredChannels.filter { !starredChannelIds.contains($0.id) }
+    }
+
+    /// DMs list for organized layout — excludes pinned rows shown above.
+    var organizedSidebarDMs: [ChatChannel] {
+        filteredDMs.filter { !starredChannelIds.contains($0.id) }
     }
 
     func isStarred(_ channel: ChatChannel) -> Bool {
