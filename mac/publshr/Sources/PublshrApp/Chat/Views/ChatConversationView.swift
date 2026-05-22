@@ -120,11 +120,18 @@ struct ChatConversationView: View {
                         .padding(.bottom, CursorMacShellDesign.editorBottomPadding)
                     }
                     .onChange(of: chat.mainChannelMessages.count) { _, _ in
-                        if let last = chat.mainChannelMessages.last {
+                        if chat.scrollTargetMessageId == nil, let last = chat.mainChannelMessages.last {
                             withAnimation(.easeOut(duration: 0.2)) {
                                 proxy.scrollTo(last.id, anchor: .bottom)
                             }
                         }
+                    }
+                    .onChange(of: chat.scrollTargetMessageId) { _, target in
+                        guard let target else { return }
+                        withAnimation(.easeOut(duration: 0.2)) {
+                            proxy.scrollTo(target, anchor: .center)
+                        }
+                        chat.scrollTargetMessageId = nil
                     }
                 }
             }
@@ -144,6 +151,7 @@ struct ChatConversationView: View {
             threadReplyCount: chat.threadCounts[message.id] ?? 0,
             voiceTranscript: chat.voiceTranscripts[message.id],
             showReadReceipts: chat.permissions.readReceiptsEnabled,
+            seenByLabel: chat.seenByLabel(for: message.id),
             onRetry: { Task { await chat.retryMessage(message) } },
             onReply: { chat.beginReply(to: message) },
             onReaction: { emoji in Task { await chat.toggleReaction(messageId: message.id, emoji: emoji) } },

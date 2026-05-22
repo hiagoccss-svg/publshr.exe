@@ -24,6 +24,15 @@ enum ChatMentionParser {
         return tokens
     }
 
+    /// Active `@mention` fragment at end of composer text, if any.
+    static func activeMentionQuery(in text: String) -> String? {
+        guard let at = text.range(of: "@", options: .backwards) else { return nil }
+        let fragment = text[at.upperBound...]
+        if fragment.contains(where: { $0.isWhitespace || $0.isNewline }) { return nil }
+        let query = String(fragment)
+        return query.count <= 40 ? query : nil
+    }
+
     static func highlightRanges(in text: String) -> [(Range<String.Index>, Bool)] {
         var result: [(Range<String.Index>, Bool)] = []
         let pattern = #"@[\w\.\-]+"#

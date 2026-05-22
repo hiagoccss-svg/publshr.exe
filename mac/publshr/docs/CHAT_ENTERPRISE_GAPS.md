@@ -41,16 +41,24 @@ Shortcuts: **⌘⇧O** or Chat menu → “Pop Out Channel”
 
 ### Medium priority
 
-8. **Quick reply from notification** — macOS notification actions.
+8. ~~**Quick reply from notification**~~ — `UNTextInputNotificationAction` on all chat categories; routes to `sendQuickReply`.
 9. **Dock badge** — unread total on app icon (`NSApp.dockTile`).
 10. **Focus Mode** — notification interruption levels (macOS 12+).
-11. **Read receipt UI** — “Seen by …” list when enabled.
+11. ~~**Read receipt UI**~~ — “Seen by …” under own messages when `read_receipts_enabled`.
 12. **Channel notification prefs** — per-channel mute/keywords (DB: `chat_channel_members.notification_level` — UI incomplete).
 13. **True speech-to-text** — replace `ChatAIService.mockTranscribeVoice` with Whisper / cloud STT.
 14. **AI via gateway** — replace heuristics with Vercel AI SDK / your LLM.
 15. **Client-safe channel filtering** — hide internal channels for guest role at query level.
-16. **Group DM creation UI** — `kind = group` with multi-select members.
-17. **Announcement / read-only channels** — block non-admin posts in UI when `visibility = announcement`.
+16. ~~**Group DM creation UI**~~ — New Message sheet: Direct / Group segment + multi-select.
+17. ~~**Announcement / read-only channels**~~ — composer uses `canPost(in:)` (admin-only posting).
+
+### Recently shipped (mac IDE)
+
+- **@mention autocomplete** — composer picker (`@here`, `@channel`, members).
+- **Channel-scoped search** — `openChannelSearch()` vs workspace search; in-memory channel filter.
+- **Pinned panel** — preview + jump to message.
+- **Chat export** — transcript `.txt` when `can_export_chats`.
+- **AI follow-ups → Planner** — “Add to Planner” on recap action items.
 
 ### Lower priority
 

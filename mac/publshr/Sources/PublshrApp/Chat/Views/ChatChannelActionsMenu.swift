@@ -44,8 +44,15 @@ struct ChatChannelActionsMenu: View {
             } label: {
                 Label("Script recap (date range)", systemImage: "doc.text.magnifyingglass")
             }
-            Button { chat.showSearchSheet = true } label: {
+            Button { chat.openChannelSearch() } label: {
                 Label("Search in channel", systemImage: "magnifyingglass")
+            }
+            if chat.permissions.canExportChats {
+                Button {
+                    Task { await chat.exportSelectedChannel() }
+                } label: {
+                    Label("Export transcript", systemImage: "square.and.arrow.up")
+                }
             }
             Button {
                 chat.showPinnedPanel.toggle()

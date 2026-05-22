@@ -56,7 +56,7 @@ struct ChatEditorToolbarContent: View {
             }
 
             TitlebarChromeIconButton(systemName: "magnifyingglass", help: "Search in channel") {
-                chat.showSearchSheet = true
+                chat.openChannelSearch()
             }
 
             TitlebarChromeIconButton(
