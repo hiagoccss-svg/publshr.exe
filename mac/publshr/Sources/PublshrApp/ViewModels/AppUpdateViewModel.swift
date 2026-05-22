@@ -106,7 +106,7 @@ final class AppUpdateViewModel: ObservableObject {
 
     func installAndRestart() async {
         guard case .readyToInstall(let update) = phase else {
-            if case .available(let update) = phase {
+            if case .available = phase {
                 await downloadUpdate()
                 guard case .readyToInstall = phase else { return }
                 await installAndRestart()

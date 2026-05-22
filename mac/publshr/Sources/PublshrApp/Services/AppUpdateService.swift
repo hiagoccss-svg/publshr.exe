@@ -30,7 +30,7 @@ struct GitHubAsset: Decodable, Sendable {
     }
 }
 
-struct AvailableUpdate: Sendable {
+struct AvailableUpdate: Sendable, Equatable {
     let version: String
     let build: Int
     let tag: String

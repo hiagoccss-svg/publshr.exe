@@ -107,7 +107,7 @@ struct AuthView: View {
 
     private var signInForm: some View {
         VStack(alignment: .leading, spacing: 12) {
-            authField("Email", text: $auth.email, contentType: .emailAddress)
+            authField("Email", text: $auth.email, contentType: authEmailContentType)
             authSecureField("Password", text: $auth.password)
             primaryButton("Sign in", action: { Task { await auth.signIn() } })
         }
@@ -115,8 +115,8 @@ struct AuthView: View {
 
     private var signUpForm: some View {
         VStack(alignment: .leading, spacing: 12) {
-            authField("Name", text: $auth.displayName, contentType: .name)
-            authField("Email", text: $auth.email, contentType: .emailAddress)
+            authField("Name", text: $auth.displayName)
+            authField("Email", text: $auth.email, contentType: authEmailContentType)
             authSecureField("Password", text: $auth.password)
             Text("At least 8 characters")
                 .font(.system(size: 11))
@@ -135,7 +135,7 @@ struct AuthView: View {
                 .foregroundStyle(CursorTheme.foregroundMuted)
                 .fixedSize(horizontal: false, vertical: true)
 
-            authField("Code", text: $auth.otpCode, contentType: .oneTimeCode)
+            authField("Code", text: $auth.otpCode, contentType: authOTPContentType)
 
             primaryButton("Verify email", action: { Task { await auth.confirmEmailOTP() } })
 
@@ -154,6 +154,16 @@ struct AuthView: View {
                 .foregroundStyle(CursorTheme.foregroundMuted)
             }
         }
+    }
+
+    private var authEmailContentType: NSTextContentType? {
+        if #available(macOS 14.0, *) { return .emailAddress }
+        return .username
+    }
+
+    private var authOTPContentType: NSTextContentType? {
+        if #available(macOS 14.0, *) { return .oneTimeCode }
+        return nil
     }
 
     private func authField(_ label: String, text: Binding<String>, contentType: NSTextContentType? = nil) -> some View {

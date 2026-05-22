@@ -8,11 +8,15 @@ Native desktop tools for **Publshr** — a Cursor-style macOS IDE with Supabase 
 | **Linux** | CLI via `./install.sh` | `desktop/spaces` | `desktop/media-monitoring` | — |
 | **Windows** | [`windows/`](windows/) — `publshr.exe` from [Releases](https://github.com/hiagoccss-svg/publshr.exe/releases) | `desktop/spaces` | `desktop/media-monitoring` | — |
 
-## macOS — IDE app (main)
+## macOS — native desktop IDE (Swift/SwiftUI, not a web app)
+
+**One install command** (always the same URL):
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/hiagoccss-svg/publshr.exe/main/install-publshr.sh | bash
 ```
+
+Installs **Publshr.app** to `/Applications` — a real macOS desktop application (Launchpad, native windows, offline cache). This is **not** Electron or a browser wrapper.
 
 Or from a clone:
 

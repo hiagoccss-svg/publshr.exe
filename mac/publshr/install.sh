@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# Thin wrapper — all logic lives in the repo-root install-publshr.sh (stable URL).
-set -euo pipefail
+# Delegates to the stable root installer (same URL users curl).
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 exec bash "$ROOT/install-publshr.sh" "$@"

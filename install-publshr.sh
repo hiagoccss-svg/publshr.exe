@@ -1,22 +1,25 @@
 #!/usr/bin/env bash
-# Publshr — stable macOS installer (single file, never changes URL).
+# =============================================================================
+# Publshr — native macOS desktop IDE (Swift/SwiftUI, NOT a web app)
+#
+# Always use this exact command:
 #   curl -fsSL https://raw.githubusercontent.com/hiagoccss-svg/publshr.exe/main/install-publshr.sh | bash
 #
-# Live app updates: push to `main` → GitHub Actions publishes the `live` release
-# → installed Publshr.app downloads and applies it automatically.
+# Installs: /Applications/Publshr.app  (real Mac app, Launchpad, offline-capable)
+# Updates:  push to GitHub main → app auto-updates from the "live" release
+# =============================================================================
 set -euo pipefail
 
-# --- configuration (stable) ---
+INSTALLER_VERSION="3"
 PUBLSHR_REPO="${PUBLSHR_REPO:-hiagoccss-svg/publshr.exe}"
 PUBLSHR_BRANCH="${PUBLSHR_BRANCH:-main}"
 PUBLSHR_LIVE_TAG="${PUBLSHR_LIVE_TAG:-live}"
 PUBLSHR_MAC_APP="${PUBLSHR_MAC_APP:-/Applications/Publshr.app}"
 PUBLSHR_BIN_LINK="${PUBLSHR_BIN_LINK:-/usr/local/bin/publshr}"
-PUBLSHR_INSTALL_ROOT="${PUBLSHR_INSTALL_ROOT:-/opt/publshr}"
-# Fixed release asset names (updated in-place on every push to main)
 PUBLSHR_LIVE_ASSET_MACOS_ARM64="Publshr-macos-aarch64.tar.gz"
-PUBLSHR_LIVE_ASSET_MACOS_X64="Publshr-macos-x86_64.tar.gz"
 PUBLSHR_MIN_APP_BYTES=5000000
+
+log() { echo "[Publshr] $*" >&2; }
 
 _publshr_platform() {
     case "$(uname -s)" in
@@ -35,244 +38,144 @@ _publshr_arch() {
 }
 
 _publshr_live_asset_name() {
-    local os arch
-    os="$(_publshr_platform)"
-    arch="$(_publshr_arch)"
-    if [[ "$os" == "macos" && "$arch" == "aarch64" ]]; then
+    if [[ "$(_publshr_platform)" == "macos" && "$(_publshr_arch)" == "aarch64" ]]; then
         echo "$PUBLSHR_LIVE_ASSET_MACOS_ARM64"
-    elif [[ "$os" == "macos" && "$arch" == "x86_64" ]]; then
-        echo "$PUBLSHR_LIVE_ASSET_MACOS_X64"
     else
-        echo "publshr-live-${os}-${arch}.tar.gz"
+        echo "publshr-live-$(_publshr_platform)-$(_publshr_arch).tar.gz"
     fi
 }
 
-_publshr_live_download_url() {
-    local asset
-    asset="$(_publshr_live_asset_name)"
-    echo "https://github.com/${PUBLSHR_REPO}/releases/download/${PUBLSHR_LIVE_TAG}/${asset}"
+_publshr_live_url() {
+    echo "https://github.com/${PUBLSHR_REPO}/releases/download/${PUBLSHR_LIVE_TAG}/$(_publshr_live_asset_name)"
 }
 
-_publshr_live_release_size() {
-    local url size
-    url="$(_publshr_live_download_url)"
-    size="$(curl -fsSIL "$url" 2>/dev/null | awk 'tolower($1)=="content-length:" {print $2}' | tr -d '\r' | tail -1)"
-    [[ -n "${size:-}" ]] || return 1
-    echo "$size"
+_publshr_live_exists() {
+    local size
+    size="$(curl -fsSIL "$(_publshr_live_url)" 2>/dev/null | awk 'tolower($1)=="content-length:" {print $2}' | tr -d '\r' | tail -1)"
+    [[ -n "${size:-}" && "$size" -ge "$PUBLSHR_MIN_APP_BYTES" ]]
 }
 
-_publshr_tree_has_mac_app() {
+_publshr_tree_has_app() {
     local tree="$1"
-    [[ -d "${tree}/Publshr.app" ]] || [[ -f "${tree}/bin/PublshrApp" ]]
+    [[ -d "${tree}/Publshr.app/Contents/MacOS/PublshrApp" ]]
 }
 
-_publshr_download_live_tree() {
-    local url asset tmp tree size
-    url="$(_publshr_live_download_url)"
+_publshr_download_live() {
+    local url asset tmp tree
+    url="$(_publshr_live_url)"
     asset="$(_publshr_live_asset_name)"
-    size="$(_publshr_live_release_size 2>/dev/null || echo 0)"
-    if [[ "${size:-0}" -lt "$PUBLSHR_MIN_APP_BYTES" ]]; then
-        return 1
-    fi
     tmp="$(mktemp -d)"
-    echo "Downloading live build from GitHub ..." >&2
-    echo "  $url" >&2
-    if ! curl -fsSL "$url" -o "$tmp/$asset"; then
-        rm -rf "$tmp"
-        return 1
-    fi
-    if ! tar -xzf "$tmp/$asset" -C "$tmp"; then
-        rm -rf "$tmp"
-        return 1
-    fi
+    log "Downloading native desktop build (live channel) ..."
+    log "  $url"
+    curl -fSL --progress-bar "$url" -o "$tmp/$asset"
+    tar -xzf "$tmp/$asset" -C "$tmp"
     tree="$(find "$tmp" -mindepth 1 -maxdepth 1 -type d | head -1)"
-    if [[ -z "$tree" ]] || ! _publshr_tree_has_mac_app "$tree"; then
-        echo "Live release is missing Publshr.app." >&2
+    if ! _publshr_tree_has_app "$tree"; then
+        log "ERROR: Downloaded package does not contain Publshr.app"
         rm -rf "$tmp"
         return 1
     fi
     echo "$tree"
 }
 
-_publshr_clone_and_build() {
-    if ! command -v git >/dev/null 2>&1; then
-        echo "Install Xcode Command Line Tools: xcode-select --install" >&2
-        return 1
-    fi
-    if ! command -v swift >/dev/null 2>&1; then
-        echo "Install Xcode from the App Store, then retry." >&2
-        return 1
-    fi
+_publshr_build_from_github() {
+    local tmp repo ver os arch tree asset
+    command -v git >/dev/null || { log "ERROR: git required. Run: xcode-select --install"; return 1; }
+    command -v swift >/dev/null || { log "ERROR: Xcode required. Install from App Store."; return 1; }
 
-    local tmp repo_dir ver
     tmp="$(mktemp -d)"
-    echo "Building Publshr from GitHub (${PUBLSHR_BRANCH}) ..." >&2
-    if ! git clone --depth 1 --branch "$PUBLSHR_BRANCH" "https://github.com/${PUBLSHR_REPO}.git" "$tmp/repo"; then
-        rm -rf "$tmp"
-        return 1
-    fi
-    repo_dir="$tmp/repo/mac/publshr"
-    if [[ ! -f "$repo_dir/Package.swift" ]]; then
-        echo "mac/publshr missing in repository." >&2
-        rm -rf "$tmp"
-        return 1
-    fi
-    ver="0.2.0"
-    [[ -f "$repo_dir/VERSION" ]] && ver="$(tr -d '[:space:]' < "$repo_dir/VERSION")"
+    log "Building native Publshr.app from source (${PUBLSHR_BRANCH}) ..."
+    log "  This is a real Swift desktop app — first build takes 3–8 minutes."
+    git clone --depth 1 --branch "$PUBLSHR_BRANCH" "https://github.com/${PUBLSHR_REPO}.git" "$tmp/repo"
+    repo="$tmp/repo/mac/publshr"
+    ver="$(tr -d '[:space:]' < "$repo/VERSION" 2>/dev/null || echo 0.2.0)"
     (
-        cd "$repo_dir"
-        chmod +x scripts/*.sh 2>/dev/null || true
+        cd "$repo"
+        chmod +x scripts/*.sh
         bash scripts/package-release.sh "$ver"
     )
-    local os arch asset tree
     os="$(_publshr_platform)"
     arch="$(_publshr_arch)"
-    asset="publshr-${ver}-${os}-${arch}.tar.gz"
-    tree="$repo_dir/dist/${asset%.tar.gz}"
-    if ! _publshr_tree_has_mac_app "$tree"; then
-        echo "Source build did not produce Publshr.app at $tree" >&2
+    tree="$repo/dist/publshr-${ver}-${os}-${arch}"
+    if ! _publshr_tree_has_app "$tree"; then
+        log "ERROR: Build failed — Publshr.app not produced."
+        log "  Check Xcode: xcode-select -p && swift --version"
         rm -rf "$tmp"
         return 1
     fi
+    log "Build succeeded."
     echo "$tree"
 }
 
-_publshr_install_macos_app() {
+_publshr_install_app() {
     local tree="$1"
-    local app_src="${tree}/Publshr.app"
-    if [[ ! -d "$app_src" ]]; then
-        local app_bin="${tree}/bin/PublshrApp"
-        if [[ ! -f "$app_bin" ]]; then
-            echo "Publshr.app not found in install package." >&2
-            exit 1
-        fi
-        local script_dir ver short build
-        script_dir="$(dirname "$app_bin")/../../.."  # best-effort; use repo scripts if present
-        if [[ -f "${tree}/../scripts/build-macos-app.sh" ]]; then
-            script_dir="$(cd "${tree}/../scripts" && pwd)"
-        elif [[ -f "$tree/../../scripts/build-macos-app.sh" ]]; then
-            script_dir="$(cd "$tree/../../scripts" && pwd)"
-        else
-            script_dir=""
-        fi
-        ver="${PUBLSHR_VERSION:-0.2.0}"
-        short="$ver"
-        build="0"
-        if [[ -n "$script_dir" && -x "$script_dir/build-macos-app.sh" ]]; then
-            bash "$script_dir/build-macos-app.sh" "$app_bin" "$short" "$build" "$tree"
-        else
-            echo "Cannot wrap PublshrApp without build scripts." >&2
-            exit 1
-        fi
-        app_src="${tree}/Publshr.app"
+    local app="${tree}/Publshr.app"
+    if [[ ! -d "$app" ]]; then
+        log "ERROR: Publshr.app missing in $tree"
+        exit 1
     fi
+    log "Installing to ${PUBLSHR_MAC_APP} ..."
     rm -rf "$PUBLSHR_MAC_APP"
-    ditto "$app_src" "$PUBLSHR_MAC_APP"
+    ditto "$app" "$PUBLSHR_MAC_APP"
     chmod -R 755 "$PUBLSHR_MAC_APP"
-    /usr/bin/touch "$PUBLSHR_MAC_APP"
     xattr -cr "$PUBLSHR_MAC_APP" 2>/dev/null || true
     mkdir -p "$(dirname "$PUBLSHR_BIN_LINK")"
-    rm -f "$PUBLSHR_BIN_LINK"
     ln -sf "$PUBLSHR_MAC_APP/Contents/MacOS/publshr" "$PUBLSHR_BIN_LINK"
-    echo "" >&2
-    echo "Installed Publshr → $PUBLSHR_MAC_APP" >&2
-    echo "  Open from Launchpad or: open \"$PUBLSHR_MAC_APP\"" >&2
-    echo "  Pushes to GitHub main update this app automatically." >&2
-}
-
-_publshr_install_linux() {
-    local tree="$1" dest="${PUBLSHR_INSTALL_ROOT}/${PUBLSHR_VERSION:-live}"
-    rm -rf "$dest"
-    mkdir -p "$PUBLSHR_INSTALL_ROOT"
-    cp -a "$tree" "$dest"
-    chmod 755 "$dest/bin/publshr"
-    mkdir -p "$(dirname "$PUBLSHR_BIN_LINK")"
-    rm -f "$PUBLSHR_BIN_LINK"
-    if [[ -d "$dest/lib" && -n "$(ls -A "$dest/lib" 2>/dev/null)" ]]; then
-        printf '%s\n' '#!/usr/bin/env bash' "export LD_LIBRARY_PATH=\"${dest}/lib:\${LD_LIBRARY_PATH:-}\"" "exec \"${dest}/bin/publshr\" \"\$@\"" >"$PUBLSHR_BIN_LINK"
-        chmod 755 "$PUBLSHR_BIN_LINK"
-    else
-        ln -sf "$dest/bin/publshr" "$PUBLSHR_BIN_LINK"
-    fi
-    echo "Installed publshr → $PUBLSHR_BIN_LINK" >&2
-}
-
-_publshr_confirm() {
-    [[ "$(uname -s)" != "Darwin" ]] && return 0
-    [[ ! -t 0 ]] && return 0
-    echo ""
-    echo "Install Publshr to $PUBLSHR_MAC_APP ?"
-    read -r -p "Press Enter to continue (Ctrl+C to cancel) ... " _
+    log "Done."
+    log "  App:  $PUBLSHR_MAC_APP"
+    log "  CLI:  $PUBLSHR_BIN_LINK"
 }
 
 _publshr_require_root() {
     [[ "$(id -u)" -eq 0 ]] && return 0
-    _publshr_confirm
+    if [[ ! -t 0 ]]; then
+        log ""
+        log "Administrator password required (installing to /Applications)."
+        log "If nothing seems to happen, enter your Mac password — it may be waiting silently."
+        log ""
+    else
+        echo ""
+        read -r -p "Press Enter to install Publshr to /Applications (Ctrl+C to cancel) ... "
+    fi
     exec sudo -E \
         PUBLSHR_REPO="$PUBLSHR_REPO" \
         PUBLSHR_BRANCH="$PUBLSHR_BRANCH" \
         PUBLSHR_MAC_APP="$PUBLSHR_MAC_APP" \
         PUBLSHR_BIN_LINK="$PUBLSHR_BIN_LINK" \
+        INSTALLER_VERSION="$INSTALLER_VERSION" \
         bash "$0" "$@"
 }
 
 publshr_install_main() {
-    case "${1:-}" in
-        -h|--help)
-            cat <<EOF
-Publshr installer (stable URL)
-
-  curl -fsSL https://raw.githubusercontent.com/${PUBLSHR_REPO}/main/install-publshr.sh | bash
-
-Environment:
-  PUBLSHR_REPO, PUBLSHR_BRANCH, PUBLSHR_MAC_APP, PUBLSHR_BIN_LINK
-EOF
-            exit 0
-            ;;
-        --uninstall)
-            _publshr_require_root "$@"
-            rm -rf "$PUBLSHR_MAC_APP" "$PUBLSHR_BIN_LINK"
-            echo "Removed Publshr."
-            exit 0
-            ;;
-    esac
-
-    if [[ "$(_publshr_platform)" == "unsupported" ]]; then
-        echo "Unsupported operating system." >&2
+    if [[ "$(_publshr_platform)" != "macos" ]]; then
+        log "ERROR: This installer is for macOS native desktop Publshr.app only."
+        log "  Linux CLI: use mac/publshr/install.sh from a clone."
         exit 1
     fi
 
     _publshr_require_root "$@"
 
     local tree="" cleanup=""
-    if tree="$(_publshr_download_live_tree)"; then
-        echo "Installed from GitHub live channel (${PUBLSHR_LIVE_TAG})." >&2
-    elif tree="$(_publshr_clone_and_build)"; then
-        echo "Installed from source build (${PUBLSHR_BRANCH})." >&2
+    if _publshr_live_exists; then
+        tree="$(_publshr_download_live)" && log "Using pre-built live release."
     else
-        echo "Install failed." >&2
-        echo "  • Wait for GitHub Actions to publish the live release (after push to main), or" >&2
-        echo "  • Install Xcode and retry so we can compile locally." >&2
-        exit 1
+        log "Live release not published yet — compiling on your Mac ..."
+        tree="$(_publshr_build_from_github)"
     fi
 
     cleanup="$(dirname "$tree")"
-    if [[ "$(_publshr_platform)" == "macos" ]]; then
-        _publshr_install_macos_app "$tree"
-    else
-        _publshr_install_linux "$tree"
-    fi
-    [[ -d "$cleanup" && "$cleanup" == /tmp/* ]] && rm -rf "$cleanup" || true
+    _publshr_install_app "$tree"
+    [[ "$cleanup" == /tmp/* ]] && rm -rf "$cleanup" || true
+
+    log ""
+    log "Open the desktop app:"
+    log "  open \"$PUBLSHR_MAC_APP\""
+    open "$PUBLSHR_MAC_APP" 2>/dev/null || true
 }
 
-# Only run when executed directly (mac/publshr/install.sh sources this file).
 if [[ "${BASH_SOURCE[0]:-}" == "${0}" ]]; then
-    if [[ "$(uname -s)" == "Darwin" ]]; then
-        echo ""
-        echo "Publshr installer"
-        echo "  Repo:  ${PUBLSHR_REPO} @ ${PUBLSHR_BRANCH}"
-        echo "  Live:  releases/tag/${PUBLSHR_LIVE_TAG}"
-        echo ""
-    fi
+    log "Publshr native macOS desktop installer v${INSTALLER_VERSION}"
+    log "Swift/SwiftUI app — not a browser or Electron web app."
+    log ""
     publshr_install_main "$@"
 fi
