@@ -1,5 +1,6 @@
 import Foundation
 import Supabase
+import UniformTypeIdentifiers
 
 /// Isolated chat state for a dedicated pop-out window (does not disturb IDE panel selection).
 @MainActor
@@ -255,6 +256,47 @@ final class ChatChannelSession: ObservableObject {
             messages.append(msg)
             await refreshExtras()
         } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func uploadFile(from url: URL) async {
+        guard permissions.canUploadFiles, let userId = currentUserId else { return }
+        uploadProgress = 0.1
+        do {
+            let data = try Data(contentsOf: url)
+            let name = url.lastPathComponent
+            let mime = UTType(filenameExtension: url.pathExtension)?.preferredMIMEType ?? "application/octet-stream"
+            let result = try await service.uploadChatFile(
+                workspaceId: workspaceId,
+                userId: userId,
+                fileName: name,
+                mimeType: mime,
+                data: data
+            )
+            uploadProgress = 0.7
+            let attachment = ChatAttachment(
+                type: mime.hasPrefix("image/") ? "image" : "file",
+                url: result.publicURL.absoluteString,
+                name: name,
+                size: data.count
+            )
+            let msg = try await service.sendMessageExtended(
+                workspaceId: workspaceId,
+                channelId: channel.id,
+                userId: userId,
+                body: "Shared \(name)",
+                attachments: [attachment]
+            )
+            if !messages.contains(where: { $0.id == msg.id }) {
+                messages.append(msg)
+            }
+            uploadProgress = 1
+            try? await Task.sleep(nanoseconds: 300_000_000)
+            uploadProgress = nil
+            await refreshExtras()
+        } catch {
+            uploadProgress = nil
             errorMessage = error.localizedDescription
         }
     }

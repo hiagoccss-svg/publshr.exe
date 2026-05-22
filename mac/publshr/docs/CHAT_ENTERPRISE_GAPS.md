@@ -11,10 +11,10 @@ What is **implemented** vs what still needs work for production-grade enterprise
 | Double-click / context menu | Open channel in new window |
 | Isolated window state | `ChatChannelSession` (does not change IDE selection) |
 | Realtime inserts | Messages, presence, reactions |
-| Realtime edits/deletes | `subscribeMessageUpdates` |
-| Typing indicators | Realtime broadcast per channel |
+| Realtime edits/deletes | `subscribeMessageUpdates` (wired to IDE + pop-out) |
+| Typing indicators | IDE + pop-out via `ChatTypingBroadcaster` |
 | Notification click | Opens dedicated window for that channel |
-| Permissions UI | Saved to `workspaces.settings.chat` in Supabase |
+| Permissions UI | Persisted to `workspaces.settings.chat` via Supabase PATCH |
 | Threads, reactions, files, voice, AI, search | Phases 2–4 |
 
 ## Pop-out window (Slack-style)
@@ -33,8 +33,8 @@ Shortcuts: **⌘⇧O** or Chat menu → “Pop Out Channel”
 
 1. **Mention push notifications** — detect `@user` and notify mentioned users (not only generic message toast).
 2. **Channel member management UI** — invite, remove, roles; guest/client mode enforcement in queries.
-3. **End-to-end file upload from pop-out** — session composer file/voice upload (currently IDE panel only for files).
-4. **Image inline preview** — render image attachments in thread, not only filename.
+3. ~~**End-to-end file upload from pop-out**~~ — implemented on `ChatChannelSession.uploadFile`.
+4. ~~**Image inline preview**~~ — `ChatMessageBubbleView` renders image attachments.
 5. **Workspace switcher** — multiple workspaces per account.
 6. **Audit log writes** — message delete/edit → `audit_logs` table.
 7. **Message retention / export** — admin policies + export job.

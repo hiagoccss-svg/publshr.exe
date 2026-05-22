@@ -70,6 +70,40 @@ struct SpaceChecklistItem: Codable, Identifiable, Equatable {
     }
 }
 
+struct SpaceFolderRecord: Codable, Identifiable, Equatable {
+    let id: UUID
+    let spaceId: UUID
+    var name: String
+    var sortOrder: Double
+    var isArchived: Bool
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case spaceId = "space_id"
+        case name
+        case sortOrder = "sort_order"
+        case isArchived = "is_archived"
+    }
+}
+
+struct SpaceListRecord: Codable, Identifiable, Equatable {
+    let id: UUID
+    let spaceId: UUID
+    var folderId: UUID?
+    var name: String
+    var sortOrder: Double
+    var isArchived: Bool
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case spaceId = "space_id"
+        case folderId = "folder_id"
+        case name
+        case sortOrder = "sort_order"
+        case isArchived = "is_archived"
+    }
+}
+
 struct SpaceRecord: Codable, Identifiable, Equatable {
     let id: UUID
     let workspaceId: UUID
@@ -93,6 +127,7 @@ struct SpaceRecord: Codable, Identifiable, Equatable {
 struct SpaceTaskRecord: Codable, Identifiable, Equatable {
     let id: UUID
     let spaceId: UUID
+    var listId: UUID?
     var title: String
     var description: String
     var status: SpaceTaskStatus
@@ -107,6 +142,7 @@ struct SpaceTaskRecord: Codable, Identifiable, Equatable {
     enum CodingKeys: String, CodingKey {
         case id
         case spaceId = "space_id"
+        case listId = "list_id"
         case title, description, status, priority
         case assigneeId = "assignee_id"
         case startDate = "start_date"
@@ -119,6 +155,7 @@ struct SpaceTaskRecord: Codable, Identifiable, Equatable {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         id = try c.decode(UUID.self, forKey: .id)
         spaceId = try c.decode(UUID.self, forKey: .spaceId)
+        listId = try c.decodeIfPresent(UUID.self, forKey: .listId)
         title = try c.decode(String.self, forKey: .title)
         description = try c.decodeIfPresent(String.self, forKey: .description) ?? ""
         status = try c.decode(SpaceTaskStatus.self, forKey: .status)
@@ -200,6 +237,7 @@ struct SpaceDocumentRecord: Codable, Identifiable, Equatable {
 struct SpaceTaskPatch: Encodable {
     var title: String?
     var description: String?
+    var listId: UUID?
     var status: String?
     var priority: String?
     var assigneeId: UUID?
@@ -213,7 +251,9 @@ struct SpaceTaskPatch: Encodable {
     var sortOrder: Double?
 
     enum CodingKeys: String, CodingKey {
-        case title, description, status, priority
+        case title, description
+        case listId = "list_id"
+        case status, priority
         case assigneeId = "assignee_id"
         case startDate = "start_date"
         case dueDate = "due_date"
@@ -225,6 +265,7 @@ struct SpaceTaskPatch: Encodable {
         var c = encoder.container(keyedBy: CodingKeys.self)
         try c.encodeIfPresent(title, forKey: .title)
         try c.encodeIfPresent(description, forKey: .description)
+        try c.encodeIfPresent(listId, forKey: .listId)
         try c.encodeIfPresent(status, forKey: .status)
         try c.encodeIfPresent(priority, forKey: .priority)
         if clearAssignee {

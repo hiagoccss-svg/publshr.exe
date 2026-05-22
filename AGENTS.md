@@ -48,7 +48,7 @@ Produces `dist/publshr-<version>-<os>-<arch>.tar.gz`.
 
 ### macOS install and live updates
 
-Every push to **`main`** publishes a new **`live`** build (icons, UI, features, colors — full `Publshr.app` tarball). Installed apps compare build + version + commit from `VERSION.txt` every **60s** and auto-install to `/Applications/Publshr.app`. Settings → bottom **Download and install latest** runs the same flow manually.
+Every push to **`main`** publishes a new **`live`** build (icons, UI, features, colors — full `Publshr.app` tarball). Installed apps compare build + version + commit from `VERSION.txt` every **60s** and auto-install **in place** (passwordless when installed to `~/Applications/Publshr.app`). Settings → bottom **Download and install latest** runs the same flow manually.
 
 Stable installer (single file, fixed URL):
 

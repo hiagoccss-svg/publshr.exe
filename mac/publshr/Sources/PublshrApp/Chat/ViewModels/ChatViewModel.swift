@@ -51,6 +51,9 @@ final class ChatViewModel: ObservableObject {
     var service: ChatService?
     private var draftSaveTask: Task<Void, Never>?
     private var presenceHeartbeat: Task<Void, Never>?
+    private var typingBroadcaster: ChatTypingBroadcaster?
+    private var typingListenTask: Task<Void, Never>?
+    private var composerTypingTask: Task<Void, Never>?
     private var didAttach = false
     private var navigationBackStack: [UUID] = []
     private var navigationForwardStack: [UUID] = []
@@ -100,7 +103,14 @@ final class ChatViewModel: ObservableObject {
     func detach() {
         presenceHeartbeat?.cancel()
         draftSaveTask?.cancel()
-        Task { await service?.stopRealtime() }
+        composerTypingTask?.cancel()
+        typingListenTask?.cancel()
+        Task {
+            await typingBroadcaster?.unsubscribe()
+            await service?.stopRealtime()
+        }
+        typingBroadcaster = nil
+        typingUsers = []
     }
 
     // MARK: - Bootstrap
@@ -226,6 +236,8 @@ final class ChatViewModel: ObservableObject {
         selectedChannel = channel
         unreadByChannel[channel.id] = 0
         service?.localStore().setUnreadCount(channelId: channel.id, count: 0)
+        refreshDockBadge()
+        Task { await subscribeTyping(for: channel.id) }
         if let draft = service?.localStore().loadDraft(channelId: channel.id) {
             composerText = draft.body
         } else {
@@ -334,6 +346,10 @@ final class ChatViewModel: ObservableObject {
                 confirmed.localStatus = .sent
                 messages[idx] = confirmed
             }
+            notifyMentions(in: text, channel: channel, messageId: sent.id)
+            if let userId = currentUserId {
+                await typingBroadcaster?.stopTyping(channelId: channel.id, userId: userId, displayName: displayName(for: userId))
+            }
         } catch {
             if let idx = messages.firstIndex(where: { $0.id == optimisticId }) {
                 var failed = messages[idx]
@@ -351,6 +367,36 @@ final class ChatViewModel: ObservableObject {
             messages.remove(at: idx)
         }
         await sendMessage()
+    }
+
+    func composerActivityChanged() {
+        scheduleDraftSave()
+        guard let channel = selectedChannel, let userId = currentUserId else { return }
+        composerTypingTask?.cancel()
+        composerTypingTask = Task {
+            try? await Task.sleep(nanoseconds: 300_000_000)
+            guard !Task.isCancelled else { return }
+            await typingBroadcaster?.sendTyping(
+                channelId: channel.id,
+                userId: userId,
+                displayName: displayName(for: userId)
+            )
+        }
+    }
+
+    private func notifyMentions(in text: String, channel: ChatChannel, messageId: UUID) {
+        let tokens = ChatMentionParser.parse(text, profiles: profiles)
+        for token in tokens {
+            guard token.type == .user, let mentionedId = token.userId, mentionedId != currentUserId else { continue }
+            let authorId = currentUserId ?? mentionedId
+            ChatNotificationService.shared.notify(
+                title: "Mention in \(channel.displayTitle)",
+                body: "\(displayName(for: authorId)) mentioned you",
+                channelId: channel.id,
+                messageId: messageId,
+                category: .mention
+            )
+        }
     }
 
     func scheduleDraftSave() {
@@ -444,10 +490,48 @@ final class ChatViewModel: ObservableObject {
     // MARK: - Realtime
 
     private func startRealtime(workspaceId: UUID) {
+        guard let auth else { return }
+        typingBroadcaster = ChatTypingBroadcaster(client: auth.client, workspaceId: workspaceId)
         let handler = IncomingMessageHandler(viewModel: self)
         service?.subscribeMessages(workspaceId: workspaceId, onInsert: handler.handleMessage)
+        service?.subscribeMessageUpdates(
+            workspaceId: workspaceId,
+            onUpdate: handler.handleMessageUpdate,
+            onDelete: handler.handleMessageDelete
+        )
         service?.subscribePresence(workspaceId: workspaceId, onChange: handler.handlePresence)
         service?.subscribeReactions(workspaceId: workspaceId, onChange: handler.handleReactions)
+    }
+
+    private func subscribeTyping(for channelId: UUID) async {
+        guard let typingBroadcaster else { return }
+        typingListenTask?.cancel()
+        await typingBroadcaster.configureHandlers(
+            onTyping: { [weak self] cid, name in
+                Task { @MainActor [weak self] in
+                    guard let chat = self, chat.selectedChannel?.id == cid else { return }
+                    chat.typingUsers = [
+                        ChatTypingState(
+                            channelId: cid,
+                            userId: UUID(),
+                            displayName: name,
+                            expiresAt: Date().addingTimeInterval(4)
+                        ),
+                    ]
+                }
+            },
+            onStop: { [weak self] cid in
+                Task { @MainActor [weak self] in
+                    guard let chat = self, chat.selectedChannel?.id == cid else { return }
+                    chat.typingUsers = []
+                }
+            }
+        )
+        await typingBroadcaster.subscribe(channelId: channelId)
+    }
+
+    func refreshDockBadge() {
+        ChatNotificationService.shared.setBadgeCount(totalUnread)
     }
 
     func handleIncomingMessage(_ message: ChatMessage) {
@@ -469,17 +553,53 @@ final class ChatViewModel: ObservableObject {
             unreadByChannel[message.channelId] = count
             service?.localStore().setUnreadCount(channelId: message.channelId, count: count)
             if message.userId != currentUserId {
-                let channelName = (channels + directMessages).first { $0.id == message.channelId }?.displayTitle ?? "Chat"
-                let author = displayName(for: message.userId)
-                ChatNotificationService.shared.notify(
-                    title: channelName,
-                    body: "\(author): \(message.body ?? "")",
-                    channelId: message.channelId,
-                    messageId: message.id
-                )
+                notifyForIncomingMessage(message)
             }
         }
         updateChannelPreview(message)
+        refreshDockBadge()
+    }
+
+    func handleMessageUpdate(_ message: ChatMessage) {
+        if selectedChannel?.id == message.channelId {
+            if let idx = messages.firstIndex(where: { $0.id == message.id }) {
+                messages[idx] = message
+            }
+            if let parent = message.threadParentId, activeThreadParent?.id == parent,
+               let idx = threadMessages.firstIndex(where: { $0.id == message.id }) {
+                threadMessages[idx] = message
+            }
+        }
+        ChatWindowManager.shared.forwardMessageUpdate(message)
+    }
+
+    func handleMessageDelete(_ messageId: UUID) {
+        if let idx = messages.firstIndex(where: { $0.id == messageId }) {
+            var m = messages[idx]
+            m.isDeleted = true
+            m.body = nil
+            messages[idx] = m
+        }
+        ChatWindowManager.shared.forwardMessageDelete(messageId)
+    }
+
+    private func notifyForIncomingMessage(_ message: ChatMessage) {
+        let channelName = (channels + directMessages).first { $0.id == message.channelId }?.displayTitle ?? "Chat"
+        let author = displayName(for: message.userId)
+        let body = message.body ?? ""
+        let mentions = ChatMentionParser.parse(body, profiles: profiles)
+        let mentionedMe = mentions.contains { token in
+            if token.type == .user, token.userId == currentUserId { return true }
+            if token.type == .here || token.type == .channel { return true }
+            return false
+        }
+        ChatNotificationService.shared.notify(
+            title: channelName,
+            body: "\(author): \(body)",
+            channelId: message.channelId,
+            messageId: message.id,
+            category: mentionedMe ? .mention : .message
+        )
     }
 
     private func updateChannelPreview(_ message: ChatMessage) {
@@ -555,6 +675,18 @@ private final class IncomingMessageHandler: @unchecked Sendable {
     func handleReactions() {
         Task { @MainActor [weak viewModel] in
             await viewModel?.loadChannelExtras()
+        }
+    }
+
+    func handleMessageUpdate(_ message: ChatMessage) {
+        Task { @MainActor [weak viewModel] in
+            viewModel?.handleMessageUpdate(message)
+        }
+    }
+
+    func handleMessageDelete(_ messageId: UUID) {
+        Task { @MainActor [weak viewModel] in
+            viewModel?.handleMessageDelete(messageId)
         }
     }
 }

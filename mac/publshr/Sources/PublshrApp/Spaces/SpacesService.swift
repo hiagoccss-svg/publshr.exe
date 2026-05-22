@@ -64,22 +64,75 @@ final class SpacesService {
             .execute()
     }
 
-    // MARK: - Tasks
+    // MARK: - Folders & lists (ClickUp hierarchy)
 
-    func fetchTasks(spaceId: UUID) async throws -> [SpaceTaskRecord] {
+    func fetchFolders(spaceId: UUID) async throws -> [SpaceFolderRecord] {
         try await client
-            .from("tasks")
+            .from("space_folders")
             .select()
             .eq("space_id", value: spaceId.uuidString)
-            .neq("status", value: SpaceTaskStatus.archived.rawValue)
+            .eq("is_archived", value: false)
             .order("sort_order")
             .execute()
             .value
     }
 
+    func fetchLists(spaceId: UUID, folderId: UUID? = nil) async throws -> [SpaceListRecord] {
+        var query = client
+            .from("space_lists")
+            .select()
+            .eq("space_id", value: spaceId.uuidString)
+            .eq("is_archived", value: false)
+        if let folderId {
+            query = query.eq("folder_id", value: folderId.uuidString)
+        }
+        return try await query.order("sort_order").execute().value
+    }
+
+    func createFolder(spaceId: UUID, name: String) async throws -> SpaceFolderRecord {
+        struct Insert: Encodable { let space_id: UUID; let name: String }
+        return try await client
+            .from("space_folders")
+            .insert(Insert(space_id: spaceId, name: name))
+            .select()
+            .single()
+            .execute()
+            .value
+    }
+
+    func createList(spaceId: UUID, folderId: UUID?, name: String) async throws -> SpaceListRecord {
+        struct Insert: Encodable {
+            let space_id: UUID
+            let folder_id: UUID?
+            let name: String
+        }
+        return try await client
+            .from("space_lists")
+            .insert(Insert(space_id: spaceId, folder_id: folderId, name: name))
+            .select()
+            .single()
+            .execute()
+            .value
+    }
+
+    // MARK: - Tasks
+
+    func fetchTasks(spaceId: UUID, listId: UUID? = nil) async throws -> [SpaceTaskRecord] {
+        var query = client
+            .from("tasks")
+            .select()
+            .eq("space_id", value: spaceId.uuidString)
+            .neq("status", value: SpaceTaskStatus.archived.rawValue)
+        if let listId {
+            query = query.eq("list_id", value: listId.uuidString)
+        }
+        return try await query.order("sort_order").execute().value
+    }
+
     func createTask(
         spaceId: UUID,
         title: String,
+        listId: UUID? = nil,
         status: SpaceTaskStatus = .todo,
         priority: SpaceTaskPriority = .normal,
         assigneeId: UUID? = nil,
@@ -87,6 +140,7 @@ final class SpacesService {
     ) async throws -> SpaceTaskRecord {
         struct Insert: Encodable {
             let space_id: UUID
+            let list_id: UUID?
             let title: String
             let status: String
             let priority: String
@@ -97,6 +151,7 @@ final class SpacesService {
             .from("tasks")
             .insert(Insert(
                 space_id: spaceId,
+                list_id: listId,
                 title: title,
                 status: status.rawValue,
                 priority: priority.rawValue,

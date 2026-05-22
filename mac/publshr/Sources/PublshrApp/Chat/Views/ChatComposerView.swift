@@ -36,7 +36,7 @@ struct ChatComposerView: View {
                     .background(CursorTheme.editorLineHighlight.opacity(0.45))
                     .clipShape(RoundedRectangle(cornerRadius: 8))
                     .onChange(of: chat.composerText) { _, _ in
-                        chat.scheduleDraftSave()
+                        chat.composerActivityChanged()
                     }
 
                 Button {

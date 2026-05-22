@@ -44,7 +44,7 @@ final class ChatWindowManager: ObservableObject {
             object: window,
             queue: .main
         ) { [weak self] _ in
-            DispatchQueue.main.async {
+            DispatchQueue.main.async { [weak self] in
                 AppWindowStateStore.saveChatPopOutFrame(channelId: channelId, frame: window.frame)
                 self?.sessions[channelId]?.teardown()
                 self?.sessions.removeValue(forKey: channelId)
@@ -68,6 +68,16 @@ final class ChatWindowManager: ObservableObject {
     func forwardIncomingMessage(_ message: ChatMessage) {
         guard let session = sessions[message.channelId] else { return }
         session.mergeIncoming(message)
+    }
+
+    func forwardMessageUpdate(_ message: ChatMessage) {
+        sessions[message.channelId]?.applyMessageUpdate(message)
+    }
+
+    func forwardMessageDelete(_ messageId: UUID) {
+        for session in sessions.values {
+            session.applyMessageDelete(messageId)
+        }
     }
 
     func closeAll() {

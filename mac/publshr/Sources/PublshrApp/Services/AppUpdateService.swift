@@ -46,8 +46,6 @@ enum AppUpdateError: LocalizedError {
     case downloadFailed(String)
     case extractFailed
     case applyScriptMissing
-    case notInstalledInApplications
-
     var errorDescription: String? {
         switch self {
         case .invalidRepo: return "Invalid GitHub repository configuration."
@@ -56,8 +54,6 @@ enum AppUpdateError: LocalizedError {
         case .downloadFailed(let detail): return "Download failed: \(detail)"
         case .extractFailed: return "Could not extract the update package."
         case .applyScriptMissing: return "Update helper script is missing from the app bundle."
-        case .notInstalledInApplications:
-            return "Install Publshr to /Applications/Publshr.app to enable automatic updates."
         }
     }
 }
@@ -175,16 +171,15 @@ final class AppUpdateService: @unchecked Sendable {
             throw AppUpdateError.applyScriptMissing
         }
 
-        let installed = URL(fileURLWithPath: "/Applications/Publshr.app")
-        let bundlePath = Bundle.main.bundleURL.standardizedFileURL
-        if bundlePath != installed.standardizedFileURL && !bundlePath.path.hasPrefix(installed.path) {
-            // Allow dev builds but warn in logs; still attempt install to /Applications.
-            appendSyncLog("WARN: running from \(bundlePath.path); update target is /Applications/Publshr.app")
-        }
+        let bundlePath = Bundle.main.bundleURL.standardizedFileURL.path
+        appendSyncLog("apply update in place: \(bundlePath)")
 
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/bin/bash")
-        process.arguments = [script.path, treeURL.path, String(parentPID)]
+        process.arguments = [script.path, treeURL.path, String(parentPID), bundlePath]
+        var env = ProcessInfo.processInfo.environment
+        env["PUBLSHR_MAC_APP"] = bundlePath
+        process.environment = env
         process.standardOutput = nil
         process.standardError = nil
         try process.run()

@@ -35,6 +35,17 @@ enum AppReleaseConfig {
         "\(liveFullVersion) · build \(buildNumber)"
     }
 
+    /// Where this instance runs from (used for in-place live updates).
+    static var installedAppPath: String {
+        Bundle.main.bundleURL.standardizedFileURL.path
+    }
+
+    static var preferredInstallPath: String {
+        FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent("Applications/Publshr.app", isDirectory: true)
+            .path
+    }
+
     static func releasesURL() -> URL? {
         let parts = githubRepo.split(separator: "/", omittingEmptySubsequences: true)
         guard parts.count == 2 else { return nil }

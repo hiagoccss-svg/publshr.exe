@@ -1,13 +1,16 @@
 #!/usr/bin/env bash
 # Replace the installed Publshr.app after the running instance exits, then relaunch.
-# Transactional: backup current app, install new build, rollback on failure.
-# User data under ~/Library/Application Support/Publshr is never touched.
-# Invoked by the app with: apply-macos-update.sh <extracted-tree-dir> <parent-pid>
+# User-owned installs (~/Applications) update without any administrator password.
+# System /Applications (root-owned) uses one AppleScript admin prompt for the whole operation.
 set -euo pipefail
 
 TREE="${1:?extracted release tree directory required}"
 PARENT_PID="${2:?parent process id required}"
-TARGET="${PUBLSHR_MAC_APP:-/Applications/Publshr.app}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=lib-install-path.sh
+source "${SCRIPT_DIR}/lib-install-path.sh"
+
+TARGET="${3:-${PUBLSHR_MAC_APP:-$(publshr_default_mac_app)}}"
 LOG_DIR="${HOME}/Library/Application Support/Publshr/updates"
 LOG="${LOG_DIR}/last-update.log"
 BACKUP="${LOG_DIR}/Publshr.app.backup"
@@ -22,7 +25,7 @@ rollback() {
     if [[ -d "$BACKUP" ]]; then
         rm -rf "$TARGET"
         if ditto "$BACKUP" "$TARGET"; then
-            chmod -R 755 "$TARGET"
+            chmod -R u+rwX,go+rX "$TARGET" 2>/dev/null || chmod -R 755 "$TARGET"
             xattr -cr "$TARGET" 2>/dev/null || true
             echo "Restored previous Publshr.app from backup."
         else
@@ -59,7 +62,6 @@ if [[ ! -d "$APP_SRC" ]]; then
         APP_BIN="${TREE}/Publshr.app/Contents/MacOS/Publshr"
     fi
     if [[ -f "$APP_BIN" ]]; then
-        SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
         bash "${SCRIPT_DIR}/build-macos-app.sh" "$APP_BIN" "${PUBLSHR_SHORT_VERSION:-0.2.0}" "${PUBLSHR_BUILD_NUMBER:-0}" "$TREE"
         APP_SRC="${TREE}/Publshr.app"
     fi
@@ -70,39 +72,78 @@ if [[ ! -d "$APP_SRC" ]]; then
     exit 1
 fi
 
-# Verify the new bundle has a runnable binary before touching the installed app.
 APP_BIN_CHECK="${APP_SRC}/Contents/MacOS/Publshr"
 if [[ ! -f "$APP_BIN_CHECK" ]]; then
     echo "ERROR: new app binary missing at $APP_BIN_CHECK" >&2
     exit 1
 fi
 
-rm -rf "$BACKUP"
-if [[ -d "$TARGET" ]]; then
-    echo "Backing up current app to $BACKUP ..."
-    ditto "$TARGET" "$BACKUP"
-fi
+_run_user_update() {
+    rm -rf "$BACKUP"
+    if [[ -d "$TARGET" ]]; then
+        echo "Backing up current app to $BACKUP ..."
+        ditto "$TARGET" "$BACKUP"
+    fi
 
-echo "Installing to $TARGET ..."
-rm -f "$STAGING_OK"
-if ! ditto "$APP_SRC" "$TARGET"; then
-    rollback "ditto install failed"
-    exit 1
-fi
-chmod -R 755 "$TARGET"
-xattr -cr "$TARGET" 2>/dev/null || true
-touch "$STAGING_OK"
+    echo "Installing to $TARGET (no administrator password) ..."
+    rm -f "$STAGING_OK"
+    rm -rf "$TARGET"
+    if ! ditto "$APP_SRC" "$TARGET"; then
+        rollback "ditto install failed"
+        exit 1
+    fi
+    chmod -R u+rwX,go+rX "$TARGET" 2>/dev/null || chmod -R 755 "$TARGET"
+    xattr -cr "$TARGET" 2>/dev/null || true
+    touch "$STAGING_OK"
 
-# Smoke-check installed binary exists after replace.
-if [[ ! -f "${TARGET}/Contents/MacOS/Publshr" ]]; then
-    rollback "installed binary missing after ditto"
-    exit 1
-fi
+    if [[ ! -f "${TARGET}/Contents/MacOS/Publshr" ]]; then
+        rollback "installed binary missing after ditto"
+        exit 1
+    fi
 
-echo "Update installed successfully; removing backup."
-rm -rf "$BACKUP"
-rm -f "$STAGING_OK"
-trap - INT TERM
+    echo "Update installed successfully; removing backup."
+    rm -rf "$BACKUP"
+    rm -f "$STAGING_OK"
+    trap - INT TERM
+}
+
+_run_admin_update_once() {
+    echo "Target is not user-writable — requesting administrator approval once ..."
+    local backup_q target_q src_q backup_dir_q
+    backup_q="$(printf '%q' "$BACKUP")"
+    target_q="$(printf '%q' "$TARGET")"
+    src_q="$(printf '%q' "$APP_SRC")"
+    backup_dir_q="$(printf '%q' "$LOG_DIR")"
+
+    local inner
+    inner="set -e
+mkdir -p ${backup_dir_q}
+rm -rf ${backup_q}
+if [[ -d ${target_q} ]]; then ditto ${target_q} ${backup_q}; fi
+rm -rf ${target_q}
+ditto ${src_q} ${target_q}
+chmod -R 755 ${target_q}
+xattr -cr ${target_q} 2>/dev/null || true
+test -f ${target_q}/Contents/MacOS/Publshr"
+
+    local escaped="${inner//\\/\\\\}"
+    escaped="${escaped//\"/\\\"}"
+    escaped="${escaped//$'\n'/ }"
+
+    if ! osascript -e "do shell script \"${escaped}\" with administrator privileges"; then
+        echo "ERROR: administrator approval required to update ${TARGET}" >&2
+        exit 1
+    fi
+    touch "$STAGING_OK" 2>/dev/null || true
+    rm -rf "$BACKUP"
+    trap - INT TERM
+}
+
+if publshr_app_path_is_user_updatable "$TARGET"; then
+    _run_user_update
+else
+    _run_admin_update_once
+fi
 
 echo "Launching Publshr ..."
 open "$TARGET"
