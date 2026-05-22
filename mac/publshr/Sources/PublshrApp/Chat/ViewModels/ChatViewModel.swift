@@ -54,6 +54,7 @@ final class ChatViewModel: ObservableObject {
     private var typingBroadcaster: ChatTypingBroadcaster?
     private var typingListenTask: Task<Void, Never>?
     private var composerTypingTask: Task<Void, Never>?
+    private var typingExpiryTask: Task<Void, Never>?
     private var didAttach = false
     private var navigationBackStack: [UUID] = []
     private var navigationForwardStack: [UUID] = []
@@ -110,6 +111,8 @@ final class ChatViewModel: ObservableObject {
             await service?.stopRealtime()
         }
         typingBroadcaster = nil
+        typingExpiryTask?.cancel()
+        typingExpiryTask = nil
         typingUsers = []
     }
 
@@ -492,6 +495,7 @@ final class ChatViewModel: ObservableObject {
     private func startRealtime(workspaceId: UUID) {
         guard let auth else { return }
         typingBroadcaster = ChatTypingBroadcaster(client: auth.client, workspaceId: workspaceId)
+        startTypingExpirySweep()
         let handler = IncomingMessageHandler(viewModel: self)
         service?.subscribeMessages(workspaceId: workspaceId, onInsert: handler.handleMessage)
         service?.subscribeMessageUpdates(
@@ -507,23 +511,14 @@ final class ChatViewModel: ObservableObject {
         guard let typingBroadcaster else { return }
         typingListenTask?.cancel()
         await typingBroadcaster.configureHandlers(
-            onTyping: { [weak self] cid, name in
+            onTyping: { [weak self] cid, uid, name in
                 Task { @MainActor [weak self] in
-                    guard let chat = self, chat.selectedChannel?.id == cid else { return }
-                    chat.typingUsers = [
-                        ChatTypingState(
-                            channelId: cid,
-                            userId: UUID(),
-                            displayName: name,
-                            expiresAt: Date().addingTimeInterval(4)
-                        ),
-                    ]
+                    self?.mergeTypingUser(channelId: cid, userId: uid, displayName: name)
                 }
             },
-            onStop: { [weak self] cid in
+            onStop: { [weak self] cid, uid in
                 Task { @MainActor [weak self] in
-                    guard let chat = self, chat.selectedChannel?.id == cid else { return }
-                    chat.typingUsers = []
+                    self?.removeTypingUser(channelId: cid, userId: uid)
                 }
             }
         )
@@ -532,6 +527,39 @@ final class ChatViewModel: ObservableObject {
 
     func refreshDockBadge() {
         ChatNotificationService.shared.setBadgeCount(totalUnread)
+    }
+
+    private func startTypingExpirySweep() {
+        typingExpiryTask?.cancel()
+        typingExpiryTask = Task { [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: 500_000_000)
+                await MainActor.run {
+                    guard let self else { return }
+                    let now = Date()
+                    self.typingUsers = self.typingUsers.filter { $0.expiresAt > now }
+                }
+            }
+        }
+    }
+
+    private func mergeTypingUser(channelId: UUID, userId: UUID, displayName: String) {
+        guard selectedChannel?.id == channelId, userId != currentUserId else { return }
+        var users = typingUsers.filter { $0.userId != userId && $0.expiresAt > Date() }
+        users.append(
+            ChatTypingState(
+                channelId: channelId,
+                userId: userId,
+                displayName: displayName,
+                expiresAt: Date().addingTimeInterval(4)
+            )
+        )
+        typingUsers = users
+    }
+
+    private func removeTypingUser(channelId: UUID, userId: UUID) {
+        guard selectedChannel?.id == channelId else { return }
+        typingUsers.removeAll { $0.userId == userId }
     }
 
     func handleIncomingMessage(_ message: ChatMessage) {

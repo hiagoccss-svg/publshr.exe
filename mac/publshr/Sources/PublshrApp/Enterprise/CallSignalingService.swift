@@ -14,12 +14,23 @@ final class CallSignalingService: ObservableObject {
     @Published private(set) var mediaStatus = "Local call — starting embedded media server…"
     @Published private(set) var localRoomCode: String?
     @Published private(set) var localJoinHint: String?
+    @Published var callScope: CallScope = .meeting
+    @Published var incomingInvite: IncomingCallInvite?
 
     private var client: SupabaseClient?
     private var realtimeTask: Task<Void, Never>?
     private var hubSyncTask: Task<Void, Never>?
+    private var incomingListenTask: Task<Void, Never>?
     private var userId: UUID?
     private var displayName = "Participant"
+    private weak var chatPresenter: ChatViewModel?
+    private weak var authPresenter: AuthViewModel?
+    private let jsonDecoder: JSONDecoder = {
+        let d = JSONDecoder()
+        d.keyDecodingStrategy = .convertFromSnakeCase
+        d.dateDecodingStrategy = .iso8601
+        return d
+    }()
 
     private let liveKitServer = LocalLiveKitServer()
     private let signalingHub = LocalCallSignalingHub()
@@ -68,22 +79,35 @@ final class CallSignalingService: ObservableObject {
         var isActive: Bool { leftAt == nil }
     }
 
-    func attach(client: SupabaseClient, userId: UUID, displayName: String? = nil) {
+    func attach(client: SupabaseClient, userId: UUID, displayName: String? = nil, workspaceId: UUID? = nil) {
         self.client = client
         self.userId = userId
         if let displayName, !displayName.isEmpty {
             self.displayName = displayName
         }
+        if let workspaceId {
+            Task { await subscribeIncomingCalls(workspaceId: workspaceId) }
+        }
+    }
+
+    func bindPresentation(chat: ChatViewModel, auth: AuthViewModel) {
+        chatPresenter = chat
+        authPresenter = auth
     }
 
     func detach() {
         Task { await tearDownLocalCall() }
+        incomingListenTask?.cancel()
+        incomingListenTask = nil
         realtimeTask?.cancel()
         realtimeTask = nil
         activeRoom = nil
         participants = []
         localRoomCode = nil
         localJoinHint = nil
+        incomingInvite = nil
+        CallWindowManager.shared.close()
+        IncomingCallWindowManager.shared.close()
     }
 
     func startChannelCall(
@@ -91,10 +115,12 @@ final class CallSignalingService: ObservableObject {
         channelId: UUID,
         title: String,
         video: Bool,
+        scope: CallScope = .meeting,
         workspaceSettings: [String: JSONValue]? = nil,
         userDisplayName: String? = nil
     ) async {
         guard let userId else { return }
+        callScope = scope
         if let userDisplayName, !userDisplayName.isEmpty {
             displayName = userDisplayName
         }
@@ -161,6 +187,41 @@ final class CallSignalingService: ObservableObject {
         }
 
         signalingHub.updateLocalMediaState(isMuted: isMuted, isVideoEnabled: isVideoEnabled)
+        presentCallWindow()
+    }
+
+    func acceptIncomingCall(chat: ChatViewModel, auth: AuthViewModel) async {
+        guard let invite = incomingInvite else { return }
+        incomingInvite = nil
+        IncomingCallWindowManager.shared.close()
+        callScope = invite.scope
+        isVideoEnabled = invite.isVideo
+        isMuted = false
+        await joinRoom(invite.room)
+        if let roomName = invite.room.livekitRoom,
+           let wsURL = liveKitServer.wsURL ?? URL(string: "ws://\(LocalNetworkAddress.lanHostIPv4() ?? "127.0.0.1"):\(LocalCallConfiguration.liveKitHTTPPort)") {
+            await connectMedia(wsURL: wsURL, roomName: roomName, video: invite.isVideo)
+        }
+        bindPresentation(chat: chat, auth: auth)
+        presentCallWindow()
+    }
+
+    func declineIncomingCall() {
+        incomingInvite = nil
+        IncomingCallWindowManager.shared.close()
+    }
+
+    func presentIncomingRing(chat: ChatViewModel, auth: AuthViewModel) {
+        guard let invite = incomingInvite else { return }
+        bindPresentation(chat: chat, auth: auth)
+        IncomingCallWindowManager.shared.present(invite: invite, calls: self, chat: chat, auth: auth)
+    }
+
+    private func presentCallWindow() {
+        guard activeRoom != nil,
+              let chat = chatPresenter,
+              let auth = authPresenter else { return }
+        CallWindowManager.shared.present(calls: self, chat: chat, auth: auth)
     }
 
     func joinDiscoveredLocalCall(channelId: UUID, roomId: UUID, title: String, video: Bool) async {
@@ -197,6 +258,7 @@ final class CallSignalingService: ObservableObject {
     }
 
     func leaveCall() async {
+        CallWindowManager.shared.close()
         await tearDownLocalCall()
         guard let client, let userId, let room = activeRoom, useCloudDiscovery else {
             activeRoom = nil
@@ -323,6 +385,40 @@ final class CallSignalingService: ObservableObject {
         return mode != "cloud"
     }
 
+    private func subscribeIncomingCalls(workspaceId: UUID) async {
+        guard let client, let userId else { return }
+        incomingListenTask?.cancel()
+        incomingListenTask = Task { @MainActor [weak self] in
+            guard let self else { return }
+            let channel = await client.channel("incoming-calls-\(userId.uuidString)")
+            let stream = await channel.postgresChange(
+                InsertAction.self,
+                schema: "public",
+                table: "call_rooms",
+                filter: "workspace_id=eq.\(workspaceId.uuidString)"
+            )
+            await channel.subscribe()
+            for await action in stream {
+                guard let record = try? action.decodeRecord(as: CallRoomRecord.self, decoder: jsonDecoder),
+                      record.status == "active",
+                      record.createdBy != userId,
+                      activeRoom == nil else { continue }
+                let scope: CallScope = record.title.localizedCaseInsensitiveContains("private") ? .private : .meeting
+                await MainActor.run {
+                    guard self.incomingInvite == nil else { return }
+                    self.incomingInvite = IncomingCallInvite(
+                        id: record.id,
+                        room: record,
+                        callerId: record.createdBy,
+                        callerName: "Team member",
+                        scope: scope,
+                        startedAt: Date()
+                    )
+                }
+            }
+        }
+    }
+
     private func publishRoomToCloud(
         workspaceId: UUID,
         channelId: UUID,
@@ -349,7 +445,7 @@ final class CallSignalingService: ObservableObject {
                     id: roomId,
                     workspace_id: workspaceId,
                     channel_id: channelId,
-                    title: title,
+                    title: "\(title) · \(callScope.label)",
                     kind: video ? "video" : "voice",
                     created_by: userId,
                     livekit_room: livekitRoom

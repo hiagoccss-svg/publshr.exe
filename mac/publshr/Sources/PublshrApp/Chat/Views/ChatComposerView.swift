@@ -9,11 +9,9 @@ struct ChatComposerView: View {
     var body: some View {
         VStack(spacing: 4) {
             if !chat.typingUsers.isEmpty {
-                Text(typingLabel)
-                    .font(.system(size: 10))
-                    .foregroundStyle(CursorTheme.foregroundDim)
+                ChatTypingIndicatorView(label: chat.typingSummary)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, 20)
+                    .padding(.horizontal, 16)
             }
 
             HStack(alignment: .bottom, spacing: 10) {
@@ -71,9 +69,4 @@ struct ChatComposerView: View {
         .buttonStyle(.plain)
     }
 
-    private var typingLabel: String {
-        let names = chat.typingUsers.map(\.displayName)
-        if names.count == 1 { return "\(names[0]) is typing…" }
-        return "\(names.joined(separator: ", ")) are typing…"
-    }
 }

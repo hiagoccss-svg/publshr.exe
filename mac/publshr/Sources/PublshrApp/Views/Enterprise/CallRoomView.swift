@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// In-call UI — local SFU + LAN signaling (no cloud media APIs).
+/// In-call UI inside the glass call window.
 struct CallRoomView: View {
     @EnvironmentObject private var calls: CallSignalingService
     @EnvironmentObject private var chat: ChatViewModel
@@ -9,13 +9,12 @@ struct CallRoomView: View {
     var body: some View {
         VStack(spacing: 0) {
             header
-            Divider()
+            Divider().opacity(0.35)
             participantGrid
-            Divider()
+            Divider().opacity(0.35)
             controls
         }
-        .frame(width: 380, height: 460)
-        .background(Color(nsColor: .windowBackgroundColor))
+        .glassPanel(cornerRadius: 14, opacity: 0.82)
         .onChange(of: calls.isMuted) { _, _ in
             Task { await calls.onMuteChanged() }
         }
@@ -26,26 +25,39 @@ struct CallRoomView: View {
 
     private var header: some View {
         VStack(spacing: 6) {
+            HStack {
+                Label(calls.callScope.label, systemImage: calls.callScope.icon)
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(CursorTheme.accent)
+                Spacer()
+                Text(calls.activeRoom?.kind == "video" ? "Video" : "Voice")
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundStyle(CursorTheme.foregroundDim)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 3)
+                    .background(Color.white.opacity(0.5))
+                    .clipShape(Capsule())
+            }
             Text(calls.activeRoom?.title ?? "Call")
-                .font(.headline)
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundStyle(CursorTheme.foreground)
             Text(calls.mediaStatus)
-                .font(.caption)
-                .foregroundStyle(.secondary)
+                .font(.system(size: 11))
+                .foregroundStyle(CursorTheme.foregroundMuted)
                 .multilineTextAlignment(.center)
             if let code = calls.localRoomCode {
-                Text("LAN room · \(code) · up to 20 participants")
-                    .font(.caption2)
-                    .foregroundStyle(.tertiary)
+                Text("Room \(code) · up to 20 on LAN")
+                    .font(.system(size: 10))
+                    .foregroundStyle(CursorTheme.foregroundDim)
             }
             if let hint = calls.localJoinHint {
                 Text(hint)
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
+                    .font(.system(size: 10))
+                    .foregroundStyle(CursorTheme.foregroundDim)
                     .multilineTextAlignment(.center)
-                    .padding(.horizontal, 8)
             }
         }
-        .padding()
+        .padding(14)
     }
 
     private var participantGrid: some View {
@@ -56,53 +68,82 @@ struct CallRoomView: View {
                         ChatProfileAvatar(
                             profile: chat.profile(for: p.userId),
                             displayName: chat.displayName(for: p.userId),
-                            size: 36
+                            size: 40
                         )
-                        VStack(alignment: .leading) {
+                        VStack(alignment: .leading, spacing: 2) {
                             Text(chat.displayName(for: p.userId))
-                                .font(.subheadline.weight(.medium))
-                            HStack(spacing: 6) {
+                                .font(.system(size: 13, weight: .medium))
+                            HStack(spacing: 8) {
                                 if p.isMuted {
-                                    Image(systemName: "mic.slash").font(.caption)
+                                    Label("Muted", systemImage: "mic.slash").font(.system(size: 10))
                                 }
                                 if p.isVideoEnabled {
-                                    Image(systemName: "video").font(.caption)
+                                    Label("Video", systemImage: "video").font(.system(size: 10))
                                 }
                             }
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(CursorTheme.foregroundDim)
                         }
                         Spacer()
                     }
-                    .padding(8)
-                    .background(Color(nsColor: .controlBackgroundColor))
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                    .padding(10)
+                    .background(Color.white.opacity(0.45))
+                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                 }
             }
-            .padding()
+            .padding(12)
         }
+        .frame(maxHeight: 280)
     }
 
     private var controls: some View {
-        HStack(spacing: 16) {
-            Button {
+        HStack(spacing: 12) {
+            callControlButton(
+                calls.isMuted ? "mic.slash.fill" : "mic.fill",
+                title: calls.isMuted ? "Unmute" : "Mute",
+                tint: CursorTheme.foreground
+            ) {
                 calls.isMuted.toggle()
-            } label: {
-                Label(calls.isMuted ? "Unmute" : "Mute", systemImage: calls.isMuted ? "mic.slash.fill" : "mic.fill")
             }
-            Button {
+            callControlButton(
+                calls.isVideoEnabled ? "video.fill" : "video",
+                title: "Video",
+                tint: CursorTheme.foreground
+            ) {
                 calls.isVideoEnabled.toggle()
-            } label: {
-                Label("Video", systemImage: calls.isVideoEnabled ? "video.fill" : "video")
             }
             Spacer()
             Button("Leave") {
                 Task { await calls.leaveCall() }
             }
-            Button("End for all", role: .destructive) {
+            .buttonStyle(.bordered)
+            Button("End") {
                 Task { await calls.endCall() }
             }
+            .buttonStyle(.borderedProminent)
+            .tint(.red)
             .disabled(auth.profile?.id != calls.activeRoom?.createdBy)
         }
-        .padding()
+        .padding(14)
+    }
+
+    private func callControlButton(
+        _ symbol: String,
+        title: String,
+        tint: Color,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            VStack(spacing: 4) {
+                Image(systemName: symbol)
+                    .font(.system(size: 16))
+                Text(title)
+                    .font(.system(size: 10))
+            }
+            .foregroundStyle(tint)
+            .frame(width: 56, height: 48)
+            .background(Color.white.opacity(0.55))
+            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+        }
+        .buttonStyle(.plain)
     }
 }

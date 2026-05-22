@@ -8,8 +8,8 @@ actor ChatTypingBroadcaster {
     private var channel: RealtimeChannelV2?
     private var listenTask: Task<Void, Never>?
 
-    var onTyping: (@Sendable (UUID, String) -> Void)?
-    var onStop: (@Sendable (UUID) -> Void)?
+    var onTyping: (@Sendable (UUID, UUID, String) -> Void)?
+    var onStop: (@Sendable (UUID, UUID) -> Void)?
 
     init(client: SupabaseClient, workspaceId: UUID) {
         self.client = client
@@ -17,8 +17,8 @@ actor ChatTypingBroadcaster {
     }
 
     func configureHandlers(
-        onTyping: (@Sendable (UUID, String) -> Void)?,
-        onStop: (@Sendable (UUID) -> Void)?
+        onTyping: (@Sendable (UUID, UUID, String) -> Void)?,
+        onStop: (@Sendable (UUID, UUID) -> Void)?
     ) {
         self.onTyping = onTyping
         self.onStop = onStop
@@ -34,11 +34,13 @@ actor ChatTypingBroadcaster {
                 let data = event["payload"]?.objectValue ?? event
                 guard let cidStr = data["channel_id"]?.stringValue,
                       let cid = UUID(uuidString: cidStr),
+                      let uidStr = data["user_id"]?.stringValue,
+                      let uid = UUID(uuidString: uidStr),
                       let name = data["display_name"]?.stringValue else { continue }
                 if data["stop"]?.boolValue == true {
-                    onStop?(cid)
+                    onStop?(cid, uid)
                 } else {
-                    onTyping?(cid, name)
+                    onTyping?(cid, uid, name)
                 }
             }
         }

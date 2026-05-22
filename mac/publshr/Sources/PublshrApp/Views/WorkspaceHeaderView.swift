@@ -231,8 +231,7 @@ struct WorkspaceHeaderView: View {
             }
 
             headerIconButton("sparkles", enabled: true, help: "AI") { chat.showAISheet = true }
-            headerIconButton("gearshape", enabled: true, help: "Permissions") { chat.showPermissionsSheet = true }
-            presenceMenuChip
+            profileMenuChip
             workspaceMenuChip
         }
     }
@@ -294,18 +293,55 @@ struct WorkspaceHeaderView: View {
 
     private var callMenu: some View {
         Menu {
-            Button { startCall(video: false) } label: {
-                Label("Voice call", systemImage: "phone.fill")
+            Section("Voice") {
+                Button { startCall(video: false, scope: .private) } label: {
+                    Label("Private call", systemImage: "person.2.fill")
+                }
+                Button { startCall(video: false, scope: .meeting) } label: {
+                    Label("Meeting call", systemImage: "person.3.fill")
+                }
             }
-            Button { startCall(video: true) } label: {
-                Label("Video call", systemImage: "video.fill")
+            Section("Video") {
+                Button { startCall(video: true, scope: .private) } label: {
+                    Label("Private video", systemImage: "video")
+                }
+                Button { startCall(video: true, scope: .meeting) } label: {
+                    Label("Meeting video", systemImage: "video.fill")
+                }
             }
         } label: {
             Image(systemName: "phone")
                 .font(.system(size: 12))
                 .foregroundStyle(CursorTheme.foregroundMuted)
                 .frame(width: 28, height: 28)
-                .background(RoundedRectangle(cornerRadius: 6).fill(CursorTheme.panelBackground))
+                .background(RoundedRectangle(cornerRadius: 6).fill(Color.white))
+                .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(CursorTheme.border, lineWidth: 1))
+        }
+        .menuStyle(.borderlessButton)
+        .help("Start a call")
+    }
+
+    private var profileMenuChip: some View {
+        Menu {
+            Button { chat.showPermissionsSheet = true } label: {
+                Label("Chat & profile settings", systemImage: "person.crop.circle")
+            }
+            Divider()
+            ForEach(ChatPresenceStatus.allCases.filter { $0 != .invisible }, id: \.self) { status in
+                Button { Task { await chat.setStatus(status) } } label: {
+                    Label(status.label, systemImage: status == chat.myStatus ? "checkmark" : "circle.fill")
+                }
+            }
+        } label: {
+            ChatProfileAvatar(
+                profile: auth.profile,
+                displayName: auth.profile?.displayName ?? auth.displayName,
+                size: 26
+            )
+            .overlay(alignment: .bottomTrailing) {
+                ChatPresenceDot(status: chat.myStatus, size: 8)
+                    .offset(x: 2, y: 2)
+            }
         }
         .menuStyle(.borderlessButton)
     }
@@ -446,7 +482,7 @@ struct WorkspaceHeaderView: View {
         }
     }
 
-    private func startCall(video: Bool) {
+    private func startCall(video: Bool, scope: CallScope) {
         guard let ws = auth.selectedWorkspace?.id,
               let channel = chat.selectedChannel else { return }
         Task {
@@ -455,7 +491,9 @@ struct WorkspaceHeaderView: View {
                 channelId: channel.id,
                 title: channel.displayTitle,
                 video: video,
-                workspaceSettings: auth.selectedWorkspace?.settings
+                scope: scope,
+                workspaceSettings: auth.selectedWorkspace?.settings,
+                userDisplayName: auth.profile?.displayName ?? auth.displayName
             )
         }
     }
