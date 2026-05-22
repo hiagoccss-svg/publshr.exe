@@ -27,9 +27,9 @@ export default function CommandPalette() {
   if (!open) return null
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-start justify-center bg-ink/20 pt-[15vh] backdrop-blur-sm">
+    <div className="fixed inset-0 z-[100] flex items-start justify-center bg-ink/15 pt-[15vh] backdrop-blur-[3px]">
       <Command
-        className="w-full max-w-lg overflow-hidden rounded-xl border border-surface-border bg-surface-raised shadow-soft"
+        className="dt-glass-overlay w-full max-w-lg overflow-hidden rounded-xl"
         onKeyDown={(e) => e.key === 'Escape' && setOpen(false)}
       >
         <Command.Input

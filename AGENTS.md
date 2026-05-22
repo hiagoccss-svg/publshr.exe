@@ -48,7 +48,7 @@ Produces `dist/publshr-<version>-<os>-<arch>.tar.gz`.
 
 ### macOS install and live updates
 
-Every push to **`main`** publishes a new **`live`** build (icons, UI, features, colors — full `Publshr.app` tarball). Installed apps check `VERSION.txt` via fixed download URLs every **60s** (build + version + commit + package digest), auto-install **in place**, and refresh Chat/Spaces from Supabase on the same schedule. Settings → **Sync now** runs the same flow manually.
+Every push to **`main`** publishes a new **`live`** build (icons, UI, shell, features, colors — full `Publshr.app` tarball). Installed apps check `VERSION.txt` via fixed download URLs every **60s** (build + version + commit + package digest + shell tag), auto-install **in place**, and refresh Chat/Spaces from Supabase on the same schedule. Settings → **Sync now** runs GitHub live + Supabase together.
 
 Stable installer (single file, fixed URL):
 
@@ -57,6 +57,18 @@ curl -fsSL "https://raw.githubusercontent.com/hiagoccss-svg/publshr.exe/refs/hea
 ```
 
 Every push to `main` runs `.github/workflows/deliver-macos.yml`, publishing the **`live`** release asset `Publshr-macos-aarch64.tar.gz`. The installed app auto-updates from that channel. See `mac/publshr/docs/AUTO_UPDATE.md`.
+
+### Desktop transparency (Electron + macOS IDE)
+
+Translucent **shell** (wallpaper bleeds through) vs solid **content** (cards, editors, tables). Shared CSS: `shared/design/desktop-transparency.css` (via `library-glass.css`). Electron windows: `shared/electron/glass-window.ts`. Docs: `shared/design/DESKTOP_TRANSPARENCY.md`. macOS IDE: `WorkspaceDesktopBackdrop`, `MainWindowChrome`.
+
+### Desktop workflow (dev + installed auto-update)
+
+See **`desktop/docs/DESKTOP_WORKFLOW.md`**. Summary:
+
+- **Dev:** `npm run dev` (or `make spaces-dev` / `planner-dev` / `media-monitoring-dev`) — native Electron window + Vite HMR; no reinstall.
+- **Installed:** Install shell once; **app bundle** updates from GitHub (`dev` / `staging` / `production`); **shell** installer only when main/preload changes.
+- Shared updater: `shared/electron/updater/`; CI: `.github/workflows/deliver-desktop.yml`.
 
 ### Spaces (macOS IDE + Electron)
 
@@ -67,8 +79,9 @@ The standalone **Spaces** Electron app lives in `desktop/spaces/` (React + TypeS
 ```bash
 cd desktop/spaces
 npm install
-npm run dev      # development
-npm run build    # production bundle
+npm run dev         # native window + hot reload
+npm run build       # production bundle
+npm run dist:shell  # installer when Electron shell changed
 npm run typecheck
 ```
 

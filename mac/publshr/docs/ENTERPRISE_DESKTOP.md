@@ -76,17 +76,24 @@ flowchart TB
 
 ## Electron modules (Spaces / Planner / Media Monitoring)
 
-These are **separate products** with local-first SQLite and optional Supabase sync. They should eventually share the native shell or ship with the same `live` update channel. Current gaps:
+These are **separate products** with local-first SQLite and optional Supabase sync.
 
-- No unified auto-update with native `live` channel
-- Biometrics only in Media Monitoring (native IDE has full Keychain + LA)
+**Desktop workflow (implemented):** see [`desktop/docs/DESKTOP_WORKFLOW.md`](../../../desktop/docs/DESKTOP_WORKFLOW.md).
+
+- **Dev:** `npm run dev` — real Electron window + Vite HMR (no reinstall).
+- **Installed:** GitHub channels `dev` / `staging` / `production` per product (`spaces-staging`, etc.).
+- **Split updates:** lightweight **app bundle** (renderer) vs **shell** installer (main/preload/Electron).
+- Shared code: `shared/electron/updater/`; CI: `.github/workflows/deliver-desktop.yml`.
+
+Biometrics: Media Monitoring uses `safeStorage` + Touch ID; native IDE uses Keychain + LA.
 
 ## Build & release checklist
 
 - [ ] Apple Developer ID signing
 - [ ] Notarization + stapling in CI
 - [ ] Remote crash analytics
-- [ ] Staging channel (`staging` tag) separate from `live`
+- [x] Electron staging/dev/production channels (per product)
+- [ ] Unified single installer wrapping IDE + Electron modules
 - [ ] Windows native shell parity
 
 ## Related docs

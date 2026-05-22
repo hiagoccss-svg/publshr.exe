@@ -40,9 +40,9 @@ export function CommandPalette(): React.ReactElement {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center bg-ink/20 pt-[12vh] backdrop-blur-[2px]">
+    <div className="fixed inset-0 z-50 flex items-start justify-center bg-ink/15 pt-[12vh] backdrop-blur-[3px]">
       <Command
-        className="w-full max-w-lg overflow-hidden rounded-xl border border-surface-border bg-surface-raised shadow-panel"
+        className="dt-glass-overlay w-full max-w-lg overflow-hidden rounded-xl"
         label="Command palette"
       >
         <Command.Input

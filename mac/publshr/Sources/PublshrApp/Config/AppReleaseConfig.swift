@@ -36,6 +36,15 @@ enum AppReleaseConfig {
         Bundle.main.object(forInfoDictionaryKey: "PublshrLivePackageDigest") as? String ?? ""
     }
 
+    /// Enterprise shell distribution tag baked at build time (matches `AppShellIdentity` / VERSION.txt line 5).
+    static var liveShellTag: String {
+        if let embedded = Bundle.main.object(forInfoDictionaryKey: "PublshrShellDistribution") as? String,
+           !embedded.isEmpty {
+            return embedded
+        }
+        return AppShellIdentity.distributionTag
+    }
+
     /// Clears stale "applied update" markers when an install was recorded but the running bundle did not change.
     static func reconcileAppliedManifestWithBundle() {
         let bundleBuild = buildNumber
@@ -50,7 +59,7 @@ enum AppReleaseConfig {
     }
 
     static var installedLabel: String {
-        "\(liveFullVersion) · build \(buildNumber)"
+        "\(liveFullVersion) · build \(buildNumber) · \(liveShellTag)"
     }
 
     /// Where this instance runs from (used for in-place live updates).

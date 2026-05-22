@@ -1,0 +1,22 @@
+appId: com.publshr.planner
+productName: Publshr Planner
+directories:
+  output: release
+files:
+  - out/**/*
+  - package.json
+mac:
+  category: public.app-category.productivity
+  target:
+    - dmg
+    - zip
+linux:
+  target:
+    - AppImage
+win:
+  target:
+    - nsis
+publish:
+  provider: github
+  owner: hiagoccss-svg
+  repo: publshr.exe

@@ -35,14 +35,14 @@ export function WorkspaceArea(): React.ReactElement {
 
   return (
     <main className="glass-workspace flex min-w-0 flex-1 flex-col overflow-hidden">
-      <div className="flex shrink-0 flex-wrap items-center gap-3 border-b border-surface-border px-4 py-2">
+      <div className="dt-divider-h flex shrink-0 flex-wrap items-center gap-3 px-4 py-2">
         <SpacesBreadcrumb />
         <div className="ml-auto flex items-center gap-2">
           <TaskQuickAdd onCreate={(title) => void createTask(title)} />
         </div>
       </div>
 
-      <div className="flex shrink-0 items-center gap-1 border-b border-surface-border px-4 py-2">
+      <div className="dt-divider-h flex shrink-0 items-center gap-1 px-4 py-2">
         {VIEW_TABS.map(({ id, label }) => (
           <button
             key={id}
@@ -109,7 +109,7 @@ function PhasePlaceholder({ view }: { view: string }): React.ReactElement {
     priority: 'Priority matrix'
   }
   return (
-    <div className="flex h-full min-h-[320px] flex-col items-center justify-center rounded-xl border border-dashed border-surface-border bg-surface-raised/50">
+    <div className="dt-content-surface-muted flex h-full min-h-[320px] flex-col items-center justify-center rounded-xl border border-dashed border-surface-border">
       <p className="text-sm font-medium text-ink">{labels[view] ?? view}</p>
       <p className="mt-1 max-w-sm text-center text-xs text-ink-muted">
         Coming soon. Overview, List, Board, and Calendar are fully available.

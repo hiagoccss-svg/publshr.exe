@@ -16,6 +16,9 @@ APP_ROOT="${OUT_DIR}/${APP_NAME}"
 MACOS_DIR="${APP_ROOT}/Contents/MacOS"
 RES_DIR="${APP_ROOT}/Contents/Resources"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=lib-shell-tag.sh
+source "${SCRIPT_DIR}/lib-shell-tag.sh"
+SHELL_TAG="${PUBLSHR_SHELL_TAG:-$(resolve_publshr_shell_tag "${SCRIPT_DIR}/../Sources/PublshrApp/Config/AppShellIdentity.swift")}"
 
 rm -rf "$APP_ROOT"
 mkdir -p "$MACOS_DIR" "$RES_DIR"
@@ -36,6 +39,7 @@ sed -e "s#@@SHORT_VERSION@@#${SHORT_VERSION}#g" \
     -e "s#@@LIVE_VERSION@@#${LIVE_VERSION}#g" \
     -e "s#@@COMMIT_SHA@@#${COMMIT_SHA}#g" \
     -e "s#@@LIVE_DIGEST@@#${LIVE_DIGEST}#g" \
+    -e "s#@@SHELL_TAG@@#${SHELL_TAG}#g" \
     "${SCRIPT_DIR}/../app/Info.plist.template" >"${APP_ROOT}/Contents/Info.plist"
 
 if [[ "$(uname -s)" == "Darwin" ]]; then

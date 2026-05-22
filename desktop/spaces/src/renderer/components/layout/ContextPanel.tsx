@@ -13,8 +13,8 @@ export function ContextPanel(): React.ReactElement {
   const task = tasks.find((t) => t.id === selectedTaskId)
 
   return (
-    <aside className="flex w-[340px] shrink-0 flex-col border-l border-surface-border bg-surface-raised shadow-panel">
-      <div className="flex items-center justify-between border-b border-surface-border px-3 py-2">
+    <aside className="dt-glass-panel flex w-[340px] shrink-0 flex-col">
+      <div className="dt-divider-h flex items-center justify-between px-3 py-2">
         <span className="text-xs font-semibold uppercase tracking-wide text-ink-muted">Context</span>
         <button
           type="button"
@@ -33,7 +33,7 @@ export function ContextPanel(): React.ReactElement {
           <h3 className="mb-2 text-xs font-semibold text-ink-secondary">Recent activity</h3>
           <ul className="space-y-2">
             {activity.slice(0, 12).map((a) => (
-              <li key={a.id} className="rounded-lg bg-surface px-2 py-1.5">
+              <li key={a.id} className="dt-content-surface-muted rounded-lg px-2 py-1.5">
                 <p className="text-xs text-ink">
                   <span className="font-medium">{a.userName}</span> {a.action}
                 </p>

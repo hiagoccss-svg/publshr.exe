@@ -1,0 +1,192 @@
+/**
+ * Desktop transparency system — live OS wallpaper bleed-through on shell chrome.
+ * Content surfaces stay readable; only frame/navigation/empty areas are translucent.
+ *
+ * Import from library-glass.css (already pulled in by each desktop app index.css).
+ */
+
+:root,
+[data-glass-theme='light'] {
+  --dt-blur-shell: 28px;
+  --dt-blur-panel: 20px;
+  --dt-blur-float: 24px;
+  --dt-saturate: 1.25;
+
+  --dt-shell-fill: rgba(255, 255, 255, 0.22);
+  --dt-chrome-fill: rgba(255, 255, 255, 0.38);
+  --dt-workspace-fill: rgba(255, 255, 255, 0.14);
+  --dt-float-fill: rgba(255, 255, 255, 0.48);
+
+  --dt-content-fill: rgba(255, 255, 255, 0.92);
+  --dt-content-muted-fill: rgba(255, 255, 255, 0.78);
+  --dt-input-fill: rgba(255, 255, 255, 0.88);
+
+  --dt-divider: rgba(255, 255, 255, 0.12);
+  --dt-divider-strong: rgba(255, 255, 255, 0.2);
+  --dt-edge-highlight: rgba(255, 255, 255, 0.18);
+  --dt-edge-shadow: rgba(26, 25, 23, 0.06);
+
+  --dt-depth-1: 0 1px 0 var(--dt-edge-highlight) inset, 0 8px 32px rgba(26, 25, 23, 0.08);
+  --dt-depth-2: 0 1px 0 var(--dt-edge-highlight) inset, 0 12px 40px rgba(26, 25, 23, 0.1);
+  --dt-depth-3: 0 1px 0 var(--dt-edge-highlight) inset, 0 20px 56px rgba(26, 25, 23, 0.14);
+
+  --dt-noise-opacity: 0.035;
+}
+
+[data-glass-theme='dark'] {
+  --dt-blur-shell: 32px;
+  --dt-blur-panel: 22px;
+  --dt-blur-float: 26px;
+  --dt-saturate: 1.15;
+
+  --dt-shell-fill: rgba(30, 30, 30, 0.35);
+  --dt-chrome-fill: rgba(37, 37, 38, 0.55);
+  --dt-workspace-fill: rgba(30, 30, 30, 0.42);
+  --dt-float-fill: rgba(45, 45, 46, 0.72);
+
+  --dt-content-fill: rgba(45, 45, 46, 0.94);
+  --dt-content-muted-fill: rgba(37, 37, 38, 0.88);
+  --dt-input-fill: rgba(60, 60, 60, 0.92);
+
+  --dt-divider: rgba(255, 255, 255, 0.12);
+  --dt-divider-strong: rgba(255, 255, 255, 0.18);
+  --dt-edge-highlight: rgba(255, 255, 255, 0.1);
+  --dt-edge-shadow: rgba(0, 0, 0, 0.2);
+
+  --dt-depth-1: 0 1px 0 var(--dt-edge-highlight) inset, 0 8px 32px rgba(0, 0, 0, 0.28);
+  --dt-depth-2: 0 1px 0 var(--dt-edge-highlight) inset, 0 12px 40px rgba(0, 0, 0, 0.34);
+  --dt-depth-3: 0 1px 0 var(--dt-edge-highlight) inset, 0 20px 56px rgba(0, 0, 0, 0.42);
+
+  --dt-noise-opacity: 0.05;
+}
+
+@layer base {
+  html.dt-glass-root,
+  html[data-glass-theme] {
+    background: transparent !important;
+  }
+
+  html.dt-glass-root body,
+  html[data-glass-theme] body,
+  html.dt-glass-root #root,
+  html[data-glass-theme] #root {
+    background: transparent !important;
+  }
+}
+
+@layer components {
+  /* Layer 0 — wallpaper shows through window; no fake gradient fills */
+  .dt-shell {
+    position: relative;
+    isolation: isolate;
+    background: transparent;
+  }
+
+  .dt-shell::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: var(--dt-noise-opacity);
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-size: 180px 180px;
+    mix-blend-mode: overlay;
+  }
+
+  .dt-shell > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Layer 1 — translucent app chrome (title bar, sidebars, nav, toolbars) */
+  .dt-chrome {
+    background: var(--dt-chrome-fill);
+    backdrop-filter: blur(var(--dt-blur-panel)) saturate(var(--dt-saturate));
+    -webkit-backdrop-filter: blur(var(--dt-blur-panel)) saturate(var(--dt-saturate));
+    box-shadow: 0 1px 0 var(--dt-edge-highlight) inset;
+  }
+
+  .dt-chrome-sidebar {
+    background: var(--dt-chrome-fill);
+    backdrop-filter: blur(var(--dt-blur-shell)) saturate(var(--dt-saturate));
+    -webkit-backdrop-filter: blur(var(--dt-blur-shell)) saturate(var(--dt-saturate));
+    border-right: 1px solid var(--dt-divider);
+    box-shadow:
+      1px 0 0 var(--dt-edge-highlight) inset,
+      0 1px 0 var(--dt-edge-highlight) inset;
+  }
+
+  .dt-chrome-workspace {
+    background: var(--dt-workspace-fill);
+    backdrop-filter: blur(var(--dt-blur-shell)) saturate(var(--dt-saturate));
+    -webkit-backdrop-filter: blur(var(--dt-blur-shell)) saturate(var(--dt-saturate));
+  }
+
+  .dt-chrome-toolbar {
+    background: var(--dt-chrome-fill);
+    backdrop-filter: blur(var(--dt-blur-panel)) saturate(var(--dt-saturate));
+    -webkit-backdrop-filter: blur(var(--dt-blur-panel)) saturate(var(--dt-saturate));
+    border-bottom: 1px solid var(--dt-divider);
+    box-shadow: 0 1px 0 var(--dt-edge-highlight) inset;
+  }
+
+  /* Layer 2 — floating frosted panels (context, modals, palettes) */
+  .dt-glass-panel {
+    background: var(--dt-float-fill);
+    backdrop-filter: blur(var(--dt-blur-float)) saturate(var(--dt-saturate));
+    -webkit-backdrop-filter: blur(var(--dt-blur-float)) saturate(var(--dt-saturate));
+    box-shadow: var(--dt-depth-2);
+    border: 1px solid var(--dt-divider);
+  }
+
+  .dt-glass-overlay {
+    background: var(--dt-float-fill);
+    backdrop-filter: blur(var(--dt-blur-float)) saturate(var(--dt-saturate));
+    -webkit-backdrop-filter: blur(var(--dt-blur-float)) saturate(var(--dt-saturate));
+    box-shadow: var(--dt-depth-3);
+    border: 1px solid var(--dt-divider-strong);
+  }
+
+  /* Layer 3 — readable working surfaces (editors, cards, messages, tables) */
+  .dt-content-surface {
+    background: var(--dt-content-fill);
+    border: 1px solid var(--dt-divider);
+    box-shadow: var(--dt-depth-1);
+  }
+
+  .dt-content-surface-muted {
+    background: var(--dt-content-muted-fill);
+    border: 1px solid var(--dt-divider);
+  }
+
+  .dt-content-input {
+    background: var(--dt-input-fill);
+    border: 1px solid var(--dt-divider);
+  }
+
+  /* Optical separators — more visible than translucent backgrounds */
+  .dt-divider-h {
+    border-bottom: 1px solid var(--dt-divider);
+    box-shadow: 0 1px 0 var(--dt-edge-highlight) inset;
+  }
+
+  .dt-divider-v {
+    border-right: 1px solid var(--dt-divider);
+    box-shadow: 1px 0 0 var(--dt-edge-highlight) inset;
+  }
+
+  .dt-divider-line {
+    height: 1px;
+    background: var(--dt-divider);
+    box-shadow: 0 1px 0 var(--dt-edge-highlight);
+  }
+
+  .dt-depth-float {
+    box-shadow: var(--dt-depth-2);
+  }
+
+  .dt-depth-modal {
+    box-shadow: var(--dt-depth-3);
+  }
+}

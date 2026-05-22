@@ -15,8 +15,14 @@
     "noUnusedParameters": true,
     "baseUrl": ".",
     "paths": {
-      "@shared/*": ["src/shared/*"]
+      "@shared/*": ["src/shared/*"],
+      "electron-updater": ["node_modules/electron-updater"]
     }
   },
-  "include": ["src/main/**/*", "src/shared/**/*", "electron.vite.config.ts"]
+  "include": [
+    "src/main/**/*",
+    "src/shared/**/*",
+    "electron.vite.config.ts",
+    "../../shared/electron/**/*.ts"
+  ]
 }

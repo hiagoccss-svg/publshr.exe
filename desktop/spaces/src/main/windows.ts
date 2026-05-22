@@ -1,34 +1,38 @@
 import { BrowserWindow, shell } from 'electron'
 import { join } from 'path'
-import { is } from '@electron-toolkit/utils'
+import {
+  configureGlassWindow,
+  glassWindowOptions
+} from '../../../../shared/electron/glass-window'
+import { loadRendererWindow } from '../../../../shared/electron/updater/window-loader'
+import { getDesktopUpdates } from './updates'
 
 const openWindows = new Map<string, BrowserWindow>()
+const bundledRendererIndex = join(__dirname, '../renderer/index.html')
 
 function loadUrl(win: BrowserWindow, hash: string): void {
-  if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
-    win.loadURL(`${process.env['ELECTRON_RENDERER_URL']}#${hash}`)
-  } else {
-    win.loadFile(join(__dirname, '../renderer/index.html'), { hash })
-  }
+  loadRendererWindow(win, bundledRendererIndex, getDesktopUpdates()?.appBundle ?? null, {
+    hash
+  })
 }
 
 export function createMainWindow(): BrowserWindow {
-  const win = new BrowserWindow({
-    width: 1440,
-    height: 900,
-    minWidth: 1100,
-    minHeight: 680,
-    show: false,
-    titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
-    backgroundColor: '#f6f5f3',
-    webPreferences: {
-      preload: join(__dirname, '../preload/index.js'),
-      sandbox: false,
-      contextIsolation: true,
-      nodeIntegration: false
-    }
-  })
+  const win = new BrowserWindow(
+    glassWindowOptions('light', {
+      width: 1440,
+      height: 900,
+      minWidth: 1100,
+      minHeight: 680,
+      webPreferences: {
+        preload: join(__dirname, '../preload/index.js'),
+        sandbox: false,
+        contextIsolation: true,
+        nodeIntegration: false
+      }
+    })
+  )
 
+  configureGlassWindow(win, 'light')
   win.on('ready-to-show', () => win.show())
   win.webContents.setWindowOpenHandler((details) => {
     shell.openExternal(details.url)
@@ -47,22 +51,22 @@ export function createSpaceWindow(spaceId: string): BrowserWindow {
     return existing
   }
 
-  const win = new BrowserWindow({
-    width: 1280,
-    height: 800,
-    minWidth: 900,
-    minHeight: 600,
-    show: false,
-    titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
-    backgroundColor: '#f6f5f3',
-    webPreferences: {
-      preload: join(__dirname, '../preload/index.js'),
-      sandbox: false,
-      contextIsolation: true,
-      nodeIntegration: false
-    }
-  })
+  const win = new BrowserWindow(
+    glassWindowOptions('light', {
+      width: 1280,
+      height: 800,
+      minWidth: 900,
+      minHeight: 600,
+      webPreferences: {
+        preload: join(__dirname, '../preload/index.js'),
+        sandbox: false,
+        contextIsolation: true,
+        nodeIntegration: false
+      }
+    })
+  )
 
+  configureGlassWindow(win, 'light')
   win.on('ready-to-show', () => win.show())
   win.on('closed', () => openWindows.delete(key))
   openWindows.set(key, win)
@@ -78,23 +82,23 @@ export function createDocumentWindow(documentId: string, title: string): Browser
     return existing
   }
 
-  const win = new BrowserWindow({
-    width: 960,
-    height: 720,
-    minWidth: 640,
-    minHeight: 480,
-    show: false,
-    title: title,
-    titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
-    backgroundColor: '#ffffff',
-    webPreferences: {
-      preload: join(__dirname, '../preload/index.js'),
-      sandbox: false,
-      contextIsolation: true,
-      nodeIntegration: false
-    }
-  })
+  const win = new BrowserWindow(
+    glassWindowOptions('light', {
+      width: 960,
+      height: 720,
+      minWidth: 640,
+      minHeight: 480,
+      title,
+      webPreferences: {
+        preload: join(__dirname, '../preload/index.js'),
+        sandbox: false,
+        contextIsolation: true,
+        nodeIntegration: false
+      }
+    })
+  )
 
+  configureGlassWindow(win, 'light')
   win.on('ready-to-show', () => win.show())
   win.on('closed', () => openWindows.delete(key))
   openWindows.set(key, win)

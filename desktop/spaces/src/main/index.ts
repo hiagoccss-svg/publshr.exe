@@ -4,6 +4,7 @@ import { SpacesDatabase } from './db/database'
 import { registerIpcHandlers } from './ipc/handlers'
 import { SupabaseSyncService } from './sync/supabase-sync'
 import { createMainWindow } from './windows'
+import { initDesktopUpdates } from './updates'
 
 let database: SpacesDatabase | null = null
 let syncService: SupabaseSyncService | null = null
@@ -23,6 +24,7 @@ app.whenReady().then(async () => {
   nativeTheme.themeSource = 'light'
   database = new SpacesDatabase()
   registerIpcHandlers(database)
+  initDesktopUpdates()
 
   syncService = new SupabaseSyncService(database, () => broadcastRefresh())
   await syncService.start()

@@ -19,9 +19,14 @@
     -moz-osx-font-smoothing: grayscale;
   }
 
+  html,
+  body,
+  #root {
+    background: transparent;
+  }
+
   body {
     @apply font-sans text-base text-content;
-    background-color: #1e1e1e;
   }
 
   ::-webkit-scrollbar {

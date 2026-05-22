@@ -9,7 +9,7 @@ export function MonitoringWorkspace() {
   const { section } = useMonitoringStore()
 
   return (
-    <div className="flex-1 flex flex-col min-h-0 min-w-0 bg-surface-workspace">
+    <div className="flex-1 flex flex-col min-h-0 min-w-0">
       {section === 'dashboard' && <DashboardView />}
       {section === 'monitoring' && <ArticleFeed />}
       {section === 'coverage' && <CoverageView />}
