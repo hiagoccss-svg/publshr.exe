@@ -13,7 +13,7 @@ enum LibraryGlassDesign {
 
     static let sidebarSelection = Color(hex: 0xE8E6E1).opacity(0.95)
     static let sidebarGlassFill = Color.white.opacity(0.52)
-    static let panelGlassFill = Color.white.opacity(0.78)
+    static let panelGlassFill = Color.white.opacity(0.68)
 
     // Spacing (reference image)
     static let outerMargin: CGFloat = 20
@@ -28,11 +28,15 @@ enum LibraryGlassDesign {
     static let sectionLabelBottom: CGFloat = 4
     static let barMenuRowHeight: CGFloat = 34
 
-    // Chrome
+    // Chrome (titlebar row — see AppWindowChromeMetrics)
     static let headerHeight: CGFloat = 40
     static let statusBarHeight: CGFloat = 22
     static let ctaPillHeight: CGFloat = 36
     static let ctaPillHorizontal: CGFloat = 16
+    static let askAIPillFill = Color(hex: 0xE8D4DC).opacity(0.72)
+    static let askAIPillStroke = Color(hex: 0xD4B8C4).opacity(0.45)
+    static let documentTabFill = Color.white.opacity(0.42)
+    static let documentTabSelectedFill = Color.white.opacity(0.62)
 
     // Masonry
     static let masonryMinColumnWidth: CGFloat = 240
@@ -41,7 +45,7 @@ enum LibraryGlassDesign {
     // Colors (warm off-white shell — keep translucent so desktop shows through)
     static let shellBackground = Color(hex: 0xF3F2EF)
     static let workspaceGlass = Color.white.opacity(0.12)
-    static let headerGlass = Color.white.opacity(0.55)
+    static let headerGlass = Color.white.opacity(0.38)
     static let cardBackground = Color.white
     static let cardGlassFill = Color.white.opacity(0.72)
     static let primaryCTA = Color(hex: 0x1A1917)
