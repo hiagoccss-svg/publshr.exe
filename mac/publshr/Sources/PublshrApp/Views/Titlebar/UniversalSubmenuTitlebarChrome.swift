@@ -13,7 +13,7 @@ struct UniversalSubmenuTitlebarChrome: View {
                 ChatSidebarTitlebarChrome(chat: chat)
             case .spaces:
                 SpacesSubmenuTitlebarChrome(spaces: spaces)
-            case .settings:
+            case .mediaMonitoring, .planner, .settings:
                 Color.clear
             }
         }

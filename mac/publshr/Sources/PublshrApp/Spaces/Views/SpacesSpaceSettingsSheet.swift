@@ -71,7 +71,7 @@ struct SpacesSpaceSettingsSheet: View {
                 .padding()
             }
         }
-        .frame(width: 440, minHeight: 360)
+        .frame(minWidth: 440, maxWidth: 440, minHeight: 360)
     }
 
     private func save(_ space: SpaceRecord) async {

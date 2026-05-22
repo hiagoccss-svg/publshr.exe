@@ -10,7 +10,7 @@ struct ContentToolbarView: View {
 
     private var toolbarHeight: CGFloat {
         switch module {
-        case .chat, .spaces: return CursorTheme.chatToolbarHeight
+        case .chat, .spaces, .mediaMonitoring, .planner: return CursorTheme.chatToolbarHeight
         case .settings: return CursorTheme.titleBarHeight
         }
     }
@@ -49,6 +49,14 @@ struct ContentToolbarView: View {
             chatToolbarLeading
         case .spaces:
             spacesToolbarLeading
+        case .mediaMonitoring:
+            Text("Media Monitoring")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(CursorTheme.foreground)
+        case .planner:
+            Text("Planner")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(CursorTheme.foreground)
         case .settings:
             Text("Settings")
                 .font(.system(size: 13, weight: .semibold))
@@ -401,6 +409,8 @@ struct ContentToolbarView: View {
         switch module {
         case .chat: return "Search in this channel"
         case .spaces: return "Search spaces and tasks"
+        case .mediaMonitoring: return "Search coverage"
+        case .planner: return "Search planner items"
         case .settings: return "Search settings"
         }
     }
@@ -417,7 +427,7 @@ struct ContentToolbarView: View {
                 get: { spaces.searchQuery },
                 set: { spaces.searchQuery = $0 }
             )
-        case .settings:
+        case .mediaMonitoring, .planner, .settings:
             return .constant("")
         }
     }
