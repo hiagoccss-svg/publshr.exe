@@ -6,6 +6,8 @@ struct ChatComposerView: View {
     var onAttachFile: (() -> Void)?
     var onVoiceNote: (() -> Void)?
 
+    private static let quickEmojis = ["👍", "❤️", "😂", "🎉", "👀", "✅"]
+
     var body: some View {
         VStack(spacing: 4) {
             if !chat.canPostInSelectedChannel {
@@ -20,16 +22,11 @@ struct ChatComposerView: View {
                     .padding(.horizontal, 16)
             }
 
-            HStack(alignment: .bottom, spacing: 10) {
-                HStack(spacing: 2) {
-                    if chat.permissions.canUploadFiles {
-                        composerIcon("paperclip") { onAttachFile?() }
-                    }
-                    if canSendVoiceNotes {
-                        composerIcon("mic") { onVoiceNote?() }
-                    }
-                }
+            composerToolbar
+                .padding(.horizontal, 16)
+                .padding(.top, 4)
 
+            HStack(alignment: .bottom, spacing: 10) {
                 TextField(composerPlaceholder, text: $chat.composerText, axis: .vertical)
                     .textFieldStyle(.plain)
                     .font(.system(size: 13))
@@ -77,6 +74,60 @@ struct ChatComposerView: View {
         .padding(.horizontal, 12)
         .padding(.bottom, 12)
         .background(Color.clear)
+    }
+
+    /// ClickUp-style composer actions — mention, emoji, attach, voice, schedule.
+    private var composerToolbar: some View {
+        HStack(spacing: 4) {
+            composerIcon("at") {
+                chat.composerText += chat.composerText.isEmpty ? "@" : " @"
+            }
+            .help("Mention someone")
+
+            Menu {
+                ForEach(Self.quickEmojis, id: \.self) { emoji in
+                    Button(emoji) {
+                        chat.composerText += emoji
+                    }
+                }
+            } label: {
+                composerIconLabel("face.smiling")
+            }
+            .menuStyle(.borderlessButton)
+            .menuIndicator(.hidden)
+            .help("Add emoji")
+
+            if chat.permissions.canUploadFiles {
+                composerIcon("paperclip") { onAttachFile?() }
+                    .help("Attach file")
+            }
+            if canSendVoiceNotes {
+                composerIcon("mic") { onVoiceNote?() }
+                    .help("Voice note")
+            }
+
+            Menu {
+                Button {} label: {
+                    Label("Schedule message", systemImage: "clock.badge")
+                }
+                .disabled(true)
+            } label: {
+                composerIconLabel("clock")
+            }
+            .menuStyle(.borderlessButton)
+            .menuIndicator(.hidden)
+            .help("Schedule send (coming soon)")
+
+            Spacer(minLength: 0)
+
+            if let channel = chat.selectedChannel {
+                Text(channel.sidebarTitle)
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundStyle(CursorTheme.foregroundDim)
+                    .lineLimit(1)
+            }
+        }
+        .opacity(chat.canPostInSelectedChannel ? 1 : 0.45)
     }
 
     private var announcementBanner: some View {
@@ -130,12 +181,16 @@ struct ChatComposerView: View {
 
     private func composerIcon(_ systemName: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Image(systemName: systemName)
-                .font(.system(size: 14))
-                .foregroundStyle(CursorTheme.foregroundMuted)
-                .frame(width: 28, height: 28)
+            composerIconLabel(systemName)
         }
         .buttonStyle(.plain)
+    }
+
+    private func composerIconLabel(_ systemName: String) -> some View {
+        Image(systemName: systemName)
+            .font(.system(size: 14))
+            .foregroundStyle(CursorTheme.foregroundMuted)
+            .frame(width: 28, height: 28)
     }
 
 }

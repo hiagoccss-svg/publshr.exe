@@ -50,6 +50,8 @@ final class ChatViewModel: ObservableObject {
     // Phase 4
     @Published var showSearchSheet = false
     @Published var showAISheet = false
+    @Published var showNotificationSettings = false
+    @Published var defaultNotificationLevel: String = ChatUserPreferences.loadDefaultNotificationLevel()
     @Published var globalSearchQuery = ""
     @Published var searchResults: [ChatSearchHit] = []
     @Published var aiResult: ChatAIResult?
@@ -977,6 +979,44 @@ final class ChatViewModel: ObservableObject {
         }
     }
 
+    /// Clears local unread badges for every channel (ClickUp: mark all read from sidebar settings).
+    func markAllChannelsRead() {
+        for id in unreadByChannel.keys {
+            unreadByChannel[id] = 0
+            service?.localStore().setUnreadCount(channelId: id, count: 0)
+        }
+        for id in unreadThreadsByChannel.keys {
+            unreadThreadsByChannel[id] = 0
+        }
+        refreshDockBadge()
+    }
+
+    func setDefaultNotificationLevel(_ level: String) {
+        defaultNotificationLevel = level
+        ChatUserPreferences.saveDefaultNotificationLevel(level)
+    }
+
+    func markChannelRead(_ channel: ChatChannel) {
+        unreadByChannel[channel.id] = 0
+        unreadThreadsByChannel[channel.id] = 0
+        service?.localStore().setUnreadCount(channelId: channel.id, count: 0)
+        refreshDockBadge()
+    }
+
+    func markSelectedChannelRead() {
+        guard let channel = selectedChannel else { return }
+        markChannelRead(channel)
+    }
+
+    func muteChannel(_ channel: ChatChannel) async {
+        let previous = selectedChannel
+        selectChannel(channel, recordHistory: false)
+        await setSelectedChannelNotificationLevel("muted")
+        if let previous, previous.id != channel.id {
+            selectChannel(previous, recordHistory: false)
+        }
+    }
+
     func openUnreadThreadFromSidebar(for channel: ChatChannel) async {
         selectChannel(channel)
         if let parent = mainChannelMessages.first(where: { (threadCounts[$0.id] ?? 0) > 0 }) {
@@ -1023,6 +1063,8 @@ final class ChatViewModel: ObservableObject {
             result = result.filter {
                 unreadCount(for: $0.id) > 0 || hasUnreadThreadReplies(for: $0.id)
             }
+        case .pinned:
+            result = result.filter { isSidebarPinned($0) }
         case .dms:
             result = result.filter { $0.kind == .dm || $0.kind == .group }
         case .channels:

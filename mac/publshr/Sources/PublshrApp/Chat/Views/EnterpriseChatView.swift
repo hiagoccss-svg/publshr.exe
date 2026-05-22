@@ -26,6 +26,9 @@ struct EnterpriseChatView: View {
         .sheet(isPresented: $chat.showAISheet) { ChatAISheet(chat: chat) }
         .sheet(isPresented: $chat.showPermissionsSheet) { ChatPermissionsSheet(chat: chat) }
         .sheet(isPresented: $chat.showChannelSettings) { ChatChannelSettingsSheet(chat: chat) }
+        .sheet(isPresented: $chat.showNotificationSettings) {
+            ChatNotificationSettingsSheet(chat: chat)
+        }
         .sheet(isPresented: $showPlannerShare) { plannerShareSheet }
         .onAppear {
             if chat.currentUserId == nil {

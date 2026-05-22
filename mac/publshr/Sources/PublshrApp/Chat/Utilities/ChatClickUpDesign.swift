@@ -33,6 +33,7 @@ enum ChatClickUpDesign {
 enum ChatSidebarFilter: String, CaseIterable, Identifiable {
     case all
     case unread
+    case pinned
     case dms
     case channels
 
@@ -42,6 +43,7 @@ enum ChatSidebarFilter: String, CaseIterable, Identifiable {
         switch self {
         case .all: "All"
         case .unread: "Unread"
+        case .pinned: "Pinned"
         case .dms: "DMs"
         case .channels: "Channels"
         }
