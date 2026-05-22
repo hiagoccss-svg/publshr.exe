@@ -9,6 +9,11 @@ from pathlib import Path
 import numpy as np
 from PIL import Image
 
+# Pixels at or above this luminance (and not part of the ink mark) become #FFFFFF.
+# The source artwork includes a grey rounded frame (~170–210); older builds only
+# whitened >=210, which left the visible grey ring in Dock/Finder.
+_BACKGROUND_LUM_THRESHOLD = 140
+
 
 def white_background(size: int) -> Image.Image:
     """Solid #FFFFFF plate for Dock/Finder (macOS app icon)."""
@@ -18,35 +23,44 @@ def white_background(size: int) -> Image.Image:
     return Image.fromarray(np.dstack([rgb, alpha]), mode="RGBA")
 
 
+def _ink_mark_mask(rgb: np.ndarray, alpha: np.ndarray) -> np.ndarray:
+    lum = rgb.mean(axis=2)
+    return (alpha > 32) & (lum < _BACKGROUND_LUM_THRESHOLD)
+
+
+def _force_white_outside_mark(arr: np.ndarray, mark: np.ndarray) -> None:
+    arr[~mark, :3] = 255
+    arr[~mark, 3] = 255
+
+
 def flatten_to_full_white_icon(source: Image.Image, size: int) -> Image.Image:
-    """Remove grey fringe, force #FFFFFF, and scale logo to cover the full square."""
+    """Remove grey frame/anti-alias, force #FFFFFF, and scale logo to fill the square."""
     src = source.convert("RGBA")
     arr = np.array(src)
     rgb = arr[:, :, :3]
     alpha = arr[:, :, 3]
 
-    # Grey anti-alias ring (off-white fringe) → pure white
-    near_bg = (np.all(rgb >= 210, axis=2)) | (alpha < 16)
-    arr[near_bg, :3] = 255
-    arr[near_bg, 3] = 255
-
-    lum = rgb.mean(axis=2)
-    mark = (alpha > 32) & (lum < 140)
+    mark = _ink_mark_mask(rgb, alpha)
+    _force_white_outside_mark(arr, mark)
 
     if not mark.any():
         layer = Image.fromarray(arr, mode="RGBA").resize((size, size), Image.Resampling.LANCZOS)
         return Image.alpha_composite(white_background(size), layer)
 
     ys, xs = np.where(mark)
-    pad = max(8, int(0.06 * max(ys.max() - ys.min(), xs.max() - xs.min())))
+    span = max(ys.max() - ys.min(), xs.max() - xs.min())
+    pad = max(4, int(0.03 * span))
     y0, y1 = max(0, ys.min() - pad), min(arr.shape[0], ys.max() + pad + 1)
     x0, x1 = max(0, xs.min() - pad), min(arr.shape[1], xs.max() + pad + 1)
     crop = arr[y0:y1, x0:x1]
     crop_img = Image.fromarray(crop, mode="RGBA")
 
     cw, ch = crop_img.size
-    scale = size / min(cw, ch)
-    nw, nh = max(1, int(round(cw * scale))), max(1, int(round(ch * scale)))
+    # ~92% of canvas: fills the squircle without clipping the mark.
+    target_side = max(1, int(round(size * 0.92)))
+    scale = target_side / max(cw, ch)
+    nw = max(1, int(round(cw * scale)))
+    nh = max(1, int(round(ch * scale)))
     scaled = crop_img.resize((nw, nh), Image.Resampling.LANCZOS)
 
     out = white_background(size)
@@ -54,12 +68,9 @@ def flatten_to_full_white_icon(source: Image.Image, size: int) -> Image.Image:
     y_off = (size - nh) // 2
     out.paste(scaled, (x_off, y_off), scaled)
 
-    # Final pass: any residual off-white → #FFFFFF
     final = np.array(out)
-    frgb = final[:, :, :3]
-    fringe = np.all(frgb >= 210, axis=2)
-    final[fringe, :3] = 255
-    final[fringe, 3] = 255
+    final_mark = _ink_mark_mask(final[:, :, :3], final[:, :, 3])
+    _force_white_outside_mark(final, final_mark)
     return Image.fromarray(final, mode="RGBA")
 
 
