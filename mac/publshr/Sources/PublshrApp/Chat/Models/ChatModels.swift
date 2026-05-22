@@ -104,6 +104,7 @@ struct ChatMessage: Codable, Identifiable, Equatable {
     var attachments: [ChatAttachment]
     var isEdited: Bool
     var isDeleted: Bool
+    var assignedTo: UUID?
     let createdAt: Date
     var updatedAt: Date
 
@@ -116,11 +117,54 @@ struct ChatMessage: Codable, Identifiable, Equatable {
         case channelId = "channel_id"
         case userId = "user_id"
         case threadParentId = "thread_parent_id"
+        case assignedTo = "assigned_to"
         case isEdited = "is_edited"
         case isDeleted = "is_deleted"
         case createdAt = "created_at"
         case updatedAt = "updated_at"
     }
+}
+
+struct ChatScheduledMessage: Codable, Identifiable, Equatable {
+    let id: UUID
+    let workspaceId: UUID
+    let channelId: UUID
+    let userId: UUID
+    var body: String
+    var threadParentId: UUID?
+    var sendAt: Date
+    var status: String
+    let createdAt: Date
+    var updatedAt: Date
+
+    enum CodingKeys: String, CodingKey {
+        case id, body, status
+        case workspaceId = "workspace_id"
+        case channelId = "channel_id"
+        case userId = "user_id"
+        case threadParentId = "thread_parent_id"
+        case sendAt = "send_at"
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+    }
+
+    var isPending: Bool { status == "pending" }
+}
+
+struct ChatDraftSummary: Identifiable, Equatable {
+    let channelId: UUID
+    let channelTitle: String
+    let body: String
+    let updatedAt: Date
+
+    var id: UUID { channelId }
+}
+
+struct ChatSentMessageSummary: Identifiable, Equatable {
+    let message: ChatMessage
+    let channelTitle: String
+
+    var id: UUID { message.id }
 }
 
 struct ChatAttachment: Codable, Equatable {
