@@ -10,7 +10,8 @@ Publshr Chat follows [ClickUp Chat Sidebar](https://help.clickup.com/hc/en-us/ar
 | **Chat sidebar** | 272px | Search, filters, channel/DM lists, **bottom footer** |
 | **Main column** | flex | Channel tabs, status bar, messages, composer toolbar |
 | **Thread panel** (optional) | ~320px | Right-side thread replies |
-| **Workspace header** (top) | full width | Tabs, search, pin, focus, pop-out, AI, profile |
+| **Unified titlebar** | full width | Traffic lights row: sidebar, back/forward, submenu search, channel title + actions |
+| **Bar menu profile** | bottom of rail | Avatar opens profile sheet (photo, status, sign out) |
 
 Settings opens in a **separate sheet/window** (not in the activity strip), matching a focused IDE shell.
 
@@ -75,7 +76,7 @@ Active layout label appears next to the toggles. Preference keys: `publshr.chat.
 
 ## Conversation column
 
-- **Status bar** — back/forward, channel icon, title (opens settings), typing, pop-out, focus, AI, search, pinned, **⋯** submenu.
+- **Unified titlebar (chat)** — channel title, pop-out, focus, AI, search, pinned, DM details (DM/group), notifications, command palette, settings (`ChatEditorToolbarContent`).
 - **Composer toolbar** — @mention picker, emoji, attach, voice, schedule send, channel label.
 - **DM inspector** — right panel for DM/group members, notifications, copy link.
 - **Composer** — `Message {channel}…`, send (⌘↩).
@@ -115,12 +116,21 @@ Per [Notification settings](https://help.clickup.com/hc/en-us/articles/632591895
 | `Chat/Utilities/ChatClickUpDesign.swift` | Layout tokens, filter/layout enums |
 | `Chat/Views/ChatSidebarTitlebarChrome.swift` | Search in submenu titlebar row |
 | `Chat/Views/ChatSidebarView.swift` | Filters, sections, flat footer + settings gear |
+| `Views/Titlebar/ShellUnifiedTitlebar.swift` | Full-width titlebar (traffic-light alignment) |
+| `Views/Titlebar/TrafficLightLayoutStore.swift` | Measures system close/minimize/zoom geometry |
+| `Views/Titlebar/ChatEditorHeaderBar.swift` | `ChatEditorToolbarContent` for chat column |
+| `Theme/AppWindowChrome.swift` | `TitlebarToolbarRow` / `TitlebarToolbarSlot` alignment |
 | `Chat/Views/ChatNotificationSettingsSheet.swift` | Notification defaults sheet |
 | `Chat/Models/ChatInAppNotification.swift` | In-app notification feed items |
 | `Chat/Services/ChatNotificationService.swift` | macOS Notification Center delivery |
 | `Chat/Views/ChatComposerView.swift` | Composer toolbar |
-| `Chat/Views/ChatEnterpriseUI.swift` | Status bar, typing indicator |
+| `Chat/Views/ChatEnterpriseUI.swift` | Typing indicator + `typingSummary` |
+| `Chat/Views/ChatSidebarHubViews.swift` | Activity / Drafts / Sent hubs |
+| `Chat/Views/ChatDMInspectorPanel.swift` | DM/group details panel |
+| `Chat/Views/ChatMentionPickerSheet.swift` | Mention picker |
+| `Chat/Views/ChatScheduleSendSheet.swift` | Schedule send |
 | `Chat/Views/ChatChannelActionsMenu.swift` | Row + toolbar actions |
+| `Views/Library/LibraryBarMenuIconRail.swift` | Module icons + profile avatar footer |
 | `Theme/WorkspaceShellBackground.swift` | `GlassSubmenuChrome`, primary bar transparency |
 | `Theme/LibrarySubmenuButtonStyle.swift` | Flat footer actions (no pill boxes) |
 | `Chat/Views/ChatWorkspaceChannelTabs.swift` | Open channel tab strip |

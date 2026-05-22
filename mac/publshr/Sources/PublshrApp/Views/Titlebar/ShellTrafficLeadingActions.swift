@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Controls immediately after the macOS traffic-light cluster.
+/// Controls immediately after the macOS traffic-light cluster (bar menu + optional back/forward).
 struct ShellTrafficLeadingActions: View {
     @EnvironmentObject private var tabStore: WorkspaceTabStore
     @EnvironmentObject private var chat: ChatViewModel
@@ -9,7 +9,7 @@ struct ShellTrafficLeadingActions: View {
     var compact: Bool = false
 
     var body: some View {
-        HStack(alignment: .center, spacing: CursorMacShellDesign.titlebarActionSpacing) {
+        HStack(alignment: .center, spacing: AppWindowChromeMetrics.toolbarItemSpacing) {
             TitlebarChromeIconButton(
                 systemName: tabStore.barMenuExpanded ? "sidebar.left" : "sidebar.right",
                 help: tabStore.barMenuExpanded

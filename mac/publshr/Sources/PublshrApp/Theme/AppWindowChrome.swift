@@ -1,19 +1,30 @@
 import SwiftUI
 
-/// Pinterest / notes-app reference — one titlebar band; controls vertically center on the traffic-light row.
+/// Cursor Mac titlebar metrics — one band shared with system traffic lights.
+///
+/// Layout rules (enforced by `TitlebarToolbarRow` / `TitlebarToolbarSlot`):
+/// - Row height is always `unifiedTitlebarRowHeight` (never driven by text or badges).
+/// - Every interactive control sits in a `controlSize` × `controlSize` slot, center-aligned.
+/// - Spacing between slots is always `toolbarItemSpacing`.
+/// - Channel titles use `toolbarTitleFontSize` inside the same row height (no second toolbar band).
 enum AppWindowChromeMetrics {
-    /// Leading reserve for standard macOS close / minimize / zoom cluster.
-    static let trafficLightLeadingInset: CGFloat = 72
+    /// Leading reserve for standard macOS close / minimize / zoom cluster (Ventura+).
+    static let trafficLightLeadingInset: CGFloat = 78
     /// Fallback when SwiftUI reports zero safe-area (pre-layout).
     static let fallbackTitlebarHeight: CGFloat = 28
-    /// Height of the system titlebar row where traffic lights are drawn (fixed — do not use safe-area height for layout).
+    /// Height of the unified titlebar row (aligned with system traffic-light band).
     static let trafficLightRowHeight: CGFloat = 38
-    /// Optical nudge so controls line up with the system close button (macOS centers lights ~12pt from window top).
-    static let trafficLightVerticalAlignPadding: CGFloat = 1
-    /// Square chrome control (edit, pop-out, close tab) — matches close-button visual size.
-    static let controlSize: CGFloat = 24
-    static let controlIconSize: CGFloat = 11
+    /// Fallback top inset when traffic lights are not measurable yet (pre-layout).
+    static let trafficLightVerticalAlignPadding: CGFloat = 6
+    /// Square chrome control — Cursor Mac titlebar hit target.
+    static let controlSize: CGFloat = 28
+    static let controlIconSize: CGFloat = 12
     static let controlCornerRadius: CGFloat = 6
+    /// Channel glyph inside the title slot.
+    static let channelIconSize: CGFloat = 16
+    static let toolbarTitleFontSize: CGFloat = 13
+    /// Gap between toolbar slots (sidebar toggle, icons, title cluster).
+    static let toolbarItemSpacing: CGFloat = 6
     /// Ask AI pill — same vertical footprint as chrome controls.
     static let askAIPillHeight: CGFloat = 24
     static let askAIPillHorizontalPadding: CGFloat = 10
@@ -25,12 +36,47 @@ enum AppWindowChromeMetrics {
     static let documentTabCornerRadius: CGFloat = 8
     static let documentTabHorizontalPadding: CGFloat = 10
     static let rowSpacing: CGFloat = 8
-    static let titlebarActionSpacing: CGFloat = 4
-    static let trailingClusterSpacing: CGFloat = 6
+    /// @deprecated Use `toolbarItemSpacing` for titlebar rows.
+    static let titlebarActionSpacing: CGFloat = toolbarItemSpacing
+    static let trailingClusterSpacing: CGFloat = toolbarItemSpacing
 
     /// Unified toolbar row height — always matches the traffic-light band (never the inflated SwiftUI safe-area).
     static var unifiedTitlebarRowHeight: CGFloat {
         trafficLightRowHeight
+    }
+}
+
+// MARK: - Titlebar layout primitives
+
+/// Fixed-height titlebar band; children must use `TitlebarToolbarSlot` for controls.
+struct TitlebarToolbarRow<Content: View>: View {
+    @ObservedObject private var layout = TrafficLightLayoutStore.shared
+    var leadingPadding: CGFloat = 0
+    var trailingPadding: CGFloat = 0
+    @ViewBuilder var content: () -> Content
+
+    var body: some View {
+        HStack(alignment: .center, spacing: AppWindowChromeMetrics.toolbarItemSpacing) {
+            content()
+        }
+        .padding(.leading, leadingPadding)
+        .padding(.trailing, trailingPadding)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(height: layout.rowHeight, alignment: .center)
+    }
+}
+
+/// Forces any toolbar child into the shared control box so icons, menus, and avatars share one baseline.
+struct TitlebarToolbarSlot<Content: View>: View {
+    @ViewBuilder var content: () -> Content
+
+    var body: some View {
+        content()
+            .frame(
+                width: AppWindowChromeMetrics.controlSize,
+                height: AppWindowChromeMetrics.controlSize,
+                alignment: .center
+            )
     }
 }
 

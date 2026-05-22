@@ -14,7 +14,8 @@ enum ProfileService {
         mimeType: String
     ) async throws -> Profile {
         let ext = mimeType.contains("png") ? "png" : "jpg"
-        let path = "avatars/\(userId.uuidString).\(ext)"
+        // Path must start with the user's UUID — a leading `avatars/` folder breaks Storage owner_id on some projects.
+        let path = "\(userId.uuidString)/avatar.\(ext)"
         _ = try await client.storage
             .from(bucket)
             .upload(

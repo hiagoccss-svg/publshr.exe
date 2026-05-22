@@ -2,7 +2,7 @@
 
 Upload **`icon.png`** at the **repository root** (GitHub web UI) or place it here as **`mac/publshr/app/icon.png`**.
 
-Mark-only PNGs (transparent background) get a **premium obsidian** holder automatically: run `python3 scripts/apply-premium-icon-background.py` from `mac/publshr/`, or rely on `generate-app-icon.swift` during macOS `icon-build.sh`.
+Mark-only PNGs (transparent background) get a **white** background automatically: run `python3 scripts/apply-premium-icon-background.py` from `mac/publshr/`, or rely on `generate-app-icon.swift` during macOS `icon-build.sh`.
 
 Before every macOS build, `scripts/sync-app-icon.sh` copies root **`icon.png`** into this folder when the files differ (checksum), so CI always picks up a new root upload even if this copy is older or smaller.
 
