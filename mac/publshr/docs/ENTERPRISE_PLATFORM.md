@@ -1,6 +1,6 @@
 # Enterprise platform (native macOS)
 
-Publshr’s native macOS IDE (`mac/publshr`) includes an enterprise layer for **install onboarding**, **subscriptions**, **workspace setup**, **settings**, **privacy**, **device registration**, **local files**, and **voice/video call signaling**.
+Publshr’s native macOS IDE (`mac/publshr`) includes an enterprise layer for **install onboarding**, **subscriptions**, **workspace setup**, **settings**, **privacy**, **device registration**, and **local files**.
 
 ## First-run setup
 
@@ -15,11 +15,11 @@ Steps: privacy → device acknowledgment → plan summary. Completing setup regi
 
 Plans live in Supabase `subscription_plans` (see migration `002_enterprise_platform.sql`). Each workspace has `plan_id` (default `trial`).
 
-| Plan       | Chat | Spaces | Calls | Seats |
-|------------|------|--------|-------|-------|
-| trial      | ✓    | ✓      | ✓     | 3     |
-| team       | ✓    | ✓      | ✓     | 25    |
-| enterprise | ✓    | ✓      | ✓     | 500   |
+| Plan       | Chat | Spaces | Seats |
+|------------|------|--------|-------|
+| trial      | ✓    | ✓      | 3     |
+| team       | ✓    | ✓      | 25    |
+| enterprise | ✓    | ✓      | 500   |
 
 `SubscriptionService` loads the plan and gates Chat/Spaces modules in `MainIDEView`.
 
@@ -37,14 +37,6 @@ Plans live in Supabase `subscription_plans` (see migration `002_enterprise_platf
 - **Security** — Keychain session, Touch ID
 - **Chat** — permissions persisted to `workspaces.settings.chat`
 
-## Calls
-
-`CallSignalingService` runs **local-first** voice/video: the app starts an embedded **livekit-server** SFU on the call host, LAN signaling via Bonjour/TCP, and LiveKit Swift for capture/playback. Up to **20** participants on the same network — no cloud media API.
-
-See [LOCAL_CALLS.md](LOCAL_CALLS.md) for bundling `livekit-server` and LAN requirements.
-
-Optional Supabase `call_rooms` rows are used only for **discovery** when online (not for media). Set workspace `calls_mode` to `"cloud"` to prefer cloud discovery; media stays local unless you configure an external SFU separately.
-
 ## Local files
 
 `FileAccessService` uses `NSOpenPanel` and security-scoped bookmarks for uploads (Chat composer, Settings → Files test).
@@ -61,9 +53,9 @@ Apply migrations in order:
 
 | Path | Role |
 |------|------|
-| `Sources/PublshrApp/Enterprise/` | Services (subscription, device, files, calls, workspace) |
+| `Sources/PublshrApp/Enterprise/` | Services (subscription, device, files, workspace) |
 | `Sources/PublshrApp/Views/Settings/` | Settings UI |
-| `Sources/PublshrApp/Views/Enterprise/` | Onboarding, call UI, module gates |
+| `Sources/PublshrApp/Views/Enterprise/` | Onboarding, module gates |
 
 ## Install / updates
 

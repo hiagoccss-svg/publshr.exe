@@ -5,7 +5,6 @@ struct ContentToolbarView: View {
     @EnvironmentObject private var auth: AuthViewModel
     @EnvironmentObject private var chat: ChatViewModel
     @EnvironmentObject private var subscription: SubscriptionService
-    @EnvironmentObject private var calls: CallSignalingService
     @ObservedObject var spaces: SpacesViewModel
     var module: AppModule
 
@@ -281,10 +280,6 @@ struct ContentToolbarView: View {
 
     private var chatActions: some View {
         HStack(spacing: 6) {
-            if chat.selectedChannel != nil, subscription.canUseCalls(workspace: auth.selectedWorkspace) {
-                callMenu
-            }
-
             if chat.selectedChannel != nil {
                 toolbarIcon(
                     chat.showPinnedPanel ? "pin.fill" : "pin",
@@ -333,41 +328,6 @@ struct ContentToolbarView: View {
         }
         .menuStyle(.borderlessButton)
         .help("Channel options")
-    }
-
-    private var callMenu: some View {
-        Menu {
-            Button { startCall(video: false, scope: .meeting) } label: {
-                Label("Voice meeting", systemImage: "phone.fill")
-            }
-            Button { startCall(video: true, scope: .meeting) } label: {
-                Label("Video meeting", systemImage: "video.fill")
-            }
-        } label: {
-            Image(systemName: "phone")
-                .font(.system(size: 13))
-                .foregroundStyle(CursorTheme.foregroundMuted)
-                .frame(width: 28, height: 28)
-                .background(RoundedRectangle(cornerRadius: 6).fill(CursorTheme.panelBackground))
-        }
-        .menuStyle(.borderlessButton)
-        .help("Start a call")
-    }
-
-    private func startCall(video: Bool, scope: CallScope) {
-        guard let ws = auth.selectedWorkspace?.id,
-              let channel = chat.selectedChannel else { return }
-        Task {
-            await calls.startChannelCall(
-                workspaceId: ws,
-                channelId: channel.id,
-                title: channel.displayTitle,
-                video: video,
-                scope: scope,
-                workspaceSettings: auth.selectedWorkspace?.settings,
-                userDisplayName: auth.profile?.displayName ?? auth.displayName
-            )
-        }
     }
 
     private var workspaceMenu: some View {
