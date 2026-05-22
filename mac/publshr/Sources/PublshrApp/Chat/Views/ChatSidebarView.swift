@@ -3,7 +3,6 @@ import SwiftUI
 /// Universal submenu for chat — search, filters, channels/DMs/recents (ClickUp) in library glass chrome.
 struct ChatSidebarView: View {
     @EnvironmentObject private var tabStore: WorkspaceTabStore
-    @EnvironmentObject private var calls: CallSignalingService
     @ObservedObject var chat: ChatViewModel
     @Binding var showNewChannel: Bool
     @Binding var showNewDM: Bool
@@ -300,9 +299,7 @@ struct ChatSidebarView: View {
                                 .font(.system(size: 10))
                                 .foregroundStyle(LibraryGlassDesign.primaryCTA)
                         }
-                        if let live = calls.liveCall(for: channel.id), !calls.isInCall(on: channel.id) {
-                            LiveCallChannelBadge(summary: live)
-                        } else if unread > 0 {
+                        if unread > 0 {
                             Text(unread > 99 ? "99+" : "\(unread)")
                                 .font(ChatClickUpDesign.unreadBadgeFont)
                                 .foregroundStyle(.white)

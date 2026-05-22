@@ -63,7 +63,4 @@ final class SubscriptionService: ObservableObject {
         features.spacesEnabled
     }
 
-    func canUseCalls(workspace: Workspace?) -> Bool {
-        features.callsEnabled
-    }
 }

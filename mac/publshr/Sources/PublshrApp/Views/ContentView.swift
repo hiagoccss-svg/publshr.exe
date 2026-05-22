@@ -6,7 +6,6 @@ struct ContentView: View {
     @EnvironmentObject private var spaces: SpacesViewModel
     @EnvironmentObject private var subscription: SubscriptionService
     @EnvironmentObject private var enterprise: EnterpriseWorkspaceService
-    @EnvironmentObject private var calls: CallSignalingService
 
     @State private var showEnterpriseOnboarding = false
 
@@ -57,19 +56,6 @@ struct ContentView: View {
         )) {
             BiometricSetupSheet()
         }
-        .onChange(of: calls.incomingInvite?.id) { oldId, newId in
-            guard let newId, oldId != newId else { return }
-            calls.bindPresentation(chat: chat, auth: auth)
-            calls.presentIncomingRing(chat: chat, auth: auth)
-        }
-        .onChange(of: calls.activeRoom?.id) { _, roomId in
-            guard auth.flowState == .signedIn else { return }
-            if roomId != nil {
-                CallWindowManager.shared.present(calls: calls, chat: chat, auth: auth)
-            } else {
-                CallWindowManager.shared.dismiss()
-            }
-        }
     }
 
     private var bootstrappingView: some View {
@@ -115,13 +101,6 @@ struct ContentView: View {
                 await chat.refreshAfterReconnect()
             }
             if let uid = auth.profile?.id {
-                calls.attach(
-                    client: auth.client,
-                    userId: uid,
-                    displayName: auth.profile?.displayName ?? auth.displayName,
-                    workspaceId: auth.selectedWorkspace?.id
-                )
-                calls.bindPresentation(chat: chat, auth: auth)
                 await DeviceIdentityService.register(
                     client: auth.client,
                     userId: uid,

@@ -8,7 +8,6 @@ struct MainIDEView: View {
     @EnvironmentObject private var updates: AppUpdateViewModel
     @EnvironmentObject private var subscription: SubscriptionService
     @EnvironmentObject private var enterprise: EnterpriseWorkspaceService
-    @EnvironmentObject private var calls: CallSignalingService
     @EnvironmentObject private var tabStore: WorkspaceTabStore
     @AppStorage("publshr.selectedModule") private var storedModule = AppModule.chat.rawValue
     @State private var module: AppModule = .chat
@@ -107,8 +106,7 @@ struct MainIDEView: View {
                 spaces: spaces,
                 updates: updates,
                 subscription: subscription,
-                enterprise: enterprise,
-                calls: calls
+                enterprise: enterprise
             )
         }
     }
