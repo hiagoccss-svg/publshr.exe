@@ -46,7 +46,7 @@ struct ShellTrafficLeadingActions: View {
         switch module {
         case .chat: chat.canNavigateBack
         case .spaces: spaces.canNavigateBack
-        case .settings: false
+        case .mediaMonitoring, .planner, .settings: false
         }
     }
 
@@ -54,7 +54,7 @@ struct ShellTrafficLeadingActions: View {
         switch module {
         case .chat: chat.canNavigateForward
         case .spaces: spaces.canNavigateForward
-        case .settings: false
+        case .mediaMonitoring, .planner, .settings: false
         }
     }
 
@@ -62,7 +62,7 @@ struct ShellTrafficLeadingActions: View {
         switch module {
         case .chat: chat.navigateBack()
         case .spaces: Task { await spaces.navigateBack() }
-        case .settings: break
+        case .mediaMonitoring, .planner, .settings: break
         }
     }
 
@@ -70,7 +70,7 @@ struct ShellTrafficLeadingActions: View {
         switch module {
         case .chat: chat.navigateForward()
         case .spaces: Task { await spaces.navigateForward() }
-        case .settings: break
+        case .mediaMonitoring, .planner, .settings: break
         }
     }
 }

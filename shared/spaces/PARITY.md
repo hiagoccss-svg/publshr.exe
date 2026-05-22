@@ -1,11 +1,15 @@
 # Spaces: desktop renderer and native IDE parity
 
-Publshr has **no separate browser web app** in this repo. “Web” means the **Electron renderer** (Chromium + React in `desktop/spaces`). “Desktop” in product terms is either:
+**Product rule:** Enterprise modules ship **inside `Publshr.app` first** (native SwiftUI + embedded `WebBundles` where needed). Electron apps under `desktop/` remain for cross-platform dev/CI; they are not required for macOS users.
 
-| Surface | Path | Role |
-|---------|------|------|
-| **Web UI (canonical for Spaces UX)** | `desktop/spaces/src/renderer/` | Full views bar, Spaces Home, settings, tldraw whiteboard |
-| **Native IDE** | `mac/publshr/Sources/PublshrApp/Spaces/` | Same views bar order and labels inside `Publshr.app` |
+| Module | In `Publshr.app` | Path |
+|--------|------------------|------|
+| Chat | Yes | `mac/publshr/.../Chat/` |
+| Spaces | Yes | `mac/publshr/.../Spaces/` |
+| Whiteboard canvas | Yes (WKWebView + `WebBundles/whiteboard`) | Spaces → Whiteboard tab |
+| Media Monitoring | Yes (native) | `mac/publshr/.../MediaMonitoring/` |
+| Planner | Yes (native) | `mac/publshr/.../Planner/` |
+| Electron parity builds | Optional | `desktop/spaces`, `desktop/media-monitoring` |
 
 ## Contract
 
@@ -23,7 +27,7 @@ When adding a view or renaming a tab, update **both**:
 
 ## Whiteboard canvas
 
-The **tldraw canvas** runs in the Electron renderer only until macOS embeds the same bundle (WKWebView host, Phase 2). The IDE shows the same board list and metadata; canvas editing uses the shared Supabase snapshot API.
+The **tldraw canvas** runs inside **`Publshr.app`** via `MacWebModuleHost` and `app/WebBundles/whiteboard/index.html` (Supabase snapshot API). Electron Spaces uses the same tables for parity testing.
 
 ## Run both surfaces
 

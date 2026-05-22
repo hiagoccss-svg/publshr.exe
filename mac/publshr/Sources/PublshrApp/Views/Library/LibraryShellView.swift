@@ -17,6 +17,7 @@ struct LibraryShellView: View {
 
     private var submenuHidden: Bool {
         module == .settings
+            || module.hidesUniversalSubmenu
             || !tabStore.sidebarExpanded
             || (module == .chat && chat.chatFocusMode)
             || (module == .spaces && spaces.spacesFocusMode)
@@ -169,6 +170,18 @@ struct LibraryShellView: View {
                 SpacesRootView(spaces: spaces, topInset: 0)
             } else {
                 EnterpriseModuleGate(moduleName: "Spaces", planName: subscription.features.planName)
+            }
+        case .mediaMonitoring:
+            if subscription.canUseMediaMonitoring(workspace: auth.selectedWorkspace) {
+                MediaMonitoringModuleView()
+            } else {
+                EnterpriseModuleGate(moduleName: "Media Monitoring", planName: subscription.features.planName)
+            }
+        case .planner:
+            if subscription.canUsePlanner(workspace: auth.selectedWorkspace) {
+                PlannerModuleView()
+            } else {
+                EnterpriseModuleGate(moduleName: "Planner", planName: subscription.features.planName)
             }
         case .settings:
             EnterpriseModuleGate(moduleName: "Settings", planName: subscription.features.planName)

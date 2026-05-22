@@ -168,6 +168,7 @@ struct MainIDEView: View {
         }
         if newModule == .chat { chat.attach(auth: auth) }
         if newModule == .spaces { spaces.attach(auth: auth) }
+        if newModule == .planner { chat.attach(auth: auth) }
         tabStore.openFromModule(newModule, activate: true)
     }
 

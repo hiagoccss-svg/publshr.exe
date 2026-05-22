@@ -20,6 +20,8 @@ struct AppSecondarySidebar: View {
                 )
             case .spaces:
                 SpacesNavSidebar(spaces: spaces)
+            case .mediaMonitoring, .planner:
+                EmptyView()
             case .settings:
                 EmptyView()
             }
