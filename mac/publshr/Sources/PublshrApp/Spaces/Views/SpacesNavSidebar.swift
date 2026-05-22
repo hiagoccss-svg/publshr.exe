@@ -37,6 +37,36 @@ struct SpacesNavSidebar: View {
 
             ScrollView {
                 VStack(spacing: 2) {
+                    Button {
+                        spaces.openSpacesHome()
+                    } label: {
+                        HStack(spacing: 8) {
+                            Image(systemName: "square.grid.2x2")
+                                .font(.system(size: 12))
+                            Text("Spaces Home")
+                                .font(.system(size: 13, weight: spaces.spacesHomeOpen && spaces.selectedSpaceId == nil ? .semibold : .regular))
+                            Spacer(minLength: 0)
+                        }
+                        .foregroundStyle(
+                            spaces.spacesHomeOpen && spaces.selectedSpaceId == nil
+                                ? LibraryGlassDesign.ink
+                                : LibraryGlassDesign.inkSecondary
+                        )
+                        .padding(.horizontal, LibraryGlassDesign.sidebarRowHorizontal)
+                        .padding(.vertical, LibraryGlassDesign.sidebarRowVertical + 1)
+                        .background(
+                            RoundedRectangle(cornerRadius: LibraryGlassDesign.sidebarRowRadius, style: .continuous)
+                                .fill(
+                                    spaces.spacesHomeOpen && spaces.selectedSpaceId == nil
+                                        ? LibraryGlassDesign.sidebarSelection
+                                        : Color.clear
+                                )
+                        )
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.horizontal, 6)
+                    .padding(.bottom, 4)
+
                     let pinned = spaces.filteredSpaces.filter(\.isPinned)
                     let rest = spaces.filteredSpaces.filter { !$0.isPinned }
                     if spaces.filteredSpaces.isEmpty {

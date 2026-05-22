@@ -31,6 +31,14 @@ struct SpacesRootView: View {
         .sheet(item: $spaces.editingDocument) { doc in
             SpacesDocumentEditorSheet(spaces: spaces, document: doc)
         }
+        .sheet(isPresented: Binding(
+            get: { spaces.spaceSettingsSpaceId != nil },
+            set: { if !$0 { spaces.spaceSettingsSpaceId = nil } }
+        )) {
+            if let id = spaces.spaceSettingsSpaceId {
+                SpacesSpaceSettingsSheet(spaces: spaces, spaceId: id)
+            }
+        }
     }
 
     @ViewBuilder
@@ -45,10 +53,14 @@ struct SpacesRootView: View {
                 } else if spaces.spaces.isEmpty {
                     emptyNoSpaces
                 } else if spaces.selectedSpace == nil {
-                    Text("Select a space")
-                        .font(.system(size: 13))
-                        .foregroundStyle(CursorTheme.foregroundMuted)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    if spaces.spacesHomeOpen || !spaces.spaces.isEmpty {
+                        SpacesHomeView(spaces: spaces)
+                    } else {
+                        Text("Select a space")
+                            .font(.system(size: 13))
+                            .foregroundStyle(CursorTheme.foregroundMuted)
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    }
                 } else {
                     switch spaces.taskView {
                     case .board:
@@ -61,6 +73,12 @@ struct SpacesRootView: View {
                         SpacesCalendarView(spaces: spaces)
                     case .whiteboard:
                         SpacesWhiteboardView(spaces: spaces)
+                    case .timeline:
+                        SpacesTimelineView(spaces: spaces)
+                    case .workload:
+                        SpacesWorkloadView(spaces: spaces)
+                    case .priority:
+                        SpacesPriorityMatrixView(spaces: spaces)
                     }
                 }
             }
