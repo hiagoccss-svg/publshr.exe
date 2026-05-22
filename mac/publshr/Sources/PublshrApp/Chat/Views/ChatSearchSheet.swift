@@ -6,13 +6,20 @@ struct ChatSearchSheet: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            HStack {
+            HStack(spacing: 8) {
+                Image(systemName: "magnifyingglass")
+                    .foregroundStyle(LibraryGlassDesign.inkMuted)
                 TextField("Search messages, tasks, files…", text: $chat.globalSearchQuery)
-                    .textFieldStyle(.roundedBorder)
+                    .textFieldStyle(.plain)
+                    .font(.system(size: MacSystemChrome.fieldFontSize))
                     .onSubmit { Task { await chat.runGlobalSearch() } }
                 Button("Search") { Task { await chat.runGlobalSearch() } }
+                    .buttonStyle(.borderless)
             }
-            .padding()
+            .macInlineTextField(background: MacSystemChrome.submenuFieldBackground())
+            .padding(MacSystemChrome.sheetPadding)
+
+            Divider().opacity(0.35)
 
             List(chat.searchResults) { hit in
                 Button {
@@ -23,16 +30,18 @@ struct ChatSearchSheet: View {
                 } label: {
                     VStack(alignment: .leading, spacing: 4) {
                         Text(hit.title)
-                            .font(.system(size: 13))
+                            .font(.system(size: MacSystemChrome.fieldFontSize))
                             .lineLimit(2)
                         Text(hit.subtitle)
                             .font(.system(size: 11))
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(LibraryGlassDesign.inkMuted)
                     }
                 }
                 .buttonStyle(.plain)
             }
+            .listStyle(.inset)
         }
         .frame(width: 480, height: 420)
+        .macNativeSheetPresentation()
     }
 }

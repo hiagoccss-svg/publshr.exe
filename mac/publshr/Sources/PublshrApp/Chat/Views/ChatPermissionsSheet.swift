@@ -33,6 +33,7 @@ struct ChatPermissionsSheet: View {
         }
         .formStyle(.grouped)
         .frame(width: 400, height: 480)
+        .macNativeSheetPresentation()
         .toolbar {
             ToolbarItem(placement: .confirmationAction) {
                 Button("Done") { dismiss() }

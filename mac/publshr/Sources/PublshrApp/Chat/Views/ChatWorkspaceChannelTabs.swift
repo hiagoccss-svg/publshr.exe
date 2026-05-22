@@ -30,7 +30,7 @@ struct ChatWorkspaceChannelTabs: View {
                 .padding(.vertical, 6)
             }
             .frame(maxWidth: .infinity)
-            .background(CursorMacShellDesign.editorBoxBackground)
+            .background(CursorMacShellDesign.editorColumnBackground)
             .overlay(alignment: .bottom) {
                 Rectangle()
                     .fill(CursorMacShellDesign.borderSubtle)

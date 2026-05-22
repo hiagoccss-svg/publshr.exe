@@ -42,7 +42,8 @@ struct ChatAISheet: View {
             Button("Close") { dismiss() }
                 .frame(maxWidth: .infinity, alignment: .trailing)
         }
-        .padding(20)
+        .padding(MacSystemChrome.sheetPadding)
         .frame(width: 440, height: 400)
+        .macNativeSheetPresentation()
     }
 }

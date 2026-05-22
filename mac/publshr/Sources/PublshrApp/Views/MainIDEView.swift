@@ -27,6 +27,7 @@ struct MainIDEView: View {
             showNotificationsPanel: $showNotificationsPanel,
             profilePresentation: $profilePresentation
         )
+        .environmentObject(TrafficLightLayoutStore.shared)
         .background(WindowChromeConfigurator())
         .background { TitlebarChromeShortcutBridge() }
         .onAppear(perform: onShellAppear)
@@ -191,9 +192,11 @@ private struct NewChannelSheet: View {
         VStack(alignment: .leading, spacing: 16) {
             Text("Create channel").font(.headline)
             TextField("Name (e.g. approvals)", text: $name)
-                .textFieldStyle(.roundedBorder)
+                .textFieldStyle(.plain)
+                .macInlineTextField()
             TextField("Topic / description (optional)", text: $description, axis: .vertical)
-                .textFieldStyle(.roundedBorder)
+                .textFieldStyle(.plain)
+                .macInlineTextField()
                 .lineLimit(2...3)
             Picker("Who can access", selection: $visibility) {
                 Text("Public").tag(ChatChannelVisibility.public)
@@ -223,8 +226,9 @@ private struct NewChannelSheet: View {
                 .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
             }
         }
-        .padding(24)
+        .padding(MacSystemChrome.sheetPadding)
         .frame(width: 400)
+        .macNativeSheetPresentation()
     }
 }
 
@@ -259,7 +263,8 @@ private struct NewDMSheet: View {
             .frame(minHeight: 200)
             Button("Close") { isPresented = false }
         }
-        .padding(20)
+        .padding(MacSystemChrome.sheetPadding)
         .frame(width: 320, height: 360)
+        .macNativeSheetPresentation()
     }
 }

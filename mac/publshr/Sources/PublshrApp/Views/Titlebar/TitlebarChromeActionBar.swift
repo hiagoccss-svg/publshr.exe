@@ -24,7 +24,7 @@ struct TitlebarChromeActionBar: View {
     }
 
     private var trailingCluster: some View {
-        HStack(alignment: .center, spacing: CursorMacShellDesign.titlebarActionSpacing) {
+        HStack(alignment: .center, spacing: AppWindowChromeMetrics.toolbarItemSpacing) {
             TitlebarChromeIconButton(
                 systemName: "bell",
                 help: "Notifications",
@@ -43,5 +43,4 @@ struct TitlebarChromeActionBar: View {
             }
         }
     }
-
 }

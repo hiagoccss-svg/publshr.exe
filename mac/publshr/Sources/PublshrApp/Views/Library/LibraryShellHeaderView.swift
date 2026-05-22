@@ -1,14 +1,12 @@
 import SwiftUI
 
-/// Per-column titlebar band — background matches the column below; no full-width separator.
+/// Per-column titlebar band — used only when `ShellColumnChromeStack(showsTitlebar: true)`.
+/// The live shell uses `ShellUnifiedTitlebar`; these rows are placeholders for legacy/pop-out layouts.
 enum ShellColumnHeaderKind {
     /// Left column: traffic-light inset; back/forward hidden when bar menu is collapsed to icon rail.
     case trafficLeading(module: Binding<AppModule>, compact: Bool = false)
-    /// Middle submenu column: empty band matching sidebar chrome.
     case secondaryChrome
-    /// Chat submenu: search in the titlebar row (ClickUp).
     case chatSubmenu
-    /// Right column: profile, notifications, command only (editor gutter color).
     case editorTrailing(
         module: Binding<AppModule>,
         showCommandPalette: Binding<Bool>,
@@ -19,18 +17,10 @@ enum ShellColumnHeaderKind {
 struct LibraryShellHeaderView: View {
     @EnvironmentObject private var chat: ChatViewModel
     let kind: ShellColumnHeaderKind
-    /// When set, the header band matches a fixed shell column (prevents HStack equal-width stretch).
-    var columnWidth: CGFloat?
-
-    private var rowHeight: CGFloat {
-        AppWindowChromeMetrics.unifiedTitlebarRowHeight
-    }
 
     var body: some View {
         rowContent
-            .frame(height: rowHeight, alignment: .center)
-            .frame(width: columnWidth, alignment: .leading)
-            .frame(maxWidth: columnWidth == nil ? .infinity : columnWidth)
+            .frame(maxWidth: .infinity)
             .background { headerBackground }
     }
 
@@ -49,55 +39,47 @@ struct LibraryShellHeaderView: View {
     @ViewBuilder
     private var rowContent: some View {
         switch kind {
-        case .trafficLeading(let module, let compact):
-            HStack(alignment: .center, spacing: compact ? 0 : 10) {
-                if !compact {
-                    Color.clear
-                        .frame(width: AppWindowChromeMetrics.trafficLightLeadingInset)
-                }
-                ShellTrafficLeadingActions(module: module, compact: compact)
-                if !compact {
-                    Spacer(minLength: 0)
-                }
-            }
-            .frame(maxWidth: .infinity, alignment: compact ? .center : .leading)
-            .padding(.trailing, compact ? 0 : 8)
-
-        case .secondaryChrome:
-            Color.clear
-                .frame(width: columnWidth, height: 1)
-
-        case .chatSubmenu:
-            ChatSidebarTitlebarChrome(chat: chat)
-                .frame(width: columnWidth, alignment: .leading)
-
-        case .editorTrailing(let module, let showCommandPalette, let showNotificationsPanel):
-            HStack(alignment: .center, spacing: 0) {
-                Spacer(minLength: 0)
-                TitlebarChromeActionBar(
-                    module: module,
-                    showCommandPalette: showCommandPalette,
-                    showNotificationsPanel: showNotificationsPanel,
-                    placement: .trailing
-                )
-            }
-            .padding(.trailing, 14)
+        case .trafficLeading:
+            Color.clear.frame(height: TrafficLightLayoutStore.shared.rowHeight)
+        case .secondaryChrome, .chatSubmenu:
+            Color.clear.frame(height: TrafficLightLayoutStore.shared.rowHeight)
+        case .editorTrailing:
+            Color.clear.frame(height: TrafficLightLayoutStore.shared.rowHeight)
         }
     }
 }
 
-/// Stacks a column header band above content with matching chrome background.
+/// Stacks optional titlebar band above column content.
 struct ShellColumnChromeStack<Content: View>: View {
-    let headerKind: ShellColumnHeaderKind
+    var showsTitlebar: Bool = true
+    var headerKind: ShellColumnHeaderKind?
     /// Locks column width in the shell `HStack` (nil = flexible editor column).
     var columnWidth: CGFloat?
     var appliesSidebarChrome: Bool = false
     var appliesPrimaryBarGlass: Bool = false
     @ViewBuilder var content: () -> Content
 
+    init(
+        showsTitlebar: Bool = true,
+        headerKind: ShellColumnHeaderKind? = nil,
+        columnWidth: CGFloat? = nil,
+        appliesSidebarChrome: Bool = false,
+        appliesPrimaryBarGlass: Bool = false,
+        @ViewBuilder content: @escaping () -> Content
+    ) {
+        self.showsTitlebar = showsTitlebar
+        self.headerKind = headerKind
+        self.columnWidth = columnWidth
+        self.appliesSidebarChrome = appliesSidebarChrome
+        self.appliesPrimaryBarGlass = appliesPrimaryBarGlass
+        self.content = content
+    }
+
     var body: some View {
         VStack(spacing: 0) {
-            LibraryShellHeaderView(kind: headerKind, columnWidth: columnWidth)
+            if showsTitlebar, let headerKind {
+                LibraryShellHeaderView(kind: headerKind)
+            }
             content()
                 .frame(
                     maxWidth: columnWidth == nil ? .infinity : columnWidth,
