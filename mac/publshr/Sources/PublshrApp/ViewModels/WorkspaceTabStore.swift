@@ -6,6 +6,8 @@ final class WorkspaceTabStore: ObservableObject {
     @Published private(set) var tabs: [WorkspaceTab] = []
     @Published var selectedTabId: String?
     @AppStorage("publshr.sidebarExpanded") var sidebarExpanded = true
+    /// Full labeled bar menu vs narrow icon rail (toggle from traffic-header).
+    @AppStorage("publshr.barMenuExpanded") var barMenuExpanded = true
     @Published var detachDragTabId: String?
 
     private var suppressSelectionSync = false

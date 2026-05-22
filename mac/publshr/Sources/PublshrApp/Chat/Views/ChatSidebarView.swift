@@ -10,6 +10,7 @@ struct ChatSidebarView: View {
     var body: some View {
         LibraryUniversalSubmenuContainer(width: LibraryUniversalSubmenu.width) {
             VStack(spacing: 0) {
+                chatSidebarHeader
                 sidebarSearch
                 filterBar
                 LibraryUniversalSubmenu.sectionDivider()
@@ -44,6 +45,42 @@ struct ChatSidebarView: View {
         if hasData, filteredEmpty, chat.sidebarFilter != .all {
             chat.setSidebarFilter(.all)
         }
+    }
+
+    // MARK: - Header (ClickUp: Chat + new menu)
+
+    private var chatSidebarHeader: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "bubble.left.and.bubble.right.fill")
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(LibraryGlassDesign.ink)
+            Text("Chat")
+                .font(ChatClickUpDesign.sidebarTitleFont)
+                .foregroundStyle(LibraryGlassDesign.ink)
+            Spacer(minLength: 0)
+            Menu {
+                Button { showNewChannel = true } label: {
+                    Label("New channel", systemImage: "number")
+                }
+                Button { showNewDM = true } label: {
+                    Label("New message", systemImage: "person.badge.plus")
+                }
+            } label: {
+                Image(systemName: "plus")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(LibraryGlassDesign.inkSecondary)
+                    .frame(width: 28, height: 28)
+                    .background(
+                        RoundedRectangle(cornerRadius: 6, style: .continuous)
+                            .fill(LibraryGlassDesign.filterPillInactiveFill)
+                    )
+            }
+            .menuStyle(.borderlessButton)
+            .menuIndicator(.hidden)
+            .help("New channel or message")
+        }
+        .padding(.horizontal, ChatClickUpDesign.horizontalPadding)
+        .frame(height: ChatClickUpDesign.headerHeight)
     }
 
     // MARK: - Search
@@ -132,16 +169,24 @@ struct ChatSidebarView: View {
 
     private var organizedContent: some View {
         Group {
-            if chat.sidebarFilter == .all, !chat.favoriteChannels.isEmpty {
-                sidebarSection("Favorites", items: chat.favoriteChannels, onAdd: nil)
+            if chat.sidebarFilter == .all, !chat.pinnedSidebarChannels.isEmpty {
+                sidebarSection("Pinned", items: chat.pinnedSidebarChannels, onAdd: nil)
                 LibraryUniversalSubmenu.sectionDivider()
             }
             if chat.sidebarFilter != .dms {
-                sidebarSection("Channels", items: chat.filteredChannels, onAdd: { showNewChannel = true })
+                sidebarSection(
+                    "Channels",
+                    items: chat.filteredChannels.filter { !chat.isSidebarPinned($0) },
+                    onAdd: { showNewChannel = true }
+                )
                 LibraryUniversalSubmenu.sectionDivider()
             }
             if chat.sidebarFilter != .channels {
-                sidebarSection("Direct Messages", items: chat.filteredDMs, onAdd: { showNewDM = true })
+                sidebarSection(
+                    "Direct Messages",
+                    items: chat.filteredDMs.filter { !chat.isSidebarPinned($0) },
+                    onAdd: { showNewDM = true }
+                )
             }
         }
     }
@@ -298,9 +343,15 @@ struct ChatSidebarView: View {
                     Spacer(minLength: 0)
                     HStack(spacing: 4) {
                         if threadUnread {
-                            Image(systemName: "bubble.left.and.bubble.right.fill")
-                                .font(.system(size: 10))
-                                .foregroundStyle(LibraryGlassDesign.primaryCTA)
+                            Button {
+                                Task { await chat.openUnreadThreadFromSidebar(for: channel) }
+                            } label: {
+                                Image(systemName: "bubble.left.and.bubble.right.fill")
+                                    .font(.system(size: 10))
+                                    .foregroundStyle(LibraryGlassDesign.primaryCTA)
+                            }
+                            .buttonStyle(.plain)
+                            .help("Open unread thread")
                         }
                         if unread > 0 {
                             Text(unread > 99 ? "99+" : "\(unread)")

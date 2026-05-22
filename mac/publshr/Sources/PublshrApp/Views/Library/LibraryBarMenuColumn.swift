@@ -3,6 +3,7 @@ import SwiftUI
 /// Primary bar menu — app modules only (Chat, Spaces).
 struct LibraryBarMenuColumn: View {
     @EnvironmentObject private var tabStore: WorkspaceTabStore
+    @EnvironmentObject private var chat: ChatViewModel
     @Binding var module: AppModule
 
     var body: some View {
@@ -12,6 +13,7 @@ struct LibraryBarMenuColumn: View {
                     navRow(
                         item.label,
                         icon: item.systemImage,
+                        badge: item == .chat ? chatUnreadBadge : 0,
                         selected: module == item
                     ) {
                         switchModule(item)
@@ -25,6 +27,10 @@ struct LibraryBarMenuColumn: View {
         }
         .frame(width: LibraryGlassDesign.barMenuWidth)
         .frame(maxHeight: .infinity)
+    }
+
+    private var chatUnreadBadge: Int {
+        min(chat.totalUnread, 99)
     }
 
     private func navRow(
@@ -45,7 +51,7 @@ struct LibraryBarMenuColumn: View {
                     .foregroundStyle(selected ? LibraryGlassDesign.ink : LibraryGlassDesign.inkSecondary)
                 Spacer(minLength: 0)
                 if badge > 0 {
-                    Text("\(badge)")
+                    Text(badge > 99 ? "99+" : "\(badge)")
                         .font(.system(size: 10, weight: .bold))
                         .foregroundStyle(.white)
                         .padding(.horizontal, 7)
@@ -67,5 +73,8 @@ struct LibraryBarMenuColumn: View {
     private func switchModule(_ item: AppModule) {
         module = item
         tabStore.openFromModule(item, activate: true)
+        if item == .chat {
+            tabStore.sidebarExpanded = true
+        }
     }
 }

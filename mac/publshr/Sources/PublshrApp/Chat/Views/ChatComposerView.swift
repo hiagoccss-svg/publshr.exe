@@ -8,6 +8,9 @@ struct ChatComposerView: View {
 
     var body: some View {
         VStack(spacing: 4) {
+            if !chat.canPostInSelectedChannel {
+                announcementBanner
+            }
             if let reply = chat.replyingTo {
                 replyBanner(reply)
             }
@@ -32,6 +35,7 @@ struct ChatComposerView: View {
                     .font(.system(size: 13))
                     .foregroundStyle(CursorTheme.foreground)
                     .lineLimit(1...6)
+                    .disabled(!chat.canPostInSelectedChannel)
                     .padding(.horizontal, 14)
                     .padding(.vertical, 10)
                     .background(
@@ -59,16 +63,34 @@ struct ChatComposerView: View {
                         )
                 }
                 .buttonStyle(.plain)
-                .disabled(chat.composerText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                .disabled(
+                    !chat.canPostInSelectedChannel
+                        || chat.composerText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                )
                 .keyboardShortcut(.return, modifiers: .command)
             }
             .padding(.horizontal, 16)
             .padding(.bottom, 10)
             .padding(.top, 6)
+            .opacity(chat.canPostInSelectedChannel ? 1 : 0.45)
         }
         .padding(.horizontal, 12)
         .padding(.bottom, 12)
         .background(Color.clear)
+    }
+
+    private var announcementBanner: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "megaphone.fill")
+                .font(.system(size: 12))
+                .foregroundStyle(CursorTheme.foregroundMuted)
+            Text("Only admins can post in this channel.")
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(CursorTheme.foregroundMuted)
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 16)
+        .padding(.top, 8)
     }
 
     private var composerPlaceholder: String {

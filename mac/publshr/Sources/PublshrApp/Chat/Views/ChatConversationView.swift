@@ -3,6 +3,7 @@ import UniformTypeIdentifiers
 
 struct ChatConversationView: View {
     @ObservedObject var chat: ChatViewModel
+    var onNewMessage: () -> Void = {}
     @State private var showFileImporter = false
     @State private var showVoiceSheet = false
     @State private var editText = ""
@@ -99,9 +100,7 @@ struct ChatConversationView: View {
         Group {
             if chat.mainChannelMessages.isEmpty && !chat.isLoading {
                 ChatEmptyStateView(
-                    onNewMessage: {
-                        NotificationCenter.default.post(name: .publshrTitlebarNewDM, object: nil)
-                    },
+                    onNewMessage: onNewMessage,
                     onCreateChannel: { Task { await chat.createChannel(name: "general") } }
                 )
             } else {

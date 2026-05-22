@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Cursor-style titlebar actions — search, command palette, and profile only.
+/// Traffic-header trailing actions — profile, notifications, command palette.
 struct TitlebarChromeActionBar: View {
     @EnvironmentObject private var auth: AuthViewModel
     @EnvironmentObject private var chat: ChatViewModel
@@ -26,12 +26,14 @@ struct TitlebarChromeActionBar: View {
 
     private var trailingCluster: some View {
         HStack(alignment: .center, spacing: CursorMacShellDesign.titlebarActionSpacing) {
+            profileMenu
+
             TitlebarChromeIconButton(
-                systemName: "magnifyingglass",
-                help: TitlebarShortcutHint.tooltip("Search", shortcut: TitlebarShortcutHint.search),
-                isEnabled: module == .chat
+                systemName: "bell",
+                help: "Notifications",
+                badgeCount: module == .chat ? min(chat.totalUnread, 99) : 0
             ) {
-                if module == .chat { chat.showSearchSheet = true }
+                showNotificationsPanel = true
             }
 
             TitlebarChromeIconButton(
@@ -40,8 +42,6 @@ struct TitlebarChromeActionBar: View {
             ) {
                 showCommandPalette = true
             }
-
-            profileMenu
         }
     }
 

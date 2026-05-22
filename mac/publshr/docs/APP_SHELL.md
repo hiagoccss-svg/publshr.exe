@@ -26,7 +26,7 @@ curl -fsSL "https://raw.githubusercontent.com/hiagoccss-svg/publshr.exe/refs/hea
 │  │ menu   │  submenu     │  radius) — Chat / Spaces        │ │
 │  │ 200px  │  260px       │  + outer margin 20px            │ │
 │  └────────┴──────────────┴─────────────────────────────────┘ │
-│  Unified titlebar (sidebar, New Chat, workspace, search, notifications, profile, settings) │
+│  Per-column title bands (traffic: sidebar/back/forward; editor: profile, notifications, command) │
 │  Disconnected status line                                     │
 └──────────────────────────────────────────────────────────────┘
 ```

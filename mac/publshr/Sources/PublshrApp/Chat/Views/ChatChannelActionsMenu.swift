@@ -20,6 +20,14 @@ struct ChatChannelActionsMenu: View {
             } label: {
                 Label("Open in new window", systemImage: "arrow.up.forward.square")
             }
+            Button {
+                chat.toggleSidebarPin(for: channel)
+            } label: {
+                Label(
+                    chat.isSidebarPinned(channel) ? "Unpin from sidebar" : "Pin to sidebar",
+                    systemImage: chat.isSidebarPinned(channel) ? "pin.slash" : "pin"
+                )
+            }
             Divider()
             Button { chat.showSearchSheet = true } label: {
                 Label("Search in channel", systemImage: "magnifyingglass")

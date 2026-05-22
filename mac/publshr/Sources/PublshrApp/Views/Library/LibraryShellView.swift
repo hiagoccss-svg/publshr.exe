@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Cursor Mac 3-column shell — per-column title bands, no global header divider.
+/// Cursor Mac 3-column shell — glass bar, traffic controls, borderless chat column.
 struct LibraryShellView: View {
     @EnvironmentObject private var auth: AuthViewModel
     @EnvironmentObject private var chat: ChatViewModel
@@ -36,6 +36,9 @@ struct LibraryShellView: View {
         .onChange(of: tabStore.sidebarExpanded) { _, _ in
             withAnimation(.easeInOut(duration: 0.2)) {}
         }
+        .onChange(of: tabStore.barMenuExpanded) { _, _ in
+            withAnimation(.easeInOut(duration: 0.15)) {}
+        }
         .onChange(of: chat.chatFocusMode) { _, _ in
             withAnimation(.easeInOut(duration: 0.2)) {}
         }
@@ -50,10 +53,16 @@ struct LibraryShellView: View {
     private var shellBody: some View {
         HStack(alignment: .top, spacing: 0) {
             ShellColumnChromeStack(
-                headerKind: .primaryLeading,
+                headerKind: .trafficLeading(module: $module),
                 appliesPrimaryBarGlass: true
             ) {
-                LibraryBarMenuColumn(module: $module)
+                Group {
+                    if tabStore.barMenuExpanded {
+                        LibraryBarMenuColumn(module: $module)
+                    } else {
+                        LibraryBarMenuIconRail(module: $module)
+                    }
+                }
             }
             .fixedSize(horizontal: true, vertical: false)
             .layoutPriority(2)
@@ -82,12 +91,12 @@ struct LibraryShellView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .animation(.easeInOut(duration: 0.15), value: submenuHidden)
+        .animation(.easeInOut(duration: 0.15), value: tabStore.barMenuExpanded)
     }
 
     private var editorColumn: some View {
         ShellColumnChromeStack(
-            headerKind: .editor(
-                title: editorColumnTitle,
+            headerKind: .editorTrailing(
                 module: $module,
                 showCommandPalette: $showCommandPalette,
                 showNotificationsPanel: $showNotificationsPanel
@@ -109,26 +118,12 @@ struct LibraryShellView: View {
         .background(module == .chat ? CursorMacShellDesign.editorColumnBackground : CursorMacShellDesign.workspaceBackground)
     }
 
-    private var editorColumnTitle: String {
-        switch module {
-        case .chat:
-            if let channel = chat.selectedChannel {
-                return channel.displayTitle
-            }
-            return auth.selectedWorkspace?.name ?? "Chat"
-        case .spaces:
-            return spaces.selectedSpace?.name ?? "Spaces"
-        case .settings:
-            return "Settings"
-        }
-    }
-
     @ViewBuilder
     private var moduleContent: some View {
         switch module {
         case .chat:
             if subscription.canUseChat(workspace: auth.selectedWorkspace) {
-                EnterpriseChatView(chat: chat, topInset: 0)
+                EnterpriseChatView(chat: chat, topInset: 0, onNewMessage: { showNewDM = true })
             } else {
                 EnterpriseModuleGate(moduleName: "Chat", planName: subscription.features.planName)
             }

@@ -8,6 +8,20 @@ enum ChatUserPreferences {
     private static let permissionsPrefix = "publshr.chat.permissions."
     private static let sidebarFilterKey = "publshr.chat.sidebarFilter"
     private static let sidebarLayoutKey = "publshr.chat.sidebarLayout"
+    private static let pinnedChannelsPrefix = "publshr.chat.pinnedChannels."
+
+    static func loadPinnedChannelIds(workspaceId: UUID) -> Set<UUID> {
+        let key = pinnedChannelsPrefix + workspaceId.uuidString
+        guard let raw = UserDefaults.standard.array(forKey: key) as? [String] else {
+            return []
+        }
+        return Set(raw.compactMap { UUID(uuidString: $0) })
+    }
+
+    static func savePinnedChannelIds(_ ids: Set<UUID>, workspaceId: UUID) {
+        let key = pinnedChannelsPrefix + workspaceId.uuidString
+        UserDefaults.standard.set(ids.map(\.uuidString), forKey: key)
+    }
 
     static func loadSidebarFilter() -> ChatSidebarFilter {
         guard let raw = UserDefaults.standard.string(forKey: sidebarFilterKey),

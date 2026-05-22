@@ -22,6 +22,7 @@ final class ChatViewModel: ObservableObject {
     @Published var sidebarFilter: ChatSidebarFilter = ChatUserPreferences.loadSidebarFilter()
     @Published var sidebarLayout: ChatSidebarLayout = ChatUserPreferences.loadSidebarLayout()
     @Published var sidebarSearchQuery = ""
+    @Published private(set) var pinnedSidebarChannelIds: Set<UUID> = []
     @Published var permissions = ChatWorkspacePermissions.default
     @Published var isOffline = false
 
@@ -96,6 +97,7 @@ final class ChatViewModel: ObservableObject {
             presenceHeartbeat?.cancel()
             await service?.stopRealtime()
             self.workspace = workspace
+            reloadPinnedSidebarChannels()
             mergePermissions(workspace: workspace, fallback: permissions)
             messages = []
             channels = []
@@ -913,15 +915,74 @@ final class ChatViewModel: ObservableObject {
         return sidebarChannelsList(sorted)
     }
 
-    /// Recently active — stable name order for Favorites (avoids row jumping on new messages).
-    var favoriteChannels: [ChatChannel] {
-        let combined = channels + directMessages
-        let byActivity = combined.sorted {
-            ($0.lastMessageAt ?? .distantPast) > ($1.lastMessageAt ?? .distantPast)
+    /// ClickUp-style pinned section — user-pinned channels/DMs (persisted per workspace).
+    var pinnedSidebarChannels: [ChatChannel] {
+        let all = channels + directMessages
+        return all
+            .filter { pinnedSidebarChannelIds.contains($0.id) }
+            .sorted {
+                $0.sidebarTitle.localizedCaseInsensitiveCompare($1.sidebarTitle) == .orderedAscending
+            }
+    }
+
+    /// Legacy alias for bar-menu badge counts.
+    var favoriteChannels: [ChatChannel] { pinnedSidebarChannels }
+
+    var canPostInSelectedChannel: Bool {
+        guard let channel = selectedChannel else { return false }
+        switch channel.visibility {
+        case .announcement, .readOnly:
+            return permissions.canDeleteMessages || permissions.canPinMessages
+        default:
+            return true
         }
-        let top = Array(byActivity.prefix(8))
-        return top.sorted {
-            $0.sidebarTitle.localizedCaseInsensitiveCompare($1.sidebarTitle) == .orderedAscending
+    }
+
+    func reloadPinnedSidebarChannels() {
+        guard let workspaceId = workspace?.id else {
+            pinnedSidebarChannelIds = []
+            return
+        }
+        pinnedSidebarChannelIds = ChatUserPreferences.loadPinnedChannelIds(workspaceId: workspaceId)
+    }
+
+    func toggleSidebarPin(for channel: ChatChannel) {
+        guard let workspaceId = workspace?.id else { return }
+        if pinnedSidebarChannelIds.contains(channel.id) {
+            pinnedSidebarChannelIds.remove(channel.id)
+        } else {
+            pinnedSidebarChannelIds.insert(channel.id)
+        }
+        ChatUserPreferences.savePinnedChannelIds(pinnedSidebarChannelIds, workspaceId: workspaceId)
+    }
+
+    func isSidebarPinned(_ channel: ChatChannel) -> Bool {
+        pinnedSidebarChannelIds.contains(channel.id)
+    }
+
+    func openFirstUnreadChannel() {
+        let all = channels + directMessages
+        if let ch = all.first(where: {
+            unreadCount(for: $0.id) > 0 || hasUnreadThreadReplies(for: $0.id)
+        }) {
+            selectChannel(ch)
+        } else if let first = all.first {
+            selectChannel(first)
+        }
+    }
+
+    func openPinnedSidebarFocus() {
+        if let first = pinnedSidebarChannels.first {
+            selectChannel(first)
+        }
+    }
+
+    func openUnreadThreadFromSidebar(for channel: ChatChannel) async {
+        selectChannel(channel)
+        if let parent = mainChannelMessages.first(where: { (threadCounts[$0.id] ?? 0) > 0 }) {
+            await openThread(for: parent)
+        } else if hasUnreadThreadReplies(for: channel.id) {
+            showThreadPanel = true
         }
     }
 
