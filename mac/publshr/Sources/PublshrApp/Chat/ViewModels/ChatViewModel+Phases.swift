@@ -95,6 +95,16 @@ extension ChatViewModel {
         } catch { errorMessage = error.localizedDescription }
     }
 
+    // MARK: - Reply
+
+    func beginReply(to message: ChatMessage) {
+        replyingTo = message
+    }
+
+    func cancelReply() {
+        replyingTo = nil
+    }
+
     // MARK: - Threads
 
     func openThread(for message: ChatMessage) async {
@@ -393,6 +403,7 @@ extension ChatViewModel {
                 permissions: permissions
             )
             workspace = ws
+            ChatUserPreferences.cachePermissions(permissions, workspaceId: ws.id)
         } catch {
             errorMessage = error.localizedDescription
         }

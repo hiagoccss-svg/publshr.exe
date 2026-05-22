@@ -11,8 +11,16 @@ final class ChatNotificationService: NSObject, UNUserNotificationCenterDelegate 
         UNUserNotificationCenter.current().delegate = self
     }
 
-    func requestAuthorization() async {
-        _ = try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge])
+    func requestAuthorizationIfNeeded() async {
+        guard !ChatUserPreferences.didPromptForNotifications else { return }
+        let center = UNUserNotificationCenter.current()
+        let settings = await center.notificationSettings()
+        guard settings.authorizationStatus == .notDetermined else {
+            ChatUserPreferences.didPromptForNotifications = true
+            return
+        }
+        _ = try? await center.requestAuthorization(options: [.alert, .sound, .badge])
+        ChatUserPreferences.didPromptForNotifications = true
     }
 
     func notify(

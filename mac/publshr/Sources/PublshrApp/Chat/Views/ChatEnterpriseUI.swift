@@ -84,6 +84,7 @@ struct ChatChannelStatusBar: View {
             }
             HStack(spacing: 12) {
                 if let channel = chat.selectedChannel {
+                    ChatChannelIconView(channel: channel, size: 18)
                     Text(channel.displayTitle)
                         .font(.system(size: 13, weight: .semibold))
                         .foregroundStyle(CursorTheme.foreground)

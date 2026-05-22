@@ -1,4 +1,5 @@
 import SwiftUI
+import UniformTypeIdentifiers
 
 // MARK: - Updates
 
@@ -42,9 +43,36 @@ struct SettingsUpdatesPane: View {
 
 struct SettingsAccountPane: View {
     @EnvironmentObject private var auth: AuthViewModel
+    @State private var showAvatarPicker = false
+    @State private var isUploadingAvatar = false
+    @State private var avatarError: String?
 
     var body: some View {
         Form {
+            Section("Profile photo") {
+                HStack(spacing: 14) {
+                    ChatProfileAvatar(
+                        profile: auth.profile,
+                        displayName: auth.profile?.displayName ?? auth.profile?.email ?? "You",
+                        size: 56,
+                        presence: nil
+                    )
+                    VStack(alignment: .leading, spacing: 6) {
+                        Button(isUploadingAvatar ? "Uploading…" : "Upload photo") {
+                            showAvatarPicker = true
+                        }
+                        .disabled(isUploadingAvatar)
+                        Text("Shown in chat, calls, and spaces.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        if let avatarError {
+                            Text(avatarError)
+                                .font(.caption)
+                                .foregroundStyle(.red)
+                        }
+                    }
+                }
+            }
             Section("Profile") {
                 if let p = auth.profile {
                     LabeledContent("Name", value: p.displayName ?? "—")
@@ -57,6 +85,29 @@ struct SettingsAccountPane: View {
         }
         .formStyle(.grouped)
         .navigationTitle("Account")
+        .fileImporter(
+            isPresented: $showAvatarPicker,
+            allowedContentTypes: [.jpeg, .png],
+            allowsMultipleSelection: false
+        ) { result in
+            guard case .success(let urls) = result, let url = urls.first else { return }
+            Task { await uploadAvatar(from: url) }
+        }
+    }
+
+    private func uploadAvatar(from url: URL) async {
+        isUploadingAvatar = true
+        avatarError = nil
+        defer { isUploadingAvatar = false }
+        let accessed = url.startAccessingSecurityScopedResource()
+        defer { if accessed { url.stopAccessingSecurityScopedResource() } }
+        do {
+            let data = try Data(contentsOf: url)
+            let mime = url.pathExtension.lowercased() == "png" ? "image/png" : "image/jpeg"
+            try await auth.uploadAvatar(data: data, mimeType: mime)
+        } catch {
+            avatarError = error.localizedDescription
+        }
     }
 }
 

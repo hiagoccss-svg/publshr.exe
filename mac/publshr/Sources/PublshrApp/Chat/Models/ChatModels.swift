@@ -49,8 +49,10 @@ struct ChatChannel: Codable, Identifiable, Equatable, Hashable {
         if kind == .dm, name.hasPrefix("dm:") {
             return String(name.dropFirst(3))
         }
-        if kind == .channel, !name.hasPrefix("#") {
-            return "#\(name)"
+        if kind == .channel {
+            var n = name
+            if n.hasPrefix("#") { n.removeFirst() }
+            return "#\(n)"
         }
         return name
     }

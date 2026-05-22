@@ -11,7 +11,9 @@ struct ChatMessageBubbleView: View {
     var links: [ChatMessageLink] = []
     var threadReplyCount: Int = 0
     var voiceTranscript: String?
+    var showReadReceipts: Bool = false
     var onRetry: (() -> Void)?
+    var onReply: (() -> Void)?
     var onReaction: ((String) -> Void)?
     var onThread: (() -> Void)?
     var onPin: (() -> Void)?
@@ -64,6 +66,7 @@ struct ChatMessageBubbleView: View {
         }
         .padding(.vertical, showAvatar ? 4 : 1)
         .contextMenu {
+            Button("Reply") { onReply?() }
             Button("Reply in thread") { onThread?() }
             Menu("React") {
                 ForEach(ChatQuickReaction.allCases, id: \.rawValue) { r in
@@ -173,7 +176,7 @@ struct ChatMessageBubbleView: View {
                 .foregroundStyle(CursorTheme.error)
                 .buttonStyle(.plain)
         case .sent, .delivered, .seen:
-            if isOwn {
+            if isOwn, showReadReceipts {
                 Image(systemName: message.localStatus == .seen ? "checkmark.circle.fill" : "checkmark")
                     .font(.system(size: 10))
                     .foregroundStyle(CursorTheme.foregroundDim)
