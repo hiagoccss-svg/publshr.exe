@@ -28,6 +28,16 @@ struct ChatChannelActionsMenu: View {
                     systemImage: chat.isSidebarPinned(channel) ? "pin.slash" : "pin"
                 )
             }
+            Button {
+                chat.markChannelRead(channel)
+            } label: {
+                Label("Mark as read", systemImage: "checkmark.circle")
+            }
+            Button {
+                Task { await chat.muteChannel(channel) }
+            } label: {
+                Label("Mute notifications", systemImage: "bell.slash")
+            }
             Divider()
             Button { chat.showSearchSheet = true } label: {
                 Label("Search in channel", systemImage: "magnifyingglass")
