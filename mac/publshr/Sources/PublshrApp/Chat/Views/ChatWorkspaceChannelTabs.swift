@@ -47,7 +47,7 @@ struct ChatWorkspaceChannelTabs: View {
                 isSelected: selected,
                 canClose: chatTabs.count > 1,
                 onSelect: { activate(tab) },
-                onClose: { tabStore.closeTab(tab.id) }
+                onClose: { tabStore.closeTab(id: tab.id) }
             )
             if selected, unreadBadge(for: tab) > 0 {
                 Text(unreadBadge(for: tab) > 99 ? "99+" : "\(unreadBadge(for: tab))")
