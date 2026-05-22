@@ -80,10 +80,12 @@ jobs:
             ASSET="Publshr-${{ matrix.product }}-app-linux-x64.zip"
           fi
           node ../../desktop/scripts/package-app-bundle.mjs "${{ matrix.product }}" "$RENDERER" "$DIST/$ASSET"
-          echo "APP_VERSION=$APP_VER" >> "$GITHUB_ENV"
-          echo "APP_ASSET=$ASSET" >> "$GITHUB_ENV"
-          echo "APP_META=$DIST/${ASSET%.zip}.meta.json" >> "$GITHUB_ENV"
-          echo "DIST_DIR=$DIST" >> "$GITHUB_ENV"
+          {
+            echo "APP_VERSION=$APP_VER"
+            echo "APP_ASSET=$ASSET"
+            echo "APP_META=$DIST/${ASSET%.zip}.meta.json"
+            echo "DIST_DIR=$DIST"
+          } >> "$GITHUB_ENV"
 
       - name: Build shell installer (macOS)
         if: runner.os == 'macOS'
@@ -103,8 +105,10 @@ jobs:
               const h=c.createHash('sha256').update(fs.readFileSync(p)).digest('hex');
               fs.writeFileSync(p.replace('.zip','.meta.json'), JSON.stringify({sha256:h,size:fs.statSync(p).size},null,2));
             "
-            echo "SHELL_ASSET=Publshr-${{ matrix.product }}-shell-macos-aarch64.zip" >> "$GITHUB_ENV"
-            echo "SHELL_META=dist-channel/Publshr-${{ matrix.product }}-shell-macos-aarch64.meta.json" >> "$GITHUB_ENV"
+            {
+              echo "SHELL_ASSET=Publshr-${{ matrix.product }}-shell-macos-aarch64.zip"
+              echo "SHELL_META=dist-channel/Publshr-${{ matrix.product }}-shell-macos-aarch64.meta.json"
+            } >> "$GITHUB_ENV"
           fi
 
       - name: Write manifest
