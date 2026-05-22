@@ -66,7 +66,8 @@ struct LibraryUniversalSubmenuContainer<Content: View, Footer: View>: View {
                         .frame(height: 1)
                 }
         }
-        .frame(width: width, maxHeight: .infinity, alignment: .topLeading)
+        .frame(width: width)
+        .frame(maxHeight: .infinity, alignment: .topLeading)
         .layoutPriority(1)
     }
 }
