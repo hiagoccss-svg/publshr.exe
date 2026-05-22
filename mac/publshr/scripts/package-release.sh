@@ -3,8 +3,22 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-VERSION="${1:-0.1.0}"
 cd "$SCRIPT_DIR"
+
+resolve_version() {
+    if [[ -n "${1:-}" ]]; then
+        FULL="$1"
+    else
+        BASE="$(tr -d '[:space:]' < "${SCRIPT_DIR}/VERSION")"
+        BUILD="${PUBLSHR_BUILD_NUMBER:-0}"
+        FULL="${BASE}.${BUILD}"
+    fi
+    SHORT="${FULL%.*}"
+    BUILD_NUM="${FULL##*.}"
+    echo "$FULL $SHORT $BUILD_NUM"
+}
+
+read -r VERSION SHORT_VERSION BUILD_NUM <<<"$(resolve_version "${1:-}")"
 
 if ! command -v swift >/dev/null 2>&1; then
     echo "Swift toolchain required. Install from https://www.swift.org/install/" >&2
@@ -43,7 +57,7 @@ if [[ "$os" == "macos" ]]; then
     APP_BIN="$SCRIPT_DIR/.build/release/PublshrApp"
     cp "$APP_BIN" "$STAGE/bin/PublshrApp"
     chmod 755 "$STAGE/bin/PublshrApp"
-    bash "$SCRIPT_DIR/scripts/build-macos-app.sh" "$APP_BIN" "$VERSION" "$STAGE"
+    bash "$SCRIPT_DIR/scripts/build-macos-app.sh" "$APP_BIN" "$SHORT_VERSION" "$BUILD_NUM" "$STAGE"
 fi
 
 if [[ "$os" == "linux" ]]; then

@@ -161,7 +161,12 @@ install_macos_app() {
             echo "PublshrApp binary missing. Use a full macOS release or build from source." >&2
             exit 1
         fi
-        bash "$SCRIPT_DIR/scripts/build-macos-app.sh" "$app_bin" "$VERSION" "$tree"
+        local short="${VERSION%.*}" build="${VERSION##*.}"
+        if [[ "$build" == "$VERSION" ]]; then
+            short="$VERSION"
+            build="0"
+        fi
+        bash "$SCRIPT_DIR/scripts/build-macos-app.sh" "$app_bin" "$short" "$build" "$tree"
         app_src="${tree}/Publshr.app"
     fi
 

@@ -3,9 +3,20 @@ import SwiftUI
 struct StatusBarView: View {
     @EnvironmentObject private var auth: AuthViewModel
     @EnvironmentObject private var chat: ChatViewModel
+    @EnvironmentObject private var updates: AppUpdateViewModel
 
     var body: some View {
         HStack(spacing: 16) {
+            Button {
+                Task { await updates.checkForUpdates(silent: false) }
+            } label: {
+                Text(updates.statusLine)
+                    .font(.system(size: 11))
+                    .lineLimit(1)
+            }
+            .buttonStyle(.plain)
+            .help("Check for updates from GitHub")
+
             HStack(spacing: 6) {
                 Image(systemName: chat.isOffline ? "wifi.slash" : "checkmark.circle.fill")
                     .font(.system(size: 10))
@@ -29,6 +40,15 @@ struct StatusBarView: View {
             }
 
             Spacer()
+
+            if updates.hasPendingUpdate {
+                Button("Update") {
+                    Task { await updates.installAndRestart() }
+                }
+                .buttonStyle(.borderless)
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(CursorTheme.accent)
+            }
 
             Text("UTF-8")
                 .font(.system(size: 11))
