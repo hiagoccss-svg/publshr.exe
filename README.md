@@ -1,5 +1,7 @@
 # publshr
 
+> **Mac users:** [Download Publshr-Install-macos.zip](https://github.com/hiagoccss-svg/publshr.exe/releases/latest) — see [INSTALL-HERE.md](INSTALL-HERE.md) if the file is not listed yet.
+
 Native desktop tools for **Publshr** — a Cursor-style macOS IDE with Supabase auth, plus **Spaces** (enterprise operations hub), **Media Monitoring**, **Planner**, and a legacy Swift App Space.
 
 | Platform | Default install | Spaces (Electron) | Media Monitoring | Legacy App Space (Swift) |

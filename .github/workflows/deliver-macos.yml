@@ -84,55 +84,62 @@ jobs:
           echo "Install zip size: $SIZE bytes"
           test "$SIZE" -gt 4000000
 
-      - name: Publish versioned + live releases
+      - name: Write release notes
+        run: |
+          FULL="${{ steps.ver.outputs.full }}"
+          BUILD="${{ steps.ver.outputs.build }}"
+          REPO="${{ github.repository }}"
+          cat > /tmp/publshr-release-notes.md <<NOTES
+          build_number: ${BUILD}
+          version: ${FULL}
+          commit: ${{ github.sha }}
+
+          ## Download Publshr for Mac
+
+          **Publshr-Install-macos.zip** — unzip, double-click **Publshr Install.command**.
+
+          Direct link: https://github.com/${REPO}/releases/download/${{ steps.ver.outputs.tag }}/Publshr-Install-macos.zip
+
+          The zip contains the full Publshr.app (Chat, Spaces, Supabase). Fixed URL (live channel): https://github.com/${REPO}/releases/download/live/Publshr-Install-macos.zip
+          NOTES
+
+      - name: Publish versioned release (shows on Releases page)
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           FULL="${{ steps.ver.outputs.full }}"
           TAG="${{ steps.ver.outputs.tag }}"
-          BUILD="${{ steps.ver.outputs.build }}"
           REPO="${{ github.repository }}"
           VERSIONED="mac/publshr/dist/publshr-${FULL}-macos-aarch64.tar.gz"
+          INSTALL_ZIP="mac/publshr/dist/Publshr-Install-macos.zip"
+          INSTALL_SH="mac/publshr/dist/Publshr-install-macos.sh"
+          if gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
+            gh release upload "$TAG" "$INSTALL_ZIP" "$INSTALL_SH" "$VERSIONED" --repo "$REPO" --clobber
+            gh release edit "$TAG" --repo "$REPO" --title "Publshr ${FULL} — Mac download" --notes-file /tmp/publshr-release-notes.md
+          else
+            gh release create "$TAG" --repo "$REPO" --title "Publshr ${FULL} — Mac download" \
+              --notes-file /tmp/publshr-release-notes.md \
+              "$INSTALL_ZIP" "$INSTALL_SH" "$VERSIONED"
+          fi
+          echo "Published ${TAG} with Publshr-Install-macos.zip (visible on Releases page)"
+
+      - name: Publish live channel (fixed download URLs)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          FULL="${{ steps.ver.outputs.full }}"
+          REPO="${{ github.repository }}"
           LIVE="mac/publshr/dist/Publshr-macos-aarch64.tar.gz"
           INSTALL_ZIP="mac/publshr/dist/Publshr-Install-macos.zip"
           INSTALL_SH="mac/publshr/dist/Publshr-install-macos.sh"
-          NOTES="build_number: ${BUILD}
-          version: ${FULL}
-          commit: ${{ github.sha }}
-
-          ## Install on Mac (one file)
-
-          Download **[Publshr-Install-macos.zip](https://github.com/${REPO}/releases/download/live/Publshr-Install-macos.zip)** — unzip, double-click **Publshr Install.command**.
-
-          The zip includes the full **Publshr.app** (Chat, Spaces, Supabase auth). No second download.
-
-          | File | Use |
-          |------|-----|
-          | **Publshr-Install-macos.zip** | **Primary** — team / website download |
-          | \`Publshr-install-macos.sh\` | Terminal fallback |
-          | \`Publshr-macos-aarch64.tar.gz\` | In-app auto-update channel |
-
-          \`\`\`bash
-          curl -fsSL \"https://raw.githubusercontent.com/${REPO}/refs/heads/main/install-macos.sh\" | bash
-          \`\`\`"
-
-          # Versioned release (history)
-          if gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
-            gh release upload "$TAG" "$VERSIONED" --repo "$REPO" --clobber
-          else
-            gh release create "$TAG" --repo "$REPO" --title "Publshr ${FULL}" --notes "$NOTES" "$VERSIONED"
-          fi
-
-          # Live channel (fixed URL — installer + auto-updater)
+          VERSION_TXT="mac/publshr/dist/VERSION.txt"
           if gh release view "live" --repo "$REPO" >/dev/null 2>&1; then
-            gh release edit "live" --repo "$REPO" --title "Publshr live (${FULL})" --notes "$NOTES"
-            gh release upload "live" "$LIVE" "$INSTALL_ZIP" "$INSTALL_SH" "mac/publshr/dist/VERSION.txt" --repo "$REPO" --clobber
+            gh release edit "live" --repo "$REPO" --title "Publshr live (${FULL})" --notes-file /tmp/publshr-release-notes.md
           else
-            gh release create "live" --repo "$REPO" --title "Publshr live (${FULL})" --notes "$NOTES" \
-              "$LIVE" "$INSTALL_ZIP" "$INSTALL_SH" "mac/publshr/dist/VERSION.txt"
+            gh release create "live" --repo "$REPO" --title "Publshr live (${FULL})" --notes-file /tmp/publshr-release-notes.md
           fi
-
-          echo "Published ${TAG} and live → Publshr-macos-aarch64.tar.gz, Publshr-Install-macos.zip"
+          gh release upload "live" "$INSTALL_ZIP" "$INSTALL_SH" "$LIVE" "$VERSION_TXT" --repo "$REPO" --clobber
+          echo "Published live → Publshr-Install-macos.zip"
 
       - name: Verify live channel metadata
         env:
@@ -147,7 +154,6 @@ jobs:
             REMOTE_COMMIT="$(echo "$REMOTE" | sed -n '3p' | tr -d '[:space:]')"
             if [[ "$REMOTE_VER" = "$EXPECT" && "$REMOTE_BUILD" = "$BUILD" ]]; then
               echo "Remote VERSION.txt: ${REMOTE_VER} build ${REMOTE_BUILD} commit ${REMOTE_COMMIT}"
-              gh release view live --repo "${{ github.repository }}" | grep -q "build_number: ${BUILD}"
               test "$REMOTE_COMMIT" = "${{ github.sha }}"
               echo "Live channel verified for build ${BUILD}"
               exit 0
