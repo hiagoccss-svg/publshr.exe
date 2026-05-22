@@ -7,7 +7,7 @@ import SwiftUI
 final class TrafficLightLayoutStore: ObservableObject {
     static let shared = TrafficLightLayoutStore()
 
-    /// Height of the custom toolbar row (fixed — matches Cursor Mac chrome controls).
+    /// Toolbar row height — follows measured traffic-light cluster (Cursor Mac uses full system size).
     @Published private(set) var rowHeight: CGFloat = AppWindowChromeMetrics.trafficLightRowHeight
     /// Leading reserve through the traffic-light cluster (SwiftUI spacer width).
     @Published private(set) var leadingInset: CGFloat = AppWindowChromeMetrics.trafficLightLeadingInset
@@ -33,37 +33,34 @@ final class TrafficLightLayoutStore: ObservableObject {
     private func apply(to window: NSWindow, generation: Int) {
         guard let contentView = window.contentView else { return }
 
-        let row = AppWindowChromeMetrics.trafficLightRowHeight
-        rowHeight = row
-
         if let metrics = Self.measureTrafficLights(in: window, contentView: contentView) {
             leadingInset = metrics.leadingInset
-            titlebarTopPadding = max(0, metrics.midYFromTop - row * 0.5)
+            titlebarTopPadding = metrics.titlebarTopPadding
+            rowHeight = metrics.rowHeight
         } else {
             leadingInset = AppWindowChromeMetrics.trafficLightLeadingInset
             titlebarTopPadding = AppWindowChromeMetrics.trafficLightVerticalAlignPadding
+            rowHeight = AppWindowChromeMetrics.trafficLightRowHeight
         }
 
-        syncAdditionalSafeArea(contentView: contentView, rowHeight: row)
+        syncAdditionalSafeArea(contentView: contentView)
 
         guard generation == refreshGeneration else { return }
     }
 
-    /// Keeps SwiftUI layout from stacking extra top inset on top of our measured titlebar band.
-    private func syncAdditionalSafeArea(contentView: NSView, rowHeight: CGFloat) {
-        let reportedTop = contentView.safeAreaInsets.top
-        let band = titlebarTopPadding + rowHeight
+    /// Avoid negative top inset — it compresses the titlebar band and makes traffic lights look undersized.
+    private func syncAdditionalSafeArea(contentView: NSView) {
         var extra = contentView.additionalSafeAreaInsets
-        let desiredTop = reportedTop > band + 0.5 ? band - reportedTop : 0
-        if abs(extra.top - desiredTop) > 0.5 {
-            extra.top = desiredTop
+        if abs(extra.top) > 0.5 {
+            extra.top = 0
             contentView.additionalSafeAreaInsets = extra
         }
     }
 
     private struct TrafficMetrics {
         var leadingInset: CGFloat
-        var midYFromTop: CGFloat
+        var titlebarTopPadding: CGFloat
+        var rowHeight: CGFloat
     }
 
     private static func measureTrafficLights(in window: NSWindow, contentView: NSView) -> TrafficMetrics? {
@@ -71,16 +68,42 @@ final class TrafficLightLayoutStore: ObservableObject {
               let container = close.superview else { return nil }
 
         let closeRect = container.convert(close.frame, to: contentView)
+        let mini = window.standardWindowButton(.miniaturizeButton)
         let zoom = window.standardWindowButton(.zoomButton)
+        let miniRect = mini.map { container.convert($0.frame, to: contentView) }
         let zoomRect = zoom.map { container.convert($0.frame, to: contentView) }
-        let trailingX = (zoomRect?.maxX ?? closeRect.maxX) + 8
+
+        let clusterMaxX = max(
+            closeRect.maxX,
+            miniRect?.maxX ?? closeRect.maxX,
+            zoomRect?.maxX ?? closeRect.maxX
+        )
+        let clusterMinY = min(
+            closeRect.minY,
+            miniRect?.minY ?? closeRect.minY,
+            zoomRect?.minY ?? closeRect.minY
+        )
+        let clusterMaxY = max(
+            closeRect.maxY,
+            miniRect?.maxY ?? closeRect.maxY,
+            zoomRect?.maxY ?? closeRect.maxY
+        )
+        let clusterHeight = max(clusterMaxY - clusterMinY, closeRect.height)
+
+        let trailingX = clusterMaxX + AppWindowChromeMetrics.afterTrafficLightGap
+        let row = max(
+            AppWindowChromeMetrics.minimumTitlebarRowHeight,
+            clusterHeight + AppWindowChromeMetrics.trafficLightVerticalPad * 2
+        )
 
         let contentHeight = contentView.bounds.height
         let midYFromTop = contentHeight - closeRect.midY
+        let topPad = max(0, midYFromTop - row * 0.5)
 
         return TrafficMetrics(
-            leadingInset: max(trailingX, 68),
-            midYFromTop: midYFromTop
+            leadingInset: max(trailingX, AppWindowChromeMetrics.trafficLightLeadingInset),
+            titlebarTopPadding: topPad,
+            rowHeight: row
         )
     }
 }

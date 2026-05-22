@@ -57,6 +57,9 @@ final class ChatViewModel: ObservableObject {
     @Published var searchResults: [ChatSearchHit] = []
     @Published var aiResult: ChatAIResult?
     @Published var isAILoading = false
+    @Published var summaryPeriodStart = Calendar.current.date(byAdding: .day, value: -7, to: Date()) ?? Date()
+    @Published var summaryPeriodEnd = Date()
+    @Published var summaryPeriodError: String?
 
     // ClickUp parity hubs & composer
     @Published var sidebarHub: ChatSidebarHub = .channels

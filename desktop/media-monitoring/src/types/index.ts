@@ -84,3 +84,25 @@ export interface StreamEvent {
   totalFound?: number
   status?: string
 }
+
+export interface ReportAnalytics {
+  periodDays: number
+  savedOnly: boolean
+  totals: {
+    mentions: number
+    total_reach: number
+    total_pr_value: number
+    total_media_value: number
+    avg_relevance: number
+  }
+  bySentiment: { sentiment: string; count: number }[]
+  byPublication: { name: string; count: number; pr_value: number; reach: number }[]
+  byMediaType: { media_type: string; count: number }[]
+  byMonitor: { name: string; count: number }[]
+}
+
+export interface CoverageActivity {
+  action: string
+  metadata?: string
+  created_at: string
+}

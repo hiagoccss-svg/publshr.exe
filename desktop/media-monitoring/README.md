@@ -1,6 +1,6 @@
-# Publshr Media Monitoring
+# Publshr Reports (Media Monitoring)
 
-Enterprise desktop media intelligence and coverage monitoring for communications teams, PR agencies, and brands.
+Enterprise desktop **Reports** and media intelligence for communications teams, PR agencies, and brands — coverage monitoring with executive dashboards, clipping detail, and export (inspired by [The Media Eye](https://www.themediaeye.com/what-we-do) / PR insights platforms).
 
 ## Quick start (ready to run)
 
@@ -36,8 +36,11 @@ npm run typecheck      # TypeScript
 | Local cache | SQLite (`better-sqlite3`) |
 | Cloud | Supabase (`publshr.exe` project) |
 
+See [docs/REPORTS.md](docs/REPORTS.md) for the Reports module map and Media Eye parity notes.
+
 ## Enterprise features (working)
 
+- **Reports** — executive summary, sentiment/publication breakdown, workspace clippings, export
 - **Live monitoring** — progressive article feed from 15+ approved publications
 - **Monitor profiles** — boolean keywords, exclusions, regions, languages
 - **Media value / PR value** — authority + traffic based (not random)

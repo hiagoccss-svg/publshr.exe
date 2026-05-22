@@ -32,6 +32,7 @@ export interface AuthState {
   workspaceName: string | null
   displayName: string | null
   profile: UserProfile | null
+  cloudValidated: boolean
 }
 
 export class SyncService {
@@ -79,7 +80,8 @@ export class SyncService {
         this.profile?.display_name ??
         (this.session?.user?.user_metadata?.display_name as string | undefined) ??
         null,
-      profile: this.profile
+      profile: this.profile,
+      cloudValidated: this.cloudValidated
     }
   }
 
