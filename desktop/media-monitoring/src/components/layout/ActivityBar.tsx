@@ -23,12 +23,8 @@ export function ActivityBar() {
 
   return (
     <div
-      className="flex flex-col items-center py-1 shrink-0 border-r relative"
-      style={{
-        width: shell.activityBarWidth,
-        backgroundColor: shell.activityBar,
-        borderColor: shell.border
-      }}
+      className="dt-chrome flex flex-col items-center py-1 shrink-0 dt-divider-v relative"
+      style={{ width: shell.activityBarWidth }}
     >
       {ITEMS.map(({ id, icon: Icon, label }) => (
         <button

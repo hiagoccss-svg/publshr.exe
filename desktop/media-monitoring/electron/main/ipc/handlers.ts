@@ -1,5 +1,9 @@
 import { ipcMain, BrowserWindow, Notification, app, shell } from 'electron'
 import { join } from 'path'
+import {
+  configureGlassWindow,
+  glassWindowOptions
+} from '../../../../../shared/electron/glass-window'
 import { v4 as uuidv4 } from 'uuid'
 import type { MonitoringEngine } from '../monitoring/engine'
 import type { SyncService } from '../supabase/sync-service'
@@ -303,19 +307,20 @@ export function registerIpcHandlers(engine: MonitoringEngine, sync: SyncService)
   })
 
   ipcMain.handle('window:open-article', (_, articleId: string) => {
-    const win = new BrowserWindow({
-      width: 1100,
-      height: 780,
-      minWidth: 800,
-      minHeight: 600,
-      backgroundColor: '#1E1E1E',
-      titleBarStyle: 'hiddenInset',
-      webPreferences: {
-        preload: join(__dirname, '../preload/index.mjs'),
-        contextIsolation: true,
-        nodeIntegration: false
-      }
-    })
+    const win = new BrowserWindow(
+      glassWindowOptions('dark', {
+        width: 1100,
+        height: 780,
+        minWidth: 800,
+        minHeight: 600,
+        webPreferences: {
+          preload: join(__dirname, '../preload/index.mjs'),
+          contextIsolation: true,
+          nodeIntegration: false
+        }
+      })
+    )
+    configureGlassWindow(win, 'dark')
     const base = process.env.ELECTRON_RENDERER_URL
     if (base) {
       win.loadURL(`${base}#/article/${articleId}`)

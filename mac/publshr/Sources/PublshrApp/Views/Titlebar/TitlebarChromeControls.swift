@@ -74,7 +74,7 @@ struct TitlebarChromeIconButton: View {
     }
 
     private var strokeColor: Color {
-        isActive ? LibraryGlassDesign.accent.opacity(0.35) : Color.clear
+        isActive ? CursorTheme.accent.opacity(0.35) : Color.clear
     }
 }
 

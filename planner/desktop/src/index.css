@@ -9,8 +9,15 @@
     @apply border-surface-border;
   }
 
+  html,
+  body,
+  #root {
+    @apply h-full overflow-hidden;
+    background: transparent;
+  }
+
   body {
-    @apply overflow-hidden select-none;
+    @apply select-none;
   }
 
   input,

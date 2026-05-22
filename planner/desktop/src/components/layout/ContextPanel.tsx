@@ -20,8 +20,8 @@ export default function ContextPanel() {
   }
 
   return (
-    <aside className="flex w-[320px] shrink-0 flex-col border-l border-surface-border bg-surface-raised/90">
-      <div className="flex items-start justify-between gap-2 border-b border-surface-border p-4">
+    <aside className="dt-glass-panel flex w-[320px] shrink-0 flex-col">
+      <div className="dt-divider-h flex items-start justify-between gap-2 p-4">
         <div className="min-w-0">
           <input
             value={item.title}
