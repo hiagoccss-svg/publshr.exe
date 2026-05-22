@@ -66,9 +66,8 @@ struct WorkspaceHeaderView: View {
                 tabStore.sidebarExpanded.toggle()
             }
         } label: {
-            Image(systemName: tabStore.sidebarExpanded ? "sidebar.left" : "sidebar.left")
+            Image(systemName: tabStore.sidebarExpanded ? "sidebar.left" : "sidebar.right")
                 .font(.system(size: 13, weight: .medium))
-                .symbolVariant(tabStore.sidebarExpanded ? .none : .slash)
                 .foregroundStyle(CursorTheme.foregroundMuted)
                 .frame(width: 30, height: 30)
                 .background(
