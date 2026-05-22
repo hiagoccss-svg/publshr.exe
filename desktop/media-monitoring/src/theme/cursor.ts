@@ -24,7 +24,7 @@ export const cursor = {
   success: '#89D185',
   activityBarWidth: 48,
   sideBarWidth: 260,
-  contextPanelWidth: 380,
+  contextPanelWidth: 320,
   titleBarHeight: 38,
   statusBarHeight: 22
 } as const

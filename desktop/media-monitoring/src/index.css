@@ -13,16 +13,27 @@
     height: 100%;
     margin: 0;
     overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply font-sans text-base text-content;
+    background-color: #1e1e1e;
   }
 
   ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+    width: 10px;
+    height: 10px;
   }
 
   ::-webkit-scrollbar-thumb {
-    background: #3c3c3c;
-    border-radius: 4px;
+    background: #424242;
+    border-radius: 0;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #4f4f4f;
   }
 
   ::-webkit-scrollbar-track {
@@ -44,22 +55,88 @@
 
 @layer components {
   .keyword-highlight {
-    @apply bg-accent/25 text-content rounded px-0.5;
+    @apply bg-accent/20 text-content rounded-sm px-0.5;
   }
 
-  .panel-divider {
-    @apply border-border;
+  /* Cursor Mac — flat IDE surfaces (no card chrome) */
+  .cursor-section-header {
+    @apply text-[10px] font-semibold uppercase tracking-[0.06em] text-content-dim;
+  }
+
+  .cursor-list {
+    @apply flex flex-col divide-y divide-border;
+  }
+
+  .cursor-list-row {
+    @apply flex gap-3 px-3 py-2.5 cursor-pointer transition-colors;
+  }
+
+  .cursor-list-row:hover {
+    @apply bg-surface-highlight/50;
+  }
+
+  .cursor-list-row-selected {
+    @apply bg-surface-highlight;
+  }
+
+  .cursor-list-row-selected:hover {
+    @apply bg-surface-highlight;
+  }
+
+  .cursor-toolbar {
+    @apply flex flex-wrap items-center gap-1 px-2 py-1 border-b border-border shrink-0;
+    background-color: #1e1e1e;
+  }
+
+  .cursor-toolbar-btn {
+    @apply flex items-center gap-1 text-[11px] px-2 py-1 rounded-sm text-content-muted transition-colors app-no-drag;
+  }
+
+  .cursor-toolbar-btn:hover {
+    @apply bg-surface-highlight text-content;
+  }
+
+  .cursor-toolbar-btn-active {
+    @apply bg-surface-highlight text-accent;
+  }
+
+  .cursor-panel-header {
+    @apply px-3 py-2 text-[11px] font-semibold uppercase tracking-wide border-b border-border text-content-header;
+  }
+
+  .cursor-metric-row {
+    @apply flex divide-x divide-border border-b border-border;
+  }
+
+  .cursor-metric-cell {
+    @apply flex-1 px-4 py-3 min-w-0;
   }
 
   .btn-primary {
-    @apply bg-accent-button hover:bg-accent-button-hover text-white text-sm px-3 py-1.5 rounded transition-colors;
+    @apply bg-accent-button hover:bg-accent-button-hover text-white text-[12px] px-3 py-1.5 rounded-sm transition-colors;
   }
 
   .btn-ghost {
-    @apply text-content-muted hover:text-content hover:bg-surface-highlight text-sm px-2 py-1 rounded transition-colors;
+    @apply text-content-muted hover:text-content hover:bg-surface-highlight text-[12px] px-2 py-1 rounded-sm transition-colors;
   }
 
   .input-field {
-    @apply w-full bg-surface-input border border-border-subtle text-content text-sm px-2.5 py-1.5 rounded outline-none focus:border-accent/60 transition-colors;
+    @apply w-full bg-surface-input border border-border-subtle text-content text-[12px] px-2 py-1 rounded-sm outline-none focus:border-accent/70 transition-colors;
+  }
+
+  .input-field-compact {
+    @apply input-field w-auto py-0.5;
+  }
+
+  .cursor-chip {
+    @apply text-2xs px-2 py-0.5 rounded-sm transition-colors;
+  }
+
+  .cursor-chip-active {
+    @apply cursor-chip bg-accent/20 text-accent;
+  }
+
+  .cursor-chip-inactive {
+    @apply cursor-chip bg-surface-input text-content-muted hover:text-content;
   }
 }

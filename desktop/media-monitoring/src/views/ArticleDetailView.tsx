@@ -4,6 +4,7 @@ import { ArrowLeft, ExternalLink } from 'lucide-react'
 import type { MonitorResult, Sentiment } from '@/types'
 import { formatShortDate, formatCurrency, formatCompactNumber } from '@/lib/format'
 import { highlightKeywords, parseKeywordMatches } from '@/lib/keywordHighlight'
+import { cursor } from '@/theme/cursor'
 
 const SENTIMENTS: Sentiment[] = ['positive', 'neutral', 'negative', 'mixed']
 
@@ -32,35 +33,35 @@ export function ArticleDetailView() {
   }, [id])
 
   if (!article) {
-    return <div className="p-8 text-content-dim text-sm">Loading article…</div>
+    return <div className="p-4 text-content-dim text-[12px]">Loading article…</div>
   }
 
   const keywords = parseKeywordMatches(article.keyword_matches)
 
   return (
-    <div className="h-full flex flex-col bg-surface-editor overflow-hidden">
-      <header className="flex items-center gap-3 px-4 py-3 border-b border-border shrink-0">
+    <div className="h-full flex flex-col overflow-hidden" style={{ backgroundColor: cursor.editor }}>
+      <header className="flex items-center gap-3 px-3 py-2 border-b border-border shrink-0">
         <button type="button" className="btn-ghost p-1" onClick={() => navigate(-1)}>
-          <ArrowLeft size={16} />
+          <ArrowLeft size={15} />
         </button>
         <div className="flex-1 min-w-0">
-          <h1 className="text-sm font-medium text-content line-clamp-1">{article.title}</h1>
-          <p className="text-xs text-content-muted">{article.publication_name}</p>
+          <h1 className="text-[13px] font-medium text-content line-clamp-1">{article.title}</h1>
+          <p className="text-[11px] text-content-muted">{article.publication_name}</p>
         </div>
         {article.url && (
           <button
             type="button"
-            className="btn-ghost"
+            className="btn-ghost text-[11px]"
             onClick={() => window.publshr.openExternal(article.url!)}
           >
-            <ExternalLink size={14} /> Open
+            <ExternalLink size={13} /> Open
           </button>
         )}
       </header>
 
       <div className="flex-1 flex min-h-0">
-        <article className="flex-1 overflow-y-auto p-6 max-w-3xl">
-          <dl className="grid grid-cols-2 gap-3 text-xs mb-6">
+        <article className="flex-1 overflow-y-auto px-4 py-4 max-w-3xl">
+          <dl className="flex flex-wrap gap-x-6 gap-y-2 text-[11px] mb-5 pb-4 border-b border-border">
             <Meta label="Published" value={formatShortDate(article.published_at)} />
             <Meta label="Author" value={article.author ?? '—'} />
             <Meta label="Reach" value={formatCompactNumber(article.reach)} />
@@ -69,18 +70,19 @@ export function ArticleDetailView() {
             <Meta label="Relevance" value={`${Math.round(article.relevance_score)}%`} />
           </dl>
 
-          <div className="prose prose-invert max-w-none">
-            <p className="text-sm text-content leading-relaxed whitespace-pre-wrap">
-              {highlightKeywords(article.article_text ?? '', keywords)}
-            </p>
-          </div>
+          <p className="text-[13px] text-content leading-relaxed whitespace-pre-wrap">
+            {highlightKeywords(article.article_text ?? '', keywords)}
+          </p>
         </article>
 
-        <aside className="w-80 border-l border-border p-4 space-y-4 shrink-0 overflow-y-auto">
-          <label className="block text-xs">
-            <span className="text-content-muted">Sentiment</span>
+        <aside
+          className="w-72 border-l border-border px-3 py-3 space-y-4 shrink-0 overflow-y-auto"
+          style={{ backgroundColor: cursor.panel }}
+        >
+          <label className="block text-[11px]">
+            <span className="cursor-section-header">Sentiment</span>
             <select
-              className="input-field mt-1 w-full"
+              className="input-field mt-1.5 w-full"
               value={article.sentiment}
               onChange={async (e) => {
                 const s = e.target.value as Sentiment
@@ -95,25 +97,26 @@ export function ArticleDetailView() {
               ))}
             </select>
           </label>
-          <label className="block text-xs">
-            <span className="text-content-muted">Notes</span>
+          <label className="block text-[11px]">
+            <span className="cursor-section-header">Notes</span>
             <textarea
-              className="input-field mt-1 w-full min-h-[80px]"
+              className="input-field mt-1.5 w-full min-h-[72px]"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
             />
           </label>
-          <label className="block text-xs">
-            <span className="text-content-muted">Tags (comma-separated)</span>
+          <label className="block text-[11px]">
+            <span className="cursor-section-header">Tags</span>
             <input
-              className="input-field mt-1 w-full"
+              className="input-field mt-1.5 w-full"
               value={tags}
               onChange={(e) => setTags(e.target.value)}
+              placeholder="comma-separated"
             />
           </label>
           <button
             type="button"
-            className="btn-primary w-full"
+            className="btn-primary w-full text-[11px]"
             onClick={async () => {
               const tagList = tags
                 .split(',')
@@ -134,7 +137,7 @@ function Meta({ label, value }: { label: string; value: string }) {
   return (
     <div>
       <dt className="text-content-dim">{label}</dt>
-      <dd className="text-content mt-0.5">{value}</dd>
+      <dd className="text-content mt-0.5 tabular-nums">{value}</dd>
     </div>
   )
 }
