@@ -2,14 +2,9 @@ import { useEffect, useState } from 'react'
 import { X } from 'lucide-react'
 import { useSpacesStore } from '../../stores/spaces-store'
 import type { TaskViewMode } from '../../../shared/types'
+import { SPACES_DEFAULT_VIEW_OPTIONS } from '../../../../../../shared/spaces/view-modes'
 
-const DEFAULT_VIEWS: { id: TaskViewMode; label: string }[] = [
-  { id: 'overview', label: 'Overview' },
-  { id: 'list', label: 'List' },
-  { id: 'board', label: 'Board' },
-  { id: 'calendar', label: 'Calendar' },
-  { id: 'timeline', label: 'Timeline' }
-]
+const DEFAULT_VIEWS = SPACES_DEFAULT_VIEW_OPTIONS as { id: TaskViewMode; label: string }[]
 
 const STATUS_OPTIONS = [
   'To Do',

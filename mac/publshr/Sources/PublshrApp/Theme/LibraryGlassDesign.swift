@@ -1,30 +1,55 @@
 import SwiftUI
 
-/// Reference library UI — proportions from Pinterest / notes-app glass shell (~1200px wide).
+/// Reference library UI — proportions from Pinterest / notes-app glass shell (~1280px wide).
 enum LibraryGlassDesign {
-    /// Primary bar menu — ~20% of a 1280px window (Cursor Mac agent column).
-    static let barMenuWidth: CGFloat = 248
+    /// Primary bar menu expanded width (`ShellColumnLayout.barExpandedWidth`).
+    static let barMenuWidth: CGFloat = ShellColumnLayout.barExpandedWidth
     /// Universal submenu — fixed width (ClickUp / Spaces sidebar ~272pt; same in every module).
-    static let sidebarWidthWide: CGFloat = 272
+    static let sidebarWidthWide: CGFloat = ShellColumnLayout.submenuWidth
     static let sidebarWidth: CGFloat = sidebarWidthWide
-    /// Minimum collapsed primary column when the bar menu is icon-only.
-    static let barMenuCollapsedWidth: CGFloat = 80
+    /// Collapsed primary column (icon rail); see `ShellColumnLayout.barCollapsedMax`.
+    static let barMenuCollapsedWidth: CGFloat = ShellColumnLayout.barCollapsedMax
 
-    /// Column 1 width — expanded uses ~19.5% of window; collapsed fits traffic lights + sidebar toggle.
-    static func barMenuColumnWidth(expanded: Bool, windowWidth: CGFloat, trafficInset: CGFloat) -> CGFloat {
-        if expanded {
-            return max(barMenuWidth, floor(windowWidth * 0.195))
-        }
-        let compact = trafficInset + AppWindowChromeMetrics.afterTrafficLightGap + AppWindowChromeMetrics.controlSize
-        return max(barMenuCollapsedWidth, compact)
+    /// Horizontal inset for bar-menu rows (tighter than submenu rows).
+    static let barMenuRowHorizontal: CGFloat = 10
+
+    /// Column 1 — fixed expanded width; compact icon rail capped below titlebar traffic reserve.
+    static func barMenuColumnWidth(
+        expanded: Bool,
+        windowWidth: CGFloat,
+        trafficInset: CGFloat,
+        submenuVisible: Bool = true
+    ) -> CGFloat {
+        ShellColumnLayout.barMenuColumnWidth(
+            expanded: expanded,
+            windowWidth: windowWidth,
+            trafficInset: trafficInset,
+            submenuVisible: submenuVisible
+        )
     }
 
-    /// Column 2 width — fixed universal submenu (not a % of window).
+    /// Column 2 — fixed universal submenu; shrinks only if the window cannot fit editor minimum.
+    static func submenuColumnWidth(
+        for windowWidth: CGFloat,
+        barWidth: CGFloat,
+        submenuVisible: Bool = true
+    ) -> CGFloat {
+        ShellColumnLayout.submenuColumnWidth(
+            windowWidth: windowWidth,
+            barWidth: barWidth,
+            submenuVisible: submenuVisible
+        )
+    }
+
+    /// Backward-compatible submenu width (assumes default bar + visible submenu).
     static func submenuColumnWidth(for windowWidth: CGFloat) -> CGFloat {
-        let editorMinimum: CGFloat = 420
-        let barExpanded = max(barMenuWidth, floor(windowWidth * 0.195))
-        let available = windowWidth - barExpanded - editorMinimum - 2
-        return min(sidebarWidthWide, max(240, available))
+        let bar = barMenuColumnWidth(
+            expanded: true,
+            windowWidth: windowWidth,
+            trafficInset: AppWindowChromeMetrics.trafficLightLeadingInset,
+            submenuVisible: true
+        )
+        return submenuColumnWidth(for: windowWidth, barWidth: bar, submenuVisible: true)
     }
     /// Column 2 + editor — pure white (Cursor Mac content columns).
     static let submenuColumnBackground = Color.white

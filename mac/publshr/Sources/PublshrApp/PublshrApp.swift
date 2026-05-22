@@ -16,7 +16,7 @@ struct PublshrApp: App {
     }
 
     var body: some Scene {
-        WindowGroup {
+        WindowGroup(id: "main") {
             ContentView()
                 .environmentObject(auth)
                 .environmentObject(chat)
@@ -226,9 +226,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NotificationCenter.default.post(name: .publshrPerformLiveSync, object: nil)
     }
 
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        MainWindowPresenter.restoreMainWindow()
+        return true
+    }
+
     func applicationDidBecomeActive(_ notification: Notification) {
         ChatNotificationFocusState.shared.setAppActive(true)
-        MainWindowChrome.apply(to: NSApp.mainWindow ?? NSApp.windows.first)
+        if NSApp.windows.contains(where: { $0.isMiniaturized }) {
+            MainWindowPresenter.restoreMainWindow()
+        } else {
+            MainWindowChrome.apply(to: NSApp.mainWindow ?? NSApp.windows.first)
+        }
         NotificationCenter.default.post(name: .publshrPerformLiveSync, object: nil)
     }
 

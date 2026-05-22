@@ -8,14 +8,16 @@ Publshr **Spaces** targets the same mental model: **Workspace → Space → (opt
 
 | Surface | Path |
 |---------|------|
-| Standalone desktop | `desktop/spaces/` — `npm run dev` |
-| macOS IDE | `mac/publshr/Sources/PublshrApp/Spaces/` |
+| Electron renderer (“web” UI) | `desktop/spaces/src/renderer/` — `npm run dev` |
+| macOS IDE (native shell) | `mac/publshr/Sources/PublshrApp/Spaces/` |
+
+Both surfaces share the same **views bar** contract: `shared/spaces/view-modes.ts` (see `shared/spaces/PARITY.md`).
 
 ## Parity matrix
 
 | ClickUp capability | Publshr status |
 |--------------------|----------------|
-| Spaces Home (browse all spaces) | ✅ Desktop — sidebar + grid |
+| Spaces Home (browse all spaces) | ✅ Electron + macOS IDE |
 | Create / edit space | ✅ Modal + settings |
 | Pin / favorites | ✅ Settings + sidebar sections |
 | Space privacy / guest access | 🔶 Workspace roles only (no guest tier) |
@@ -23,9 +25,10 @@ Publshr **Spaces** targets the same mental model: **Workspace → Space → (opt
 | New folder auto-creates list | ✅ |
 | List / Board / Calendar views | ✅ |
 | Overview (space dashboard) | ✅ |
-| Timeline / Gantt | ✅ Desktop — start + due bars |
-| Workload by assignee | ✅ Desktop |
-| Priority matrix | ✅ Desktop |
+| Timeline / Gantt | ✅ Electron + macOS IDE |
+| Workload by assignee | ✅ Electron + macOS IDE |
+| Priority matrix | ✅ Electron + macOS IDE |
+| Whiteboard (tldraw canvas) | ✅ Electron renderer; macOS lists boards (canvas embed Phase 2) |
 | Table view | ✅ List view (sortable table) |
 | Task detail (status, priority, dates, assignee, tags, checklist, comments) | ✅ |
 | Documents at space level | ✅ |
@@ -35,7 +38,7 @@ Publshr **Spaces** targets the same mental model: **Workspace → Space → (opt
 | Custom statuses per folder/list | 🔶 Inherited workspace statuses |
 | ClickApps (sprints, time tracking, etc.) | 🔶 Roadmap |
 | Gantt dependencies | 🔶 Roadmap |
-| Goals, whiteboards, Mind Maps | ❌ Out of scope |
+| Goals, Mind Maps | 🔶 Roadmap |
 | 15+ views (Map, Activity, etc.) | Partial — core ops views first |
 
 ## Layout (ClickUp-aligned)

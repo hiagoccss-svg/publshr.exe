@@ -2,6 +2,7 @@ import SwiftUI
 
 /// Primary bar menu — app modules only (Chat, Spaces).
 struct LibraryBarMenuColumn: View {
+    var barWidth: CGFloat = LibraryGlassDesign.barMenuWidth
     @EnvironmentObject private var tabStore: WorkspaceTabStore
     @EnvironmentObject private var chat: ChatViewModel
     @Binding var module: AppModule
@@ -28,7 +29,7 @@ struct LibraryBarMenuColumn: View {
 
             LibraryBarMenuProfileFooter(profilePresentation: $profilePresentation)
         }
-        .frame(width: LibraryGlassDesign.barMenuWidth)
+        .frame(width: barWidth, alignment: .leading)
         .frame(minHeight: 0, maxHeight: .infinity)
     }
 
@@ -44,10 +45,10 @@ struct LibraryBarMenuColumn: View {
         action: @escaping () -> Void
     ) -> some View {
         Button(action: action) {
-            HStack(spacing: 10) {
+            HStack(spacing: 8) {
                 Image(systemName: icon)
-                    .font(.system(size: 15, weight: .regular))
-                    .frame(width: 20, alignment: .center)
+                    .font(.system(size: 14, weight: .regular))
+                    .frame(width: 18, alignment: .center)
                     .foregroundStyle(selected ? LibraryGlassDesign.ink : LibraryGlassDesign.inkSecondary)
                 Text(title)
                     .font(.system(size: 13, weight: selected ? .semibold : .regular))
@@ -65,7 +66,7 @@ struct LibraryBarMenuColumn: View {
                         .clipShape(Capsule())
                 }
             }
-            .padding(.horizontal, LibraryGlassDesign.sidebarRowHorizontal)
+            .padding(.horizontal, LibraryGlassDesign.barMenuRowHorizontal)
             .frame(height: LibraryGlassDesign.barMenuRowHeight)
             .background(
                 RoundedRectangle(cornerRadius: LibraryGlassDesign.sidebarRowRadius, style: .continuous)

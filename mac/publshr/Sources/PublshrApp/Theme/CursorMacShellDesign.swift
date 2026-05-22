@@ -9,8 +9,8 @@ enum CursorMacShellDesign {
     /// Chat / workspace editor column — solid white (matches submenu column).
     static let editorColumnBackground = Color.white
     static let titleBarBackground = Color(hex: 0xF3F3F3)
-    /// Collapsed primary bar menu (icon rail); matches `LibraryGlassDesign.barMenuCollapsedWidth`.
-    static let barMenuIconRailWidth: CGFloat = LibraryGlassDesign.barMenuCollapsedWidth
+    /// Collapsed primary bar menu (icon rail); matches `ShellColumnLayout.barCollapsedMax`.
+    static let barMenuIconRailWidth: CGFloat = ShellColumnLayout.barCollapsedMax
     /// Center column content card.
     static let editorBoxBackground = Color.white
     static let border = Color(hex: 0xE4E2DC)

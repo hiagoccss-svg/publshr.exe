@@ -37,9 +37,11 @@ final class SpacesViewModel: ObservableObject {
     @Published var newTaskTitle = ""
     @Published var newDocumentTitle = ""
     @Published var expandedFolderIds: Set<UUID> = []
+    @Published var spacesHomeOpen = false
+    @Published var spaceSettingsSpaceId: UUID?
 
     enum TaskViewMode: String, CaseIterable, Identifiable {
-        case overview, list, board, whiteboard, calendar
+        case overview, list, board, whiteboard, calendar, timeline, workload, priority
         var id: String { rawValue }
 
         var label: String {
@@ -49,6 +51,9 @@ final class SpacesViewModel: ObservableObject {
             case .board: return "Board"
             case .whiteboard: return "Whiteboard"
             case .calendar: return "Calendar"
+            case .timeline: return "Timeline"
+            case .workload: return "Workload"
+            case .priority: return "Priority"
             }
         }
 
@@ -59,6 +64,9 @@ final class SpacesViewModel: ObservableObject {
             case .board: return "rectangle.split.3x1"
             case .whiteboard: return "scribble.variable"
             case .calendar: return "calendar"
+            case .timeline: return "chart.bar.xaxis"
+            case .workload: return "person.2"
+            case .priority: return "square.grid.2x2.fill"
             }
         }
     }
@@ -190,11 +198,61 @@ final class SpacesViewModel: ObservableObject {
             navigationForwardStack.removeAll()
         }
         selectedSpaceId = id
+        spacesHomeOpen = false
         selectedFolderId = nil
         selectedListId = nil
         selectedTaskId = nil
         comments = []
+        taskView = defaultView(for: id)
         await loadSpaceContext(id)
+    }
+
+    func openSpacesHome() {
+        selectedSpaceId = nil
+        selectedFolderId = nil
+        selectedListId = nil
+        selectedTaskId = nil
+        spacesHomeOpen = true
+    }
+
+    func defaultView(for spaceId: UUID) -> TaskViewMode {
+        let key = "spaces:defaultView:\(spaceId.uuidString)"
+        guard let raw = UserDefaults.standard.string(forKey: key),
+              let mode = TaskViewMode(rawValue: raw) else {
+            return .overview
+        }
+        return mode
+    }
+
+    func setDefaultView(for spaceId: UUID, view: TaskViewMode) {
+        UserDefaults.standard.set(view.rawValue, forKey: "spaces:defaultView:\(spaceId.uuidString)")
+    }
+
+    func updateSpaceMetadata(
+        id: UUID,
+        name: String?,
+        description: String?,
+        isPinned: Bool? = nil,
+        isFavourite: Bool? = nil
+    ) async {
+        guard let service else { return }
+        do {
+            try await service.updateSpace(
+                id: id,
+                name: name,
+                description: description,
+                isPinned: isPinned,
+                isFavourite: isFavourite
+            )
+            if let idx = spaces.firstIndex(where: { $0.id == id }) {
+                if let name { spaces[idx].name = name }
+                if let description { spaces[idx].description = description }
+                if let isPinned { spaces[idx].isPinned = isPinned }
+                if let isFavourite { spaces[idx].isFavourite = isFavourite }
+            }
+        } catch {
+            errorMessage = error.localizedDescription
+        }
     }
 
     func loadSpaceContext(_ spaceId: UUID) async {
