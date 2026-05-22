@@ -28,13 +28,12 @@ sed -e "s#@@SHORT_VERSION@@#${SHORT_VERSION}#g" \
 
 if [[ "$(uname -s)" == "Darwin" ]]; then
     ICON_OUT="${RES_DIR}/AppIcon.icns"
-    if [[ -f "${SCRIPT_DIR}/../app/AppIcon.icns" ]]; then
-        cp "${SCRIPT_DIR}/../app/AppIcon.icns" "$ICON_OUT"
-    else
-        chmod +x "${SCRIPT_DIR}/generate-app-icon.swift" 2>/dev/null || true
-        swift "${SCRIPT_DIR}/generate-app-icon.swift" "$ICON_OUT" 2>/dev/null || true
+    bash "${SCRIPT_DIR}/icon-build.sh" "$ICON_OUT"
+    if [[ -f "${SCRIPT_DIR}/../app/icon.png" ]]; then
+        cp "${SCRIPT_DIR}/../app/icon.png" "${RES_DIR}/icon.png"
     fi
     if [[ -f "$ICON_OUT" ]]; then
+        cp "$ICON_OUT" "${SCRIPT_DIR}/../app/AppIcon.icns" 2>/dev/null || true
         /usr/libexec/PlistBuddy -c "Add :CFBundleIconFile string AppIcon" "${APP_ROOT}/Contents/Info.plist" 2>/dev/null \
             || /usr/libexec/PlistBuddy -c "Set :CFBundleIconFile AppIcon" "${APP_ROOT}/Contents/Info.plist"
     fi

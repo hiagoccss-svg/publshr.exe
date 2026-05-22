@@ -201,9 +201,21 @@ struct InstallerRootView: View {
 
     private var header: some View {
         VStack(spacing: 10) {
-            Image(systemName: "chevron.left.forwardslash.chevron.right")
-                .font(.system(size: 44, weight: .medium))
-                .foregroundStyle(InstallerTheme.accent)
+            Group {
+                if let icon = InstallerBranding.appIcon {
+                    Image(nsImage: icon)
+                        .resizable()
+                        .interpolation(.high)
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 72, height: 72)
+                        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                        .shadow(color: .black.opacity(0.12), radius: 8, y: 4)
+                } else {
+                    Image(systemName: "chevron.left.forwardslash.chevron.right")
+                        .font(.system(size: 44, weight: .medium))
+                        .foregroundStyle(InstallerTheme.accent)
+                }
+            }
             Text("Install Publshr")
                 .font(.system(size: 26, weight: .semibold))
                 .foregroundStyle(InstallerTheme.foreground)

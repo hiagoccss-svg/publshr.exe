@@ -1,45 +1,40 @@
 #!/usr/bin/env swift
-// Generates AppIcon.icns for Publshr.app (run on macOS during packaging).
+// Generates AppIcon.icns from mac/publshr/app/icon.png (or programmatic fallback).
 import AppKit
 import Foundation
 
-let outIcns = CommandLine.arguments.count > 1
-    ? URL(fileURLWithPath: CommandLine.arguments[1])
-    : URL(fileURLWithPath: "AppIcon.icns")
+let outIcns = URL(fileURLWithPath: CommandLine.arguments.count > 1 ? CommandLine.arguments[1] : "AppIcon.icns")
+let sourcePNG: URL? = CommandLine.arguments.count > 2
+    ? URL(fileURLWithPath: CommandLine.arguments[2])
+    : nil
 
-let size: CGFloat = 1024
-let image = NSImage(size: NSSize(width: size, height: size))
-image.lockFocus()
+func loadSourceImage() -> NSImage {
+    if let src = sourcePNG, FileManager.default.fileExists(atPath: src.path),
+       let loaded = NSImage(contentsOf: src) {
+        let side = max(loaded.size.width, loaded.size.height)
+        let canvas = NSImage(size: NSSize(width: side, height: side))
+        canvas.lockFocus()
+        NSColor.clear.setFill()
+        NSBezierPath(rect: NSRect(x: 0, y: 0, width: side, height: side)).fill()
+        let inset = side * 0.04
+        let draw = NSRect(x: inset, y: inset, width: side - inset * 2, height: side - inset * 2)
+        loaded.draw(in: draw, from: .zero, operation: .sourceOver, fraction: 1)
+        canvas.unlockFocus()
+        return canvas
+    }
 
-NSColor(calibratedRed: 0.09, green: 0.09, blue: 0.10, alpha: 1).setFill()
-NSBezierPath(rect: NSRect(x: 0, y: 0, width: size, height: size)).fill()
+    let size: CGFloat = 1024
+    let image = NSImage(size: NSSize(width: size, height: size))
+    image.lockFocus()
+    NSColor(calibratedRed: 0.09, green: 0.09, blue: 0.10, alpha: 1).setFill()
+    NSBezierPath(rect: NSRect(x: 0, y: 0, width: size, height: size)).fill()
+    let accent = NSColor(calibratedRed: 0.0, green: 0.48, blue: 0.83, alpha: 1)
+    accent.setFill()
+    image.unlockFocus()
+    return image
+}
 
-let accent = NSColor(calibratedRed: 0.0, green: 0.48, blue: 0.83, alpha: 1)
-accent.setFill()
-
-// Cursor-style chevron mark
-let chevron = NSBezierPath()
-chevron.move(to: NSPoint(x: size * 0.28, y: size * 0.72))
-chevron.line(to: NSPoint(x: size * 0.46, y: size * 0.50))
-chevron.line(to: NSPoint(x: size * 0.28, y: size * 0.28))
-chevron.line(to: NSPoint(x: size * 0.38, y: size * 0.28))
-chevron.line(to: NSPoint(x: size * 0.56, y: size * 0.50))
-chevron.line(to: NSPoint(x: size * 0.38, y: size * 0.72))
-chevron.close()
-chevron.fill()
-
-let chevron2 = NSBezierPath()
-chevron2.move(to: NSPoint(x: size * 0.50, y: size * 0.72))
-chevron2.line(to: NSPoint(x: size * 0.68, y: size * 0.50))
-chevron2.line(to: NSPoint(x: size * 0.50, y: size * 0.28))
-chevron2.line(to: NSPoint(x: size * 0.60, y: size * 0.28))
-chevron2.line(to: NSPoint(x: size * 0.78, y: size * 0.50))
-chevron2.line(to: NSPoint(x: size * 0.60, y: size * 0.72))
-chevron2.close()
-chevron2.fill()
-
-image.unlockFocus()
-
+let image = loadSourceImage()
 let tmp = FileManager.default.temporaryDirectory.appendingPathComponent("PublshrIcon-\(UUID().uuidString)")
 try FileManager.default.createDirectory(at: tmp, withIntermediateDirectories: true)
 defer { try? FileManager.default.removeItem(at: tmp) }
@@ -77,9 +72,8 @@ for (px, name) in slots {
     NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: rep)
     image.draw(in: NSRect(x: 0, y: 0, width: CGFloat(px), height: CGFloat(px)))
     NSGraphicsContext.restoreGraphicsState()
-    let url = iconset.appendingPathComponent(name)
-    if let png = rep.png {
-        try png.write(to: url)
+    if let png = rep.representation(using: .png, properties: [:]) {
+        try png.write(to: iconset.appendingPathComponent(name))
     }
 }
 
@@ -93,7 +87,3 @@ guard proc.terminationStatus == 0 else {
     exit(1)
 }
 print("Wrote \(outIcns.path)")
-
-private extension NSBitmapImageRep {
-    var png: Data? { representation(using: .png, properties: [:]) }
-}
