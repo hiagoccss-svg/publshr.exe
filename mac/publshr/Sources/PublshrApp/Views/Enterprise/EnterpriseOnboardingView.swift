@@ -13,9 +13,7 @@ struct EnterpriseOnboardingView: View {
         ZStack {
             Color(nsColor: .windowBackgroundColor).ignoresSafeArea()
             VStack(spacing: 24) {
-                Image(systemName: "building.2.crop.circle")
-                    .font(.system(size: 48))
-                    .foregroundStyle(CursorTheme.accent)
+                PublshrBrandLogoView(size: 56, cornerRadius: 14)
                 Text("Enterprise setup")
                     .font(.title.weight(.semibold))
                 Text("Configure privacy, register this Mac, and confirm your workspace plan before using Chat and Spaces.")

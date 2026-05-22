@@ -37,9 +37,7 @@ struct AuthView: View {
     private var brandHeader: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 10) {
-                Image(systemName: "chevron.left.forwardslash.chevron.right")
-                    .font(.system(size: 20, weight: .medium))
-                    .foregroundStyle(CursorTheme.accent)
+                PublshrBrandLogoView(size: 28, cornerRadius: 7)
                 Text("Publshr")
                     .font(.system(size: 24, weight: .semibold))
                     .foregroundStyle(CursorTheme.foreground)
