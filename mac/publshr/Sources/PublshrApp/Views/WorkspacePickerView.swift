@@ -42,6 +42,13 @@ struct WorkspacePickerView: View {
             .padding(.horizontal, AuthChromeLayout.horizontalPadding)
         }
         .task { await auth.loadWorkspaces() }
+        .overlay {
+            if auth.isLoading && auth.workspaceMemberships.isEmpty {
+                ProgressView("Loading workspaces…")
+                    .padding(20)
+                    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 10))
+            }
+        }
     }
 
     private var header: some View {

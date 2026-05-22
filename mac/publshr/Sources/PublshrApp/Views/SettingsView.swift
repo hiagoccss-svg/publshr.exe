@@ -217,7 +217,7 @@ struct SettingsView: View {
 
     private var securitySection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("You stay signed in automatically. Touch ID is optional quick unlock — not required each launch.")
+            Text("When enabled, \(BiometricAuthService.biometricLabel) is required each time you open Publshr. Your password is still used for first sign-in.")
                 .font(.system(size: 11))
                 .foregroundStyle(CursorTheme.foregroundDim)
                 .fixedSize(horizontal: false, vertical: true)

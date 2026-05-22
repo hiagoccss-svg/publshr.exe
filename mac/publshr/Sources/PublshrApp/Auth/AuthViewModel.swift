@@ -31,6 +31,8 @@ final class AuthViewModel: ObservableObject {
 
     /// Optional quick unlock — never required to use the app.
     @AppStorage("publshr.useBiometricUnlock") var biometricUnlockEnabled = false
+    @AppStorage("publshr.didOfferBiometricSetup") private var didOfferBiometricSetup = false
+    @Published var showBiometricSetupOffer = false
 
     let client: SupabaseClient
     private static let lastWorkspaceKey = "com.publshr.app.lastWorkspaceId"
@@ -109,20 +111,18 @@ final class AuthViewModel: ObservableObject {
         // 1) Restore persisted Supabase session (stay signed in — no login form).
         if let existing = await loadPersistedSession() {
             session = existing
-            await loadProfile()
-            await loadWorkspaces()
-            restoreLastWorkspaceSelection()
-            resolveFlowStateAfterSession()
+            if await gateSessionWithBiometricIfNeeded() {
+                await finishSessionRestore()
+            }
             return
         }
 
-        // 2) Optional Touch ID only when user enabled it in Settings.
+        // 2) Keychain session when Supabase storage was cleared (e.g. after Sign out with Touch ID on).
         if prefersBiometricUnlock, let restored = await unlockWithBiometricsInternal() {
             session = restored
-            await loadProfile()
-            await loadWorkspaces()
-            restoreLastWorkspaceSelection()
-            resolveFlowStateAfterSession()
+            if await gateSessionWithBiometricIfNeeded() {
+                await finishSessionRestore()
+            }
             return
         }
 
@@ -152,11 +152,28 @@ final class AuthViewModel: ObservableObject {
         }
         if biometricUnlockEnabled {
             persistSessionToKeychain()
+        } else if BiometricAuthService.isAvailable, !didOfferBiometricSetup {
+            showBiometricSetupOffer = true
         }
+        await finishSessionRestore()
+    }
+
+    private func finishSessionRestore() async {
         await loadProfile()
         await loadWorkspaces()
         restoreLastWorkspaceSelection()
         resolveFlowStateAfterSession()
+    }
+
+    /// When Touch ID is enabled, require a successful scan before showing the IDE.
+    private func gateSessionWithBiometricIfNeeded() async -> Bool {
+        guard prefersBiometricUnlock else { return true }
+        let ok = await BiometricAuthService.authenticate(reason: "Unlock Publshr")
+        if ok { return true }
+        session = nil
+        flowState = .signedOut
+        infoMessage = "Quick unlock was cancelled. Sign in with your password."
+        return false
     }
 
     func resolveFlowStateAfterSession() {
@@ -209,10 +226,24 @@ final class AuthViewModel: ObservableObject {
             }
             resolveFlowStateAfterSession()
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = friendlyWorkspaceError(error)
             workspaceMemberships = []
             supabaseStatusLine = "Workspace sync failed"
         }
+    }
+
+    private func friendlyWorkspaceError(_ error: Error) -> String {
+        let text = String(describing: error)
+        if text.localizedCaseInsensitiveContains("create_workspace")
+            || text.localizedCaseInsensitiveContains("function")
+            || text.localizedCaseInsensitiveContains("does not exist") {
+            return "Workspace setup is not ready on the server. Ask your admin to apply Supabase migration 20260522000000_enterprise_foundation.sql."
+        }
+        if text.localizedCaseInsensitiveContains("row-level security")
+            || text.localizedCaseInsensitiveContains("permission denied") {
+            return "You do not have permission to access workspaces. Contact your administrator."
+        }
+        return error.localizedDescription
     }
 
     func confirmWorkspaceSelection() async {
@@ -244,7 +275,7 @@ final class AuthViewModel: ObservableObject {
             flowState = .signedIn
             errorMessage = nil
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = friendlyWorkspaceError(error)
         }
     }
 
@@ -257,10 +288,7 @@ final class AuthViewModel: ObservableObject {
         guard canOfferBiometricUnlock else { return false }
         guard let restored = await unlockWithBiometricsInternal() else { return false }
         session = restored
-        await loadProfile()
-        await loadWorkspaces()
-        restoreLastWorkspaceSelection()
-        resolveFlowStateAfterSession()
+        await finishSessionRestore()
         return true
     }
 
@@ -271,11 +299,39 @@ final class AuthViewModel: ObservableObject {
     }
 
     func setBiometricUnlockEnabled(_ enabled: Bool) {
-        biometricUnlockEnabled = enabled
-        if enabled, session != nil {
-            persistSessionToKeychain()
-        } else {
+        if !enabled {
+            biometricUnlockEnabled = false
             AuthKeychain.delete()
+            return
+        }
+        Task { await enableBiometricUnlock() }
+    }
+
+    /// Verify with Touch ID / password, then store session for quick unlock.
+    func enableBiometricUnlock() async {
+        guard BiometricAuthService.isAvailable else {
+            errorMessage = "\(BiometricAuthService.biometricLabel) is not available on this Mac."
+            return
+        }
+        guard session != nil else {
+            errorMessage = "Sign in first, then enable quick unlock in Settings."
+            return
+        }
+        let ok = await BiometricAuthService.authenticate(
+            reason: "Enable \(BiometricAuthService.biometricLabel) for Publshr"
+        )
+        guard ok else { return }
+        biometricUnlockEnabled = true
+        didOfferBiometricSetup = true
+        persistSessionToKeychain()
+        infoMessage = "\(BiometricAuthService.biometricLabel) is enabled for this Mac."
+    }
+
+    func dismissBiometricSetupOffer(enable: Bool) {
+        showBiometricSetupOffer = false
+        didOfferBiometricSetup = true
+        if enable {
+            Task { await enableBiometricUnlock() }
         }
     }
 
@@ -434,7 +490,9 @@ final class AuthViewModel: ObservableObject {
             otpCode = ""
             screen = .signIn
             flowState = .signedOut
-            AuthKeychain.delete()
+            if !biometricUnlockEnabled {
+                AuthKeychain.delete()
+            }
             supabaseStatusLine = "Signed out"
         } catch {
             errorMessage = friendlyAuthError(error)

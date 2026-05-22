@@ -47,6 +47,12 @@ struct ContentView: View {
             EnterpriseOnboardingView(isPresented: $showEnterpriseOnboarding)
         }
         .sheet(isPresented: Binding(
+            get: { auth.showBiometricSetupOffer },
+            set: { if !$0 { auth.dismissBiometricSetupOffer(enable: false) } }
+        )) {
+            BiometricSetupSheet()
+        }
+        .sheet(isPresented: Binding(
             get: { calls.activeRoom != nil },
             set: { if !$0 { Task { await calls.leaveCall() } } }
         )) {

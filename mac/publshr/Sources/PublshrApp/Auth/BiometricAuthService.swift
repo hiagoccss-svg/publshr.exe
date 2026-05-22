@@ -23,11 +23,12 @@ enum BiometricAuthService {
     }
 
     /// Quick unlock — biometrics when possible, otherwise Mac login password (single prompt).
+    @MainActor
     static func authenticate(reason: String = "Unlock Publshr") async -> Bool {
         await withCheckedContinuation { continuation in
             let context = LAContext()
             context.localizedCancelTitle = "Cancel"
-            context.localizedFallbackTitle = "Use password"
+            context.localizedFallbackTitle = "Use Password"
             var error: NSError?
             let policy: LAPolicy
             if context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &error) {
@@ -39,7 +40,9 @@ enum BiometricAuthService {
                 return
             }
             context.evaluatePolicy(policy, localizedReason: reason) { success, _ in
-                continuation.resume(returning: success)
+                DispatchQueue.main.async {
+                    continuation.resume(returning: success)
+                }
             }
         }
     }
