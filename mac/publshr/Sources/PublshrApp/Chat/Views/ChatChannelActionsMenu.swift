@@ -39,6 +39,11 @@ struct ChatChannelActionsMenu: View {
                 Label("Mute notifications", systemImage: "bell.slash")
             }
             Divider()
+            Button {
+                chat.showAISheet = true
+            } label: {
+                Label("Script recap (date range)", systemImage: "doc.text.magnifyingglass")
+            }
             Button { chat.showSearchSheet = true } label: {
                 Label("Search in channel", systemImage: "magnifyingglass")
             }

@@ -138,7 +138,7 @@ struct ChatChannelStatusBar: View {
                     .frame(width: 28, height: 28)
             }
             .buttonStyle(.plain)
-            .help("Ask AI")
+            .help("Chat recap & AI")
 
             Button {
                 chat.showSearchSheet = true

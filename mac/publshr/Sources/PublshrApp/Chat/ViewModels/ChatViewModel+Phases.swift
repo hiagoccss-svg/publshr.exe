@@ -384,6 +384,73 @@ extension ChatViewModel {
         composerText = ChatAIService.suggestReply(to: messages)
     }
 
+    /// Fetches messages between `summaryPeriodStart` and `summaryPeriodEnd` and builds a detailed script recap.
+    func runPeriodScriptSummary() async {
+        guard let channel = selectedChannel else {
+            summaryPeriodError = "Select a channel first."
+            return
+        }
+        guard summaryPeriodStart <= summaryPeriodEnd else {
+            summaryPeriodError = "Start date must be on or before end date."
+            return
+        }
+
+        isAILoading = true
+        summaryPeriodError = nil
+        defer { isAILoading = false }
+
+        let title = channel.displayTitle
+        var fetched: [ChatMessage] = []
+        var truncated = false
+        let limit = 2500
+
+        if let service, let workspace {
+            do {
+                fetched = try await service.fetchMessagesInPeriod(
+                    channelId: channel.id,
+                    workspaceId: workspace.id,
+                    from: summaryPeriodStart,
+                    to: summaryPeriodEnd,
+                    limit: limit
+                )
+                truncated = fetched.count >= limit
+            } catch {
+                summaryPeriodError = error.localizedDescription
+                fetched = service.localStore().loadMessagesInPeriod(
+                    channelId: channel.id,
+                    from: summaryPeriodStart,
+                    to: summaryPeriodEnd
+                )
+                if fetched.isEmpty {
+                    return
+                }
+                summaryPeriodError = "Offline — recap from cached messages only."
+            }
+        } else if let service {
+            fetched = service.localStore().loadMessagesInPeriod(
+                channelId: channel.id,
+                from: summaryPeriodStart,
+                to: summaryPeriodEnd
+            )
+            if fetched.isEmpty {
+                summaryPeriodError = "No cached messages for this period. Connect to load history."
+                return
+            }
+        } else {
+            summaryPeriodError = "Chat is not ready yet."
+            return
+        }
+
+        aiResult = ChatPeriodSummaryBuilder.build(
+            messages: fetched,
+            profiles: profiles,
+            channelTitle: title,
+            periodStart: summaryPeriodStart,
+            periodEnd: summaryPeriodEnd,
+            truncated: truncated
+        )
+    }
+
     // MARK: - Read receipts
 
     func markMessagesSeen() async {

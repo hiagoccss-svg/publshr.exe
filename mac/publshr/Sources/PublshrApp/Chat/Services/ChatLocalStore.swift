@@ -148,6 +148,21 @@ final class ChatLocalStore {
         return decoded.sorted { $0.createdAt < $1.createdAt }
     }
 
+    func loadMessagesInPeriod(channelId: UUID, from start: Date, to end: Date) -> [ChatMessage] {
+        let calendar = Calendar.current
+        let rangeStart = calendar.startOfDay(for: start).timeIntervalSince1970
+        let rangeEnd = (calendar.date(bySettingHour: 23, minute: 59, second: 59, of: end) ?? end).timeIntervalSince1970
+        let rows = fetchRows(
+            """
+            SELECT payload FROM messages
+            WHERE channel_id = ? AND created_at >= ? AND created_at <= ?
+            ORDER BY created_at ASC;
+            """,
+            channelId.uuidString, String(rangeStart), String(rangeEnd)
+        )
+        return rows.compactMap { decode(ChatMessage.self, from: $0["payload"]) }
+    }
+
     func upsertMessage(_ message: ChatMessage) {
         guard let json = encode(message) else { return }
         exec(
