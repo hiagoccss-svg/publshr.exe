@@ -18,6 +18,23 @@ enum ChatChannelVisibility: String, Codable, CaseIterable {
     case readOnly = "read_only"
     case hidden
     case inviteOnly = "invite_only"
+
+    var label: String {
+        switch self {
+        case .public: "Public"
+        case .private: "Private"
+        case .internal: "Internal"
+        case .clientSafe: "Client-safe"
+        case .announcement: "Announcement"
+        case .readOnly: "Read-only"
+        case .hidden: "Hidden"
+        case .inviteOnly: "Invite only"
+        }
+    }
+
+    var blocksNonAdminPosts: Bool {
+        self == .announcement || self == .readOnly
+    }
 }
 
 struct ChatChannel: Codable, Identifiable, Equatable, Hashable {

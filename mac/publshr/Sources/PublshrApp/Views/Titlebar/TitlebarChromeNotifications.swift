@@ -3,6 +3,7 @@ import Foundation
 extension Notification.Name {
     static let publshrTitlebarToggleSidebar = Notification.Name("com.publshr.titlebar.toggleSidebar")
     static let publshrTitlebarNewChat = Notification.Name("com.publshr.titlebar.newChat")
+    static let publshrTitlebarNewDM = Notification.Name("com.publshr.titlebar.newDM")
     static let publshrTitlebarCommandPalette = Notification.Name("com.publshr.titlebar.commandPalette")
     static let publshrTitlebarSearch = Notification.Name("com.publshr.titlebar.search")
     static let publshrTitlebarNotifications = Notification.Name("com.publshr.titlebar.notifications")

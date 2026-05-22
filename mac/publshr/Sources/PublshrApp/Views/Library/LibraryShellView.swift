@@ -28,7 +28,7 @@ struct LibraryShellView: View {
             .frame(width: geometry.size.width, height: geometry.size.height)
         }
         .ignoresSafeArea(.container, edges: .top)
-        .background(CursorMacShellDesign.columnChromeBackground)
+        .background(Color.clear)
         .onAppear {
             tabStore.sidebarExpanded = true
             syncModulesIfNeeded()
@@ -51,7 +51,7 @@ struct LibraryShellView: View {
         HStack(alignment: .top, spacing: 0) {
             ShellColumnChromeStack(
                 headerKind: .primaryLeading,
-                appliesSidebarChrome: true
+                appliesPrimaryBarGlass: true
             ) {
                 LibraryBarMenuColumn(module: $module)
             }
@@ -93,13 +93,20 @@ struct LibraryShellView: View {
                 showNotificationsPanel: $showNotificationsPanel
             )
         ) {
-            moduleContent
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .cursorEditorColumnBox()
-                .padding(CursorMacShellDesign.editorBoxPadding)
+            Group {
+                if module == .chat {
+                    moduleContent
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else {
+                    moduleContent
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .cursorEditorColumnBox()
+                        .padding(CursorMacShellDesign.editorBoxPadding)
+                }
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(CursorMacShellDesign.workspaceBackground)
+        .background(module == .chat ? CursorMacShellDesign.editorColumnBackground : CursorMacShellDesign.workspaceBackground)
     }
 
     private var editorColumnTitle: String {

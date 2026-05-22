@@ -14,7 +14,7 @@ struct ChatConversationView: View {
                 ChatThreadPanelView(chat: chat)
             }
         }
-        .background(CursorMacShellDesign.editorBoxBackground)
+        .background(CursorMacShellDesign.editorColumnBackground)
         .fileImporter(
             isPresented: $showFileImporter,
             allowedContentTypes: [.image, .movie, .video, .pdf, .data],
@@ -99,7 +99,9 @@ struct ChatConversationView: View {
         Group {
             if chat.mainChannelMessages.isEmpty && !chat.isLoading {
                 ChatEmptyStateView(
-                    onNewMessage: {},
+                    onNewMessage: {
+                        NotificationCenter.default.post(name: .publshrTitlebarNewDM, object: nil)
+                    },
                     onCreateChannel: { Task { await chat.createChannel(name: "general") } }
                 )
             } else {
