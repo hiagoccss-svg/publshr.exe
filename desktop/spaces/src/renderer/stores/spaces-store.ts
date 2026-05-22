@@ -45,6 +45,8 @@ interface SpacesState {
   commandOpen: boolean
   searchQuery: string
   newSpaceModalOpen: boolean
+  spaceSettingsId: string | null
+  spacesHomeOpen: boolean
   loadBootstrap: () => Promise<void>
   refreshActiveSpace: () => Promise<void>
   refreshHierarchy: () => Promise<void>
@@ -60,6 +62,12 @@ interface SpacesState {
   setCommandOpen: (v: boolean) => void
   setSearchQuery: (q: string) => void
   setNewSpaceModalOpen: (v: boolean) => void
+  setSpaceSettingsId: (id: string | null) => void
+  openSpaceSettings: (id: string) => void
+  setSpacesHomeOpen: (v: boolean) => void
+  getDefaultViewForSpace: (spaceId: string) => TaskViewMode
+  setDefaultViewForSpace: (spaceId: string, view: TaskViewMode) => void
+  updateSpace: (id: string, patch: Partial<Space>) => Promise<void>
   createSpace: (input: { name: string; description?: string; type?: Space['type'] }) => Promise<Space>
   createFolder: (name: string) => Promise<void>
   createList: (name: string, folderId?: string | null) => Promise<void>
@@ -97,6 +105,8 @@ export const useSpacesStore = create<SpacesState>((set, get) => ({
   commandOpen: false,
   searchQuery: '',
   newSpaceModalOpen: false,
+  spaceSettingsId: null,
+  spacesHomeOpen: false,
 
   loadBootstrap: async () => {
     const api = getSpacesAPI()
@@ -148,10 +158,12 @@ export const useSpacesStore = create<SpacesState>((set, get) => ({
   },
 
   setActiveSpace: async (id) => {
+    const defaultView = id ? get().getDefaultViewForSpace(id) : 'overview'
     set({
       activeSpaceId: id,
       activeSection: 'spaces',
-      taskView: 'overview',
+      spacesHomeOpen: false,
+      taskView: defaultView,
       selectedTaskId: null,
       activeFolderId: null,
       activeListId: null,
@@ -209,6 +221,55 @@ export const useSpacesStore = create<SpacesState>((set, get) => ({
   setCommandOpen: (v) => set({ commandOpen: v }),
   setSearchQuery: (q) => set({ searchQuery: q }),
   setNewSpaceModalOpen: (v) => set({ newSpaceModalOpen: v }),
+  setSpaceSettingsId: (id) => set({ spaceSettingsId: id }),
+  openSpaceSettings: (id) => set({ spaceSettingsId: id }),
+  setSpacesHomeOpen: (v) => {
+    if (v) {
+      set({
+        spacesHomeOpen: true,
+        activeSpaceId: null,
+        selectedTaskId: null,
+        activeFolderId: null,
+        activeListId: null,
+        folders: [],
+        lists: [],
+        tasks: [],
+        taskComments: []
+      })
+    } else {
+      set({ spacesHomeOpen: false })
+    }
+  },
+
+  getDefaultViewForSpace: (spaceId) => {
+    try {
+      const raw = localStorage.getItem(`spaces:defaultView:${spaceId}`)
+      if (raw && isTaskViewMode(raw)) return raw
+    } catch {
+      /* ignore */
+    }
+    return 'overview'
+  },
+
+  setDefaultViewForSpace: (spaceId, view) => {
+    try {
+      localStorage.setItem(`spaces:defaultView:${spaceId}`, view)
+    } catch {
+      /* ignore */
+    }
+  },
+
+  updateSpace: async (id, patch) => {
+    const api = getSpacesAPI()
+    await api.updateSpace(id, patch)
+    const spaces = await api.listSpaces()
+    set({ spaces })
+    if (patch.isArchived && get().activeSpaceId === id) {
+      const next = spaces.find((s) => !s.isArchived)
+      if (next) await get().setActiveSpace(next.id)
+      else set({ activeSpaceId: null, spacesHomeOpen: true, folders: [], lists: [], tasks: [] })
+    }
+  },
 
   createSpace: async (input) => {
     const api = getSpacesAPI()
@@ -271,3 +332,16 @@ export const useSpacesStore = create<SpacesState>((set, get) => ({
     await get().refreshActiveSpace()
   }
 }))
+
+function isTaskViewMode(v: string): v is TaskViewMode {
+  return [
+    'overview',
+    'list',
+    'board',
+    'timeline',
+    'calendar',
+    'workload',
+    'priority',
+    'document'
+  ].includes(v)
+}

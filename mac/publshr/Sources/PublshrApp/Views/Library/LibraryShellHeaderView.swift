@@ -53,6 +53,8 @@ struct LibraryShellHeaderView: View {
 struct ShellColumnChromeStack<Content: View>: View {
     var showsTitlebar: Bool = true
     var headerKind: ShellColumnHeaderKind?
+    /// Locks column width in the shell `HStack` (nil = flexible editor column).
+    var columnWidth: CGFloat?
     var appliesSidebarChrome: Bool = false
     var appliesPrimaryBarGlass: Bool = false
     @ViewBuilder var content: () -> Content
@@ -60,12 +62,14 @@ struct ShellColumnChromeStack<Content: View>: View {
     init(
         showsTitlebar: Bool = true,
         headerKind: ShellColumnHeaderKind? = nil,
+        columnWidth: CGFloat? = nil,
         appliesSidebarChrome: Bool = false,
         appliesPrimaryBarGlass: Bool = false,
         @ViewBuilder content: @escaping () -> Content
     ) {
         self.showsTitlebar = showsTitlebar
         self.headerKind = headerKind
+        self.columnWidth = columnWidth
         self.appliesSidebarChrome = appliesSidebarChrome
         self.appliesPrimaryBarGlass = appliesPrimaryBarGlass
         self.content = content
@@ -77,9 +81,14 @@ struct ShellColumnChromeStack<Content: View>: View {
                 LibraryShellHeaderView(kind: headerKind)
             }
             content()
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .frame(
+                    maxWidth: columnWidth == nil ? .infinity : columnWidth,
+                    maxHeight: .infinity,
+                    alignment: .topLeading
+                )
         }
-        .frame(minHeight: 0, maxHeight: .infinity)
+        .frame(width: columnWidth, alignment: .leading)
+        .frame(maxWidth: columnWidth ?? .infinity, maxHeight: .infinity, alignment: .topLeading)
         .modifier(ShellColumnChromeBackground(
             appliesSidebarChrome: appliesSidebarChrome,
             appliesPrimaryBarGlass: appliesPrimaryBarGlass

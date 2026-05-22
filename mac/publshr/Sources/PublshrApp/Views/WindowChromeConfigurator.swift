@@ -53,9 +53,8 @@ enum MainWindowChrome {
             content.wantsLayer = true
             content.layer?.backgroundColor = NSColor.clear.cgColor
         }
-        if !isSwiftUIHosting,
-           window.responds(to: #selector(setter: NSWindow.toolbarStyle)) {
-            window.toolbarStyle = .unifiedCompact
+        if window.responds(to: #selector(setter: NSWindow.toolbarStyle)) {
+            window.toolbarStyle = .unified
         }
         if window.responds(to: #selector(setter: NSWindow.titlebarSeparatorStyle)) {
             window.titlebarSeparatorStyle = .none

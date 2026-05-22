@@ -6,9 +6,9 @@ Publshr Chat follows [ClickUp Chat Sidebar](https://help.clickup.com/hc/en-us/ar
 
 | Zone | Width | Contents |
 |------|-------|----------|
-| **Bar menu** (far left) | 200px | **Chat** · **Spaces** (real app modules only) |
-| **Chat sidebar** | 272px | Search, filters, channel/DM lists, **bottom footer** |
-| **Main column** | flex | Channel tabs, status bar, messages, composer toolbar |
+| **Bar menu** (far left) | ~19.5% window (min 248px) · collapsed = traffic lights + toggle | **Chat** · **Spaces** (real app modules only) |
+| **Chat sidebar** | ~30% window (min 360px) · **#FFFFFF** | Search in unified titlebar row; filters, lists, footer (flat, no boxed chrome) |
+| **Main column** | ~50% remainder · **#FFFFFF** | Titlebar: 32×32 icon slots, 8pt gaps, aligned with columns 1–2 |
 | **Thread panel** (optional) | ~320px | Right-side thread replies |
 | **Unified titlebar** | full width | Traffic lights row: sidebar, back/forward, submenu search, channel title + actions |
 | **Bar menu profile** | bottom of rail | Avatar opens profile sheet (photo, status, sign out) |
@@ -40,9 +40,19 @@ Settings opens in a **separate sheet/window** (not in the activity strip), match
 |--------|----------|
 | **All** | Channels + DMs (organized) or full recents list |
 | **Unread** | Rows with message unread count or thread unread |
+| **@** | Channels/DMs with unread @you / @here / @channel |
 | **Pinned** | User-pinned channels/DMs only |
 | **DMs** | Direct + group messages only |
 | **Channels** | Workspace channels only |
+
+### Hubs (above channel list)
+
+| Hub | Behavior |
+|-----|----------|
+| **Channels** | Default organized/recents lists |
+| **Activity** | In-app notification feed (mentions + messages) |
+| **Drafts** | Unsent composer drafts (SQLite) |
+| **Sent** | Your recent messages + pending scheduled sends |
 
 ### Layouts (bottom-left, ClickUp)
 
@@ -66,8 +76,9 @@ Active layout label appears next to the toggles. Preference keys: `publshr.chat.
 
 ## Conversation column
 
-- **Unified titlebar (chat)** — channel title, in-channel search, command palette, settings (`ChatEditorToolbarContent`).
-- **Composer toolbar** — @mention, emoji, attach, voice, schedule (placeholder), channel label.
+- **Unified titlebar (chat)** — channel title, pop-out, focus, AI, search, pinned, DM details (DM/group), notifications, command palette, settings (`ChatEditorToolbarContent`).
+- **Composer toolbar** — @mention picker, emoji, attach, voice, schedule send, channel label.
+- **DM inspector** — right panel for DM/group members, notifications, copy link.
 - **Composer** — `Message {channel}…`, send (⌘↩).
 - **Unread** — bold sidebar row; numeric badge; thread icon for unread thread replies.
 
@@ -113,7 +124,11 @@ Per [Notification settings](https://help.clickup.com/hc/en-us/articles/632591895
 | `Chat/Models/ChatInAppNotification.swift` | In-app notification feed items |
 | `Chat/Services/ChatNotificationService.swift` | macOS Notification Center delivery |
 | `Chat/Views/ChatComposerView.swift` | Composer toolbar |
-| `Chat/Views/ChatEnterpriseUI.swift` | Typing indicator |
+| `Chat/Views/ChatEnterpriseUI.swift` | Typing indicator + `typingSummary` |
+| `Chat/Views/ChatSidebarHubViews.swift` | Activity / Drafts / Sent hubs |
+| `Chat/Views/ChatDMInspectorPanel.swift` | DM/group details panel |
+| `Chat/Views/ChatMentionPickerSheet.swift` | Mention picker |
+| `Chat/Views/ChatScheduleSendSheet.swift` | Schedule send |
 | `Chat/Views/ChatChannelActionsMenu.swift` | Row + toolbar actions |
 | `Views/Library/LibraryBarMenuIconRail.swift` | Module icons + profile avatar footer |
 | `Theme/WorkspaceShellBackground.swift` | `GlassSubmenuChrome`, primary bar transparency |

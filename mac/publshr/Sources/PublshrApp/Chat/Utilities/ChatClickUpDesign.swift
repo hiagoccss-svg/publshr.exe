@@ -33,6 +33,7 @@ enum ChatClickUpDesign {
 enum ChatSidebarFilter: String, CaseIterable, Identifiable {
     case all
     case unread
+    case mentions
     case pinned
     case dms
     case channels
@@ -43,9 +44,38 @@ enum ChatSidebarFilter: String, CaseIterable, Identifiable {
         switch self {
         case .all: "All"
         case .unread: "Unread"
+        case .mentions: "@"
         case .pinned: "Pinned"
         case .dms: "DMs"
         case .channels: "Channels"
+        }
+    }
+}
+
+/// ClickUp hubs above the channel list — Activity, Drafts, Sent.
+enum ChatSidebarHub: String, CaseIterable, Identifiable {
+    case channels
+    case activity
+    case drafts
+    case sent
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .channels: "Channels"
+        case .activity: "Activity"
+        case .drafts: "Drafts"
+        case .sent: "Sent"
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .channels: "bubble.left.and.bubble.right"
+        case .activity: "bell"
+        case .drafts: "doc.text"
+        case .sent: "paperplane"
         }
     }
 }

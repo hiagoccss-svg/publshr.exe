@@ -8,7 +8,7 @@ struct ChatEditorToolbarContent: View {
     @Binding var showNotificationsPanel: Bool
 
     var body: some View {
-        HStack(alignment: .center, spacing: AppWindowChromeMetrics.toolbarItemSpacing) {
+        TitlebarToolbarRow(leadingPadding: 0, trailingPadding: 0) {
             channelTitle
             Spacer(minLength: 8)
             trailingActions
@@ -51,7 +51,7 @@ struct ChatEditorToolbarContent: View {
                 }
             }
 
-            TitlebarChromeIconButton(systemName: "sparkles", help: "Ask AI") {
+            TitlebarChromeIconButton(systemName: "sparkles", help: "Chat recap & AI") {
                 chat.showAISheet = true
             }
 
@@ -65,6 +65,17 @@ struct ChatEditorToolbarContent: View {
                 isActive: chat.showPinnedPanel
             ) {
                 chat.showPinnedPanel.toggle()
+            }
+
+            if let channel = chat.selectedChannel,
+               channel.kind == .dm || channel.kind == .group {
+                TitlebarChromeIconButton(
+                    systemName: "info.circle",
+                    help: "Conversation details",
+                    isActive: chat.showDMInspector
+                ) {
+                    chat.showDMInspector.toggle()
+                }
             }
 
             if let channel = chat.selectedChannel {
@@ -94,20 +105,22 @@ struct ChatEditorToolbarContent: View {
     }
 
     private func channelMoreMenu(_ channel: ChatChannel) -> some View {
-        Menu {
-            ChatChannelActionsMenu(chat: chat, channel: channel)
-        } label: {
-            Image(systemName: "ellipsis")
-                .font(.system(size: AppWindowChromeMetrics.controlIconSize, weight: .regular))
-                .foregroundStyle(LibraryGlassDesign.inkSecondary)
-                .frame(
-                    width: AppWindowChromeMetrics.controlSize,
-                    height: AppWindowChromeMetrics.controlSize
-                )
-                .contentShape(Rectangle())
+        TitlebarToolbarSlot {
+            Menu {
+                ChatChannelActionsMenu(chat: chat, channel: channel)
+            } label: {
+                Image(systemName: "ellipsis")
+                    .font(.system(size: AppWindowChromeMetrics.controlIconSize, weight: .regular))
+                    .foregroundStyle(LibraryGlassDesign.inkSecondary)
+                    .frame(
+                        width: AppWindowChromeMetrics.controlSize,
+                        height: AppWindowChromeMetrics.controlSize
+                    )
+                    .contentShape(Rectangle())
+            }
+            .menuStyle(.borderlessButton)
+            .help("More")
         }
-        .menuStyle(.borderlessButton)
-        .help("More")
     }
 
     private func channelSubtitle(_ channel: ChatChannel) -> String? {

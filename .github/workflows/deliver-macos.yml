@@ -32,6 +32,8 @@ jobs:
       - name: Sync icon and select Xcode
         run: |
           bash mac/publshr/scripts/sync-app-icon.sh
+          python3 -m pip install --quiet pillow numpy
+          python3 mac/publshr/scripts/apply-premium-icon-background.py 1024
           sudo xcode-select -s /Applications/Xcode.app
 
       - name: Build native macOS app

@@ -34,11 +34,26 @@ struct ChatChannelActionsMenu: View {
                 Label("Mark as read", systemImage: "checkmark.circle")
             }
             Button {
+                chat.markChannelUnread(channel)
+            } label: {
+                Label("Mark as unread", systemImage: "envelope.badge")
+            }
+            Button {
+                chat.copyChannelLink(channel)
+            } label: {
+                Label("Copy link", systemImage: "link")
+            }
+            Button {
                 Task { await chat.muteChannel(channel) }
             } label: {
                 Label("Mute notifications", systemImage: "bell.slash")
             }
             Divider()
+            Button {
+                chat.showAISheet = true
+            } label: {
+                Label("Script recap (date range)", systemImage: "doc.text.magnifyingglass")
+            }
             Button { chat.showSearchSheet = true } label: {
                 Label("Search in channel", systemImage: "magnifyingglass")
             }

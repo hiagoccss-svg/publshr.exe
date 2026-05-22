@@ -422,6 +422,36 @@ extension ChatService {
         store.cacheMessages(all, channelId: channelId)
         return main
     }
+
+    /// Messages in a channel between start-of-day `from` and end-of-day `to` (inclusive).
+    func fetchMessagesInPeriod(
+        channelId: UUID,
+        workspaceId: UUID,
+        from start: Date,
+        to end: Date,
+        limit: Int = 2500
+    ) async throws -> [ChatMessage] {
+        let calendar = Calendar.current
+        let rangeStart = calendar.startOfDay(for: start)
+        let rangeEnd = calendar.date(bySettingHour: 23, minute: 59, second: 59, of: end) ?? end
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+
+        let rows: [ChatMessage] = try await client
+            .from("chat_messages")
+            .select()
+            .eq("channel_id", value: channelId.uuidString)
+            .eq("workspace_id", value: workspaceId.uuidString)
+            .eq("is_deleted", value: false)
+            .gte("created_at", value: formatter.string(from: rangeStart))
+            .lte("created_at", value: formatter.string(from: rangeEnd))
+            .order("created_at", ascending: true)
+            .limit(limit)
+            .execute()
+            .value
+        store.cacheMessages(rows, channelId: channelId)
+        return rows
+    }
 }
 
 struct ChatUploadedFile: Equatable {
