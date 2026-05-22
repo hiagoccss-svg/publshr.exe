@@ -15,7 +15,8 @@ struct LibraryShellView: View {
     @Binding var profilePresentation: WorkspaceProfilePresentation?
 
     private var submenuHidden: Bool {
-        !tabStore.sidebarExpanded
+        module == .settings
+            || !tabStore.sidebarExpanded
             || (module == .chat && chat.chatFocusMode)
             || (module == .spaces && spaces.spacesFocusMode)
     }
@@ -78,6 +79,7 @@ struct LibraryShellView: View {
                 }
                 .fixedSize(horizontal: true, vertical: false)
                 .layoutPriority(2)
+                .transition(.move(edge: .leading).combined(with: .opacity))
 
                 if !submenuHidden {
                     ShellColumnChromeStack(showsTitlebar: false, appliesSidebarChrome: true) {

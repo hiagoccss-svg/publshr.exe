@@ -1,8 +1,10 @@
 import SwiftUI
 
 /// Per-column titlebar band — used only when `ShellColumnChromeStack(showsTitlebar: true)`.
+/// The live shell uses `ShellUnifiedTitlebar`; these rows are placeholders for legacy/pop-out layouts.
 enum ShellColumnHeaderKind {
-    case trafficLeading(module: Binding<AppModule>)
+    /// Left column: traffic-light inset; back/forward hidden when bar menu is collapsed to icon rail.
+    case trafficLeading(module: Binding<AppModule>, compact: Bool = false)
     case secondaryChrome
     case chatSubmenu
     case editorTrailing(
@@ -75,6 +77,7 @@ struct ShellColumnChromeStack<Content: View>: View {
                 LibraryShellHeaderView(kind: headerKind)
             }
             content()
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .frame(minHeight: 0, maxHeight: .infinity)
         .modifier(ShellColumnChromeBackground(

@@ -49,7 +49,7 @@ See [INSTALL.md](./INSTALL.md) for all download URLs.
 ## Auto-update flow (production)
 
 1. Push to **`main`** → `.github/workflows/deliver-macos.yml` publishes **`live`** asset.
-2. App polls every **10 minutes**; silent download when update available.
+2. App polls every **30 seconds**; optional silent download + auto-install when enabled.
 3. User chooses **Restart to update** (or menu command).
 4. `apply-macos-update.sh`: wait for exit → backup → install → verify → relaunch; **rollback** on failure.
 
@@ -102,5 +102,6 @@ Biometrics: Media Monitoring uses `safeStorage` + Touch ID; native IDE uses Keyc
 
 - [INSTALL.md](./INSTALL.md)
 - [AUTO_UPDATE.md](./AUTO_UPDATE.md)
+- [ENTERPRISE_INSTALL_AND_LIVE.md](./ENTERPRISE_INSTALL_AND_LIVE.md)
 - [CHAT_SYSTEM.md](./CHAT_SYSTEM.md)
 - [CHAT_ENTERPRISE_GAPS.md](./CHAT_ENTERPRISE_GAPS.md)

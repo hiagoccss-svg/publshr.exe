@@ -9,8 +9,8 @@ enum CursorMacShellDesign {
     /// Chat / workspace editor column — lighter grey than submenu chrome.
     static let editorColumnBackground = Color(hex: 0xFAFAF9)
     static let titleBarBackground = Color(hex: 0xF3F3F3)
-    /// Primary bar — enterprise module icons only (traffic lights sit in system titlebar above).
-    static let barMenuIconRailWidth: CGFloat = 52
+    /// Collapsed primary bar menu (icon rail); matches `LibraryGlassDesign.barMenuCollapsedWidth`.
+    static let barMenuIconRailWidth: CGFloat = LibraryGlassDesign.barMenuCollapsedWidth
     /// Center column content card.
     static let editorBoxBackground = Color.white
     static let border = Color(hex: 0xE4E2DC)

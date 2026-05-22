@@ -6,6 +6,9 @@ enum AppReleaseConfig {
     static let liveTag = "live"
     static let minAppAssetBytes = 5_000_000
 
+    /// Poll GitHub `live` + run Supabase sync on this interval (also on wake / app active / Sync now).
+    static let livePollIntervalSeconds: UInt64 = 30
+
     static var githubRepo: String {
         Bundle.main.object(forInfoDictionaryKey: "PublshrGitHubRepo") as? String ?? defaultRepo
     }

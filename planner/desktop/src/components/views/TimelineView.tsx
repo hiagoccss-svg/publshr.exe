@@ -49,7 +49,7 @@ export default function TimelineView() {
             const end = item.due_date ? parseISO(item.due_date) : addWeeks(start, 1)
             const offset = Math.max(0, differenceInDays(start, rangeStart))
             const span = Math.max(1, differenceInDays(end, start) + 1)
-            const colStart = offset + 2
+            const colStart = offset + 1
             const colSpan = Math.min(span, dayCount - offset)
 
             return (

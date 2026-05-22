@@ -21,9 +21,9 @@ enum LibraryUniversalSubmenu {
                 .buttonStyle(.plain)
             }
         }
-        .padding(.horizontal, 12)
-        .padding(.top, 8)
-        .padding(.bottom, 2)
+        .padding(.horizontal, LibraryGlassDesign.sidebarRowHorizontal)
+        .padding(.top, LibraryGlassDesign.sectionLabelTop)
+        .padding(.bottom, LibraryGlassDesign.sectionLabelBottom)
     }
 
     static func sectionDivider() -> some View {

@@ -1,27 +1,43 @@
 import SwiftUI
 
-/// Controls immediately after the macOS traffic-light cluster.
+/// Controls immediately after the macOS traffic-light cluster (bar menu + optional back/forward).
 struct ShellTrafficLeadingActions: View {
+    @EnvironmentObject private var tabStore: WorkspaceTabStore
     @EnvironmentObject private var chat: ChatViewModel
     @EnvironmentObject private var spaces: SpacesViewModel
     @Binding var module: AppModule
+    var compact: Bool = false
 
     var body: some View {
         HStack(alignment: .center, spacing: AppWindowChromeMetrics.toolbarItemSpacing) {
             TitlebarChromeIconButton(
-                systemName: "chevron.left",
-                help: TitlebarShortcutHint.tooltip("Back", shortcut: TitlebarShortcutHint.navigateBack),
-                isEnabled: canNavigateBack
+                systemName: tabStore.barMenuExpanded ? "sidebar.left" : "sidebar.right",
+                help: tabStore.barMenuExpanded
+                    ? "Collapse main menu to icon bar"
+                    : "Expand main menu",
+                isActive: !tabStore.barMenuExpanded
             ) {
-                navigateBack()
+                withAnimation(.easeInOut(duration: 0.15)) {
+                    tabStore.barMenuExpanded.toggle()
+                }
             }
 
-            TitlebarChromeIconButton(
-                systemName: "chevron.right",
-                help: TitlebarShortcutHint.tooltip("Forward", shortcut: TitlebarShortcutHint.navigateForward),
-                isEnabled: canNavigateForward
-            ) {
-                navigateForward()
+            if !compact {
+                TitlebarChromeIconButton(
+                    systemName: "chevron.left",
+                    help: TitlebarShortcutHint.tooltip("Back", shortcut: TitlebarShortcutHint.navigateBack),
+                    isEnabled: canNavigateBack
+                ) {
+                    navigateBack()
+                }
+
+                TitlebarChromeIconButton(
+                    systemName: "chevron.right",
+                    help: TitlebarShortcutHint.tooltip("Forward", shortcut: TitlebarShortcutHint.navigateForward),
+                    isEnabled: canNavigateForward
+                ) {
+                    navigateForward()
+                }
             }
         }
     }

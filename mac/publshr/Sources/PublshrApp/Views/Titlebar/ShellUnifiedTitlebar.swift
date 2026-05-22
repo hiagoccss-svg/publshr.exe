@@ -53,7 +53,10 @@ struct ShellUnifiedTitlebar: View {
                     tabStore.sidebarExpanded.toggle()
                 }
             }
-            ShellTrafficLeadingActions(module: $module)
+            ShellTrafficLeadingActions(
+                module: $module,
+                compact: !tabStore.barMenuExpanded
+            )
         }
         .padding(.trailing, 4)
         .frame(minWidth: CursorMacShellDesign.barMenuIconRailWidth, alignment: .leading)

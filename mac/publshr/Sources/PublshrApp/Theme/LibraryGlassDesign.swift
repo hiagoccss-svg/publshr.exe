@@ -4,9 +4,11 @@ import SwiftUI
 enum LibraryGlassDesign {
     /// Primary bar menu (labeled: Daily Note, Inbox, Notes…) — not a 48px icon strip.
     static let barMenuWidth: CGFloat = 200
-    /// Universal submenu (Areas, Recent Notes, Channels…).
-    static let sidebarWidth: CGFloat = 260
+    /// Universal submenu (Areas, Recent Notes, Channels…) — single width everywhere.
     static let sidebarWidthWide: CGFloat = 272
+    static let sidebarWidth: CGFloat = sidebarWidthWide
+    /// Collapsed primary column — matches macOS traffic-light inset.
+    static let barMenuCollapsedWidth: CGFloat = 72
 
     @available(*, deprecated, message: "Use barMenuWidth for the reference shell")
     static let activityBarWidth: CGFloat = 48
@@ -35,8 +37,8 @@ enum LibraryGlassDesign {
     static let sectionLabelBottom: CGFloat = 4
     static let barMenuRowHeight: CGFloat = 34
 
-    // Chrome (titlebar row — see AppWindowChromeMetrics)
-    static let headerHeight: CGFloat = 40
+    // Chrome (titlebar row — see AppWindowChromeMetrics.unifiedTitlebarRowHeight)
+    static let headerHeight: CGFloat = AppWindowChromeMetrics.unifiedTitlebarRowHeight
     static let statusBarHeight: CGFloat = 22
     static let ctaPillHeight: CGFloat = 36
     static let ctaPillHorizontal: CGFloat = 16

@@ -56,7 +56,7 @@ export function Sidebar({ collapsed }: SidebarProps): React.ReactElement {
   return (
     <aside
       className={clsx(
-        'glass-sidebar flex shrink-0 flex-col transition-[width] duration-200',
+        'glass-sidebar flex min-h-0 shrink-0 flex-col overflow-hidden transition-[width] duration-200',
         collapsed ? 'w-14 !bg-surface-raised/90' : activeSection === 'spaces' && activeSpaceId ? 'glass-sidebar-wide' : ''
       )}
     >
