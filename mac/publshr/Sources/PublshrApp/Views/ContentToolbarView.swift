@@ -8,15 +8,18 @@ struct ContentToolbarView: View {
     var module: AppModule
 
     private var toolbarHeight: CGFloat {
-        module == .chat ? CursorTheme.chatToolbarHeight : CursorTheme.titleBarHeight
+        switch module {
+        case .chat, .spaces: return CursorTheme.chatToolbarHeight
+        case .settings: return CursorTheme.titleBarHeight
+        }
     }
 
     var body: some View {
         HStack(spacing: 12) {
             toolbarLeading
-                .frame(minWidth: module == .chat ? 180 : 0, alignment: .leading)
+                .frame(minWidth: (module == .chat || module == .spaces) ? 180 : 0, alignment: .leading)
 
-            if module == .chat {
+            if module == .chat || module == .spaces {
                 searchField
                     .frame(maxWidth: .infinity)
             } else {
@@ -27,10 +30,15 @@ struct ContentToolbarView: View {
 
             toolbarTrailing
         }
-        .padding(.leading, module == .chat ? 14 : 12)
+        .padding(.leading, (module == .chat || module == .spaces) ? 14 : 12)
         .padding(.trailing, 14)
         .frame(height: toolbarHeight)
         .background(CursorTheme.editorBackground)
+        .overlay(alignment: .bottom) {
+            if module == .settings {
+                Rectangle().fill(CursorTheme.borderSubtle).frame(height: 1)
+            }
+        }
     }
 
     @ViewBuilder
@@ -39,10 +47,7 @@ struct ContentToolbarView: View {
         case .chat:
             chatToolbarLeading
         case .spaces:
-            Text(spaces.selectedSpace?.name ?? "Spaces")
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(CursorTheme.foreground)
-                .lineLimit(1)
+            spacesToolbarLeading
         case .settings:
             Text("Settings")
                 .font(.system(size: 13, weight: .semibold))
@@ -79,6 +84,41 @@ struct ContentToolbarView: View {
                 }
             } else {
                 Text("Chat")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(CursorTheme.foregroundDim)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var spacesToolbarLeading: some View {
+        HStack(spacing: 10) {
+            HStack(spacing: 2) {
+                navButton(
+                    systemName: "chevron.left",
+                    enabled: spaces.canNavigateBack,
+                    help: "Back"
+                ) { Task { await spaces.navigateBack() } }
+                navButton(
+                    systemName: "chevron.right",
+                    enabled: spaces.canNavigateForward,
+                    help: "Forward"
+                ) { Task { await spaces.navigateForward() } }
+            }
+
+            if let space = spaces.selectedSpace {
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(space.name)
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(CursorTheme.foreground)
+                        .lineLimit(1)
+                    Text(spaces.spaceSubtitle(space))
+                        .font(.system(size: 11))
+                        .foregroundStyle(CursorTheme.foregroundMuted)
+                        .lineLimit(1)
+                }
+            } else {
+                Text("Spaces")
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundStyle(CursorTheme.foregroundDim)
             }
@@ -123,14 +163,10 @@ struct ContentToolbarView: View {
                 .textFieldStyle(.plain)
                 .font(.system(size: 12))
             if module == .chat, !chat.searchQuery.isEmpty {
-                Button {
-                    chat.searchQuery = ""
-                } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 12))
-                        .foregroundStyle(CursorTheme.foregroundDim)
-                }
-                .buttonStyle(.plain)
+                clearSearchButton { chat.searchQuery = "" }
+            }
+            if module == .spaces, !spaces.searchQuery.isEmpty {
+                clearSearchButton { spaces.searchQuery = "" }
             }
         }
         .padding(.horizontal, 10)
@@ -139,15 +175,94 @@ struct ContentToolbarView: View {
         .clipShape(RoundedRectangle(cornerRadius: 8))
     }
 
+    private func clearSearchButton(action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: "xmark.circle.fill")
+                .font(.system(size: 12))
+                .foregroundStyle(CursorTheme.foregroundDim)
+        }
+        .buttonStyle(.plain)
+    }
+
     @ViewBuilder
     private var toolbarTrailing: some View {
         HStack(spacing: 8) {
             if module == .chat {
                 chatActions
             }
+            if module == .spaces {
+                spacesActions
+            }
 
             if !auth.workspaceMemberships.isEmpty {
                 workspaceMenu
+            }
+        }
+    }
+
+    private var spacesActions: some View {
+        HStack(spacing: 6) {
+            viewModePicker
+
+            if spaces.selectedSpace != nil {
+                toolbarIcon(
+                    spaces.selectedSpace?.isPinned == true ? "pin.fill" : "pin",
+                    tint: spaces.selectedSpace?.isPinned == true ? CursorTheme.accent : CursorTheme.foregroundMuted
+                ) {
+                    Task { await spaces.togglePinSelectedSpace() }
+                }
+                .help("Pin space")
+
+                toolbarIcon(
+                    spaces.showTaskPanel ? "sidebar.right" : "sidebar.right.fill",
+                    tint: spaces.showTaskPanel ? CursorTheme.accent : CursorTheme.foregroundMuted
+                ) {
+                    spaces.showTaskPanel.toggle()
+                }
+                .help("Task panel")
+            }
+
+            toolbarIcon(
+                spaces.spacesFocusMode ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right",
+                tint: spaces.spacesFocusMode ? CursorTheme.accent : CursorTheme.foregroundMuted
+            ) {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    spaces.spacesFocusMode.toggle()
+                }
+            }
+            .help(spaces.spacesFocusMode ? "Show sidebars" : "Focus on space")
+
+            Button {
+                Task { await spaces.reload() }
+            } label: {
+                Image(systemName: spaces.isLoading ? "arrow.triangle.2.circlepath" : "arrow.clockwise")
+                    .font(.system(size: 13))
+                    .foregroundStyle(CursorTheme.foregroundMuted)
+                    .frame(width: 28, height: 28)
+                    .background(RoundedRectangle(cornerRadius: 6).fill(CursorTheme.panelBackground))
+            }
+            .buttonStyle(.plain)
+            .help("Refresh")
+        }
+    }
+
+    private var viewModePicker: some View {
+        HStack(spacing: 2) {
+            ForEach(SpacesViewModel.TaskViewMode.allCases) { mode in
+                Button {
+                    spaces.taskView = mode
+                } label: {
+                    Image(systemName: mode.icon)
+                        .font(.system(size: 12))
+                        .foregroundStyle(spaces.taskView == mode ? CursorTheme.accent : CursorTheme.foregroundMuted)
+                        .frame(width: 28, height: 28)
+                        .background(
+                            RoundedRectangle(cornerRadius: 6)
+                                .fill(spaces.taskView == mode ? CursorTheme.accent.opacity(0.1) : CursorTheme.panelBackground)
+                        )
+                }
+                .buttonStyle(.plain)
+                .help(mode.label)
             }
         }
     }
@@ -270,7 +385,12 @@ struct ContentToolbarView: View {
                 get: { chat.searchQuery },
                 set: { chat.searchQuery = $0 }
             )
-        case .spaces, .settings:
+        case .spaces:
+            return Binding(
+                get: { spaces.searchQuery },
+                set: { spaces.searchQuery = $0 }
+            )
+        case .settings:
             return .constant("")
         }
     }
