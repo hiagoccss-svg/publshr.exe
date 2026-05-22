@@ -16,12 +16,20 @@ struct LibraryShellHeaderView: View {
     /// When hosted in `NSTitlebarAccessoryViewController`, AppKit already offsets for traffic lights.
     var reservesTrafficLightLeadingInset: Bool = true
 
+    /// Nudge row content to the traffic-light vertical center (tune per macOS release).
+    private var titlebarVerticalPadding: CGFloat {
+        reservesTrafficLightLeadingInset
+            ? AppWindowChromeMetrics.trafficLightVerticalAlignPadding
+            : 0
+    }
+
     private var rowHeight: CGFloat {
         AppWindowChromeMetrics.unifiedTitlebarRowHeight
     }
 
     var body: some View {
         titlebarRow
+            .padding(.top, titlebarVerticalPadding)
             .frame(height: rowHeight, alignment: .center)
             .frame(maxWidth: .infinity)
             .background { AppWindowChromeBackground() }
