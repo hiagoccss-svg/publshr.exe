@@ -30,7 +30,7 @@ struct GlassPrimaryBarChrome: View {
                 blendingMode: .behindWindow
             )
             LibraryGlassDesign.primaryBarGlassFill
-            CursorMacShellDesign.columnChromeBackground.opacity(0.10)
+            CursorMacShellDesign.columnChromeBackground.opacity(0.04)
         }
     }
 }

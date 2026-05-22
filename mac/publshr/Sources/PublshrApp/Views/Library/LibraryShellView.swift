@@ -52,6 +52,10 @@ struct LibraryShellView: View {
         }
     }
 
+    private var barColumnWidth: CGFloat {
+        LibraryGlassDesign.barMenuColumnWidth(expanded: tabStore.barMenuExpanded)
+    }
+
     private var shellBody: some View {
         VStack(spacing: 0) {
             ShellUnifiedTitlebar(
@@ -62,7 +66,11 @@ struct LibraryShellView: View {
             )
 
             HStack(alignment: .top, spacing: 0) {
-                ShellColumnChromeStack(showsTitlebar: false, appliesPrimaryBarGlass: true) {
+                ShellColumnChromeStack(
+                    showsTitlebar: false,
+                    columnWidth: barColumnWidth,
+                    appliesPrimaryBarGlass: true
+                ) {
                     Group {
                         if tabStore.barMenuExpanded {
                             LibraryBarMenuColumn(
@@ -77,10 +85,15 @@ struct LibraryShellView: View {
                         }
                     }
                 }
+                .layoutPriority(3)
                 .transition(.move(edge: .leading).combined(with: .opacity))
 
                 if !submenuHidden {
-                    ShellColumnChromeStack(showsTitlebar: false, appliesSidebarChrome: true) {
+                    ShellColumnChromeStack(
+                        showsTitlebar: false,
+                        columnWidth: LibraryGlassDesign.submenuColumnWidth,
+                        appliesSidebarChrome: true
+                    ) {
                         AppSecondarySidebar(
                             module: module,
                             chat: chat,
@@ -89,8 +102,7 @@ struct LibraryShellView: View {
                             showNewDM: $showNewDM
                         )
                     }
-                    .fixedSize(horizontal: true, vertical: false)
-                    .layoutPriority(2)
+                    .layoutPriority(3)
                     .transition(.move(edge: .leading).combined(with: .opacity))
                 }
 
