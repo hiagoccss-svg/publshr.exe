@@ -66,6 +66,9 @@ if [[ "$os" == "macos" ]]; then
     cp "$APP_BIN" "$STAGE/bin/PublshrApp"
     chmod 755 "$STAGE/bin/PublshrApp"
     bash "$SCRIPT_DIR/scripts/build-macos-app.sh" "$APP_BIN" "$SHORT_VERSION" "$BUILD_NUM" "$STAGE"
+    # Never ship duplicate/wrong executables in the bundle (breaks Dock launch).
+    rm -f "$STAGE/Publshr.app/Contents/MacOS/PublshrApp"
+    rm -f "$STAGE/Publshr.app/Contents/MacOS/publshr"
     INSTALLER_BIN="$SCRIPT_DIR/.build/release/PublshrInstaller"
     if [[ -f "$INSTALLER_BIN" ]]; then
         bash "$SCRIPT_DIR/scripts/build-macos-installer.sh" "$INSTALLER_BIN" "$SHORT_VERSION" "$BUILD_NUM" "$STAGE"
@@ -74,6 +77,9 @@ if [[ "$os" == "macos" ]]; then
         cp "$SCRIPT_DIR/.build/release/publshr" "$STAGE/Publshr.app/Contents/MacOS/publshr-cli"
         chmod 755 "$STAGE/Publshr.app/Contents/MacOS/publshr-cli"
         ln -sf publshr-cli "$STAGE/bin/publshr"
+    fi
+    if [[ "$(uname -s)" == "Darwin" ]]; then
+        bash "$SCRIPT_DIR/scripts/verify-macos-app-bundle.sh" "$STAGE/Publshr.app"
     fi
 fi
 

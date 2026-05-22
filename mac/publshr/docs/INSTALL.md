@@ -10,6 +10,8 @@ Publshr is a **native Swift/SwiftUI desktop app**. Users install once; updates a
 | **Publshr-install-macos.sh** | Shell script only | `https://github.com/hiagoccss-svg/publshr.exe/releases/download/live/Publshr-install-macos.sh` |
 | **Publshr-macos-aarch64.tar.gz** | Full app bundle (advanced / IT) | `https://github.com/hiagoccss-svg/publshr.exe/releases/download/live/Publshr-macos-aarch64.tar.gz` |
 
+If the app opens like a broken web/CLI bundle, the `live` release may be outdated. Re-run the installer (it will rebuild a correct native app from source), or merge latest `main` and wait for CI to republish `live`.
+
 Until the `live` release is published, use the **main** branch script:
 
 ```bash

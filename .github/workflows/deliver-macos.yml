@@ -35,7 +35,7 @@ jobs:
         env:
           PUBLSHR_BUILD_NUMBER: ${{ steps.ver.outputs.build }}
         run: |
-          chmod +x scripts/package-release.sh scripts/build-macos-app.sh scripts/build-macos-installer.sh scripts/apply-macos-update.sh scripts/generate-app-icon.swift
+          chmod +x scripts/*.sh scripts/generate-app-icon.swift
           bash scripts/package-release.sh "${{ steps.ver.outputs.full }}"
 
       - name: Verify Publshr.app in tarball
@@ -43,13 +43,18 @@ jobs:
           FULL="${{ steps.ver.outputs.full }}"
           ASSET="mac/publshr/dist/publshr-${FULL}-macos-aarch64.tar.gz"
           test -f "$ASSET"
-          tar -tzf "$ASSET" | grep -q 'Publshr.app/Contents/MacOS/Publshr'
+          TMP="$(mktemp -d)"
+          tar -xzf "$ASSET" -C "$TMP"
+          APP="$(find "$TMP" -path '*/Publshr.app' -type d | head -1)"
+          test -n "$APP"
+          bash mac/publshr/scripts/verify-macos-app-bundle.sh "$APP"
           SIZE="$(wc -c < "$ASSET" | tr -d ' ')"
           echo "Asset size: $SIZE bytes"
           if [[ "$SIZE" -lt 4000000 ]]; then
             echo "ERROR: tarball too small — expected full IDE app" >&2
             exit 1
           fi
+          rm -rf "$TMP"
 
       - name: Prepare stable live asset names
         run: |

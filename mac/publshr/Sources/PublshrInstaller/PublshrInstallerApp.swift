@@ -30,6 +30,8 @@ final class InstallerViewModel: ObservableObject {
     private let repo = ProcessInfo.processInfo.environment["PUBLSHR_REPO"] ?? "hiagoccss-svg/publshr.exe"
     private let liveURL: URL
     private let appDest = URL(fileURLWithPath: "/Applications/Publshr.app")
+    private let sourceMarker = FileManager.default.homeDirectoryForCurrentUser
+        .appendingPathComponent("Library/Application Support/Publshr/install-source.tree")
 
     init() {
         liveURL = URL(string: "https://github.com/\(repo)/releases/download/live/Publshr-macos-aarch64.tar.gz")!
@@ -40,31 +42,41 @@ final class InstallerViewModel: ObservableObject {
     }
 
     private func runInstall() async {
-        phase = .downloading
-        progress = 0.05
-        statusLine = "Downloading Publshr…"
-
         let tmp = FileManager.default.temporaryDirectory.appendingPathComponent("publshr-install-\(UUID().uuidString)")
         do {
             try FileManager.default.createDirectory(at: tmp, withIntermediateDirectories: true)
-            let archive = tmp.appendingPathComponent("Publshr-macos-aarch64.tar.gz")
 
-            let (bytes, response) = try await URLSession.shared.download(from: liveURL)
-            guard let http = response as? HTTPURLResponse, http.statusCode == 200 else {
-                throw InstallerError.downloadFailed
+            let tree: URL
+            if let bundled = loadBundledSourceTree() {
+                phase = .installing
+                progress = 0.5
+                statusLine = "Installing from downloaded package…"
+                tree = bundled
+            } else {
+                phase = .downloading
+                progress = 0.05
+                statusLine = "Downloading Publshr…"
+
+                let archive = tmp.appendingPathComponent("Publshr-macos-aarch64.tar.gz")
+                let (bytes, response) = try await URLSession.shared.download(from: liveURL)
+                guard let http = response as? HTTPURLResponse, http.statusCode == 200 else {
+                    throw InstallerError.downloadFailed
+                }
+                try FileManager.default.moveItem(at: bytes, to: archive)
+                progress = 0.45
+                statusLine = "Extracting…"
+
+                let extract = Process()
+                extract.executableURL = URL(fileURLWithPath: "/usr/bin/tar")
+                extract.arguments = ["-xzf", archive.path, "-C", tmp.path]
+                try extract.run()
+                extract.waitUntilExit()
+                guard extract.terminationStatus == 0 else { throw InstallerError.extractFailed }
+
+                guard let extracted = findAppTree(in: tmp) else { throw InstallerError.invalidPackage }
+                tree = extracted
             }
-            try FileManager.default.moveItem(at: bytes, to: archive)
-            progress = 0.45
-            statusLine = "Extracting…"
 
-            let extract = Process()
-            extract.executableURL = URL(fileURLWithPath: "/usr/bin/tar")
-            extract.arguments = ["-xzf", archive.path, "-C", tmp.path]
-            try extract.run()
-            extract.waitUntilExit()
-            guard extract.terminationStatus == 0 else { throw InstallerError.extractFailed }
-
-            guard let tree = findAppTree(in: tmp) else { throw InstallerError.invalidPackage }
             let sourceApp = tree.appendingPathComponent("Publshr.app")
             guard FileManager.default.fileExists(atPath: sourceApp.path) else {
                 throw InstallerError.invalidPackage
@@ -87,14 +99,32 @@ final class InstallerViewModel: ObservableObject {
         }
     }
 
+    private func loadBundledSourceTree() -> URL? {
+        guard let raw = try? String(contentsOf: sourceMarker, encoding: .utf8) else { return nil }
+        let path = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !path.isEmpty else { return nil }
+        let tree = URL(fileURLWithPath: path)
+        return validateAppTree(tree) ? tree : nil
+    }
+
+    private func validateAppTree(_ tree: URL) -> Bool {
+        let gui = tree.appendingPathComponent("Publshr.app/Contents/MacOS/Publshr")
+        guard FileManager.default.fileExists(atPath: gui.path) else { return false }
+        let stale = tree.appendingPathComponent("Publshr.app/Contents/MacOS/PublshrApp")
+        if FileManager.default.fileExists(atPath: stale.path) { return false }
+        if let attrs = try? FileManager.default.attributesOfItem(atPath: gui.path),
+           let size = attrs[.size] as? Int, size < 500_000 {
+            return false
+        }
+        return true
+    }
+
     private func findAppTree(in tmp: URL) -> URL? {
         guard let items = try? FileManager.default.contentsOfDirectory(at: tmp, includingPropertiesForKeys: [.isDirectoryKey]) else {
             return nil
         }
         for item in items where item.hasDirectoryPath {
-            let app = item.appendingPathComponent("Publshr.app")
-            let bin = app.appendingPathComponent("Contents/MacOS/Publshr")
-            if FileManager.default.fileExists(atPath: bin.path) { return item }
+            if validateAppTree(item) { return item }
         }
         return nil
     }

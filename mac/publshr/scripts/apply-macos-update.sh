@@ -53,6 +53,9 @@ APP_SRC="${TREE}/Publshr.app"
 if [[ ! -d "$APP_SRC" ]]; then
     APP_BIN="${TREE}/bin/PublshrApp"
     if [[ ! -f "$APP_BIN" ]]; then
+        APP_BIN="${TREE}/Publshr.app/Contents/MacOS/PublshrApp"
+    fi
+    if [[ ! -f "$APP_BIN" ]]; then
         APP_BIN="${TREE}/Publshr.app/Contents/MacOS/Publshr"
     fi
     if [[ -f "$APP_BIN" ]]; then

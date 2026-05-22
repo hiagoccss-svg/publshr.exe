@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+# Fail CI/install if Publshr.app is not a real native GUI bundle.
+set -euo pipefail
+
+APP="${1:?Usage: verify-macos-app-bundle.sh <path-to-Publshr.app>}"
+
+EXEC="${APP}/Contents/MacOS/Publshr"
+PLIST="${APP}/Contents/Info.plist"
+MIN_BYTES=500000
+
+if [[ ! -f "$PLIST" ]]; then
+    echo "ERROR: Missing Info.plist in $APP" >&2
+    exit 1
+fi
+
+BUNDLE_EXEC="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$PLIST" 2>/dev/null || true)"
+if [[ "$BUNDLE_EXEC" != "Publshr" ]]; then
+    echo "ERROR: CFBundleExecutable must be Publshr (got: ${BUNDLE_EXEC:-<unset>})" >&2
+    exit 1
+fi
+
+if [[ ! -f "$EXEC" ]]; then
+    echo "ERROR: Missing GUI binary at $EXEC" >&2
+    ls -la "${APP}/Contents/MacOS/" 2>/dev/null >&2 || true
+    exit 1
+fi
+
+if [[ -f "${APP}/Contents/MacOS/PublshrApp" ]]; then
+    echo "ERROR: Stale PublshrApp binary must not ship in MacOS/ (use Publshr only)" >&2
+    exit 1
+fi
+
+if [[ -f "${APP}/Contents/MacOS/publshr" && ! -L "${APP}/Contents/MacOS/publshr" ]]; then
+    echo "ERROR: CLI binary must not be named publshr in MacOS/ (use publshr-cli)" >&2
+    exit 1
+fi
+
+if head -1 "$EXEC" 2>/dev/null | grep -q '^#!'; then
+    echo "ERROR: CFBundleExecutable must be Mach-O, not a shell script: $EXEC" >&2
+    exit 1
+fi
+
+if [[ "$(uname -s)" == "Darwin" ]]; then
+    FILE_INFO="$(file "$EXEC")"
+    if ! grep -q 'Mach-O' <<<"$FILE_INFO"; then
+        echo "ERROR: $EXEC is not Mach-O: $FILE_INFO" >&2
+        exit 1
+    fi
+fi
+
+SIZE="$(wc -c < "$EXEC" | tr -d ' ')"
+if [[ "$SIZE" -lt "$MIN_BYTES" ]]; then
+    echo "ERROR: $EXEC too small ($SIZE bytes) — expected native GUI app (>= $MIN_BYTES)" >&2
+    exit 1
+fi
+
+echo "OK: $APP — native GUI Publshr ($SIZE bytes)" >&2

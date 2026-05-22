@@ -63,12 +63,38 @@ _publshr_tree_has_app() {
     [[ -n "$tree" && -d "${tree}/Publshr.app" && -f "$app_bin" ]]
 }
 
+# Reject broken CI bundles (CLI in bundle, shell launcher, or missing Mach-O GUI).
+_publshr_validate_native_app() {
+    local tree="$1"
+    local exec="${tree}/Publshr.app/Contents/MacOS/Publshr"
+    _publshr_tree_has_app "$tree" || return 1
+    if [[ -f "${tree}/Publshr.app/Contents/MacOS/PublshrApp" ]]; then
+        log "  Invalid bundle: stale Contents/MacOS/PublshrApp (must be Publshr only)"
+        return 1
+    fi
+    if [[ -f "${tree}/Publshr.app/Contents/MacOS/publshr" && ! -L "${tree}/Publshr.app/Contents/MacOS/publshr" ]]; then
+        log "  Invalid bundle: CLI binary must not be Contents/MacOS/publshr"
+        return 1
+    fi
+    if head -1 "$exec" 2>/dev/null | grep -q '^#!'; then
+        log "  Invalid bundle: CFBundleExecutable must not be a shell script"
+        return 1
+    fi
+    local size
+    size="$(wc -c < "$exec" | tr -d ' ')"
+    if [[ "$size" -lt 500000 ]]; then
+        log "  Invalid bundle: Publshr binary too small ($size bytes) — not the GUI app"
+        return 1
+    fi
+    return 0
+}
+
 _publshr_find_extract_tree() {
     local tmp="$1" candidate
     for candidate in "$tmp"/*; do
         [[ -d "$candidate" ]] || continue
         candidate="${candidate%/}"
-        if _publshr_tree_has_app "$candidate"; then
+        if _publshr_validate_native_app "$candidate"; then
             echo "$candidate"
             return 0
         fi
@@ -86,8 +112,9 @@ _publshr_download_live() {
     curl -fSL --progress-bar "$url" -o "$tmp/$asset"
     tar -xzf "$tmp/$asset" -C "$tmp"
     tree="$(_publshr_find_extract_tree "$tmp")" || tree=""
-    if ! _publshr_tree_has_app "$tree"; then
-        log "ERROR: Downloaded package does not contain a valid Publshr.app"
+    if ! _publshr_validate_native_app "$tree"; then
+        log "ERROR: Downloaded live package has a broken Publshr.app (not a native GUI bundle)."
+        log "  A fresh build will be compiled on this Mac, or merge latest main and wait for CI live release."
         log "  Contents of ${tmp}:"
         ls -la "$tmp" 2>/dev/null | while read -r line; do log "    $line"; done
         for candidate in "$tmp"/*; do
@@ -186,6 +213,9 @@ _publshr_require_root() {
 _publshr_try_gui_installer() {
     local tree="$1"
     if [[ -d "${tree}/PublshrInstaller.app" ]]; then
+        local marker="${HOME}/Library/Application Support/Publshr/install-source.tree"
+        mkdir -p "$(dirname "$marker")"
+        printf '%s\n' "$tree" >"$marker"
         log "Opening Publshr Installer (native UI — click Install) ..."
         open "${tree}/PublshrInstaller.app"
         return 0
@@ -203,7 +233,11 @@ publshr_install_main() {
     local tree="" cleanup=""
     if _publshr_live_exists; then
         tree="$(_publshr_download_live)" || tree=""
-        if _publshr_tree_has_app "$tree" && _publshr_try_gui_installer "$tree"; then
+        if [[ -n "$tree" ]] && ! _publshr_validate_native_app "$tree"; then
+            log "Live GitHub release is outdated or broken — building a correct native app locally ..."
+            tree="$(_publshr_build_from_github)" || tree=""
+        fi
+        if _publshr_validate_native_app "$tree" && _publshr_try_gui_installer "$tree"; then
             cleanup="$(dirname "$tree")"
             [[ "$cleanup" == /tmp/* ]] && rm -rf "$cleanup" || true
             exit 0
@@ -221,8 +255,8 @@ publshr_install_main() {
         fi
     fi
 
-    if ! _publshr_tree_has_app "$tree"; then
-        log "ERROR: Could not prepare a valid Publshr.app package."
+    if ! _publshr_validate_native_app "$tree"; then
+        log "ERROR: Could not prepare a valid native Publshr.app (Mach-O GUI in Contents/MacOS/Publshr)."
         exit 1
     fi
 
