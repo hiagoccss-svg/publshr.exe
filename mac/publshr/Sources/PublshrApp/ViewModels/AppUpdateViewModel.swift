@@ -16,25 +16,15 @@ final class AppUpdateViewModel: ObservableObject {
     }
 
     @Published private(set) var phase: Phase = .idle
-    @AppStorage("publshr.autoCheckUpdates") private var storedAutoCheck = true
-    @AppStorage("publshr.autoInstallUpdates") private var storedAutoInstall = true
+    @Published private(set) var lastSyncLine: String = "Waiting for first sync…"
+    @AppStorage("publshr.autoCheckUpdates") var autoCheckEnabled = true
+    @AppStorage("publshr.autoInstallUpdates") var autoInstallEnabled = true
 
     private let service = AppUpdateService.shared
     private var checkTask: Task<Void, Never>?
 
     /// Poll interval for GitHub `live` channel (every push to main publishes there).
     private static let livePollSeconds: UInt64 = 60
-
-    /// Live updates are always on — storage keys kept for migration only.
-    var autoCheckEnabled: Bool {
-        get { true }
-        set { storedAutoCheck = true }
-    }
-
-    var autoInstallEnabled: Bool {
-        get { true }
-        set { storedAutoInstall = true }
-    }
 
     var hasPendingUpdate: Bool {
         switch phase {
@@ -79,7 +69,7 @@ final class AppUpdateViewModel: ObservableObject {
         case .downloading(let progress):
             return "Downloading update… \(Int(progress * 100))%"
         case .readyToInstall(let update):
-            return "Preparing version \(update.version)…"
+            return "Ready to install \(update.version)"
         case .installing:
             return "Installing update…"
         case .failed(let message):
@@ -112,38 +102,59 @@ final class AppUpdateViewModel: ObservableObject {
     }
 
     func startAutomaticChecks() {
-        storedAutoCheck = true
-        storedAutoInstall = true
+        guard autoCheckEnabled else { return }
         checkTask?.cancel()
         checkTask = Task {
             await performLiveSync()
             while !Task.isCancelled {
                 try? await Task.sleep(nanoseconds: Self.livePollSeconds * 1_000_000_000)
+                guard autoCheckEnabled else { continue }
                 await performLiveSync()
             }
         }
     }
 
-    /// Background path: check, download, install — failures are logged only (no workspace banner).
+    func stopAutomaticChecks() {
+        checkTask?.cancel()
+        checkTask = nil
+    }
+
+    /// Background path: check, download, install when auto-install is on.
     func performLiveSync() async {
+        guard autoCheckEnabled else {
+            lastSyncLine = "Auto-check is off"
+            return
+        }
         if case .installing = phase { return }
         if case .downloading = phase { return }
 
         await checkForUpdates(silent: true)
-        if case .failed = phase {
-            phase = .upToDate
+        if case .failed(let message) = phase {
+            lastSyncLine = "Sync failed — \(message)"
+            phase = .idle
             return
         }
 
         if case .available = phase {
             await downloadUpdate(silent: true)
         }
-        if case .failed = phase {
-            phase = .upToDate
+        if case .failed(let message) = phase {
+            lastSyncLine = "Download failed — \(message)"
+            phase = .idle
             return
         }
+
         if case .readyToInstall = phase {
-            await installAndRestart()
+            if autoInstallEnabled {
+                await installAndRestart()
+            } else {
+                lastSyncLine = "Update ready — enable auto-install or tap Install"
+            }
+            return
+        }
+
+        if case .upToDate = phase {
+            lastSyncLine = "Up to date · checked \(Self.timeStamp())"
         }
     }
 
@@ -151,6 +162,7 @@ final class AppUpdateViewModel: ObservableObject {
     func installLiveUpdateNow() async {
         if case .installing = phase { return }
         if case .failed = phase { phase = .idle }
+        lastSyncLine = "Syncing live channel…"
         await updateNow()
     }
 
@@ -163,13 +175,20 @@ final class AppUpdateViewModel: ObservableObject {
         if case .downloading = phase { return }
         if case .installing = phase { return }
         if !silent { phase = .checking }
+        if silent { lastSyncLine = "Checking live channel…" }
 
         do {
             if let update = try await service.checkForUpdate() {
                 if case .readyToInstall = phase { return }
                 phase = .available(update)
+                if silent {
+                    lastSyncLine = "Update \(update.version) available — downloading…"
+                }
             } else {
                 phase = .upToDate
+                if silent {
+                    lastSyncLine = "Up to date · checked \(Self.timeStamp())"
+                }
             }
         } catch {
             setFailure(error, silent: silent)
@@ -188,6 +207,7 @@ final class AppUpdateViewModel: ObservableObject {
         }
 
         phase = .downloading(progress: 0)
+        if silent { lastSyncLine = "Downloading \(update.version)…" }
 
         do {
             let archiveURL = try await service.download(update) { progress in
@@ -199,6 +219,7 @@ final class AppUpdateViewModel: ObservableObject {
             }
             _ = try service.extract(archiveURL: archiveURL, version: update.version)
             phase = .readyToInstall(update)
+            if silent { lastSyncLine = "Downloaded \(update.version) — installing…" }
         } catch {
             setFailure(error, silent: silent)
         }
@@ -236,6 +257,7 @@ final class AppUpdateViewModel: ObservableObject {
         guard case .readyToInstall(let update) = phase else { return }
 
         phase = .installing
+        lastSyncLine = "Installing \(update.version)…"
         do {
             let updatesRoot = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
                 .appendingPathComponent("Publshr/updates", isDirectory: true)
@@ -248,10 +270,20 @@ final class AppUpdateViewModel: ObservableObject {
     }
 
     private func setFailure(_ error: Error, silent: Bool) {
+        let message = error.localizedDescription
         if silent {
-            phase = .upToDate
+            lastSyncLine = "Sync failed — \(message)"
+            phase = .idle
             return
         }
-        phase = .failed(error.localizedDescription)
+        phase = .failed(message)
+        lastSyncLine = message
+    }
+
+    private static func timeStamp() -> String {
+        let formatter = DateFormatter()
+        formatter.timeStyle = .short
+        formatter.dateStyle = .none
+        return formatter.string(from: Date())
     }
 }

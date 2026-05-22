@@ -185,6 +185,11 @@ enum CursorTheme {
     static let workspaceTabSpacing: CGFloat = 6
     static let workspaceTabHorizontalPadding: CGFloat = 10
     static let workspaceTabCornerRadius: CGFloat = 7
+    /// Hairline separators (sidebars, header, composer).
+    static let hairlineOpacity: Double = 0.45
+    static var hairline: Color { border.opacity(hairlineOpacity) }
+    /// Activity icons align with the workspace header row under traffic lights.
+    static let activityBarIconBandHeight: CGFloat = 44
 }
 
 extension Color {

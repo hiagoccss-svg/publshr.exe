@@ -31,6 +31,11 @@ enum AppReleaseConfig {
         Bundle.main.object(forInfoDictionaryKey: "PublshrLiveCommit") as? String ?? ""
     }
 
+    /// SHA-256 of the live tarball at build time (line 4 of VERSION.txt when present).
+    static var livePackageDigest: String {
+        Bundle.main.object(forInfoDictionaryKey: "PublshrLivePackageDigest") as? String ?? ""
+    }
+
     static var installedLabel: String {
         "\(liveFullVersion) · build \(buildNumber)"
     }

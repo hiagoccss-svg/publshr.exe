@@ -12,14 +12,17 @@ struct ChatSidebarView: View {
     var body: some View {
         VStack(spacing: 0) {
             ScrollView {
-                VStack(alignment: .leading, spacing: 6) {
+                VStack(alignment: .leading, spacing: 0) {
                     sidebarSection("Favorites", items: chat.favoriteChannels, onAdd: nil)
+                    NavSidebarDivider()
                     sidebarSection("Channels", items: chat.filteredChannels, onAdd: { showNewChannel = true })
+                    NavSidebarDivider()
                     sidebarSection("Direct Messages", items: chat.filteredDMs, onAdd: { showNewDM = true })
+                    NavSidebarDivider()
                     projectsSection
                 }
-                .padding(.vertical, 6)
-                .padding(.horizontal, 2)
+                .padding(.vertical, 8)
+                .padding(.horizontal, 4)
             }
         }
         .frame(maxHeight: .infinity)
@@ -139,13 +142,18 @@ struct ChatSidebarView: View {
                             .clipShape(Capsule())
                     }
                 }
-                .frame(height: 30)
+                .frame(height: 28)
                 .padding(.horizontal, 10)
                 .background(
-                    RoundedRectangle(cornerRadius: 6, style: .continuous)
-                        .fill(selected ? Color.white : Color.clear)
-                        .shadow(color: selected ? Color.black.opacity(0.04) : .clear, radius: 4, y: 1)
+                    selected ? CursorTheme.accent.opacity(0.08) : Color.clear
                 )
+                .overlay(alignment: .leading) {
+                    if selected {
+                        Rectangle()
+                            .fill(CursorTheme.accent)
+                            .frame(width: 2)
+                    }
+                }
             }
             .buttonStyle(.plain)
 
@@ -162,7 +170,7 @@ struct ChatSidebarView: View {
             Image(systemName: "ellipsis")
                 .font(.system(size: 11))
                 .foregroundStyle(CursorTheme.foregroundDim)
-                .frame(width: 24, height: 30)
+                .frame(width: 24, height: 28)
         }
         .menuStyle(.borderlessButton)
         .menuIndicator(.hidden)

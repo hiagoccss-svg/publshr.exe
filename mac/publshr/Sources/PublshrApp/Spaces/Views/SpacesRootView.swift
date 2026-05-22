@@ -17,7 +17,7 @@ struct SpacesRootView: View {
                         .fill(CursorTheme.borderSubtle)
                         .frame(width: 1)
                     SpacesTaskDetailPanel(spaces: spaces)
-                        .frame(width: 320)
+                        .frame(width: SpacesClickUpDesign.inspectorWidth)
                 }
             }
         }

@@ -85,13 +85,15 @@ struct ChatVoicePlaybackRow: View {
                 Text(formatDuration(durationMs))
                     .font(.system(size: 12, weight: .medium))
                 Spacer()
-                Picker("Speed", selection: $playbackRate) {
-                    Text("1×").tag(1.0)
-                    Text("1.5×").tag(1.5)
-                    Text("2×").tag(2.0)
+                HStack(spacing: 4) {
+                    ForEach([(1.0, "1×"), (1.5, "1.5×"), (2.0, "2×")], id: \.0) { rate, label in
+                        Button(label) { playbackRate = rate }
+                            .font(.system(size: 10, weight: playbackRate == rate ? .semibold : .regular))
+                            .foregroundStyle(playbackRate == rate ? CursorTheme.accent : CursorTheme.foregroundMuted)
+                            .buttonStyle(.plain)
+                    }
                 }
-                .pickerStyle(.segmented)
-                .frame(width: 140)
+                .fixedSize()
             }
             if let transcript {
                 Text(transcript)
@@ -99,9 +101,12 @@ struct ChatVoicePlaybackRow: View {
                     .foregroundStyle(CursorTheme.foregroundMuted)
             }
         }
-        .padding(10)
-        .background(CursorTheme.inputBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .padding(.vertical, 8)
+        .overlay(alignment: .top) {
+            Rectangle()
+                .fill(CursorTheme.hairline)
+                .frame(height: 1)
+        }
     }
 
     private func formatDuration(_ ms: Int) -> String {

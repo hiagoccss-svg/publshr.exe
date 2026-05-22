@@ -31,8 +31,10 @@ struct ChatComposerView: View {
                     .lineLimit(1...6)
                     .padding(.horizontal, 12)
                     .padding(.vertical, 8)
-                    .background(CursorTheme.editorLineHighlight.opacity(0.45))
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .strokeBorder(CursorTheme.hairline, lineWidth: 1)
+                    )
                     .onChange(of: chat.composerText) { _, _ in
                         chat.composerActivityChanged()
                     }
@@ -57,6 +59,11 @@ struct ChatComposerView: View {
             .padding(.top, 6)
         }
         .background(CursorTheme.chatBackground)
+        .overlay(alignment: .top) {
+            Rectangle()
+                .fill(CursorTheme.hairline)
+                .frame(height: 1)
+        }
     }
 
     private func composerIcon(_ systemName: String, action: @escaping () -> Void) -> some View {

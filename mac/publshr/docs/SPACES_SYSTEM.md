@@ -10,25 +10,36 @@ Apply the schema once per Supabase project:
 # File: mac/publshr/supabase/migrations/001_spaces_schema.sql
 ```
 
-## Architecture
+## Architecture (ClickUp hierarchy)
 
 ```
-Activity bar → Spaces sidebar (List, native) → Toolbar → Workspace (Board / List / Overview) → Inspector
+Workspace → Space → (optional) Folder → List → Tasks
+                              └─ Docs (space-level)
+```
+
+```
+Activity bar → Spaces sidebar (spaces + folder/list/doc tree) → Breadcrumbs + Views bar → Board / List / Calendar / Overview → Inspector
 ```
 
 | Layer | File |
 |-------|------|
-| UI | `Spaces/Views/*` |
-| State | `SpacesViewModel.swift` |
+| UI | `Spaces/Views/*`, `SpacesClickUpDesign.swift` |
+| Breadcrumbs / views | `SpacesBreadcrumbBar.swift`, `SpacesViewsBar.swift`, `SpacesHierarchyTreeView.swift` |
+| State | `SpacesViewModel.swift`, `SpacesBreadcrumb.swift` |
 | API + realtime | `SpacesService.swift` |
-| Offline cache | `Spaces/Services/SpacesLocalStore.swift` |
-| Native chrome | `SpacesNativeDesign.swift` |
+| Offline cache | `Spaces/Services/SpacesLocalStore.swift` (wired on load failure) |
+| Layout tokens | `SpacesClickUpDesign.swift` — sidebar 272pt, inspector 340pt, board columns 280pt |
+
+Apply enterprise schema: `supabase/migrations/20260522010000_spaces_clickup_enterprise.sql`
 
 ## Live features
 
-- Spaces CRUD, pin, search
-- Tasks: full edit, drag-and-drop board, archive
-- Comments, activity log, documents (editor sheet), approvals list, files list
-- Realtime: tasks, spaces, comments
-- Offline: cached spaces/tasks when network fails
+- **Spaces** CRUD, pin, search; sidebar 272pt with pinned sections
+- **Folders** create (auto-creates default List, ClickUp-style); expand/collapse tree
+- **Lists** create in space or folder; filter tasks by list; “All tasks” view
+- **Tasks** board (280pt columns), list, calendar, overview; drag status; inspector 340pt
+- **Documents** create, sidebar + overview links, editor sheet (560×520)
+- **Comments**, activity log, assignee, priority, due, tags, checklist
+- Realtime: tasks, spaces
+- Offline: SQLite cache for spaces/tasks when network fails
 - Focus mode, back/forward navigation, menu commands (⌘⇧N space, ⌘⇧T task)

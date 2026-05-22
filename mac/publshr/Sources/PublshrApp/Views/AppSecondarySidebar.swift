@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// White secondary column (channels, spaces) — full window height, like Cursor.
+/// White secondary column (channels, spaces) — aligned below the workspace header.
 struct AppSecondarySidebar: View {
     var module: AppModule
     @ObservedObject var chat: ChatViewModel
@@ -12,6 +12,14 @@ struct AppSecondarySidebar: View {
     var body: some View {
         VStack(spacing: 0) {
             Color.clear.frame(height: topInset)
+
+            Color.clear
+                .frame(height: CursorTheme.workspaceHeaderHeight)
+                .overlay(alignment: .bottom) {
+                    Rectangle()
+                        .fill(CursorTheme.hairline)
+                        .frame(height: 1)
+                }
 
             Group {
                 switch module {
@@ -29,22 +37,13 @@ struct AppSecondarySidebar: View {
             }
             .frame(maxHeight: .infinity)
         }
-        .frame(width: CursorTheme.navSidebarWidth)
+        .frame(width: module == .spaces ? SpacesClickUpDesign.sidebarWidth : CursorTheme.navSidebarWidth)
         .frame(maxHeight: .infinity)
-        .background(sidebarBackground)
+        .background(CursorTheme.navSidebar)
         .overlay(alignment: .trailing) {
             Rectangle()
-                .fill(CursorTheme.border.opacity(0.4))
+                .fill(CursorTheme.hairline)
                 .frame(width: 1)
-        }
-    }
-
-    @ViewBuilder
-    private var sidebarBackground: some View {
-        if module == .chat {
-            ChatNavSidebarBackground()
-        } else {
-            CursorTheme.navSidebar
         }
     }
 }

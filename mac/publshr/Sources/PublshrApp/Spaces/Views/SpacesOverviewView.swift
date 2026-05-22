@@ -5,7 +5,7 @@ struct SpacesOverviewView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
+            VStack(alignment: .leading, spacing: SpacesClickUpDesign.overviewSectionSpacing) {
                 if let space = spaces.selectedSpace {
                     header(space)
                 }
@@ -16,7 +16,7 @@ struct SpacesOverviewView: View {
 
                 activitySection
             }
-            .padding(20)
+            .padding(SpacesClickUpDesign.overviewPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
@@ -69,7 +69,7 @@ struct SpacesOverviewView: View {
                         .font(.system(size: 11))
                         .frame(width: 120)
                     Button("Add") {
-                        Task { await spaces.createDocument() }
+                        Task { await spaces.createDocument(openEditor: true) }
                     }
                     .controlSize(.small)
                     .disabled(spaces.newDocumentTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
@@ -81,23 +81,32 @@ struct SpacesOverviewView: View {
                     .font(.system(size: 11))
                     .foregroundStyle(CursorTheme.foregroundDim)
             } else {
-                ForEach(spaces.documents.prefix(6)) { doc in
-                    HStack(spacing: 8) {
-                        Image(systemName: "doc.text")
-                            .font(.system(size: 12))
-                            .foregroundStyle(CursorTheme.accent)
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(doc.title)
-                                .font(.system(size: 12, weight: .medium))
-                            Text(doc.docType)
+                ForEach(spaces.documents.prefix(8)) { doc in
+                    Button {
+                        spaces.editingDocument = doc
+                    } label: {
+                        HStack(spacing: 10) {
+                            Image(systemName: "doc.text.fill")
+                                .font(.system(size: 13))
+                                .foregroundStyle(CursorTheme.accent)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(doc.title)
+                                    .font(.system(size: 13, weight: .medium))
+                                    .foregroundStyle(CursorTheme.foreground)
+                                Text(doc.docType.capitalized)
+                                    .font(.system(size: 10))
+                                    .foregroundStyle(CursorTheme.foregroundDim)
+                            }
+                            Spacer()
+                            Image(systemName: "chevron.right")
                                 .font(.system(size: 10))
                                 .foregroundStyle(CursorTheme.foregroundDim)
                         }
-                        Spacer()
+                        .padding(SpacesClickUpDesign.docRowPadding)
+                        .background(CursorTheme.panelBackground)
+                        .clipShape(RoundedRectangle(cornerRadius: SpacesClickUpDesign.docRowRadius))
                     }
-                    .padding(10)
-                    .background(CursorTheme.panelBackground)
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                    .buttonStyle(.plain)
                 }
             }
         }
@@ -146,9 +155,9 @@ struct SpacesOverviewView: View {
                 .font(.system(size: 22, weight: .medium))
                 .foregroundStyle(CursorTheme.foreground)
         }
-        .padding(14)
+        .padding(SpacesClickUpDesign.metricCardPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(CursorTheme.panelBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 10))
+        .clipShape(RoundedRectangle(cornerRadius: SpacesClickUpDesign.metricCardRadius))
     }
 }
