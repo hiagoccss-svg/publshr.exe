@@ -260,6 +260,23 @@ struct SpaceDocumentRecord: Codable, Identifiable, Equatable {
     }
 }
 
+/// Collaborative canvas (tldraw snapshot stored in Supabase `whiteboards.snapshot`).
+struct SpaceWhiteboardRecord: Codable, Identifiable, Equatable {
+    let id: UUID
+    let workspaceId: UUID
+    let spaceId: UUID
+    var name: String
+    var updatedAt: Date?
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case workspaceId = "workspace_id"
+        case spaceId = "space_id"
+        case name
+        case updatedAt = "updated_at"
+    }
+}
+
 struct SpaceTaskPatch: Encodable {
     var title: String?
     var description: String?

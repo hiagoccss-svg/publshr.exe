@@ -38,6 +38,7 @@ Apply enterprise schema: `supabase/migrations/20260522010000_spaces_clickup_ente
 - **Folders** create (auto-creates default List, ClickUp-style); expand/collapse tree; rename API
 - **Lists** create in space or folder; filter tasks by list; “All tasks” view; rename API
 - **Tasks** board (280pt columns), list, calendar, overview; drag status; inspector 340pt
+- **Whiteboards** — infinite canvas per space (tldraw + Supabase); see `WHITEBOARD_SYSTEM.md`
 - **Documents** create, sidebar + overview links, editor sheet (560×520)
 - **Comments**, activity log, assignee, priority, due, tags, checklist
 - Realtime: tasks, spaces

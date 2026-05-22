@@ -1,0 +1,1 @@
+-- See supabase/migrations/20260522140000_whiteboards_enterprise.sql (apply that file on the shared Supabase project).

@@ -7,11 +7,13 @@ import { CalendarView } from '../tasks/CalendarView'
 import { EmptySpaceState } from '../spaces/EmptySpaceState'
 import { PlaceholderSection } from '../spaces/PlaceholderSection'
 import { SpacesBreadcrumb } from '../spaces/SpacesBreadcrumb'
+import { WhiteboardView } from '../whiteboard/WhiteboardView'
 
-const VIEW_TABS: { id: 'overview' | 'list' | 'board' | 'calendar' | 'timeline' | 'workload' | 'priority'; label: string }[] = [
+const VIEW_TABS: { id: 'overview' | 'list' | 'board' | 'calendar' | 'timeline' | 'workload' | 'priority' | 'whiteboard'; label: string }[] = [
   { id: 'overview', label: 'Overview' },
   { id: 'list', label: 'List' },
   { id: 'board', label: 'Board' },
+  { id: 'whiteboard', label: 'Whiteboard' },
   { id: 'calendar', label: 'Calendar' },
   { id: 'timeline', label: 'Timeline' },
   { id: 'workload', label: 'Workload' },
@@ -64,6 +66,7 @@ export function WorkspaceArea(): React.ReactElement {
         {taskView === 'list' && <TaskListView />}
         {taskView === 'board' && <TaskBoardView />}
         {taskView === 'calendar' && <CalendarView />}
+        {taskView === 'whiteboard' && <WhiteboardView />}
         {(taskView === 'timeline' || taskView === 'workload' || taskView === 'priority') && (
           <PhasePlaceholder view={taskView} />
         )}

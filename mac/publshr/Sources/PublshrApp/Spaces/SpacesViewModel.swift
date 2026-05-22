@@ -9,6 +9,8 @@ final class SpacesViewModel: ObservableObject {
     @Published private(set) var tasks: [SpaceTaskRecord] = []
     @Published private(set) var activity: [SpaceActivityRecord] = []
     @Published private(set) var documents: [SpaceDocumentRecord] = []
+    @Published private(set) var whiteboards: [SpaceWhiteboardRecord] = []
+    @Published var selectedWhiteboardId: UUID?
     @Published private(set) var comments: [SpaceCommentRecord] = []
     @Published var profiles: [UUID: Profile] = [:]
 
@@ -37,7 +39,7 @@ final class SpacesViewModel: ObservableObject {
     @Published var expandedFolderIds: Set<UUID> = []
 
     enum TaskViewMode: String, CaseIterable, Identifiable {
-        case overview, list, board, calendar
+        case overview, list, board, whiteboard, calendar
         var id: String { rawValue }
 
         var label: String {
@@ -45,6 +47,7 @@ final class SpacesViewModel: ObservableObject {
             case .overview: return "Overview"
             case .list: return "List"
             case .board: return "Board"
+            case .whiteboard: return "Whiteboard"
             case .calendar: return "Calendar"
             }
         }
@@ -54,6 +57,7 @@ final class SpacesViewModel: ObservableObject {
             case .overview: return "square.grid.2x2"
             case .list: return "list.bullet"
             case .board: return "rectangle.split.3x1"
+            case .whiteboard: return "scribble.variable"
             case .calendar: return "calendar"
             }
         }
@@ -198,6 +202,7 @@ final class SpacesViewModel: ObservableObject {
         await loadTasks(for: spaceId)
         await loadActivity(for: spaceId)
         await loadDocuments(for: spaceId)
+        await loadWhiteboards(for: spaceId)
     }
 
     func loadHierarchy(for spaceId: UUID) async {
@@ -400,6 +405,39 @@ final class SpacesViewModel: ObservableObject {
             documents = try await service.fetchDocuments(spaceId: spaceId)
         } catch {
             documents = []
+        }
+    }
+
+    func loadWhiteboards(for spaceId: UUID) async {
+        guard let service else { return }
+        do {
+            whiteboards = try await service.fetchWhiteboards(spaceId: spaceId)
+            if selectedWhiteboardId == nil {
+                selectedWhiteboardId = whiteboards.first?.id
+            }
+        } catch {
+            whiteboards = []
+        }
+    }
+
+    func createWhiteboard() async {
+        guard let service,
+              let workspaceId,
+              let spaceId = selectedSpaceId,
+              let userId else { return }
+        let name = "Whiteboard \(whiteboards.count + 1)"
+        do {
+            let board = try await service.createWhiteboard(
+                workspaceId: workspaceId,
+                spaceId: spaceId,
+                name: name,
+                createdBy: userId
+            )
+            whiteboards.insert(board, at: 0)
+            selectedWhiteboardId = board.id
+            taskView = .whiteboard
+        } catch {
+            errorMessage = error.localizedDescription
         }
     }
 
