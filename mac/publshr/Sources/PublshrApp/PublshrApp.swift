@@ -36,10 +36,7 @@ struct PublshrApp: App {
                 }
                 .onChange(of: auth.flowState) { _, state in
                     if state == .signedIn {
-                        Task {
-                            await updates.performLiveSync()
-                            await syncEnterpriseServices()
-                        }
+                        Task { await performFullSync() }
                     } else {
                         calls.detach()
                     }
@@ -48,7 +45,7 @@ struct PublshrApp: App {
                     Task { await syncEnterpriseServices() }
                 }
                 .onReceive(NotificationCenter.default.publisher(for: .publshrPerformLiveSync)) { _ in
-                    Task { await updates.performLiveSync() }
+                    Task { await performFullSync() }
                 }
         }
         .windowStyle(.hiddenTitleBar)
@@ -101,6 +98,17 @@ struct PublshrApp: App {
     }
 
     @MainActor
+    private func performFullSync() async {
+        await updates.performLiveSync()
+        guard auth.flowState == .signedIn else { return }
+        await auth.refreshSupabaseConnection()
+        await chat.refreshAfterReconnect()
+        await spaces.reload()
+        await chat.loadPlannerTasks()
+        await syncEnterpriseServices()
+    }
+
+    @MainActor
     private func syncEnterpriseServices() async {
         guard auth.flowState == .signedIn else { return }
         await subscription.refresh(client: auth.client, workspace: auth.selectedWorkspace)
@@ -134,18 +142,10 @@ struct PublshrApp: App {
             chat.selectChannelById(channelId)
         }
         AppLifecycleService.shared.onWake = {
-            Task {
-                await chat.refreshAfterReconnect()
-                await spaces.reload()
-                await updates.performLiveSync()
-            }
+            Task { await performFullSync() }
         }
         AppLifecycleService.shared.onNetworkRestored = {
-            Task {
-                await chat.refreshAfterReconnect()
-                await spaces.reload()
-                await updates.performLiveSync()
-            }
+            Task { await performFullSync() }
         }
         AppLifecycleService.shared.start()
     }

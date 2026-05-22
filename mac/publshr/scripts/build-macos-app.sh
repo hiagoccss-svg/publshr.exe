@@ -9,6 +9,7 @@ OUT_DIR="${4:-.}"
 GITHUB_REPO="${PUBLSHR_GITHUB_REPO:-hiagoccss-svg/publshr.exe}"
 LIVE_VERSION="${PUBLSHR_LIVE_VERSION:-${SHORT_VERSION}.${BUILD}}"
 COMMIT_SHA="${PUBLSHR_COMMIT_SHA:-local}"
+LIVE_DIGEST="${PUBLSHR_LIVE_DIGEST:-}"
 
 APP_NAME="Publshr.app"
 APP_ROOT="${OUT_DIR}/${APP_NAME}"
@@ -28,6 +29,7 @@ sed -e "s#@@SHORT_VERSION@@#${SHORT_VERSION}#g" \
     -e "s#@@GITHUB_REPO@@#${GITHUB_REPO}#g" \
     -e "s#@@LIVE_VERSION@@#${LIVE_VERSION}#g" \
     -e "s#@@COMMIT_SHA@@#${COMMIT_SHA}#g" \
+    -e "s#@@LIVE_DIGEST@@#${LIVE_DIGEST}#g" \
     "${SCRIPT_DIR}/../app/Info.plist.template" >"${APP_ROOT}/Contents/Info.plist"
 
 if [[ "$(uname -s)" == "Darwin" ]]; then
