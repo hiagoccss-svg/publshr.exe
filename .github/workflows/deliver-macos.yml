@@ -1,0 +1,72 @@
+# Build and publish a macOS Publshr.app release on every push to main.
+# The installed app checks GitHub Releases and applies updates automatically.
+name: Deliver macOS app
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "mac/publshr/**"
+      - ".github/workflows/deliver-macos.yml"
+      - "install-publshr.sh"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-macos:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compute version
+        id: ver
+        run: |
+          BASE="$(tr -d '[:space:]' < mac/publshr/VERSION)"
+          BUILD="${GITHUB_RUN_NUMBER}"
+          FULL="${BASE}.${BUILD}"
+          echo "base=$BASE" >> "$GITHUB_OUTPUT"
+          echo "build=$BUILD" >> "$GITHUB_OUTPUT"
+          echo "full=$FULL" >> "$GITHUB_OUTPUT"
+          echo "tag=v${FULL}" >> "$GITHUB_OUTPUT"
+
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode.app
+
+      - name: Package macOS release
+        working-directory: mac/publshr
+        env:
+          PUBLSHR_BUILD_NUMBER: ${{ steps.ver.outputs.build }}
+        run: |
+          chmod +x scripts/package-release.sh scripts/build-macos-app.sh scripts/apply-macos-update.sh
+          bash scripts/package-release.sh "${{ steps.ver.outputs.full }}"
+
+      - name: Upload release asset
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ steps.ver.outputs.tag }}"
+          FULL="${{ steps.ver.outputs.full }}"
+          ASSET="mac/publshr/dist/publshr-${FULL}-macos-aarch64.tar.gz"
+          if [[ ! -f "$ASSET" ]]; then
+            echo "Expected asset missing: $ASSET" >&2
+            ls -la mac/publshr/dist/ >&2 || true
+            exit 1
+          fi
+          if gh release view "$TAG" --repo "${{ github.repository }}" >/dev/null 2>&1; then
+            gh release upload "$TAG" "$ASSET" --repo "${{ github.repository }}" --clobber
+          else
+            gh release create "$TAG" \
+              --repo "${{ github.repository }}" \
+              --title "Publshr ${FULL}" \
+              --notes "Automatic build from \`${{ github.sha }}\` on \`${{ github.ref_name }}\`.
+
+Install once:
+\`\`\`bash
+curl -fsSL https://raw.githubusercontent.com/${{ github.repository }}/main/install-publshr.sh | bash
+\`\`\`
+
+After that, **Publshr updates itself** when you push to \`main\` — no Terminal reinstall." \
+              "$ASSET"
+          fi
