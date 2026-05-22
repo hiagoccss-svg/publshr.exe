@@ -85,7 +85,8 @@ struct ShellUnifiedTitlebar: View {
         Group {
             if module == .chat {
                 ChatEditorToolbarContent(
-                    showCommandPalette: $showCommandPalette
+                    showCommandPalette: $showCommandPalette,
+                    showNotificationsPanel: $showNotificationsPanel
                 )
                 .padding(.leading, CursorMacShellDesign.editorHorizontalPadding)
                 .padding(.trailing, 14)

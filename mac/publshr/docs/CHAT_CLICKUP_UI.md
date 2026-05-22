@@ -66,12 +66,7 @@ Active layout label appears next to the toggles. Preference keys: `publshr.chat.
 
 ## Conversation column
 
-<<<<<<< HEAD
-- **Editor header** — channel title, in-channel search, command palette, settings, profile (typing in composer area).
-- **Composer** — placeholder `Message {channel}…`, attach, voice, send (⌘↩).
-- **Unread** — bold sidebar row; numeric badge on the right; thread icon for unread thread replies.
-=======
-- **Status bar** — back/forward, channel icon, title (opens settings), typing, pop-out, focus, AI, search, pinned, **⋯** submenu.
+- **Unified titlebar (chat)** — channel title, in-channel search, command palette, settings (`ChatEditorToolbarContent`).
 - **Composer toolbar** — @mention, emoji, attach, voice, schedule (placeholder), channel label.
 - **Composer** — `Message {channel}…`, send (⌘↩).
 - **Unread** — bold sidebar row; numeric badge; thread icon for unread thread replies.
@@ -87,7 +82,6 @@ Per [Notification settings](https://help.clickup.com/hc/en-us/articles/632591895
 - **Default for new channels** — `all` | `mentions` | `muted` (UserDefaults `publshr.chat.defaultNotificationLevel`)
 - **Current channel** — quick All / Mentions / Mute (updates `chat_channel_members.notification_level`)
 - **Mark all conversations read**
->>>>>>> origin/main
 
 ## Keyboard shortcuts
 
@@ -110,19 +104,18 @@ Per [Notification settings](https://help.clickup.com/hc/en-us/articles/632591895
 |------|------|
 | `Chat/Utilities/ChatClickUpDesign.swift` | Layout tokens, filter/layout enums |
 | `Chat/Views/ChatSidebarTitlebarChrome.swift` | Search in submenu titlebar row |
-<<<<<<< HEAD
-| `Chat/Views/ChatSidebarView.swift` | ClickUp sidebar (filters, sections, flat footer) |
-| `Views/Titlebar/ChatEditorHeaderBar.swift` | Chat editor column titlebar |
-| `Theme/AppWindowChrome.swift` | `TitlebarToolbarRow` / `TitlebarToolbarSlot` alignment |
-=======
 | `Chat/Views/ChatSidebarView.swift` | Filters, sections, flat footer + settings gear |
+| `Views/Titlebar/ShellUnifiedTitlebar.swift` | Full-width titlebar (traffic-light alignment) |
+| `Views/Titlebar/TrafficLightLayoutStore.swift` | Measures system close/minimize/zoom geometry |
+| `Views/Titlebar/ChatEditorHeaderBar.swift` | `ChatEditorToolbarContent` for chat column |
+| `Theme/AppWindowChrome.swift` | `TitlebarToolbarRow` / `TitlebarToolbarSlot` alignment |
 | `Chat/Views/ChatNotificationSettingsSheet.swift` | Notification defaults sheet |
 | `Chat/Models/ChatInAppNotification.swift` | In-app notification feed items |
 | `Chat/Services/ChatNotificationService.swift` | macOS Notification Center delivery |
 | `Chat/Views/ChatComposerView.swift` | Composer toolbar |
-| `Chat/Views/ChatEnterpriseUI.swift` | Status bar, typing indicator |
+| `Chat/Views/ChatEnterpriseUI.swift` | Typing indicator |
 | `Chat/Views/ChatChannelActionsMenu.swift` | Row + toolbar actions |
->>>>>>> origin/main
+| `Views/Library/LibraryBarMenuIconRail.swift` | Module icons + profile avatar footer |
 | `Theme/WorkspaceShellBackground.swift` | `GlassSubmenuChrome`, primary bar transparency |
 | `Theme/LibrarySubmenuButtonStyle.swift` | Flat footer actions (no pill boxes) |
 | `Chat/Views/ChatWorkspaceChannelTabs.swift` | Open channel tab strip |

@@ -13,9 +13,6 @@ struct EnterpriseChatView: View {
         ChatWorkspaceChrome(topInset: topInset, embedInPopOut: embedInPopOut) {
             VStack(spacing: 0) {
                 chatStatusBanner
-                if !embedInPopOut {
-                    ChatWorkspaceChannelTabs()
-                }
                 ChatConversationView(chat: chat, onNewMessage: onNewMessage ?? {})
             }
         }
