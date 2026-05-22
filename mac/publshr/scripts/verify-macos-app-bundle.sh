@@ -77,4 +77,10 @@ if ! _binary_contains "PublshrEnterpriseShell-4"; then
     exit 1
 fi
 
+ICON="${APP}/Contents/Resources/AppIcon.icns"
+if [[ ! -f "$ICON" ]]; then
+    echo "ERROR: Missing AppIcon.icns in bundle (icon updates require a full live rebuild)" >&2
+    exit 1
+fi
+
 echo "OK: $APP — native GUI Publshr ($SIZE bytes)" >&2

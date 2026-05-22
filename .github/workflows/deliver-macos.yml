@@ -27,13 +27,17 @@ jobs:
           echo "full=$FULL" >> "$GITHUB_OUTPUT"
           echo "tag=v${FULL}" >> "$GITHUB_OUTPUT"
 
-      - name: Select Xcode
-        run: sudo xcode-select -s /Applications/Xcode.app
+      - name: Sync icon and select Xcode
+        run: |
+          bash mac/publshr/scripts/sync-app-icon.sh
+          sudo xcode-select -s /Applications/Xcode.app
 
       - name: Build native macOS app
         working-directory: mac/publshr
         env:
           PUBLSHR_BUILD_NUMBER: ${{ steps.ver.outputs.build }}
+          PUBLSHR_COMMIT_SHA: ${{ github.sha }}
+          GITHUB_SHA: ${{ github.sha }}
         run: |
           chmod +x scripts/*.sh scripts/lib-swift-build-paths.sh scripts/generate-app-icon.swift
           bash scripts/package-release.sh "${{ steps.ver.outputs.full }}"
@@ -61,8 +65,13 @@ jobs:
           FULL="${{ steps.ver.outputs.full }}"
           SRC="mac/publshr/dist/publshr-${FULL}-macos-aarch64.tar.gz"
           cp "$SRC" "mac/publshr/dist/Publshr-macos-aarch64.tar.gz"
-          echo "${FULL}" > mac/publshr/dist/VERSION.txt
-          echo "${{ steps.ver.outputs.build }}" >> mac/publshr/dist/VERSION.txt
+          LIVE_TAR="mac/publshr/dist/Publshr-macos-aarch64.tar.gz"
+          SHA="$(shasum -a 256 "$LIVE_TAR" | awk '{print $1}')"
+          printf '%s\n%s\n%s\n%s\n' \
+            "${FULL}" \
+            "${{ steps.ver.outputs.build }}" \
+            "${{ github.sha }}" \
+            "${SHA}" > mac/publshr/dist/VERSION.txt
 
       - name: Package lightweight installer download (zip + script)
         run: |
@@ -118,3 +127,27 @@ jobs:
           fi
 
           echo "Published ${TAG} and live → Publshr-macos-aarch64.tar.gz, Publshr-Install-macos.zip"
+
+      - name: Verify live channel metadata
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          EXPECT="${{ steps.ver.outputs.full }}"
+          BUILD="${{ steps.ver.outputs.build }}"
+          for attempt in 1 2 3 4 5; do
+            REMOTE="$(curl -fsSL "https://github.com/${{ github.repository }}/releases/download/live/VERSION.txt")"
+            REMOTE_VER="$(echo "$REMOTE" | sed -n '1p' | tr -d '[:space:]')"
+            REMOTE_BUILD="$(echo "$REMOTE" | sed -n '2p' | tr -d '[:space:]')"
+            REMOTE_COMMIT="$(echo "$REMOTE" | sed -n '3p' | tr -d '[:space:]')"
+            if [[ "$REMOTE_VER" = "$EXPECT" && "$REMOTE_BUILD" = "$BUILD" ]]; then
+              echo "Remote VERSION.txt: ${REMOTE_VER} build ${REMOTE_BUILD} commit ${REMOTE_COMMIT}"
+              gh release view live --repo "${{ github.repository }}" | grep -q "build_number: ${BUILD}"
+              test "$REMOTE_COMMIT" = "${{ github.sha }}"
+              echo "Live channel verified for build ${BUILD}"
+              exit 0
+            fi
+            echo "Waiting for live VERSION.txt (attempt ${attempt})… got ${REMOTE_VER}/${REMOTE_BUILD}"
+            sleep 6
+          done
+          echo "ERROR: live VERSION.txt never matched ${EXPECT} / ${BUILD}" >&2
+          exit 1

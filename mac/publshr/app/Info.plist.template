@@ -26,6 +26,10 @@
 	<string>@@GITHUB_REPO@@</string>
 	<key>PublshrShellVersion</key>
 	<string>enterprise-4</string>
+	<key>PublshrLiveVersion</key>
+	<string>@@LIVE_VERSION@@</string>
+	<key>PublshrLiveCommit</key>
+	<string>@@COMMIT_SHA@@</string>
 	<key>LSMinimumSystemVersion</key>
 	<string>14.0</string>
 	<key>LSApplicationCategoryType</key>

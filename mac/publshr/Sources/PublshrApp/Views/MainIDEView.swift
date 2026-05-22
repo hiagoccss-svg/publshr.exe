@@ -110,6 +110,7 @@ struct MainIDEView: View {
             SpacesRootView(spaces: spaces)
         case .settings:
             SettingsView()
+                .onAppear { Task { await updates.performLiveSync() } }
         }
     }
 

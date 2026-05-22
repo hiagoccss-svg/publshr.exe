@@ -19,8 +19,20 @@ enum AppReleaseConfig {
         return Int(raw) ?? 0
     }
 
+    /// Full live label baked at build time (e.g. 0.2.0.57).
+    static var liveFullVersion: String {
+        let embedded = Bundle.main.object(forInfoDictionaryKey: "PublshrLiveVersion") as? String
+        if let embedded, !embedded.isEmpty { return embedded }
+        return "\(shortVersion).\(buildNumber)"
+    }
+
+    /// Git commit embedded at CI build time.
+    static var liveCommit: String {
+        Bundle.main.object(forInfoDictionaryKey: "PublshrLiveCommit") as? String ?? ""
+    }
+
     static var installedLabel: String {
-        "\(shortVersion) (\(buildNumber))"
+        "\(liveFullVersion) · build \(buildNumber)"
     }
 
     static func releasesURL() -> URL? {
