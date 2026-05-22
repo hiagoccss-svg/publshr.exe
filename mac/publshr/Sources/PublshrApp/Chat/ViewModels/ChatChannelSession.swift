@@ -23,6 +23,7 @@ final class ChatChannelSession: ObservableObject {
     @Published var errorMessage: String?
     @Published var uploadProgress: Double?
     @Published var typingLabel: String?
+    @Published var editingMessageId: UUID?
     @Published var voiceTranscripts: [UUID: String] = [:]
 
     let profiles: [UUID: Profile]
@@ -49,13 +50,13 @@ final class ChatChannelSession: ObservableObject {
         let channelId = channel.id
         Task { [weak self] in
             await self?.typingBroadcast?.configureHandlers(
-                onTyping: { cid, name in
+                onTyping: { cid, uid, name in
                     Task { @MainActor in
-                        guard let self, self.channel.id == cid else { return }
+                        guard let self, self.channel.id == cid, uid != self.currentUserId else { return }
                         self.typingLabel = "\(name) is typing…"
                     }
                 },
-                onStop: { cid in
+                onStop: { cid, _ in
                     Task { @MainActor in
                         guard let self, self.channel.id == cid else { return }
                         self.typingLabel = nil
@@ -119,6 +120,25 @@ final class ChatChannelSession: ObservableObject {
             counts[msg.threadParentId!, default: 0] += 1
         }
         return counts
+    }
+
+    func editMessage(_ message: ChatMessage, newBody: String) async {
+        guard permissions.canEditMessages,
+              message.userId == currentUserId else { return }
+        do {
+            let updated = try await service.editMessage(messageId: message.id, workspaceId: workspaceId, body: newBody)
+            if let i = messages.firstIndex(where: { $0.id == message.id }) {
+                messages[i] = updated
+            }
+        } catch { errorMessage = error.localizedDescription }
+    }
+
+    func deleteMessage(_ message: ChatMessage) async {
+        guard permissions.canDeleteMessages else { return }
+        do {
+            try await service.deleteMessage(messageId: message.id, workspaceId: workspaceId)
+            applyMessageDelete(message.id)
+        } catch { errorMessage = error.localizedDescription }
     }
 
     func sendMessage() async {

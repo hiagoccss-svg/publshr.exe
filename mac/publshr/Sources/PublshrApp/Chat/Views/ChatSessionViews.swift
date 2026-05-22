@@ -5,18 +5,50 @@ import UniformTypeIdentifiers
 struct SessionPopOutRootView: View {
     @ObservedObject var session: ChatChannelSession
     @State private var showVoice = false
+    @State private var editText = ""
 
     var body: some View {
         HStack(spacing: 0) {
-            SessionConversationView(session: session, showVoice: $showVoice)
+            SessionConversationView(session: session, showVoice: $showVoice, editText: $editText)
             if session.showThreadPanel {
                 SessionThreadPanel(session: session)
             }
         }
         .background(CursorTheme.chatBackground)
+        .preferredColorScheme(.light)
         .sheet(isPresented: $showVoice) {
             ChatVoiceRecorderSheetForSession(session: session)
         }
+        .sheet(isPresented: Binding(
+            get: { session.editingMessageId != nil },
+            set: { if !$0 { session.editingMessageId = nil } }
+        )) {
+            sessionEditSheet
+        }
+    }
+
+    private var sessionEditSheet: some View {
+        VStack(spacing: 12) {
+            Text("Edit message").font(.headline)
+            TextField("Message", text: $editText, axis: .vertical)
+                .textFieldStyle(.roundedBorder)
+                .lineLimit(3...8)
+            HStack {
+                Button("Cancel") { session.editingMessageId = nil }
+                Spacer()
+                Button("Save") {
+                    guard let id = session.editingMessageId,
+                          let msg = session.messages.first(where: { $0.id == id }) else { return }
+                    Task {
+                        await session.editMessage(msg, newBody: editText)
+                        session.editingMessageId = nil
+                    }
+                }
+                .keyboardShortcut(.defaultAction)
+            }
+        }
+        .padding(20)
+        .frame(width: 360)
     }
 }
 
@@ -24,10 +56,12 @@ struct SessionPopOutRootView: View {
 struct SessionConversationView: View {
     @ObservedObject var session: ChatChannelSession
     @Binding var showVoice: Bool
+    @Binding var editText: String
     @State private var showFileImporter = false
 
     var body: some View {
         VStack(spacing: 0) {
+            sessionHeader
             ScrollViewReader { proxy in
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 12) {
@@ -58,6 +92,23 @@ struct SessionConversationView: View {
         }
     }
 
+    private var sessionHeader: some View {
+        HStack {
+            Text(session.channel.displayTitle)
+                .font(.system(size: 14, weight: .semibold))
+            Spacer()
+            if let typing = session.typingLabel {
+                ChatTypingIndicatorView(label: typing)
+            }
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .background(Color.white)
+        .overlay(alignment: .bottom) {
+            Rectangle().fill(CursorTheme.borderSubtle).frame(height: 1)
+        }
+    }
+
     private func sessionMessageRow(_ message: ChatMessage) -> some View {
         ChatMessageBubbleView(
             message: message,
@@ -70,36 +121,44 @@ struct SessionConversationView: View {
             threadReplyCount: session.threadCounts[message.id] ?? 0,
             voiceTranscript: session.voiceTranscripts[message.id],
             onReaction: { emoji in Task { await session.toggleReaction(messageId: message.id, emoji: emoji) } },
-            onThread: { Task { await session.openThread(message) } }
+            onThread: { Task { await session.openThread(message) } },
+            onEdit: {
+                session.editingMessageId = message.id
+                editText = message.body ?? ""
+            },
+            onDelete: { Task { await session.deleteMessage(message) } }
         )
     }
 
     private var sessionComposer: some View {
-        HStack(alignment: .bottom, spacing: 8) {
-            if session.permissions.canUseVoiceNotes {
-                Button { showVoice = true } label: {
-                    Image(systemName: "mic").foregroundStyle(CursorTheme.foregroundDim)
+        VStack(spacing: 6) {
+            HStack(alignment: .bottom, spacing: 8) {
+                if session.permissions.canUseVoiceNotes {
+                    Button { showVoice = true } label: {
+                        Image(systemName: "mic").foregroundStyle(CursorTheme.foregroundDim)
+                    }
+                    .buttonStyle(.plain)
+                }
+                TextField("Message…", text: $session.composerText, axis: .vertical)
+                    .textFieldStyle(.plain)
+                    .font(.system(size: 13))
+                    .lineLimit(1...6)
+                    .padding(10)
+                    .background(Color.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                    .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(CursorTheme.border, lineWidth: 1))
+                    .onChange(of: session.composerText) { _, _ in session.composerChanged() }
+                Button { Task { await session.sendMessage() } } label: {
+                    Image(systemName: "arrow.up.circle.fill")
+                        .font(.system(size: 24))
+                        .foregroundStyle(CursorTheme.accent)
                 }
                 .buttonStyle(.plain)
+                .disabled(session.composerText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
-            TextField("Message…", text: $session.composerText, axis: .vertical)
-                .textFieldStyle(.plain)
-                .font(.system(size: 13))
-                .lineLimit(1...6)
-                .padding(10)
-                .background(CursorTheme.inputBackground)
-                .clipShape(RoundedRectangle(cornerRadius: 8))
-                .onChange(of: session.composerText) { _, _ in session.composerChanged() }
-            Button { Task { await session.sendMessage() } } label: {
-                Image(systemName: "arrow.up.circle.fill")
-                    .font(.system(size: 24))
-                    .foregroundStyle(CursorTheme.accent)
-            }
-            .buttonStyle(.plain)
-            .disabled(session.composerText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            .padding(12)
         }
-        .padding(12)
-        .background(CursorTheme.panelBackground)
+        .background(Color.white)
     }
 }
 
@@ -118,28 +177,28 @@ struct SessionThreadPanel: View {
             }
             .padding(12)
             ScrollView {
-                ForEach(session.threadMessages) { msg in
-                    ChatMessageBubbleView(
-                        message: msg,
-                        authorName: session.displayName(for: msg.userId),
-                        authorProfile: session.profiles[msg.userId],
-                        isOwn: msg.userId == session.currentUserId,
-                        showAvatar: true
-                    )
+                LazyVStack(alignment: .leading, spacing: 8) {
+                    ForEach(session.threadMessages) { msg in
+                        ChatMessageBubbleView(
+                            message: msg,
+                            authorName: session.displayName(for: msg.userId),
+                            authorProfile: session.profiles[msg.userId],
+                            isOwn: msg.userId == session.currentUserId,
+                            showAvatar: true
+                        )
+                    }
                 }
                 .padding(12)
             }
             HStack {
                 TextField("Reply…", text: $session.threadComposerText)
-                Button { Task { await session.sendThreadReply() } } label: {
-                    Image(systemName: "arrow.up.circle.fill")
-                }
-                .buttonStyle(.plain)
+                    .textFieldStyle(.roundedBorder)
+                Button("Send") { Task { await session.sendThreadReply() } }
             }
-            .padding(10)
+            .padding(12)
         }
-        .frame(width: 260)
-        .background(CursorTheme.chatBackground)
+        .frame(width: 300)
+        .background(Color.white)
     }
 }
 

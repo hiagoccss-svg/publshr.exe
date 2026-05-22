@@ -1,9 +1,9 @@
 import AppKit
 import SwiftUI
 
-/// Voice/video calls open in a dedicated window (not a sheet over the IDE).
+/// Dedicated glass call window (voice / video) — not a sheet over the IDE.
 @MainActor
-final class CallWindowManager {
+final class CallWindowManager: ObservableObject {
     static let shared = CallWindowManager()
 
     private var window: NSWindow?
@@ -15,22 +15,23 @@ final class CallWindowManager {
     ) {
         if let window {
             window.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
             return
         }
 
-        let root = CallRoomView()
+        let root = CallRoomRootView()
             .environmentObject(calls)
             .environmentObject(chat)
             .environmentObject(auth)
-            .frame(minWidth: 380, minHeight: 440)
+            .frame(minWidth: 360, minHeight: 480)
 
         let hosting = NSHostingController(rootView: root)
         let window = NSWindow(contentViewController: hosting)
         let video = calls.activeRoom?.kind == "video"
         window.title = calls.activeRoom?.title ?? (video ? "Video call" : "Voice call")
-        window.setContentSize(NSSize(width: 400, height: 460))
+        window.setContentSize(NSSize(width: 520, height: 620))
         window.center()
-        window.styleMask = [.titled, .closable, .resizable, .miniaturizable]
+        GlassWindowConfigurator.applyCallWindow(window)
         window.isReleasedWhenClosed = false
 
         self.window = window
@@ -40,14 +41,20 @@ final class CallWindowManager {
             object: window,
             queue: .main
         ) { _ in
-            Task { @MainActor [weak self] in
-                await calls.leaveCall()
-                self?.window = nil
+            DispatchQueue.main.async { [weak self] in
+                Task { await calls.leaveCall() }
+                if self?.window === window {
+                    self?.window = nil
+                }
             }
         }
 
         window.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
+    }
+
+    func close() {
+        dismiss()
     }
 
     func dismiss() {
@@ -57,5 +64,40 @@ final class CallWindowManager {
 
     func closeAll() {
         dismiss()
+    }
+}
+
+/// Root hosted in the glass call `NSWindow`.
+struct CallRoomRootView: View {
+    @EnvironmentObject private var calls: CallSignalingService
+
+    var body: some View {
+        ZStack {
+            VisualEffectBlur(material: .hudWindow, blendingMode: .behindWindow)
+                .ignoresSafeArea()
+            CallRoomView()
+                .padding(12)
+        }
+        .preferredColorScheme(.light)
+    }
+}
+
+/// NSVisualEffectView bridge for desktop wallpaper bleed-through.
+struct VisualEffectBlur: NSViewRepresentable {
+    var material: NSVisualEffectView.Material
+    var blendingMode: NSVisualEffectView.BlendingMode
+
+    func makeNSView(context: Context) -> NSVisualEffectView {
+        let view = NSVisualEffectView()
+        view.material = material
+        view.blendingMode = blendingMode
+        view.state = .active
+        view.isEmphasized = true
+        return view
+    }
+
+    func updateNSView(_ nsView: NSVisualEffectView, context: Context) {
+        nsView.material = material
+        nsView.blendingMode = blendingMode
     }
 }

@@ -10,7 +10,12 @@ struct EnterpriseChatView: View {
 
     var body: some View {
         ChatWorkspaceChrome(topInset: topInset, embedInPopOut: embedInPopOut) {
-            ChatConversationView(chat: chat)
+            VStack(spacing: 0) {
+                if !embedInPopOut, chat.selectedChannel != nil {
+                    ChatChannelStatusBar(chat: chat)
+                }
+                ChatConversationView(chat: chat)
+            }
         }
         .sheet(isPresented: $chat.showSearchSheet) { ChatSearchSheet(chat: chat) }
         .sheet(isPresented: $chat.showAISheet) { ChatAISheet(chat: chat) }

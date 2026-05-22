@@ -2,8 +2,8 @@ import Foundation
 import Supabase
 import AVFoundation
 
-/// Workspace voice/video calls — Supabase signaling + native AV capture prep.
-/// Configure `livekit_url` in workspace settings for full duplex media (LiveKit).
+/// Workspace voice/video — **local-first**: embedded SFU + LAN signaling (up to 20 participants).
+/// No cloud media APIs. Supabase is optional and only used for call discovery when online.
 @MainActor
 final class CallSignalingService: ObservableObject {
     @Published private(set) var activeRoom: CallRoomRecord?
@@ -11,11 +11,34 @@ final class CallSignalingService: ObservableObject {
     @Published var isMuted = false
     @Published var isVideoEnabled = false
     @Published var errorMessage: String?
-    @Published private(set) var mediaStatus = "Signaling only — add LiveKit URL in workspace settings for HD voice/video."
+    @Published private(set) var mediaStatus = "Local call — starting embedded media server…"
+    @Published private(set) var localRoomCode: String?
+    @Published private(set) var localJoinHint: String?
+    @Published var callScope: CallScope = .meeting
+    @Published var incomingInvite: IncomingCallInvite?
+    @Published private(set) var liveCallsByChannelId: [UUID: LiveCallSummary] = [:]
+
+    let liveMedia = LocalCallMediaSession()
 
     private var client: SupabaseClient?
     private var realtimeTask: Task<Void, Never>?
+    private var hubSyncTask: Task<Void, Never>?
+    private var incomingListenTask: Task<Void, Never>?
+    private var activeCallsListenTask: Task<Void, Never>?
     private var userId: UUID?
+    private var displayName = "Participant"
+    private weak var chatPresenter: ChatViewModel?
+    private weak var authPresenter: AuthViewModel?
+    private let jsonDecoder: JSONDecoder = {
+        let d = JSONDecoder()
+        d.keyDecodingStrategy = .convertFromSnakeCase
+        d.dateDecodingStrategy = .iso8601
+        return d
+    }()
+
+    private let liveKitServer = LocalLiveKitServer()
+    private let signalingHub = LocalCallSignalingHub()
+    private var useCloudDiscovery = true
 
     struct CallRoomRecord: Codable, Identifiable, Equatable {
         let id: UUID
@@ -59,79 +82,240 @@ final class CallSignalingService: ObservableObject {
         var isActive: Bool { leftAt == nil }
     }
 
-    func attach(client: SupabaseClient, userId: UUID) {
+    func attach(client: SupabaseClient, userId: UUID, displayName: String? = nil, workspaceId: UUID? = nil) {
         self.client = client
         self.userId = userId
+        if let displayName, !displayName.isEmpty {
+            self.displayName = displayName
+        }
+        if let workspaceId {
+            Task {
+                await subscribeIncomingCalls(workspaceId: workspaceId)
+                await subscribeActiveCalls(workspaceId: workspaceId)
+            }
+        }
+    }
+
+    func bindPresentation(chat: ChatViewModel, auth: AuthViewModel) {
+        chatPresenter = chat
+        authPresenter = auth
     }
 
     func detach() {
+        Task { await tearDownLocalCall() }
+        incomingListenTask?.cancel()
+        incomingListenTask = nil
+        activeCallsListenTask?.cancel()
+        activeCallsListenTask = nil
+        liveCallsByChannelId = [:]
         realtimeTask?.cancel()
         realtimeTask = nil
         activeRoom = nil
         participants = []
+        localRoomCode = nil
+        localJoinHint = nil
+        incomingInvite = nil
+        CallWindowManager.shared.close()
+        IncomingCallWindowManager.shared.close()
     }
 
-    func startChannelCall(workspaceId: UUID, channelId: UUID, title: String, video: Bool, workspaceSettings: [String: JSONValue]? = nil) async {
-        guard let client, let userId else { return }
-        if let settings = workspaceSettings,
-           case .string(let url) = settings["livekit_url"],
-           !url.isEmpty {
-            mediaStatus = "Connecting via LiveKit (\(url))…"
-        } else {
-            mediaStatus = "Signaling only — add LiveKit URL in workspace settings for HD voice/video."
+    func startChannelCall(
+        workspaceId: UUID,
+        channelId: UUID,
+        title: String,
+        video: Bool,
+        scope: CallScope = .meeting,
+        workspaceSettings: [String: JSONValue]? = nil,
+        userDisplayName: String? = nil
+    ) async {
+        guard let userId else { return }
+        callScope = scope
+        if let userDisplayName, !userDisplayName.isEmpty {
+            displayName = userDisplayName
         }
+        useCloudDiscovery = !isLocalOnly(settings: workspaceSettings)
         isVideoEnabled = video
+        isMuted = false
+        mediaStatus = "Starting local media server (no cloud APIs)…"
+        errorMessage = nil
         await requestMediaPermissions(video: video)
+
+        let roomId = UUID()
+        let roomCode = String(channelId.uuidString.prefix(8)).lowercased()
+        let livekitRoomName = "publshr-\(roomCode)"
+        localRoomCode = roomCode
+
+        activeRoom = CallRoomRecord(
+            id: roomId,
+            workspaceId: workspaceId,
+            channelId: channelId,
+            title: title,
+            kind: video ? "video" : "voice",
+            status: "active",
+            createdBy: userId,
+            livekitRoom: livekitRoomName
+        )
+
+        await liveKitServer.startIfNeeded()
+        if let err = liveKitServer.lastError {
+            mediaStatus = err
+            errorMessage = err
+        } else if liveKitServer.isRunning, let wsURL = liveKitServer.wsURL {
+            mediaStatus = "Local SFU running — connecting…"
+            await connectMedia(wsURL: wsURL, roomName: livekitRoomName, video: video)
+        } else {
+            mediaStatus = "Waiting for local SFU…"
+        }
+
         do {
-            struct Insert: Encodable {
-                let workspace_id: UUID
-                let channel_id: UUID
-                let title: String
-                let kind: String
-                let created_by: UUID
-                let livekit_room: String
-            }
-            let room: CallRoomRecord = try await client
+            try await signalingHub.startHosting(
+                roomId: roomId,
+                channelId: channelId,
+                roomCode: roomCode,
+                displayName: displayName,
+                userId: userId
+            )
+            syncParticipantsFromHub(roomId: roomId)
+            updateJoinHint()
+            startHubParticipantSync(roomId: roomId)
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+
+        if useCloudDiscovery {
+            await publishRoomToCloud(
+                workspaceId: workspaceId,
+                channelId: channelId,
+                title: title,
+                video: video,
+                userId: userId,
+                livekitRoom: livekitRoomName,
+                roomId: roomId
+            )
+        }
+
+        signalingHub.updateLocalMediaState(isMuted: isMuted, isVideoEnabled: isVideoEnabled)
+        presentCallWindow()
+        if let workspaceId = activeRoom?.workspaceId {
+            await refreshLiveCalls(workspaceId: workspaceId)
+        }
+    }
+
+    /// Join an active meeting already running on this channel.
+    func joinActiveCall(for channelId: UUID) async {
+        guard let summary = liveCallsByChannelId[channelId], let client else { return }
+        isVideoEnabled = summary.isVideo
+        isMuted = false
+        callScope = summary.scope
+        let room: CallRoomRecord
+        do {
+            room = try await client
                 .from("call_rooms")
-                .insert(Insert(
-                    workspace_id: workspaceId,
-                    channel_id: channelId,
-                    title: title,
-                    kind: video ? "video" : "voice",
-                    created_by: userId,
-                    livekit_room: "publshr-\(channelId.uuidString.prefix(8))"
-                ))
                 .select()
+                .eq("id", value: summary.roomId.uuidString)
                 .single()
                 .execute()
                 .value
-            activeRoom = room
-            await joinRoom(room)
-            subscribeParticipants(roomId: room.id)
         } catch {
             errorMessage = error.localizedDescription
+            return
+        }
+        await joinRoom(room)
+        if let roomName = summary.livekitRoom,
+           let wsURL = liveKitServer.wsURL ?? URL(string: "ws://\(LocalNetworkAddress.lanHostIPv4() ?? "127.0.0.1"):\(LocalCallConfiguration.liveKitHTTPPort)") {
+            await connectMedia(wsURL: wsURL, roomName: roomName, video: summary.isVideo)
+        }
+        presentCallWindow()
+    }
+
+    func liveCall(for channelId: UUID) -> LiveCallSummary? {
+        liveCallsByChannelId[channelId]
+    }
+
+    func isInCall(on channelId: UUID) -> Bool {
+        activeRoom?.channelId == channelId
+    }
+
+    func acceptIncomingCall(chat: ChatViewModel, auth: AuthViewModel) async {
+        guard let invite = incomingInvite else { return }
+        incomingInvite = nil
+        IncomingCallWindowManager.shared.close()
+        callScope = invite.scope
+        isVideoEnabled = invite.isVideo
+        isMuted = false
+        await joinRoom(invite.room)
+        if let roomName = invite.room.livekitRoom,
+           let wsURL = liveKitServer.wsURL ?? URL(string: "ws://\(LocalNetworkAddress.lanHostIPv4() ?? "127.0.0.1"):\(LocalCallConfiguration.liveKitHTTPPort)") {
+            await connectMedia(wsURL: wsURL, roomName: roomName, video: invite.isVideo)
+        }
+        bindPresentation(chat: chat, auth: auth)
+        presentCallWindow()
+    }
+
+    func declineIncomingCall() {
+        incomingInvite = nil
+        IncomingCallWindowManager.shared.close()
+    }
+
+    func presentIncomingRing(chat: ChatViewModel, auth: AuthViewModel) {
+        guard let invite = incomingInvite else { return }
+        bindPresentation(chat: chat, auth: auth)
+        IncomingCallWindowManager.shared.present(invite: invite, calls: self, chat: chat, auth: auth)
+    }
+
+    private func presentCallWindow() {
+        guard activeRoom != nil,
+              let chat = chatPresenter,
+              let auth = authPresenter else { return }
+        CallWindowManager.shared.present(calls: self, chat: chat, auth: auth)
+    }
+
+    func joinDiscoveredLocalCall(channelId: UUID, roomId: UUID, title: String, video: Bool) async {
+        guard let userId else { return }
+        isVideoEnabled = video
+        activeRoom = CallRoomRecord(
+            id: roomId,
+            workspaceId: UUID(),
+            channelId: channelId,
+            title: title,
+            kind: video ? "video" : "voice",
+            status: "active",
+            createdBy: userId,
+            livekitRoom: "publshr-\(String(channelId.uuidString.prefix(8)).lowercased())"
+        )
+        signalingHub.browseAndJoin(channelId: channelId, roomId: roomId, displayName: displayName, userId: userId)
+        mediaStatus = "Joining call on your network…"
+        if let wsURL = liveKitServer.wsURL ?? URL(string: "ws://\(LocalNetworkAddress.lanHostIPv4() ?? "127.0.0.1"):\(LocalCallConfiguration.liveKitHTTPPort)") {
+            await connectMedia(wsURL: wsURL, roomName: activeRoom?.livekitRoom ?? "publshr-room", video: video)
         }
     }
 
     func joinRoom(_ room: CallRoomRecord) async {
-        guard let client, let userId else { return }
+        guard let userId else { return }
         activeRoom = room
-        struct Upsert: Encodable {
-            let room_id: UUID
-            let user_id: UUID
-            let is_muted: Bool
-            let is_video_enabled: Bool
+        let roomCode = room.livekitRoom?.replacingOccurrences(of: "publshr-", with: "") ?? room.id.uuidString.prefix(8).description
+        localRoomCode = roomCode
+        if let channelId = room.channelId {
+            signalingHub.browseAndJoin(channelId: channelId, roomId: room.id, displayName: displayName, userId: userId)
         }
-        try? await client
-            .from("call_participants")
-            .upsert(Upsert(room_id: room.id, user_id: userId, is_muted: isMuted, is_video_enabled: isVideoEnabled), onConflict: "room_id,user_id")
-            .execute()
         await reloadParticipants(roomId: room.id)
         subscribeParticipants(roomId: room.id)
+        updateJoinHint()
     }
 
     func leaveCall() async {
-        guard let client, let userId, let room = activeRoom else { return }
+        CallWindowManager.shared.close()
+        await tearDownLocalCall()
+        if let channelId = activeRoom?.channelId {
+            liveCallsByChannelId.removeValue(forKey: channelId)
+        }
+        guard let client, let userId, let room = activeRoom, useCloudDiscovery else {
+            activeRoom = nil
+            participants = []
+            localRoomCode = nil
+            localJoinHint = nil
+            return
+        }
         struct Patch: Encodable {
             let left_at: String
         }
@@ -145,24 +329,212 @@ final class CallSignalingService: ObservableObject {
         realtimeTask?.cancel()
         activeRoom = nil
         participants = []
+        localRoomCode = nil
+        localJoinHint = nil
     }
 
     func endCall() async {
-        guard let client, let room = activeRoom else { return }
-        struct Patch: Encodable {
-            let status: String
-            let ended_at: String
+        if useCloudDiscovery, let client, let room = activeRoom {
+            struct Patch: Encodable {
+                let status: String
+                let ended_at: String
+            }
+            let iso = ISO8601DateFormatter().string(from: Date())
+            try? await client
+                .from("call_rooms")
+                .update(Patch(status: "ended", ended_at: iso))
+                .eq("id", value: room.id.uuidString)
+                .execute()
         }
-        let iso = ISO8601DateFormatter().string(from: Date())
-        try? await client
-            .from("call_rooms")
-            .update(Patch(status: "ended", ended_at: iso))
-            .eq("id", value: room.id.uuidString)
-            .execute()
         await leaveCall()
     }
 
+    func onMuteChanged() async {
+        signalingHub.updateLocalMediaState(isMuted: isMuted, isVideoEnabled: isVideoEnabled)
+        await liveMedia.setMuted(isMuted)
+        await liveMedia.setVideoEnabled(isVideoEnabled)
+        guard let client, let userId, let room = activeRoom, useCloudDiscovery else { return }
+        struct Patch: Encodable {
+            let is_muted: Bool
+            let is_video_enabled: Bool
+        }
+        try? await client
+            .from("call_participants")
+            .update(Patch(is_muted: isMuted, is_video_enabled: isVideoEnabled))
+            .eq("room_id", value: room.id.uuidString)
+            .eq("user_id", value: userId.uuidString)
+            .execute()
+    }
+
+    private func connectMedia(wsURL: URL, roomName: String, video: Bool) async {
+        guard let userId else { return }
+        do {
+            let token = try LocalCallJWT.accessToken(
+                apiKey: LocalCallConfiguration.liveKitAPIKey,
+                apiSecret: LocalCallConfiguration.liveKitAPISecret,
+                identity: userId.uuidString,
+                roomName: roomName
+            )
+            await liveMedia.connect(
+                wsURL: wsURL,
+                token: token,
+                enableVideo: video,
+                localUserId: userId,
+                localDisplayName: displayName
+            )
+            if liveMedia.isConnected {
+                mediaStatus = "Connected — local voice/video (up to \(LocalCallConfiguration.maxParticipants) people)."
+            } else {
+                mediaStatus = liveMedia.connectionError ?? "Could not connect to local SFU."
+            }
+        } catch {
+            mediaStatus = error.localizedDescription
+        }
+    }
+
+    private func tearDownLocalCall() async {
+        hubSyncTask?.cancel()
+        hubSyncTask = nil
+        await liveMedia.setMuted(true)
+        liveMedia.disconnect()
+        signalingHub.stop()
+        if signalingHub.isHosting {
+            liveKitServer.stop()
+        }
+    }
+
+    private func startHubParticipantSync(roomId: UUID) {
+        hubSyncTask?.cancel()
+        hubSyncTask = Task { @MainActor [weak self] in
+            while !Task.isCancelled {
+                guard let self else { return }
+                self.syncParticipantsFromHub(roomId: roomId)
+                try? await Task.sleep(nanoseconds: 400_000_000)
+            }
+        }
+    }
+
+    private func syncParticipantsFromHub(roomId: UUID) {
+        participants = signalingHub.participants.map { p in
+            CallParticipantRow(
+                id: p.userId,
+                roomId: roomId,
+                userId: p.userId,
+                joinedAt: p.joinedAt,
+                leftAt: nil,
+                isMuted: p.isMuted,
+                isVideoEnabled: p.isVideoEnabled
+            )
+        }
+    }
+
+    private func updateJoinHint() {
+        guard let code = localRoomCode else { return }
+        if let host = signalingHub.hostAddress, let port = signalingHub.signalingPort {
+            localJoinHint = "Others on your network: open this channel’s call or join LAN room \(code) at \(host):\(port)"
+        } else {
+            localJoinHint = "Room code: \(code) (same Wi‑Fi / LAN)"
+        }
+    }
+
+    private func isLocalOnly(settings: [String: JSONValue]?) -> Bool {
+        guard let settings, case .string(let mode) = settings["calls_mode"] else { return true }
+        return mode != "cloud"
+    }
+
+    private func subscribeIncomingCalls(workspaceId: UUID) async {
+        guard let client, let userId else { return }
+        incomingListenTask?.cancel()
+        incomingListenTask = Task { @MainActor [weak self] in
+            guard let self else { return }
+            let channel = await client.channel("incoming-calls-\(userId.uuidString)")
+            let stream = await channel.postgresChange(
+                InsertAction.self,
+                schema: "public",
+                table: "call_rooms",
+                filter: "workspace_id=eq.\(workspaceId.uuidString)"
+            )
+            await channel.subscribe()
+            for await action in stream {
+                guard let record = try? action.decodeRecord(as: CallRoomRecord.self, decoder: jsonDecoder),
+                      record.status == "active",
+                      record.createdBy != userId,
+                      activeRoom == nil else { continue }
+                let scope: CallScope = record.title.localizedCaseInsensitiveContains("private") ? .private : .meeting
+                await MainActor.run {
+                    guard self.incomingInvite == nil else { return }
+                    self.incomingInvite = IncomingCallInvite(
+                        id: record.id,
+                        room: record,
+                        callerId: record.createdBy,
+                        callerName: "Team member",
+                        scope: scope,
+                        startedAt: Date()
+                    )
+                }
+            }
+        }
+    }
+
+    private func publishRoomToCloud(
+        workspaceId: UUID,
+        channelId: UUID,
+        title: String,
+        video: Bool,
+        userId: UUID,
+        livekitRoom: String,
+        roomId: UUID
+    ) async {
+        guard let client else { return }
+        do {
+            struct Insert: Encodable {
+                let id: UUID
+                let workspace_id: UUID
+                let channel_id: UUID
+                let title: String
+                let kind: String
+                let created_by: UUID
+                let livekit_room: String
+            }
+            let room: CallRoomRecord = try await client
+                .from("call_rooms")
+                .insert(Insert(
+                    id: roomId,
+                    workspace_id: workspaceId,
+                    channel_id: channelId,
+                    title: "\(title) · \(callScope.label)",
+                    kind: video ? "video" : "voice",
+                    created_by: userId,
+                    livekit_room: livekitRoom
+                ))
+                .select()
+                .single()
+                .execute()
+                .value
+            activeRoom = room
+            struct Upsert: Encodable {
+                let room_id: UUID
+                let user_id: UUID
+                let is_muted: Bool
+                let is_video_enabled: Bool
+            }
+            try? await client
+                .from("call_participants")
+                .upsert(Upsert(room_id: room.id, user_id: userId, is_muted: isMuted, is_video_enabled: isVideoEnabled), onConflict: "room_id,user_id")
+                .execute()
+            await reloadParticipants(roomId: room.id)
+            subscribeParticipants(roomId: room.id)
+        } catch {
+            // Local call still works without cloud discovery.
+            NSLog("Cloud call discovery unavailable: \(error)")
+        }
+    }
+
     private func reloadParticipants(roomId: UUID) async {
+        if !signalingHub.participants.isEmpty {
+            syncParticipantsFromHub(roomId: roomId)
+            return
+        }
         guard let client else { return }
         do {
             participants = try await client
@@ -178,9 +550,10 @@ final class CallSignalingService: ObservableObject {
     }
 
     private func subscribeParticipants(roomId: UUID) {
-        guard let client else { return }
+        guard let client, useCloudDiscovery else { return }
         realtimeTask?.cancel()
-        realtimeTask = Task {
+        realtimeTask = Task { @MainActor [weak self] in
+            guard let self else { return }
             let channel = await client.channel("call-\(roomId.uuidString)")
             let stream = await channel.postgresChange(
                 InsertAction.self,
@@ -196,17 +569,107 @@ final class CallSignalingService: ObservableObject {
             )
             await channel.subscribe()
             await withTaskGroup(of: Void.self) { group in
-                group.addTask { [weak self] in
+                group.addTask { @MainActor [weak self] in
                     for await _ in stream {
                         await self?.reloadParticipants(roomId: roomId)
                     }
                 }
-                group.addTask { [weak self] in
+                group.addTask { @MainActor [weak self] in
                     for await _ in updates {
                         await self?.reloadParticipants(roomId: roomId)
                     }
                 }
             }
+        }
+    }
+
+    private func subscribeActiveCalls(workspaceId: UUID) async {
+        guard let client else { return }
+        activeCallsListenTask?.cancel()
+        await refreshLiveCalls(workspaceId: workspaceId)
+        activeCallsListenTask = Task { @MainActor [weak self] in
+            guard let self else { return }
+            let channel = await client.channel("active-calls-\(workspaceId.uuidString)")
+            let roomInserts = await channel.postgresChange(
+                InsertAction.self,
+                schema: "public",
+                table: "call_rooms",
+                filter: "workspace_id=eq.\(workspaceId.uuidString)"
+            )
+            let roomUpdates = await channel.postgresChange(
+                UpdateAction.self,
+                schema: "public",
+                table: "call_rooms",
+                filter: "workspace_id=eq.\(workspaceId.uuidString)"
+            )
+            let participantChanges = await channel.postgresChange(
+                InsertAction.self,
+                schema: "public",
+                table: "call_participants"
+            )
+            await channel.subscribe()
+            await withTaskGroup(of: Void.self) { group in
+                group.addTask { @MainActor [weak self] in
+                    for await _ in roomInserts {
+                        await self?.refreshLiveCalls(workspaceId: workspaceId)
+                    }
+                }
+                group.addTask { @MainActor [weak self] in
+                    for await _ in roomUpdates {
+                        await self?.refreshLiveCalls(workspaceId: workspaceId)
+                    }
+                }
+                group.addTask { @MainActor [weak self] in
+                    for await _ in participantChanges {
+                        await self?.refreshLiveCalls(workspaceId: workspaceId)
+                    }
+                }
+            }
+        }
+    }
+
+    private func refreshLiveCalls(workspaceId: UUID) async {
+        guard let client, let userId else {
+            liveCallsByChannelId = [:]
+            return
+        }
+        do {
+            let rooms: [CallRoomRecord] = try await client
+                .from("call_rooms")
+                .select()
+                .eq("workspace_id", value: workspaceId.uuidString)
+                .eq("status", value: "active")
+                .execute()
+                .value
+
+            var map: [UUID: LiveCallSummary] = [:]
+            for room in rooms {
+                guard let channelId = room.channelId else { continue }
+                if activeRoom?.channelId == channelId { continue }
+
+                let parts: [CallParticipantRow] = try await client
+                    .from("call_participants")
+                    .select()
+                    .eq("room_id", value: room.id.uuidString)
+                    .execute()
+                    .value
+                let count = max(parts.filter(\.isActive).count, 1)
+
+                let scope: CallScope = room.title.localizedCaseInsensitiveContains("private") ? .private : .meeting
+                map[channelId] = LiveCallSummary(
+                    roomId: room.id,
+                    channelId: channelId,
+                    title: room.title,
+                    kind: room.kind,
+                    scope: scope,
+                    participantCount: max(count, 1),
+                    createdBy: room.createdBy,
+                    livekitRoom: room.livekitRoom
+                )
+            }
+            liveCallsByChannelId = map
+        } catch {
+            NSLog("refreshLiveCalls: \(error)")
         }
     }
 

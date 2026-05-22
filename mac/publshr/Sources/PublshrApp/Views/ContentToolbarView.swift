@@ -318,15 +318,11 @@ struct ContentToolbarView: View {
 
     private var callMenu: some View {
         Menu {
-            Button {
-                startCall(video: false)
-            } label: {
-                Label("Voice call", systemImage: "phone.fill")
+            Button { startCall(video: false, scope: .meeting) } label: {
+                Label("Voice meeting", systemImage: "phone.fill")
             }
-            Button {
-                startCall(video: true)
-            } label: {
-                Label("Video call", systemImage: "video.fill")
+            Button { startCall(video: true, scope: .meeting) } label: {
+                Label("Video meeting", systemImage: "video.fill")
             }
         } label: {
             Image(systemName: "phone")
@@ -339,7 +335,7 @@ struct ContentToolbarView: View {
         .help("Start a call")
     }
 
-    private func startCall(video: Bool) {
+    private func startCall(video: Bool, scope: CallScope) {
         guard let ws = auth.selectedWorkspace?.id,
               let channel = chat.selectedChannel else { return }
         Task {
@@ -348,7 +344,9 @@ struct ContentToolbarView: View {
                 channelId: channel.id,
                 title: channel.displayTitle,
                 video: video,
-                workspaceSettings: auth.selectedWorkspace?.settings
+                scope: scope,
+                workspaceSettings: auth.selectedWorkspace?.settings,
+                userDisplayName: auth.profile?.displayName ?? auth.displayName
             )
         }
     }

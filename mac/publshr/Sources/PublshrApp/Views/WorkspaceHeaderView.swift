@@ -230,8 +230,7 @@ struct WorkspaceHeaderView: View {
             HeaderActionDivider()
 
             if chat.selectedChannel != nil, subscription.canUseCalls(workspace: auth.selectedWorkspace) {
-                ToolbarIconButton(systemName: "phone", help: "Voice call") { startCall(video: false) }
-                ToolbarIconButton(systemName: "video", help: "Video call") { startCall(video: true) }
+                callMenu
             }
 
             if chat.selectedChannel != nil {
@@ -316,6 +315,34 @@ struct WorkspaceHeaderView: View {
                 .buttonStyle(.plain)
             }
         }
+    }
+
+    private var callMenu: some View {
+        Menu {
+            Section("Voice") {
+                Button { startCall(video: false, scope: .private) } label: {
+                    Label("Private call", systemImage: "person.2.fill")
+                }
+                Button { startCall(video: false, scope: .meeting) } label: {
+                    Label("Meeting call", systemImage: "person.3.fill")
+                }
+            }
+            Section("Video") {
+                Button { startCall(video: true, scope: .private) } label: {
+                    Label("Private video", systemImage: "video")
+                }
+                Button { startCall(video: true, scope: .meeting) } label: {
+                    Label("Meeting video", systemImage: "video.fill")
+                }
+            }
+        } label: {
+            Image(systemName: "phone")
+                .font(.system(size: 12))
+                .foregroundStyle(CursorTheme.foregroundMuted)
+                .frame(width: 28, height: 28)
+        }
+        .menuStyle(.borderlessButton)
+        .help("Start a call")
     }
 
     private var profileMenuChip: some View {
@@ -457,7 +484,7 @@ struct WorkspaceHeaderView: View {
         }
     }
 
-    private func startCall(video: Bool) {
+    private func startCall(video: Bool, scope: CallScope) {
         guard let ws = auth.selectedWorkspace?.id,
               let channel = chat.selectedChannel else { return }
         Task {
@@ -466,7 +493,9 @@ struct WorkspaceHeaderView: View {
                 channelId: channel.id,
                 title: channel.displayTitle,
                 video: video,
-                workspaceSettings: auth.selectedWorkspace?.settings
+                scope: scope,
+                workspaceSettings: auth.selectedWorkspace?.settings,
+                userDisplayName: auth.profile?.displayName ?? auth.displayName
             )
         }
     }

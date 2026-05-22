@@ -52,6 +52,11 @@ struct ContentView: View {
         )) {
             BiometricSetupSheet()
         }
+        .onChange(of: calls.incomingInvite?.id) { oldId, newId in
+            guard let newId, oldId != newId else { return }
+            calls.bindPresentation(chat: chat, auth: auth)
+            calls.presentIncomingRing(chat: chat, auth: auth)
+        }
         .onChange(of: calls.activeRoom?.id) { _, roomId in
             guard auth.flowState == .signedIn else { return }
             if roomId != nil {
@@ -101,7 +106,13 @@ struct ContentView: View {
         Task {
             await subscription.refresh(client: auth.client, workspace: auth.selectedWorkspace)
             if let uid = auth.profile?.id {
-                calls.attach(client: auth.client, userId: uid)
+                calls.attach(
+                    client: auth.client,
+                    userId: uid,
+                    displayName: auth.profile?.displayName ?? auth.displayName,
+                    workspaceId: auth.selectedWorkspace?.id
+                )
+                calls.bindPresentation(chat: chat, auth: auth)
                 await DeviceIdentityService.register(
                     client: auth.client,
                     userId: uid,

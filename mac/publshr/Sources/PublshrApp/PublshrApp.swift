@@ -113,7 +113,13 @@ struct PublshrApp: App {
         guard auth.flowState == .signedIn else { return }
         await subscription.refresh(client: auth.client, workspace: auth.selectedWorkspace)
         if let uid = auth.profile?.id {
-            calls.attach(client: auth.client, userId: uid)
+            calls.attach(
+                client: auth.client,
+                userId: uid,
+                displayName: auth.profile?.displayName ?? auth.displayName,
+                workspaceId: auth.selectedWorkspace?.id
+            )
+            calls.bindPresentation(chat: chat, auth: auth)
             await DeviceIdentityService.register(
                 client: auth.client,
                 userId: uid,

@@ -1,90 +1,165 @@
 import SwiftUI
 
-/// In-call UI — native macOS panel with live participant list (Supabase signaling).
+/// In-call UI inside the glass call window with LiveKit video tiles.
 struct CallRoomView: View {
     @EnvironmentObject private var calls: CallSignalingService
     @EnvironmentObject private var chat: ChatViewModel
     @EnvironmentObject private var auth: AuthViewModel
 
+    private let gridColumns = [
+        GridItem(.adaptive(minimum: 160, maximum: 220), spacing: 8),
+    ]
+
     var body: some View {
         VStack(spacing: 0) {
             header
-            Divider()
-            participantGrid
-            Divider()
+            Divider().opacity(0.35)
+            videoGrid
+            Divider().opacity(0.35)
             controls
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(nsColor: .windowBackgroundColor))
+        .glassPanel(cornerRadius: 14, opacity: 0.82)
+        .onChange(of: calls.isMuted) { _, _ in
+            Task { await calls.onMuteChanged() }
+        }
+        .onChange(of: calls.isVideoEnabled) { _, _ in
+            Task { await calls.onMuteChanged() }
+        }
     }
 
     private var header: some View {
-        VStack(spacing: 4) {
+        VStack(spacing: 6) {
+            HStack {
+                Label(calls.callScope.label, systemImage: calls.callScope.icon)
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(CursorTheme.accent)
+                Spacer()
+                Text(calls.activeRoom?.kind == "video" ? "Video" : "Voice")
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundStyle(CursorTheme.foregroundDim)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 3)
+                    .background(Color.white.opacity(0.5))
+                    .clipShape(Capsule())
+            }
             Text(calls.activeRoom?.title ?? "Call")
-                .font(.headline)
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundStyle(CursorTheme.foreground)
             Text(calls.mediaStatus)
-                .font(.caption)
-                .foregroundStyle(.secondary)
+                .font(.system(size: 11))
+                .foregroundStyle(CursorTheme.foregroundMuted)
                 .multilineTextAlignment(.center)
+            if let code = calls.localRoomCode {
+                Text("Room \(code) · up to 20 on LAN")
+                    .font(.system(size: 10))
+                    .foregroundStyle(CursorTheme.foregroundDim)
+            }
         }
-        .padding()
+        .padding(14)
     }
 
-    private var participantGrid: some View {
-        ScrollView {
-            LazyVStack(spacing: 8) {
-                ForEach(calls.participants.filter(\.isActive)) { p in
-                    HStack(spacing: 10) {
-                        ChatProfileAvatar(
-                            profile: chat.profile(for: p.userId),
-                            displayName: chat.displayName(for: p.userId),
-                            size: 36
-                        )
-                        VStack(alignment: .leading) {
-                            Text(chat.displayName(for: p.userId))
-                                .font(.subheadline.weight(.medium))
-                            HStack(spacing: 6) {
-                                if p.isMuted {
-                                    Image(systemName: "mic.slash").font(.caption)
-                                }
-                                if p.isVideoEnabled {
-                                    Image(systemName: "video").font(.caption)
-                                }
-                            }
-                            .foregroundStyle(.secondary)
-                        }
-                        Spacer()
-                    }
-                    .padding(8)
-                    .background(Color(nsColor: .controlBackgroundColor))
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
-                }
+    @ViewBuilder
+    private var videoGrid: some View {
+        if calls.liveMedia.videoTiles.isEmpty {
+            ScrollView {
+                participantListFallback
             }
-            .padding()
+            .frame(maxHeight: 300)
+        } else {
+            ScrollView {
+                LazyVGrid(columns: gridColumns, spacing: 8) {
+                    ForEach(calls.liveMedia.videoTiles) { tile in
+                        CallParticipantVideoCell(
+                            tile: tile,
+                            resolvedName: resolvedDisplayName(for: tile)
+                        )
+                    }
+                }
+                .padding(12)
+            }
+            .frame(maxHeight: 340)
         }
+    }
+
+    private var participantListFallback: some View {
+        LazyVStack(spacing: 8) {
+            ForEach(calls.participants.filter(\.isActive)) { p in
+                HStack(spacing: 10) {
+                    ChatProfileAvatar(
+                        profile: chat.profile(for: p.userId),
+                        displayName: chat.displayName(for: p.userId),
+                        size: 40
+                    )
+                    Text(chat.displayName(for: p.userId))
+                        .font(.system(size: 13, weight: .medium))
+                    Spacer()
+                }
+                .padding(10)
+                .background(Color.white.opacity(0.45))
+                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+            }
+        }
+        .padding(12)
+    }
+
+    private func resolvedDisplayName(for tile: CallVideoTile) -> String {
+        if tile.isLocal { return "You" }
+        if let uid = tile.userId {
+            return chat.displayName(for: uid)
+        }
+        return tile.displayName
     }
 
     private var controls: some View {
-        HStack(spacing: 16) {
-            Button {
+        HStack(spacing: 12) {
+            callControlButton(
+                calls.isMuted ? "mic.slash.fill" : "mic.fill",
+                title: calls.isMuted ? "Unmute" : "Mute",
+                tint: CursorTheme.foreground
+            ) {
                 calls.isMuted.toggle()
-            } label: {
-                Label(calls.isMuted ? "Unmute" : "Mute", systemImage: calls.isMuted ? "mic.slash.fill" : "mic.fill")
             }
-            Button {
+            callControlButton(
+                calls.isVideoEnabled ? "video.fill" : "video",
+                title: "Video",
+                tint: CursorTheme.foreground
+            ) {
                 calls.isVideoEnabled.toggle()
-            } label: {
-                Label("Video", systemImage: calls.isVideoEnabled ? "video.fill" : "video")
             }
             Spacer()
             Button("Leave") {
                 Task { await calls.leaveCall() }
             }
-            Button("End for all", role: .destructive) {
+            .buttonStyle(.bordered)
+            Button("End") {
                 Task { await calls.endCall() }
             }
+            .buttonStyle(.borderedProminent)
+            .tint(.red)
             .disabled(auth.profile?.id != calls.activeRoom?.createdBy)
         }
-        .padding()
+        .padding(14)
+    }
+
+    private func callControlButton(
+        _ symbol: String,
+        title: String,
+        tint: Color,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            VStack(spacing: 4) {
+                Image(systemName: symbol)
+                    .font(.system(size: 16))
+                Text(title)
+                    .font(.system(size: 10))
+            }
+            .foregroundStyle(tint)
+            .frame(width: 56, height: 48)
+            .background(Color.white.opacity(0.55))
+            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+        }
+        .buttonStyle(.plain)
     }
 }
