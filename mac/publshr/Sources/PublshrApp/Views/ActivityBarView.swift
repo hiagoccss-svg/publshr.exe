@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct ActivityBarView: View {
+    @EnvironmentObject private var tabStore: WorkspaceTabStore
     @Binding var module: AppModule
     var topInset: CGFloat
 
@@ -37,6 +38,7 @@ struct ActivityBarView: View {
         let selected = module == item
         return Button {
             module = item
+            tabStore.openFromModule(item, activate: true)
         } label: {
             Image(systemName: item.systemImage)
                 .font(.system(size: CursorTheme.activityBarIconSize, weight: .medium))

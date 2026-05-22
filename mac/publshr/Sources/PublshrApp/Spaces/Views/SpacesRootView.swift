@@ -4,9 +4,10 @@ struct SpacesRootView: View {
     @EnvironmentObject private var auth: AuthViewModel
     @ObservedObject var spaces: SpacesViewModel
     var topInset: CGFloat = 0
+    var embedInPopOut: Bool = false
 
     var body: some View {
-        SpacesWorkspaceChrome(spaces: spaces, topInset: topInset) {
+        SpacesWorkspaceChrome(spaces: spaces, topInset: topInset, embedInPopOut: embedInPopOut) {
             HStack(spacing: 0) {
                 workspaceContent
                     .frame(maxWidth: .infinity, maxHeight: .infinity)

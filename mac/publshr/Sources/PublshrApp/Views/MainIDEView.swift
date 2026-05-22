@@ -6,13 +6,16 @@ struct MainIDEView: View {
     @EnvironmentObject private var spaces: SpacesViewModel
     @EnvironmentObject private var updates: AppUpdateViewModel
     @EnvironmentObject private var subscription: SubscriptionService
+    @EnvironmentObject private var tabStore: WorkspaceTabStore
     @AppStorage("publshr.selectedModule") private var storedModule = AppModule.chat.rawValue
     @State private var module: AppModule = .chat
     @State private var showNewChannel = false
     @State private var showNewDM = false
 
     private var sidebarHidden: Bool {
-        (module == .chat && chat.chatFocusMode) || (module == .spaces && spaces.spacesFocusMode)
+        !tabStore.sidebarExpanded
+            || (module == .chat && chat.chatFocusMode)
+            || (module == .spaces && spaces.spacesFocusMode)
     }
 
     var body: some View {
@@ -39,6 +42,8 @@ struct MainIDEView: View {
             if let restored = AppModule(rawValue: storedModule) {
                 module = restored
             }
+            tabStore.ensureDefaultTabs(module: module)
+            tabStore.openFromModule(module, activate: true)
             chat.attach(auth: auth)
             spaces.attach(auth: auth)
         }
@@ -48,6 +53,21 @@ struct MainIDEView: View {
             if newModule != .spaces { spaces.spacesFocusMode = false }
             if newModule == .chat { chat.attach(auth: auth) }
             if newModule == .spaces { spaces.attach(auth: auth) }
+            tabStore.openFromModule(newModule, activate: true)
+        }
+        .onChange(of: tabStore.selectedTabId) { _, _ in
+            tabStore.applySelection(module: &module, chat: chat, spaces: spaces)
+            if let tab = tabStore.selectedTab, case .app(let m) = tab.kind {
+                storedModule = m.rawValue
+            }
+        }
+        .onChange(of: chat.selectedChannel?.id) { _, _ in
+            tabStore.reflectChannelSelection(chat.selectedChannel)
+            tabStore.syncTabMetadata(chat: chat, spaces: spaces)
+        }
+        .onChange(of: spaces.selectedSpaceId) { _, _ in
+            tabStore.reflectSpaceSelection(spaces.selectedSpace)
+            tabStore.syncTabMetadata(chat: chat, spaces: spaces)
         }
         .onChange(of: auth.selectedMembership?.workspace.id) { _, _ in
             if module == .spaces {
@@ -61,6 +81,7 @@ struct MainIDEView: View {
         .sheet(isPresented: $showNewDM) { newDMSheet }
         .onReceive(NotificationCenter.default.publisher(for: .publshrOpenSettings)) { _ in
             module = .settings
+            tabStore.openFromModule(.settings, activate: true)
         }
     }
 
@@ -85,15 +106,13 @@ struct MainIDEView: View {
 
     private func contentColumn(topInset: CGFloat) -> some View {
         VStack(spacing: 0) {
-            if module == .settings {
-                VStack(spacing: 0) {
-                    Color.clear.frame(height: topInset)
-                    ContentToolbarView(spaces: spaces, module: module)
-                        .frame(height: CursorTheme.titleBarHeight)
-                }
-            }
+            WorkspaceHeaderView(
+                spaces: spaces,
+                module: $module,
+                topInset: topInset
+            )
 
-            moduleMainContent(topInset: topInset)
+            moduleMainContent
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
 
             ContentStatusFooter(module: module)
@@ -104,11 +123,11 @@ struct MainIDEView: View {
     }
 
     @ViewBuilder
-    private func moduleMainContent(topInset: CGFloat) -> some View {
+    private var moduleMainContent: some View {
         switch module {
         case .chat:
             if subscription.canUseChat(workspace: auth.selectedWorkspace) {
-                EnterpriseChatView(chat: chat, topInset: topInset)
+                EnterpriseChatView(chat: chat, topInset: 0)
                     .onAppear { chat.attach(auth: auth) }
             } else {
                 EnterpriseModuleGate(
@@ -118,7 +137,7 @@ struct MainIDEView: View {
             }
         case .spaces:
             if subscription.canUseSpaces(workspace: auth.selectedWorkspace) {
-                SpacesRootView(spaces: spaces, topInset: topInset)
+                SpacesRootView(spaces: spaces, topInset: 0)
             } else {
                 EnterpriseModuleGate(
                     moduleName: "Spaces",
