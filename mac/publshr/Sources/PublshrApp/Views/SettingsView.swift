@@ -74,6 +74,10 @@ struct SettingsView: View {
                 .font(.system(size: 13))
                 .foregroundStyle(CursorTheme.foreground)
 
+            Text(AppShellIdentity.distributionTag)
+                .font(.system(size: 10, design: .monospaced))
+                .foregroundStyle(CursorTheme.foregroundDim)
+
             if let err = updates.errorMessage {
                 Text(err)
                     .font(.system(size: 11))
@@ -81,7 +85,7 @@ struct SettingsView: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
 
-            if Bundle.main.object(forInfoDictionaryKey: "PublshrShellVersion") as? String != "enterprise-3" {
+            if Bundle.main.object(forInfoDictionaryKey: "PublshrShellVersion") as? String != "enterprise-4" {
                 Text("Your app is an older build (fake Explorer UI). Use Download and install to get Chat and Spaces.")
                     .font(.system(size: 11))
                     .foregroundStyle(CursorTheme.foregroundMuted)

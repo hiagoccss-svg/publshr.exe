@@ -69,8 +69,8 @@ if command -v strings >/dev/null 2>&1; then
         echo "ERROR: Binary still contains fake Explorer sidebar — wrong build" >&2
         exit 1
     fi
-    if ! strings "$EXEC" | grep -q "Favorites"; then
-        echo "ERROR: Binary missing enterprise Chat nav (Favorites) — wrong build" >&2
+    if ! strings "$EXEC" | grep -q "PublshrEnterpriseShell-4"; then
+        echo "ERROR: Binary missing enterprise shell marker (PublshrEnterpriseShell-4) — wrong build" >&2
         exit 1
     fi
 fi

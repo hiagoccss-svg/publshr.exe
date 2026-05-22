@@ -32,7 +32,7 @@ _validate_app() {
     if command -v strings >/dev/null 2>&1; then
         strings "$exec" | grep -q "Welcome to Publshr" && return 1
         strings "$exec" | grep -q "Search files, commands" && return 1
-        strings "$exec" | grep -q "Favorites" || return 1
+        strings "$exec" | grep -q "PublshrEnterpriseShell-4" || return 1
     fi
     return 0
 }
