@@ -14,7 +14,8 @@ struct ChatSidebarView: View {
                     sidebarSection("Direct Messages", items: chat.filteredDMs, onAdd: { showNewDM = true })
                     projectsSection
                 }
-                .padding(.vertical, 8)
+                .padding(.vertical, 6)
+                .padding(.horizontal, 2)
             }
         }
         .frame(maxHeight: .infinity)
@@ -35,12 +36,12 @@ struct ChatSidebarView: View {
                     Button {
                         Task { await chat.sharePlannerTask(task) }
                     } label: {
-                        HStack(spacing: 10) {
+                        HStack(spacing: 8) {
                             Image(systemName: "folder")
-                                .font(.system(size: 12))
+                                .font(.system(size: 11, weight: .medium))
                                 .foregroundStyle(CursorTheme.foregroundMuted)
-                                .frame(width: 18)
-                            VStack(alignment: .leading, spacing: 2) {
+                                .frame(width: 14)
+                            VStack(alignment: .leading, spacing: 1) {
                                 Text(task.title)
                                     .font(.system(size: 12))
                                     .foregroundStyle(CursorTheme.foregroundMuted)
@@ -51,11 +52,11 @@ struct ChatSidebarView: View {
                             }
                             Spacer(minLength: 0)
                         }
-                        .frame(height: CursorTheme.chatSidebarRowHeight)
-                        .padding(.horizontal, 12)
+                        .frame(height: 28)
+                        .padding(.horizontal, 10)
                     }
                     .buttonStyle(.plain)
-                    .padding(.horizontal, 8)
+                    .padding(.horizontal, 6)
                 }
             }
         }
@@ -86,23 +87,23 @@ struct ChatSidebarView: View {
     private func sectionHeader(_ title: String, onAdd: (() -> Void)?) -> some View {
         HStack {
             Text(title.uppercased())
-                .font(.system(size: 10, weight: .semibold))
+                .font(.system(size: 9, weight: .semibold))
                 .foregroundStyle(CursorTheme.foregroundDim)
-                .tracking(0.5)
+                .tracking(0.45)
             Spacer()
             if let onAdd {
                 Button(action: onAdd) {
                     Image(systemName: "plus")
-                        .font(.system(size: 11, weight: .medium))
+                        .font(.system(size: 10, weight: .medium))
                         .foregroundStyle(CursorTheme.foregroundMuted)
-                        .frame(width: 22, height: 22)
+                        .frame(width: 20, height: 20)
                 }
                 .buttonStyle(.plain)
             }
         }
-        .padding(.horizontal, 16)
-        .padding(.top, 12)
-        .padding(.bottom, 4)
+        .padding(.horizontal, 12)
+        .padding(.top, 10)
+        .padding(.bottom, 3)
     }
 
     private func channelRow(_ channel: ChatChannel) -> some View {
@@ -111,13 +112,13 @@ struct ChatSidebarView: View {
         return Button {
             chat.selectChannel(channel)
         } label: {
-            HStack(spacing: 10) {
+            HStack(spacing: 8) {
                 Image(systemName: channel.sidebarIcon)
-                    .font(.system(size: 12))
+                    .font(.system(size: 11, weight: .medium))
                     .foregroundStyle(selected ? CursorTheme.accent : CursorTheme.foregroundMuted)
-                    .frame(width: 18)
+                    .frame(width: 14)
                 Text(dmTitle(channel))
-                    .font(.system(size: 13, weight: unread > 0 ? .semibold : .regular))
+                    .font(.system(size: 12, weight: unread > 0 ? .semibold : .regular))
                     .foregroundStyle(selected ? CursorTheme.foreground : CursorTheme.foregroundMuted)
                     .lineLimit(1)
                 Spacer(minLength: 0)
@@ -131,15 +132,15 @@ struct ChatSidebarView: View {
                         .clipShape(Capsule())
                 }
             }
-            .frame(height: CursorTheme.chatSidebarRowHeight)
-            .padding(.horizontal, 12)
+            .frame(height: 28)
+            .padding(.horizontal, 10)
             .background(
-                RoundedRectangle(cornerRadius: 6)
+                RoundedRectangle(cornerRadius: 5, style: .continuous)
                     .fill(selected ? CursorTheme.accent.opacity(0.08) : Color.clear)
             )
         }
         .buttonStyle(.plain)
-        .padding(.horizontal, 8)
+        .padding(.horizontal, 6)
     }
 
     private func dmTitle(_ channel: ChatChannel) -> String {

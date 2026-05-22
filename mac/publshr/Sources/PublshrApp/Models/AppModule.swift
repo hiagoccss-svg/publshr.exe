@@ -18,9 +18,9 @@ enum AppModule: String, CaseIterable, Identifiable {
 
     var systemImage: String {
         switch self {
-        case .chat: return "bubble.left.and.bubble.right.fill"
-        case .spaces: return "square.grid.2x2.fill"
-        case .settings: return "gearshape.fill"
+        case .chat: return "bubble.left.and.bubble.right"
+        case .spaces: return "square.grid.2x2"
+        case .settings: return "gearshape"
         }
     }
 
