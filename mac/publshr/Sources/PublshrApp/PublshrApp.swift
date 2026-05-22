@@ -9,6 +9,7 @@ struct PublshrApp: App {
     @StateObject private var subscription = SubscriptionService()
     @StateObject private var enterprise = EnterpriseWorkspaceService()
     @StateObject private var calls = CallSignalingService()
+    @StateObject private var tabStore = WorkspaceTabStore()
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
     init() {
@@ -25,6 +26,7 @@ struct PublshrApp: App {
                 .environmentObject(subscription)
                 .environmentObject(enterprise)
                 .environmentObject(calls)
+                .environmentObject(tabStore)
                 .onOpenURL { url in
                     auth.handleIncomingURL(url)
                 }

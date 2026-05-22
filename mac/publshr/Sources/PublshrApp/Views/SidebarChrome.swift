@@ -32,14 +32,22 @@ struct EnterpriseSidebarRow: View {
     }
 }
 
-/// Subtle frosted sidebar for chat (less transparent than native `.sidebar` lists).
-struct ChatNavSidebarBackground: View {
+/// Soft horizontal rule between nav sections.
+struct NavSidebarDivider: View {
     var body: some View {
-        ZStack {
-            CursorTheme.navSidebar
-            Rectangle()
-                .fill(.regularMaterial)
-                .opacity(0.38)
-        }
+        Rectangle()
+            .fill(CursorTheme.hairline)
+            .frame(height: 1)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+    }
+}
+
+/// Vertical rule in the workspace header between action groups.
+struct HeaderActionDivider: View {
+    var body: some View {
+        Rectangle()
+            .fill(CursorTheme.hairline)
+            .frame(width: 1, height: 20)
     }
 }

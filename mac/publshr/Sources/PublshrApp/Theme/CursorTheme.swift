@@ -180,6 +180,16 @@ enum CursorTheme {
     static let chatRowSpacing: CGFloat = 16
     static let chatSidebarRowHeight: CGFloat = 30
     static let tabBarHeight: CGFloat = 35
+    /// Header row with document tabs (content column, white bar).
+    static let workspaceHeaderHeight: CGFloat = 44
+    static let workspaceTabSpacing: CGFloat = 6
+    static let workspaceTabHorizontalPadding: CGFloat = 10
+    static let workspaceTabCornerRadius: CGFloat = 7
+    /// Hairline separators (sidebars, header, composer).
+    static let hairlineOpacity: Double = 0.45
+    static var hairline: Color { border.opacity(hairlineOpacity) }
+    /// Activity icons align with the workspace header row under traffic lights.
+    static let activityBarIconBandHeight: CGFloat = 44
 }
 
 extension Color {

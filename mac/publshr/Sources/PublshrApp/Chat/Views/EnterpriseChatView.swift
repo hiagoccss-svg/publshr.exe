@@ -5,10 +5,11 @@ struct EnterpriseChatView: View {
     @EnvironmentObject private var auth: AuthViewModel
     @ObservedObject var chat: ChatViewModel
     var topInset: CGFloat = 0
+    var embedInPopOut: Bool = false
     @State private var showPlannerShare = false
 
     var body: some View {
-        ChatWorkspaceChrome(chat: chat, topInset: topInset) {
+        ChatWorkspaceChrome(topInset: topInset, embedInPopOut: embedInPopOut) {
             ChatConversationView(chat: chat)
         }
         .sheet(isPresented: $chat.showSearchSheet) { ChatSearchSheet(chat: chat) }
