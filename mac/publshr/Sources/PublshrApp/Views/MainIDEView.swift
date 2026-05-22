@@ -5,6 +5,7 @@ struct MainIDEView: View {
     @EnvironmentObject private var chat: ChatViewModel
     @EnvironmentObject private var spaces: SpacesViewModel
     @EnvironmentObject private var updates: AppUpdateViewModel
+    @EnvironmentObject private var subscription: SubscriptionService
     @AppStorage("publshr.selectedModule") private var storedModule = AppModule.chat.rawValue
     @State private var module: AppModule = .chat
     @State private var showNewChannel = false
@@ -79,18 +80,35 @@ struct MainIDEView: View {
         }
         .sheet(isPresented: $showNewChannel) { newChannelSheet }
         .sheet(isPresented: $showNewDM) { newDMSheet }
+        .onReceive(NotificationCenter.default.publisher(for: .publshrOpenSettings)) { _ in
+            module = .settings
+        }
     }
 
     @ViewBuilder
     private var moduleMainContent: some View {
         switch module {
         case .chat:
-            EnterpriseChatView(chat: chat)
-                .onAppear { chat.attach(auth: auth) }
+            if subscription.canUseChat(workspace: auth.selectedWorkspace) {
+                EnterpriseChatView(chat: chat)
+                    .onAppear { chat.attach(auth: auth) }
+            } else {
+                EnterpriseModuleGate(
+                    moduleName: "Chat",
+                    planName: subscription.features.planName
+                )
+            }
         case .spaces:
-            SpacesRootView(spaces: spaces)
+            if subscription.canUseSpaces(workspace: auth.selectedWorkspace) {
+                SpacesRootView(spaces: spaces)
+            } else {
+                EnterpriseModuleGate(
+                    moduleName: "Spaces",
+                    planName: subscription.features.planName
+                )
+            }
         case .settings:
-            SettingsView()
+            SettingsRootView()
         }
     }
 

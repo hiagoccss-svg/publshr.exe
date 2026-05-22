@@ -4,6 +4,11 @@ struct ContentView: View {
     @EnvironmentObject private var auth: AuthViewModel
     @EnvironmentObject private var chat: ChatViewModel
     @EnvironmentObject private var spaces: SpacesViewModel
+    @EnvironmentObject private var subscription: SubscriptionService
+    @EnvironmentObject private var enterprise: EnterpriseWorkspaceService
+    @EnvironmentObject private var calls: CallSignalingService
+
+    @State private var showEnterpriseOnboarding = false
 
     var body: some View {
         Group {
@@ -24,10 +29,12 @@ struct ContentView: View {
         .onAppear {
             applyAppearance()
             syncEnterpriseData()
+            evaluateOnboarding()
         }
         .onChange(of: auth.flowState) { _, _ in
             applyAppearance()
             syncEnterpriseData()
+            evaluateOnboarding()
         }
         .onChange(of: auth.selectedMembership?.id) { _, _ in
             syncEnterpriseData()
@@ -35,6 +42,15 @@ struct ContentView: View {
         .task(id: auth.flowState) {
             guard auth.flowState == .signedIn else { return }
             await runPeriodicSupabaseSync()
+        }
+        .sheet(isPresented: $showEnterpriseOnboarding) {
+            EnterpriseOnboardingView(isPresented: $showEnterpriseOnboarding)
+        }
+        .sheet(isPresented: Binding(
+            get: { calls.activeRoom != nil },
+            set: { if !$0 { Task { await calls.leaveCall() } } }
+        )) {
+            CallRoomView()
         }
     }
 
@@ -61,6 +77,10 @@ struct ContentView: View {
         }
     }
 
+    private func evaluateOnboarding() {
+        showEnterpriseOnboarding = auth.flowState == .signedIn && EnterpriseInstallState.needsEnterpriseSetup
+    }
+
     /// Pull Chat + Spaces from Supabase whenever workspace/session is ready — no status-bar clicks.
     private func syncEnterpriseData() {
         guard auth.flowState == .signedIn else { return }
@@ -71,6 +91,18 @@ struct ContentView: View {
             auth: auth
         )
         spaces.attach(auth: auth)
+        Task {
+            await subscription.refresh(client: auth.client, workspace: auth.selectedWorkspace)
+            if let uid = auth.profile?.id {
+                calls.attach(client: auth.client, userId: uid)
+                await DeviceIdentityService.register(
+                    client: auth.client,
+                    userId: uid,
+                    workspaceId: auth.selectedWorkspace?.id
+                )
+                await enterprise.loadDevices(client: auth.client, userId: uid)
+            }
+        }
     }
 
     private func runPeriodicSupabaseSync() async {
@@ -80,6 +112,14 @@ struct ContentView: View {
             await chat.refreshAfterReconnect()
             await spaces.reload()
             await chat.loadPlannerTasks()
+            await subscription.refresh(client: auth.client, workspace: auth.selectedWorkspace)
+            if let uid = auth.profile?.id {
+                await DeviceIdentityService.register(
+                    client: auth.client,
+                    userId: uid,
+                    workspaceId: auth.selectedWorkspace?.id
+                )
+            }
         }
     }
 }

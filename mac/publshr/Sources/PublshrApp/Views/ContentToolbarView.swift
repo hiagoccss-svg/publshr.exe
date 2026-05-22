@@ -4,6 +4,8 @@ import SwiftUI
 struct ContentToolbarView: View {
     @EnvironmentObject private var auth: AuthViewModel
     @EnvironmentObject private var chat: ChatViewModel
+    @EnvironmentObject private var subscription: SubscriptionService
+    @EnvironmentObject private var calls: CallSignalingService
     @ObservedObject var spaces: SpacesViewModel
     var module: AppModule
 
@@ -255,6 +257,10 @@ struct ContentToolbarView: View {
 
     private var chatActions: some View {
         HStack(spacing: 6) {
+            if chat.selectedChannel != nil, subscription.canUseCalls(workspace: auth.selectedWorkspace) {
+                callMenu
+            }
+
             if chat.selectedChannel != nil {
                 toolbarIcon(
                     chat.showPinnedPanel ? "pin.fill" : "pin",
@@ -286,6 +292,43 @@ struct ContentToolbarView: View {
             }
 
             statusMenu
+        }
+    }
+
+    private var callMenu: some View {
+        Menu {
+            Button {
+                startCall(video: false)
+            } label: {
+                Label("Voice call", systemImage: "phone.fill")
+            }
+            Button {
+                startCall(video: true)
+            } label: {
+                Label("Video call", systemImage: "video.fill")
+            }
+        } label: {
+            Image(systemName: "phone")
+                .font(.system(size: 13))
+                .foregroundStyle(CursorTheme.foregroundMuted)
+                .frame(width: 28, height: 28)
+                .background(RoundedRectangle(cornerRadius: 6).fill(CursorTheme.panelBackground))
+        }
+        .menuStyle(.borderlessButton)
+        .help("Start a call")
+    }
+
+    private func startCall(video: Bool) {
+        guard let ws = auth.selectedWorkspace?.id,
+              let channel = chat.selectedChannel else { return }
+        Task {
+            await calls.startChannelCall(
+                workspaceId: ws,
+                channelId: channel.id,
+                title: channel.displayTitle,
+                video: video,
+                workspaceSettings: auth.selectedWorkspace?.settings
+            )
         }
     }
 
