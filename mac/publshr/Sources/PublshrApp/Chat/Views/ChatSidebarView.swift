@@ -29,7 +29,9 @@ struct ChatSidebarView: View {
                     .padding(.vertical, 6)
                     .padding(.horizontal, 4)
                 }
+                .frame(maxHeight: .infinity)
             }
+            .frame(maxHeight: .infinity)
         } footer: {
             layoutFooter
         }
@@ -119,6 +121,10 @@ struct ChatSidebarView: View {
 
     private var organizedContent: some View {
         Group {
+            if chat.sidebarFilter == .all, !chat.favoriteChannels.isEmpty {
+                sidebarSection("Favorites", items: chat.favoriteChannels, onAdd: nil)
+                LibraryUniversalSubmenu.sectionDivider()
+            }
             if chat.sidebarFilter != .dms {
                 sidebarSection("Channels", items: chat.filteredChannels, onAdd: { showNewChannel = true })
                 LibraryUniversalSubmenu.sectionDivider()
@@ -298,6 +304,7 @@ struct ChatSidebarView: View {
                                 .foregroundStyle(LibraryGlassDesign.inkMuted)
                         }
                     }
+                    .frame(minWidth: 40, alignment: .trailing)
                 }
                 .frame(height: ChatClickUpDesign.rowHeight)
                 .padding(.horizontal, 10)
@@ -309,6 +316,7 @@ struct ChatSidebarView: View {
             .buttonStyle(.plain)
 
             channelRowMenu(channel)
+                .frame(width: 28)
         }
         .padding(.horizontal, 6)
         .contextMenu {

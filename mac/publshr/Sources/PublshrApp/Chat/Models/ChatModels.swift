@@ -114,6 +114,11 @@ struct ChatAttachment: Codable, Equatable {
     /// Phase 3: voice note duration, waveform, transcript reference.
     var voiceNoteDurationMs: Int?
     var transcriptId: UUID?
+
+    var isVoice: Bool { type == "voice" }
+    var isVideo: Bool { type == "video" }
+    var isImage: Bool { type == "image" }
+    var isMediaAttachment: Bool { isVoice || isVideo || isImage }
 }
 
 // MARK: - Presence
