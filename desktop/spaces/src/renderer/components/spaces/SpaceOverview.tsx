@@ -66,7 +66,7 @@ export function SpaceOverview(): React.ReactElement {
                   <button
                     type="button"
                     onClick={() => {
-                      setSelectedTask(t.id)
+                      void setSelectedTask(t.id)
                       setTaskView('list')
                     }}
                     className="flex w-full items-center justify-between rounded-lg px-2 py-1 text-left text-xs hover:bg-surface-muted"
@@ -87,7 +87,7 @@ export function SpaceOverview(): React.ReactElement {
             <button
               key={t.id}
               type="button"
-              onClick={() => setSelectedTask(t.id)}
+              onClick={() => void setSelectedTask(t.id)}
               className="mb-1 block w-full truncate rounded-lg px-2 py-1 text-left text-xs text-ink hover:bg-surface-muted"
             >
               {t.title}

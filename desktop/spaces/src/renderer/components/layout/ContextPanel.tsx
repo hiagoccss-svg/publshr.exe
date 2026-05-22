@@ -13,7 +13,7 @@ export function ContextPanel(): React.ReactElement {
   const task = tasks.find((t) => t.id === selectedTaskId)
 
   return (
-    <aside className="flex w-80 shrink-0 flex-col border-l border-surface-border bg-surface-raised shadow-panel">
+    <aside className="flex w-[340px] shrink-0 flex-col border-l border-surface-border bg-surface-raised shadow-panel">
       <div className="flex items-center justify-between border-b border-surface-border px-3 py-2">
         <span className="text-xs font-semibold uppercase tracking-wide text-ink-muted">Context</span>
         <button
@@ -26,7 +26,7 @@ export function ContextPanel(): React.ReactElement {
       </div>
 
       {task ? (
-        <TaskDetailForm task={task} onClose={() => setSelectedTask(null)} />
+        <TaskDetailForm task={task} onClose={() => void setSelectedTask(null)} />
       ) : (
         <div className="flex-1 overflow-y-auto p-3">
           <p className="mb-3 text-xs text-ink-muted">Select a task to inspect details, checklist, and links.</p>

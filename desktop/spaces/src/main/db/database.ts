@@ -11,8 +11,11 @@ import type {
   SearchResult,
   Space,
   SpaceActivity,
+  SpaceComment,
   SpaceDocument,
   SpaceFile,
+  SpaceFolder,
+  SpaceList,
   SpaceMember,
   SyncStatus,
   Task,
@@ -52,10 +55,34 @@ function rowToSpace(row: Record<string, unknown>): Space {
   }
 }
 
+function rowToFolder(row: Record<string, unknown>): SpaceFolder {
+  return {
+    id: row.id as string,
+    spaceId: row.space_id as string,
+    name: row.name as string,
+    sortOrder: row.sort_order as number,
+    isArchived: Boolean(row.is_archived),
+    updatedAt: row.updated_at as string
+  }
+}
+
+function rowToList(row: Record<string, unknown>): SpaceList {
+  return {
+    id: row.id as string,
+    spaceId: row.space_id as string,
+    folderId: (row.folder_id as string) || null,
+    name: row.name as string,
+    sortOrder: row.sort_order as number,
+    isArchived: Boolean(row.is_archived),
+    updatedAt: row.updated_at as string
+  }
+}
+
 function rowToTask(row: Record<string, unknown>): Task {
   return {
     id: row.id as string,
     spaceId: row.space_id as string,
+    listId: (row.list_id as string) || null,
     title: row.title as string,
     description: row.description as string,
     status: row.status as TaskStatus,
@@ -85,7 +112,67 @@ export class SpacesDatabase {
     const path = join(dir, 'spaces.db')
     this.db = new Database(path)
     this.db.exec(SCHEMA_SQL)
+    this.runMigrations()
     this.ensureSeed()
+  }
+
+  private runMigrations(): void {
+    const versionRow = this.db.prepare(`SELECT value FROM meta WHERE key = 'schema_version'`).get() as
+      | { value: string }
+      | undefined
+    const version = Number(versionRow?.value ?? 0)
+
+    if (version < 2) {
+      const taskCols = this.db.prepare(`PRAGMA table_info(tasks)`).all() as Array<{ name: string }>
+      if (!taskCols.some((c) => c.name === 'list_id')) {
+        this.db.exec(`ALTER TABLE tasks ADD COLUMN list_id TEXT REFERENCES space_lists(id) ON DELETE SET NULL`)
+      }
+      this.db.exec(`
+        CREATE TABLE IF NOT EXISTS space_folders (
+          id TEXT PRIMARY KEY,
+          space_id TEXT NOT NULL REFERENCES spaces(id) ON DELETE CASCADE,
+          name TEXT NOT NULL,
+          sort_order REAL NOT NULL DEFAULT 0,
+          is_archived INTEGER NOT NULL DEFAULT 0,
+          updated_at TEXT NOT NULL,
+          sync_pending INTEGER NOT NULL DEFAULT 0
+        );
+        CREATE TABLE IF NOT EXISTS space_lists (
+          id TEXT PRIMARY KEY,
+          space_id TEXT NOT NULL REFERENCES spaces(id) ON DELETE CASCADE,
+          folder_id TEXT REFERENCES space_folders(id) ON DELETE SET NULL,
+          name TEXT NOT NULL,
+          sort_order REAL NOT NULL DEFAULT 0,
+          is_archived INTEGER NOT NULL DEFAULT 0,
+          updated_at TEXT NOT NULL,
+          sync_pending INTEGER NOT NULL DEFAULT 0
+        );
+        CREATE INDEX IF NOT EXISTS idx_tasks_list ON tasks(list_id);
+        CREATE INDEX IF NOT EXISTS idx_folders_space ON space_folders(space_id);
+        CREATE INDEX IF NOT EXISTS idx_lists_space ON space_lists(space_id);
+      `)
+      this.ensureDefaultListsForExistingSpaces()
+      this.db
+        .prepare(
+          `INSERT INTO meta (key, value) VALUES ('schema_version', '2')
+           ON CONFLICT(key) DO UPDATE SET value = excluded.value`
+        )
+        .run()
+    }
+  }
+
+  private ensureDefaultListsForExistingSpaces(): void {
+    const spaces = this.db.prepare(`SELECT id FROM spaces WHERE is_archived = 0`).all() as Array<{
+      id: string
+    }>
+    for (const { id: spaceId } of spaces) {
+      const listCount = this.db
+        .prepare(`SELECT COUNT(*) as c FROM space_lists WHERE space_id = ? AND is_archived = 0`)
+        .get(spaceId) as { c: number }
+      if (listCount.c === 0) {
+        this.createList(spaceId, 'List', null)
+      }
+    }
   }
 
   setSyncStatus(status: SyncStatus): void {
@@ -209,7 +296,104 @@ export class SpacesDatabase {
     this.indexSearch('space', space.id, space.id, space.name, space.description)
     this.logActivity(space.id, space.ownerId, 'You', 'created space', 'space', space.id)
     this.enqueueSync('spaces', space.id, 'insert', space)
+    this.createList(space.id, 'List', null)
     return space
+  }
+
+  listFolders(spaceId: string): SpaceFolder[] {
+    const rows = this.db
+      .prepare(
+        `SELECT * FROM space_folders WHERE space_id = ? AND is_archived = 0 ORDER BY sort_order ASC, name ASC`
+      )
+      .all(spaceId)
+    return rows.map((r) => rowToFolder(r as Record<string, unknown>))
+  }
+
+  createFolder(spaceId: string, name: string): SpaceFolder {
+    const id = uuid()
+    const ts = now()
+    const maxOrder = this.db
+      .prepare(`SELECT COALESCE(MAX(sort_order), 0) as m FROM space_folders WHERE space_id = ?`)
+      .get(spaceId) as { m: number }
+    const folder: SpaceFolder = {
+      id,
+      spaceId,
+      name,
+      sortOrder: maxOrder.m + 1,
+      isArchived: false,
+      updatedAt: ts
+    }
+    this.db
+      .prepare(
+        `INSERT INTO space_folders (id, space_id, name, sort_order, is_archived, updated_at, sync_pending)
+         VALUES (?, ?, ?, ?, 0, ?, 1)`
+      )
+      .run(folder.id, folder.spaceId, folder.name, folder.sortOrder, folder.updatedAt)
+    this.createList(spaceId, 'List', folder.id)
+    this.logActivity(spaceId, '', 'You', `created folder "${name}"`, 'folder', folder.id)
+    this.enqueueSync('space_folders', folder.id, 'insert', folder)
+    return folder
+  }
+
+  updateFolder(id: string, patch: { name?: string }): SpaceFolder {
+    const row = this.db.prepare('SELECT * FROM space_folders WHERE id = ?').get(id)
+    if (!row) throw new Error('Folder not found')
+    const current = rowToFolder(row as Record<string, unknown>)
+    const next = { ...current, name: patch.name ?? current.name, updatedAt: now() }
+    this.db
+      .prepare(`UPDATE space_folders SET name = ?, updated_at = ?, sync_pending = 1 WHERE id = ?`)
+      .run(next.name, next.updatedAt, id)
+    this.enqueueSync('space_folders', id, 'update', next)
+    return next
+  }
+
+  listLists(spaceId: string): SpaceList[] {
+    const rows = this.db
+      .prepare(
+        `SELECT * FROM space_lists WHERE space_id = ? AND is_archived = 0 ORDER BY sort_order ASC, name ASC`
+      )
+      .all(spaceId)
+    return rows.map((r) => rowToList(r as Record<string, unknown>))
+  }
+
+  createList(spaceId: string, name: string, folderId: string | null = null): SpaceList {
+    const id = uuid()
+    const ts = now()
+    const maxOrder = this.db
+      .prepare(
+        `SELECT COALESCE(MAX(sort_order), 0) as m FROM space_lists WHERE space_id = ? AND COALESCE(folder_id, '') = COALESCE(?, '')`
+      )
+      .get(spaceId, folderId) as { m: number }
+    const list: SpaceList = {
+      id,
+      spaceId,
+      folderId,
+      name,
+      sortOrder: maxOrder.m + 1,
+      isArchived: false,
+      updatedAt: ts
+    }
+    this.db
+      .prepare(
+        `INSERT INTO space_lists (id, space_id, folder_id, name, sort_order, is_archived, updated_at, sync_pending)
+         VALUES (?, ?, ?, ?, ?, 0, ?, 1)`
+      )
+      .run(list.id, list.spaceId, list.folderId, list.name, list.sortOrder, list.updatedAt)
+    this.logActivity(spaceId, '', 'You', `created list "${name}"`, 'list', list.id)
+    this.enqueueSync('space_lists', list.id, 'insert', list)
+    return list
+  }
+
+  updateList(id: string, patch: { name?: string }): SpaceList {
+    const row = this.db.prepare('SELECT * FROM space_lists WHERE id = ?').get(id)
+    if (!row) throw new Error('List not found')
+    const current = rowToList(row as Record<string, unknown>)
+    const next = { ...current, name: patch.name ?? current.name, updatedAt: now() }
+    this.db
+      .prepare(`UPDATE space_lists SET name = ?, updated_at = ?, sync_pending = 1 WHERE id = ?`)
+      .run(next.name, next.updatedAt, id)
+    this.enqueueSync('space_lists', id, 'update', next)
+    return next
   }
 
   updateSpace(id: string, patch: Partial<Space>): Space {
@@ -240,10 +424,20 @@ export class SpacesDatabase {
     return next
   }
 
-  listTasks(spaceId: string): Task[] {
-    const rows = this.db
-      .prepare('SELECT * FROM tasks WHERE space_id = ? ORDER BY sort_order ASC, updated_at DESC')
-      .all(spaceId)
+  listTasks(spaceId: string, listId?: string | null): Task[] {
+    const rows = listId
+      ? this.db
+          .prepare(
+            `SELECT * FROM tasks WHERE space_id = ? AND list_id = ? AND status != 'archived'
+             ORDER BY sort_order ASC, updated_at DESC`
+          )
+          .all(spaceId, listId)
+      : this.db
+          .prepare(
+            `SELECT * FROM tasks WHERE space_id = ? AND status != 'archived'
+             ORDER BY sort_order ASC, updated_at DESC`
+          )
+          .all(spaceId)
     return rows.map((r) => rowToTask(r as Record<string, unknown>))
   }
 
@@ -257,6 +451,7 @@ export class SpacesDatabase {
     const task: Task = {
       id,
       spaceId: input.spaceId,
+      listId: input.listId ?? null,
       title: input.title,
       description: '',
       status: input.status ?? 'todo',
@@ -278,14 +473,15 @@ export class SpacesDatabase {
     this.db
       .prepare(
         `INSERT INTO tasks (
-          id, space_id, title, description, status, priority, assignee_id,
+          id, space_id, list_id, title, description, status, priority, assignee_id,
           start_date, due_date, tags, parent_task_id, checklist, comment_count,
           attachment_count, linked_doc_ids, sort_order, updated_at, created_at, sync_pending
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, '[]', NULL, '[]', 0, 0, '[]', ?, ?, ?, 1)`
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '[]', NULL, '[]', 0, 0, '[]', ?, ?, ?, 1)`
       )
       .run(
         task.id,
         task.spaceId,
+        task.listId,
         task.title,
         task.description,
         task.status,
@@ -315,6 +511,7 @@ export class SpacesDatabase {
       status: input.status ?? current.status,
       priority: input.priority ?? current.priority,
       assigneeId: input.assigneeId !== undefined ? input.assigneeId : current.assigneeId,
+      listId: input.listId !== undefined ? input.listId : current.listId,
       startDate: input.startDate !== undefined ? input.startDate : current.startDate,
       dueDate: input.dueDate !== undefined ? input.dueDate : current.dueDate,
       tags: input.tags ?? current.tags,
@@ -326,7 +523,7 @@ export class SpacesDatabase {
     this.db
       .prepare(
         `UPDATE tasks SET
-          title = ?, description = ?, status = ?, priority = ?, assignee_id = ?,
+          title = ?, description = ?, status = ?, priority = ?, assignee_id = ?, list_id = ?,
           start_date = ?, due_date = ?, tags = ?, checklist = ?, sort_order = ?,
           updated_at = ?, sync_pending = 1
          WHERE id = ?`
@@ -337,6 +534,7 @@ export class SpacesDatabase {
         next.status,
         next.priority,
         next.assigneeId,
+        next.listId,
         next.startDate,
         next.dueDate,
         JSON.stringify(next.tags),
@@ -459,6 +657,68 @@ export class SpacesDatabase {
         updatedAt: row.updated_at as string
       }
     })
+  }
+
+  listComments(taskId: string): SpaceComment[] {
+    const rows = this.db
+      .prepare(
+        `SELECT * FROM space_comments WHERE task_id = ? ORDER BY created_at ASC`
+      )
+      .all(taskId)
+    return rows.map((r) => {
+      const row = r as Record<string, unknown>
+      return {
+        id: row.id as string,
+        spaceId: row.space_id as string,
+        taskId: (row.task_id as string) || null,
+        documentId: (row.document_id as string) || null,
+        userId: row.user_id as string,
+        userName: row.user_name as string,
+        body: row.body as string,
+        createdAt: row.created_at as string
+      }
+    })
+  }
+
+  createComment(input: { spaceId: string; taskId: string; body: string }): SpaceComment {
+    const meta = Object.fromEntries(
+      this.db.prepare('SELECT key, value FROM meta').all().map((r) => {
+        const row = r as { key: string; value: string }
+        return [row.key, row.value]
+      })
+    )
+    const id = uuid()
+    const ts = now()
+    const comment: SpaceComment = {
+      id,
+      spaceId: input.spaceId,
+      taskId: input.taskId,
+      documentId: null,
+      userId: meta.current_user_id ?? uuid(),
+      userName: meta.current_user_name ?? 'You',
+      body: input.body,
+      createdAt: ts
+    }
+    this.db
+      .prepare(
+        `INSERT INTO space_comments (id, space_id, task_id, document_id, user_id, user_name, body, created_at, sync_pending)
+         VALUES (?, ?, ?, NULL, ?, ?, ?, ?, 1)`
+      )
+      .run(
+        comment.id,
+        comment.spaceId,
+        comment.taskId,
+        comment.userId,
+        comment.userName,
+        comment.body,
+        comment.createdAt
+      )
+    this.db
+      .prepare(`UPDATE tasks SET comment_count = comment_count + 1, updated_at = ? WHERE id = ?`)
+      .run(ts, input.taskId)
+    this.logActivity(input.spaceId, comment.userId, comment.userName, 'commented on task', 'task', input.taskId)
+    this.enqueueSync('space_comments', comment.id, 'insert', comment)
+    return comment
   }
 
   listFiles(spaceId: string): SpaceFile[] {

@@ -8,7 +8,21 @@ export function registerIpcHandlers(db: SpacesDatabase): void {
   ipcMain.handle('spaces:getSpace', (_e, id: string) => db.getSpace(id))
   ipcMain.handle('spaces:createSpace', (_e, input) => db.createSpace(input))
   ipcMain.handle('spaces:updateSpace', (_e, id: string, patch) => db.updateSpace(id, patch))
-  ipcMain.handle('spaces:listTasks', (_e, spaceId: string) => db.listTasks(spaceId))
+  ipcMain.handle('spaces:listFolders', (_e, spaceId: string) => db.listFolders(spaceId))
+  ipcMain.handle('spaces:createFolder', (_e, spaceId: string, name: string) =>
+    db.createFolder(spaceId, name)
+  )
+  ipcMain.handle('spaces:updateFolder', (_e, id: string, patch) => db.updateFolder(id, patch))
+  ipcMain.handle('spaces:listLists', (_e, spaceId: string) => db.listLists(spaceId))
+  ipcMain.handle('spaces:createList', (_e, spaceId: string, name: string, folderId?: string | null) =>
+    db.createList(spaceId, name, folderId ?? null)
+  )
+  ipcMain.handle('spaces:updateList', (_e, id: string, patch) => db.updateList(id, patch))
+  ipcMain.handle('spaces:listTasks', (_e, spaceId: string, listId?: string | null) =>
+    db.listTasks(spaceId, listId)
+  )
+  ipcMain.handle('spaces:listComments', (_e, taskId: string) => db.listComments(taskId))
+  ipcMain.handle('spaces:createComment', (_e, input) => db.createComment(input))
   ipcMain.handle('spaces:createTask', (_e, input) => db.createTask(input))
   ipcMain.handle('spaces:updateTask', (_e, input) => db.updateTask(input))
   ipcMain.handle('spaces:deleteTask', (_e, id: string) => db.deleteTask(id))

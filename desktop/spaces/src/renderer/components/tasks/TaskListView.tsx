@@ -37,7 +37,7 @@ export function TaskListView(): React.ReactElement {
         </thead>
         <tbody>
           {tasks.map((task) => (
-            <TaskRow key={task.id} task={task} onSelect={() => setSelectedTask(task.id)} />
+            <TaskRow key={task.id} task={task} onSelect={() => void setSelectedTask(task.id)} />
           ))}
         </tbody>
       </table>

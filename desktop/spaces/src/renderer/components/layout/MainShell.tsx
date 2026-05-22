@@ -3,6 +3,7 @@ import { Sidebar } from './Sidebar'
 import { WorkspaceArea } from './WorkspaceArea'
 import { ContextPanel } from './ContextPanel'
 import { CommandPalette } from '../command/CommandPalette'
+import { NewSpaceModal } from '../spaces/NewSpaceModal'
 import { useSpacesStore } from '../../stores/spaces-store'
 
 export function MainShell(): React.ReactElement {
@@ -18,6 +19,7 @@ export function MainShell(): React.ReactElement {
         {contextOpen && <ContextPanel />}
       </div>
       <CommandPalette />
+      <NewSpaceModal />
     </div>
   )
 }
