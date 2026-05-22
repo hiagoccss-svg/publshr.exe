@@ -43,17 +43,21 @@ enum AppUpdateError: LocalizedError {
     case invalidRepo
     case noReleases
     case noCompatibleAsset
-    case downloadFailed(String)
+    case downloadFailed
     case extractFailed
     case applyScriptMissing
+
+    /// Enterprise-facing copy — no HTTP codes, hosts, or delivery channel names.
     var errorDescription: String? {
         switch self {
-        case .invalidRepo: return "Invalid GitHub repository configuration."
-        case .noReleases: return "No published releases found on GitHub."
-        case .noCompatibleAsset: return "No macOS build is available for this Mac."
-        case .downloadFailed(let detail): return "Download failed: \(detail)"
-        case .extractFailed: return "Could not extract the update package."
-        case .applyScriptMissing: return "Update helper script is missing from the app bundle."
+        case .invalidRepo, .noReleases, .noCompatibleAsset:
+            return "Software updates are not available for this installation."
+        case .downloadFailed:
+            return "The update could not be downloaded. Check your connection and try again."
+        case .extractFailed:
+            return "The update package could not be prepared. Try again from Settings."
+        case .applyScriptMissing:
+            return "This installation cannot apply updates automatically. Reinstall from your IT team."
         }
     }
 }
@@ -66,8 +70,29 @@ final class AppUpdateService: @unchecked Sendable {
     private let fileManager = FileManager.default
     private let decoder = JSONDecoder()
 
-    init(session: URLSession = .shared) {
-        self.session = session
+    init(session: URLSession? = nil) {
+        if let session {
+            self.session = session
+        } else {
+            let config = URLSessionConfiguration.default
+            config.timeoutIntervalForRequest = 180
+            config.timeoutIntervalForResource = 600
+            config.waitsForConnectivity = true
+            self.session = URLSession(configuration: config)
+        }
+    }
+
+    private func assetDownloadRequest(url: URL) -> URLRequest {
+        var request = URLRequest(url: url)
+        request.setValue("application/octet-stream", forHTTPHeaderField: "Accept")
+        request.setValue("Publshr/1.0", forHTTPHeaderField: "User-Agent")
+        request.cachePolicy = .reloadIgnoringLocalCacheData
+        return request
+    }
+
+    private func resolvedDownloadURL(for update: AvailableUpdate) -> URL {
+        AppReleaseConfig.releaseDownloadURL(tag: update.tag, assetName: update.assetName)
+            ?? update.downloadURL
     }
 
     func checkForUpdate() async throws -> AvailableUpdate? {
@@ -106,16 +131,20 @@ final class AppUpdateService: @unchecked Sendable {
         let archiveURL = updatesRoot.appendingPathComponent("\(update.build)-\(update.assetName)")
         try? fileManager.removeItem(at: archiveURL)
 
-        var request = URLRequest(url: update.downloadURL)
-        request.setValue("Publshr/1.0", forHTTPHeaderField: "User-Agent")
+        let downloadURL = resolvedDownloadURL(for: update)
+        let (tempURL, response) = try await session.download(for: assetDownloadRequest(url: downloadURL))
+        let http = response as? HTTPURLResponse
+        let bytes = (try? fileManager.attributesOfItem(atPath: tempURL.path)[.size] as? Int) ?? 0
 
-        let (tempURL, response) = try await session.download(for: request)
-        guard let http = response as? HTTPURLResponse, (200 ... 299).contains(http.statusCode) else {
-            throw AppUpdateError.downloadFailed("HTTP \((response as? HTTPURLResponse)?.statusCode ?? -1)")
+        if bytes < AppReleaseConfig.minAppAssetBytes {
+            let code = http?.statusCode ?? -1
+            appendSyncLog("download failed status=\(code) bytes=\(bytes) url=\(downloadURL.absoluteString)")
+            throw AppUpdateError.downloadFailed
         }
 
         progress(1.0)
         try fileManager.moveItem(at: tempURL, to: archiveURL)
+        appendSyncLog("download ok bytes=\(bytes) build=\(update.build)")
         return archiveURL
     }
 
@@ -219,11 +248,13 @@ final class AppUpdateService: @unchecked Sendable {
         }
         let (data, response) = try await session.data(for: githubRequest(url: url))
         guard let http = response as? HTTPURLResponse else {
-            throw AppUpdateError.downloadFailed("No HTTP response")
+            appendSyncLog("live release: no HTTP response")
+            throw AppUpdateError.downloadFailed
         }
         if http.statusCode == 404 { return nil }
         guard (200 ... 299).contains(http.statusCode) else {
-            throw AppUpdateError.downloadFailed("GitHub live release HTTP \(http.statusCode)")
+            appendSyncLog("live release metadata HTTP \(http.statusCode)")
+            throw AppUpdateError.downloadFailed
         }
         return try decoder.decode(GitHubRelease.self, from: data)
     }
@@ -234,7 +265,8 @@ final class AppUpdateService: @unchecked Sendable {
         }
         let (data, response) = try await session.data(for: githubRequest(url: url))
         guard let http = response as? HTTPURLResponse, (200 ... 299).contains(http.statusCode) else {
-            throw AppUpdateError.downloadFailed("GitHub releases HTTP \((response as? HTTPURLResponse)?.statusCode ?? -1)")
+            appendSyncLog("releases list HTTP \((response as? HTTPURLResponse)?.statusCode ?? -1)")
+            throw AppUpdateError.downloadFailed
         }
         return try decoder.decode([GitHubRelease].self, from: data)
     }
@@ -243,7 +275,7 @@ final class AppUpdateService: @unchecked Sendable {
         let assetName = AppReleaseConfig.liveAssetName()
         guard let asset = live.assets.first(where: { $0.name == assetName }),
               asset.size >= AppReleaseConfig.minAppAssetBytes,
-              let downloadURL = URL(string: asset.browserDownloadUrl),
+              let downloadURL = AppReleaseConfig.releaseDownloadURL(tag: AppReleaseConfig.liveTag, assetName: assetName),
               let pageURL = URL(string: live.htmlURL) else {
             throw AppUpdateError.noCompatibleAsset
         }
@@ -307,12 +339,11 @@ final class AppUpdateService: @unchecked Sendable {
 
     /// Reads `VERSION.txt` from the live release (version, build, commit, package digest).
     private func fetchLiveManifest(in assets: [GitHubAsset]) async -> LiveChannelManifest? {
-        guard let asset = assets.first(where: { $0.name == "VERSION.txt" }),
-              let url = URL(string: asset.browserDownloadUrl) else {
+        guard let url = AppReleaseConfig.releaseDownloadURL(tag: AppReleaseConfig.liveTag, assetName: "VERSION.txt") else {
             return nil
         }
         do {
-            let (data, response) = try await session.data(for: githubRequest(url: url))
+            let (data, response) = try await session.data(for: assetDownloadRequest(url: url))
             guard let http = response as? HTTPURLResponse, (200 ... 299).contains(http.statusCode) else {
                 return nil
             }
@@ -349,7 +380,7 @@ final class AppUpdateService: @unchecked Sendable {
         let assetName = AppReleaseConfig.platformAssetName(version: version)
         guard let asset = release.assets.first(where: { $0.name == assetName }),
               asset.size >= AppReleaseConfig.minAppAssetBytes,
-              let downloadURL = URL(string: asset.browserDownloadUrl),
+              let downloadURL = AppReleaseConfig.releaseDownloadURL(tag: tag, assetName: assetName),
               let pageURL = URL(string: release.htmlURL) else {
             return nil
         }

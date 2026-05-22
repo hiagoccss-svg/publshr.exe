@@ -70,23 +70,26 @@ final class AppUpdateViewModel: ObservableObject {
 
     var statusLine: String {
         switch phase {
-        case .idle:
-            return "Live · v\(AppReleaseConfig.installedLabel)"
+        case .idle, .upToDate:
+            return "Version \(AppReleaseConfig.shortVersion) (build \(AppReleaseConfig.buildNumber))"
         case .checking:
-            return "Checking live channel…"
-        case .upToDate:
-            return "Live · v\(AppReleaseConfig.installedLabel) — up to date"
-        case .available(let update):
-            return "Update \(update.version) — downloading…"
+            return "Checking for updates…"
+        case .available:
+            return "Downloading update…"
         case .downloading(let progress):
-            return "Downloading live build… \(Int(progress * 100))%"
+            return "Downloading update… \(Int(progress * 100))%"
         case .readyToInstall(let update):
-            return "Installing \(update.version)…"
+            return "Preparing version \(update.version)…"
         case .installing:
-            return "Installing update — restarting…"
+            return "Installing update…"
         case .failed(let message):
             return message
         }
+    }
+
+    /// Shown in Settings only when the user explicitly requested an update action.
+    var settingsErrorMessage: String? {
+        errorMessage
     }
 
     var settingsActionTitle: String {
@@ -121,19 +124,23 @@ final class AppUpdateViewModel: ObservableObject {
         }
     }
 
-    /// Background path: check `live`, download if newer, install and restart.
+    /// Background path: check, download, install — failures are logged only (no workspace banner).
     func performLiveSync() async {
         if case .installing = phase { return }
         if case .downloading = phase { return }
 
+        await checkForUpdates(silent: true)
         if case .failed = phase {
-            phase = .idle
+            phase = .upToDate
+            return
         }
 
-        await checkForUpdates(silent: true)
-
         if case .available = phase {
-            await downloadUpdate()
+            await downloadUpdate(silent: true)
+        }
+        if case .failed = phase {
+            phase = .upToDate
+            return
         }
         if case .readyToInstall = phase {
             await installAndRestart()
@@ -165,11 +172,11 @@ final class AppUpdateViewModel: ObservableObject {
                 phase = .upToDate
             }
         } catch {
-            phase = .failed(error.localizedDescription)
+            setFailure(error, silent: silent)
         }
     }
 
-    func downloadUpdate() async {
+    func downloadUpdate(silent: Bool = false) async {
         let update: AvailableUpdate
         switch phase {
         case .available(let u):
@@ -193,7 +200,7 @@ final class AppUpdateViewModel: ObservableObject {
             _ = try service.extract(archiveURL: archiveURL, version: update.version)
             phase = .readyToInstall(update)
         } catch {
-            phase = .failed(error.localizedDescription)
+            setFailure(error, silent: silent)
         }
     }
 
@@ -203,7 +210,7 @@ final class AppUpdateViewModel: ObservableObject {
             return
         }
         if case .available = phase {
-            await downloadUpdate()
+            await downloadUpdate(silent: false)
             if case .readyToInstall = phase {
                 await installAndRestart()
             }
@@ -216,7 +223,7 @@ final class AppUpdateViewModel: ObservableObject {
             }
             return
         }
-        await downloadUpdate()
+        await downloadUpdate(silent: false)
         if case .readyToInstall = phase {
             await installAndRestart()
         }
@@ -224,7 +231,7 @@ final class AppUpdateViewModel: ObservableObject {
 
     func installAndRestart() async {
         if case .available = phase {
-            await downloadUpdate()
+            await downloadUpdate(silent: false)
         }
         guard case .readyToInstall(let update) = phase else { return }
 
@@ -236,7 +243,15 @@ final class AppUpdateViewModel: ObservableObject {
             try service.applyUpdate(treeURL: staging, parentPID: ProcessInfo.processInfo.processIdentifier)
             NSApplication.shared.terminate(nil)
         } catch {
-            phase = .failed(error.localizedDescription)
+            setFailure(error, silent: false)
         }
+    }
+
+    private func setFailure(_ error: Error, silent: Bool) {
+        if silent {
+            phase = .upToDate
+            return
+        }
+        phase = .failed(error.localizedDescription)
     }
 }

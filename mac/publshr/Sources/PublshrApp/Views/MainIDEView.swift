@@ -19,8 +19,6 @@ struct MainIDEView: View {
             let topInset = max(geometry.safeAreaInsets.top, CursorTheme.windowChromeTopInset)
 
             VStack(spacing: 0) {
-                AppUpdateBannerView(updates: updates)
-
                 HStack(alignment: .top, spacing: 0) {
                     if !sidebarHidden {
                         leftRail(topInset: topInset)
