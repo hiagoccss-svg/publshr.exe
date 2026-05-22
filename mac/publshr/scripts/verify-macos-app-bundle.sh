@@ -31,8 +31,10 @@ if [[ -f "${APP}/Contents/MacOS/PublshrApp" ]]; then
 fi
 
 if [[ -f "${APP}/Contents/MacOS/publshr" && ! -L "${APP}/Contents/MacOS/publshr" ]]; then
-    echo "ERROR: CLI binary must not be named publshr in MacOS/ (use publshr-cli)" >&2
-    exit 1
+    if [[ ! -f "${APP}/Contents/MacOS/Publshr" ]] || ! [[ "${APP}/Contents/MacOS/publshr" -ef "${APP}/Contents/MacOS/Publshr" ]]; then
+        echo "ERROR: CLI binary must not be named publshr in MacOS/ (use publshr-cli)" >&2
+        exit 1
+    fi
 fi
 
 if head -1 "$EXEC" 2>/dev/null | grep -q '^#!'; then
