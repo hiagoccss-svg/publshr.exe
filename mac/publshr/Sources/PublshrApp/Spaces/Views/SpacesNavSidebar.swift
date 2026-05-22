@@ -38,6 +38,7 @@ struct SpacesNavSidebar: View {
     private var spacesListSection: some View {
         VStack(alignment: .leading, spacing: 0) {
             LibraryUniversalSubmenu.sectionHeader("Spaces")
+                .padding(.top, spacesSubmenuTitlebarTopPadding)
 
             ScrollView {
                 VStack(spacing: 2) {
@@ -155,6 +156,11 @@ struct SpacesNavSidebar: View {
             }
             .buttonStyle(LibraryPrimaryPillButtonStyle())
         }
+    }
+
+    /// Align first section with the macOS traffic-light row (shell side columns are full height).
+    private var spacesSubmenuTitlebarTopPadding: CGFloat {
+        AppWindowChromeMetrics.trafficLightVerticalAlignPadding
     }
 }
 

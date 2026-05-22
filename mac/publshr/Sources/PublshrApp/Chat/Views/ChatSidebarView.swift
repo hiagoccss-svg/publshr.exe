@@ -12,7 +12,6 @@ struct ChatSidebarView: View {
     var body: some View {
         LibraryUniversalSubmenuContainer(width: LibraryUniversalSubmenu.width) {
             VStack(spacing: 0) {
-                chatHeader
                 sidebarSearch
                 filterBar
                 LibraryUniversalSubmenu.sectionDivider()
@@ -46,51 +45,7 @@ struct ChatSidebarView: View {
         }
     }
 
-    // MARK: - Header (ClickUp: Chat + create)
-
-    private var chatHeader: some View {
-        HStack(spacing: 8) {
-            Image(systemName: "bubble.left.and.bubble.right.fill")
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(LibraryGlassDesign.primaryCTA)
-            Text("Chat")
-                .font(ChatClickUpDesign.sidebarTitleFont)
-                .foregroundStyle(LibraryGlassDesign.ink)
-            Spacer(minLength: 0)
-            Menu {
-                Button { showNewChannel = true } label: {
-                    Label("New channel", systemImage: "number")
-                }
-                Button { showNewDM = true } label: {
-                    Label("New message", systemImage: "person.badge.plus")
-                }
-            } label: {
-                Image(systemName: "plus")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(LibraryGlassDesign.inkSecondary)
-                    .frame(width: 24, height: 24)
-            }
-            .menuStyle(.borderlessButton)
-            .menuIndicator(.hidden)
-            Button {
-                withAnimation(.easeInOut(duration: 0.15)) {
-                    tabStore.sidebarExpanded = false
-                }
-            } label: {
-                Image(systemName: "sidebar.left")
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(LibraryGlassDesign.inkSecondary)
-                    .frame(width: 24, height: 24)
-            }
-            .buttonStyle(.plain)
-            .help("Hide chat sidebar (⌘\\)")
-        }
-        .padding(.horizontal, ChatClickUpDesign.horizontalPadding)
-        .padding(.top, 12)
-        .padding(.bottom, 6)
-    }
-
-    // MARK: - Search (ClickUp: find channel or person)
+    // MARK: - Search (titlebar band — aligned with traffic-light row)
 
     private var sidebarSearch: some View {
         HStack(spacing: 6) {
@@ -119,6 +74,33 @@ struct ChatSidebarView: View {
             }
             .buttonStyle(.plain)
             .help("Search messages in workspace (⌘⇧F)")
+            Menu {
+                Button { showNewChannel = true } label: {
+                    Label("New channel", systemImage: "number")
+                }
+                Button { showNewDM = true } label: {
+                    Label("New message", systemImage: "person.badge.plus")
+                }
+            } label: {
+                Image(systemName: "plus")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(LibraryGlassDesign.inkSecondary)
+                    .frame(width: 24, height: 24)
+            }
+            .menuStyle(.borderlessButton)
+            .menuIndicator(.hidden)
+            Button {
+                withAnimation(.easeInOut(duration: 0.15)) {
+                    tabStore.sidebarExpanded = false
+                }
+            } label: {
+                Image(systemName: "sidebar.left")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(LibraryGlassDesign.inkSecondary)
+                    .frame(width: 24, height: 24)
+            }
+            .buttonStyle(.plain)
+            .help("Hide chat sidebar (⌘\\)")
         }
         .padding(.horizontal, 10)
         .frame(height: ChatClickUpDesign.searchHeight)
@@ -132,7 +114,15 @@ struct ChatSidebarView: View {
                 .strokeBorder(LibraryGlassDesign.hairline, lineWidth: 1)
         )
         .padding(.horizontal, ChatClickUpDesign.horizontalPadding)
-        .padding(.bottom, 8)
+        .padding(.top, submenuTitlebarTopPadding)
+        .padding(.bottom, 6)
+    }
+
+    /// Top inset so search sits in the same band as macOS traffic lights (shell side columns are full height).
+    private var submenuTitlebarTopPadding: CGFloat {
+        let band = AppWindowChromeMetrics.unifiedTitlebarRowHeight
+        let search = ChatClickUpDesign.searchHeight
+        return AppWindowChromeMetrics.trafficLightVerticalAlignPadding + max(0, (band - search) / 2)
     }
 
     // MARK: - Filters (ClickUp pills)
@@ -147,7 +137,7 @@ struct ChatSidebarView: View {
             .padding(.horizontal, ChatClickUpDesign.horizontalPadding)
         }
         .frame(height: ChatClickUpDesign.filterBarHeight)
-        .padding(.bottom, 4)
+        .padding(.bottom, 6)
     }
 
     private func filterPill(_ filter: ChatSidebarFilter) -> some View {
