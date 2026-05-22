@@ -6,7 +6,7 @@ enum ShellColumnHeaderKind {
     case trafficLeading(module: Binding<AppModule>)
     /// Middle submenu column: empty band matching sidebar chrome.
     case secondaryChrome
-    /// Right column: profile, notifications, command only (workspace gutter color).
+    /// Right column: profile, notifications, command only (editor gutter color).
     case editorTrailing(
         module: Binding<AppModule>,
         showCommandPalette: Binding<Bool>,
@@ -25,15 +25,18 @@ struct LibraryShellHeaderView: View {
         rowContent
             .frame(height: rowHeight, alignment: .center)
             .frame(maxWidth: .infinity)
-            .background(headerBackground)
+            .background { headerBackground }
     }
 
-    private var headerBackground: Color {
+    @ViewBuilder
+    private var headerBackground: some View {
         switch kind {
-        case .trafficLeading, .secondaryChrome:
-            return CursorMacShellDesign.columnChromeBackground
+        case .trafficLeading:
+            GlassPrimaryBarChrome()
+        case .secondaryChrome:
+            CursorMacShellDesign.columnChromeBackground
         case .editorTrailing:
-            return CursorMacShellDesign.workspaceBackground
+            CursorMacShellDesign.editorColumnBackground
         }
     }
 
@@ -72,6 +75,7 @@ struct LibraryShellHeaderView: View {
 struct ShellColumnChromeStack<Content: View>: View {
     let headerKind: ShellColumnHeaderKind
     var appliesSidebarChrome: Bool = false
+    var appliesPrimaryBarGlass: Bool = false
     @ViewBuilder var content: () -> Content
 
     var body: some View {
@@ -80,15 +84,21 @@ struct ShellColumnChromeStack<Content: View>: View {
             content()
         }
         .frame(minHeight: 0, maxHeight: .infinity)
-        .modifier(ShellColumnChromeBackground(appliesSidebarChrome: appliesSidebarChrome))
+        .modifier(ShellColumnChromeBackground(
+            appliesSidebarChrome: appliesSidebarChrome,
+            appliesPrimaryBarGlass: appliesPrimaryBarGlass
+        ))
     }
 }
 
 private struct ShellColumnChromeBackground: ViewModifier {
     let appliesSidebarChrome: Bool
+    let appliesPrimaryBarGlass: Bool
 
     func body(content: Content) -> some View {
-        if appliesSidebarChrome {
+        if appliesPrimaryBarGlass {
+            content.glassPrimaryBar()
+        } else if appliesSidebarChrome {
             content
                 .background(CursorMacShellDesign.columnChromeBackground)
                 .cursorColumnDividerTrailing()

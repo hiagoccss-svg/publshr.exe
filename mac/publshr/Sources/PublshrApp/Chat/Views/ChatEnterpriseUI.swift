@@ -96,14 +96,22 @@ struct ChatChannelStatusBar: View {
                 }
 
                 if let channel = chat.selectedChannel {
-                    ChatChannelIconView(channel: channel, size: 18)
-                    VStack(alignment: .leading, spacing: 1) {
-                        Text(channel.displayTitle)
-                            .font(.system(size: 13, weight: .semibold))
-                            .foregroundStyle(CursorTheme.foreground)
-                        Text(memberLine(channel))
-                            .font(.system(size: 11))
-                            .foregroundStyle(CursorTheme.foregroundDim)
+                    HStack(spacing: 8) {
+                        ChatChannelIconView(channel: channel, size: 18)
+                        Button {
+                            chat.showChannelSettings = true
+                        } label: {
+                            VStack(alignment: .leading, spacing: 1) {
+                                Text(channel.displayTitle)
+                                    .font(.system(size: 13, weight: .semibold))
+                                    .foregroundStyle(CursorTheme.foreground)
+                                Text(memberLine(channel))
+                                    .font(.system(size: 11))
+                                    .foregroundStyle(CursorTheme.foregroundDim)
+                            }
+                        }
+                        .buttonStyle(.plain)
+                        .help("Channel settings & members")
                     }
                 }
                 Spacer(minLength: 8)
@@ -117,7 +125,7 @@ struct ChatChannelStatusBar: View {
             .padding(.horizontal, CursorMacShellDesign.editorHorizontalPadding)
             .frame(height: CursorMacShellDesign.chatToolbarHeight)
         }
-        .background(CursorMacShellDesign.editorBoxBackground)
+        .background(CursorMacShellDesign.editorColumnBackground)
         .overlay(alignment: .bottom) {
             Rectangle().fill(CursorMacShellDesign.borderSubtle).frame(height: 1)
         }

@@ -43,6 +43,8 @@ final class ChatViewModel: ObservableObject {
     // Phase 3
     @Published var plannerTasks: [PlannerTask] = []
     @Published var showPermissionsSheet = false
+    @Published var showChannelSettings = false
+    @Published var selectedChannelMembers: [ChatChannelMember] = []
     @Published var voiceTranscripts: [UUID: String] = [:]
 
     // Phase 4
@@ -284,6 +286,7 @@ final class ChatViewModel: ObservableObject {
         service?.localStore().setUnreadCount(channelId: channel.id, count: 0)
         refreshDockBadge()
         Task { await subscribeTyping(for: channel.id) }
+        Task { await loadChannelMembers(for: channel) }
         if let draft = service?.localStore().loadDraft(channelId: channel.id) {
             composerText = draft.body
         } else {
@@ -317,11 +320,162 @@ final class ChatViewModel: ObservableObject {
     }
 
     func channelMemberCount(for channel: ChatChannel) -> Int {
+        if channel.id == selectedChannel?.id, !selectedChannelMembers.isEmpty {
+            return selectedChannelMembers.count
+        }
         switch channel.kind {
         case .dm:
             return 2
         case .group, .channel, .thread:
-            return max(profiles.count, 1)
+            return max(selectedChannelMembers.count, 1)
+        }
+    }
+
+    var canManageSelectedChannel: Bool {
+        guard let channel = selectedChannel, let userId = currentUserId else { return false }
+        if auth?.selectedMembership?.role.canManageWorkspace == true { return true }
+        if channel.createdBy == userId { return true }
+        return selectedChannelMembers.contains { $0.userId == userId && ($0.role == "owner" || $0.role == "admin") }
+    }
+
+    func canPost(in channel: ChatChannel) -> Bool {
+        guard channel.visibility.blocksNonAdminPosts else { return true }
+        return canManageChannel(channel)
+    }
+
+    func canManageChannel(_ channel: ChatChannel) -> Bool {
+        guard let userId = currentUserId else { return false }
+        if auth?.selectedMembership?.role.canManageWorkspace == true { return true }
+        if channel.createdBy == userId { return true }
+        if channel.id == selectedChannel?.id {
+            return selectedChannelMembers.contains { $0.userId == userId && ($0.role == "owner" || $0.role == "admin") }
+        }
+        return false
+    }
+
+    func myChannelMemberRecord() -> ChatChannelMember? {
+        guard let userId = currentUserId else { return nil }
+        return selectedChannelMembers.first { $0.userId == userId }
+    }
+
+    func loadChannelMembers(for channel: ChatChannel) async {
+        guard let service, let workspace else { return }
+        do {
+            selectedChannelMembers = try await service.fetchChannelMembers(
+                channelId: channel.id,
+                workspaceId: workspace.id
+            )
+        } catch {
+            if channel.kind == .dm { selectedChannelMembers = [] }
+        }
+    }
+
+    func inviteMemberToSelectedChannel(profile: Profile) async {
+        guard permissions.canInviteUsers,
+              let service, let workspace, let channel = selectedChannel,
+              channel.kind != .dm else { return }
+        guard !selectedChannelMembers.contains(where: { $0.userId == profile.id }) else { return }
+        do {
+            try await service.addChannelMember(
+                workspaceId: workspace.id,
+                channelId: channel.id,
+                userId: profile.id
+            )
+            await loadChannelMembers(for: channel)
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func removeMemberFromSelectedChannel(_ member: ChatChannelMember) async {
+        guard let service, let workspace, let channel = selectedChannel else { return }
+        let isSelf = member.userId == currentUserId
+        guard isSelf || canManageSelectedChannel else {
+            errorMessage = "You do not have permission to remove members."
+            return
+        }
+        do {
+            try await service.removeChannelMember(memberId: member.id, workspaceId: workspace.id)
+            selectedChannelMembers.removeAll { $0.id == member.id }
+            if isSelf {
+                selectedChannel = nil
+                channels.removeAll { $0.id == channel.id }
+                directMessages.removeAll { $0.id == channel.id }
+            }
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func updateSelectedChannelSettings(
+        name: String?,
+        description: String?,
+        visibility: ChatChannelVisibility?
+    ) async {
+        guard canManageSelectedChannel,
+              let service, let workspace, var channel = selectedChannel else { return }
+        do {
+            let updated = try await service.updateChannel(
+                channelId: channel.id,
+                workspaceId: workspace.id,
+                name: name,
+                description: description,
+                visibility: visibility,
+                isArchived: nil
+            )
+            channel = updated
+            replaceChannelInLists(updated)
+            selectedChannel = updated
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func setSelectedChannelNotificationLevel(_ level: String) async {
+        guard let service, let workspace, let record = myChannelMemberRecord() else { return }
+        do {
+            try await service.updateChannelMemberNotification(
+                memberId: record.id,
+                workspaceId: workspace.id,
+                level: level
+            )
+            if let idx = selectedChannelMembers.firstIndex(where: { $0.id == record.id }) {
+                var copy = selectedChannelMembers[idx]
+                copy.notificationLevel = level
+                selectedChannelMembers[idx] = copy
+            }
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func archiveSelectedChannel() async {
+        guard canManageSelectedChannel,
+              let service, let workspace, let channel = selectedChannel else { return }
+        do {
+            _ = try await service.updateChannel(
+                channelId: channel.id,
+                workspaceId: workspace.id,
+                name: nil,
+                description: nil,
+                visibility: nil,
+                isArchived: true
+            )
+            channels.removeAll { $0.id == channel.id }
+            directMessages.removeAll { $0.id == channel.id }
+            selectedChannel = channels.first ?? directMessages.first
+            showChannelSettings = false
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    private func replaceChannelInLists(_ channel: ChatChannel) {
+        if let idx = channels.firstIndex(where: { $0.id == channel.id }) {
+            channels[idx] = channel
+        }
+        if let idx = directMessages.firstIndex(where: { $0.id == channel.id }) {
+            directMessages[idx] = channel
         }
     }
 
@@ -360,6 +514,10 @@ final class ChatViewModel: ObservableObject {
 
     func sendMessage() async {
         guard let service, let workspace, let channel = selectedChannel else { return }
+        guard canPost(in: channel) else {
+            errorMessage = "Only workspace admins can post in this channel."
+            return
+        }
         guard let userId = currentUserId else {
             errorMessage = "Your profile is still loading. Wait a moment or sign out and back in."
             return
@@ -478,7 +636,11 @@ final class ChatViewModel: ObservableObject {
 
     // MARK: - Channels / DMs
 
-    func createChannel(name: String) async {
+    func createChannel(
+        name: String,
+        visibility: ChatChannelVisibility = .public,
+        description: String? = nil
+    ) async {
         guard permissions.canCreateChannels else {
             errorMessage = "You do not have permission to create channels in this workspace."
             return
@@ -493,6 +655,8 @@ final class ChatViewModel: ObservableObject {
             let ch = try await service.createChannel(
                 workspaceId: workspace.id,
                 name: clean,
+                visibility: visibility,
+                description: description,
                 createdBy: userId
             )
             channels.insert(ch, at: 0)

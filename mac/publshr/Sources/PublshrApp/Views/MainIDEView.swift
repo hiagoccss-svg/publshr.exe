@@ -83,6 +83,11 @@ struct MainIDEView: View {
                 chat.selectedChannel = nil
             }
         }
+        .onReceive(NotificationCenter.default.publisher(for: .publshrTitlebarNewDM)) { _ in
+            module = .chat
+            tabStore.openFromModule(.chat, activate: true)
+            showNewDM = true
+        }
         .onReceive(NotificationCenter.default.publisher(for: .publshrTitlebarCommandPalette)) { _ in
             showCommandPalette = true
         }
@@ -173,25 +178,47 @@ private struct NewChannelSheet: View {
     @ObservedObject var chat: ChatViewModel
     @Binding var isPresented: Bool
     @State private var name = ""
+    @State private var description = ""
+    @State private var visibility: ChatChannelVisibility = .public
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Create Channel").font(.headline)
-            TextField("Channel name", text: $name)
+            Text("Create channel").font(.headline)
+            TextField("Name (e.g. approvals)", text: $name)
                 .textFieldStyle(.roundedBorder)
+            TextField("Topic / description (optional)", text: $description, axis: .vertical)
+                .textFieldStyle(.roundedBorder)
+                .lineLimit(2...3)
+            Picker("Who can access", selection: $visibility) {
+                Text("Public").tag(ChatChannelVisibility.public)
+                Text("Private").tag(ChatChannelVisibility.private)
+                Text("Internal").tag(ChatChannelVisibility.internal)
+                Text("Announcement").tag(ChatChannelVisibility.announcement)
+                Text("Read-only").tag(ChatChannelVisibility.readOnly)
+            }
+            .pickerStyle(.menu)
+            Text("Workspace permissions still apply to invites and posting.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
             HStack {
                 Spacer()
                 Button("Cancel") { isPresented = false }
                 Button("Create") {
                     Task {
-                        await chat.createChannel(name: name)
+                        await chat.createChannel(
+                            name: name,
+                            visibility: visibility,
+                            description: description.isEmpty ? nil : description
+                        )
                         isPresented = false
                     }
                 }
+                .keyboardShortcut(.defaultAction)
+                .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
             }
         }
         .padding(24)
-        .frame(width: 360)
+        .frame(width: 400)
     }
 }
 

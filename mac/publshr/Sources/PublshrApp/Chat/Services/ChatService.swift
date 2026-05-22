@@ -128,7 +128,56 @@ final class ChatService {
             .execute()
             .value
         store.cacheChannels([row])
+        try await addChannelMember(
+            workspaceId: workspaceId,
+            channelId: row.id,
+            userId: createdBy,
+            role: "owner"
+        )
         return row
+    }
+
+    func updateChannel(
+        channelId: UUID,
+        workspaceId: UUID,
+        name: String?,
+        description: String?,
+        visibility: ChatChannelVisibility?,
+        isArchived: Bool?
+    ) async throws -> ChatChannel {
+        struct Patch: Encodable {
+            var name: String?
+            var description: String?
+            var visibility: String?
+            var is_archived: Bool?
+        }
+        let row: ChatChannel = try await client
+            .from("chat_channels")
+            .update(Patch(
+                name: name,
+                description: description,
+                visibility: visibility?.rawValue,
+                is_archived: isArchived
+            ))
+            .eq("id", value: channelId.uuidString)
+            .eq("workspace_id", value: workspaceId.uuidString)
+            .select()
+            .single()
+            .execute()
+            .value
+        store.cacheChannels([row])
+        return row
+    }
+
+    func fetchChannelMembers(channelId: UUID, workspaceId: UUID) async throws -> [ChatChannelMember] {
+        try await client
+            .from("chat_channel_members")
+            .select()
+            .eq("channel_id", value: channelId.uuidString)
+            .eq("workspace_id", value: workspaceId.uuidString)
+            .order("joined_at", ascending: true)
+            .execute()
+            .value
     }
 
     func createDM(
@@ -162,15 +211,49 @@ final class ChatService {
         return channel
     }
 
-    func addChannelMember(workspaceId: UUID, channelId: UUID, userId: UUID) async throws {
+    func addChannelMember(
+        workspaceId: UUID,
+        channelId: UUID,
+        userId: UUID,
+        role: String = "member"
+    ) async throws {
         struct Insert: Encodable {
             let workspace_id: UUID
             let channel_id: UUID
             let user_id: UUID
+            let role: String
         }
         _ = try await client
             .from("chat_channel_members")
-            .insert(Insert(workspace_id: workspaceId, channel_id: channelId, user_id: userId))
+            .insert(Insert(
+                workspace_id: workspaceId,
+                channel_id: channelId,
+                user_id: userId,
+                role: role
+            ))
+            .execute()
+    }
+
+    func removeChannelMember(memberId: UUID, workspaceId: UUID) async throws {
+        _ = try await client
+            .from("chat_channel_members")
+            .delete()
+            .eq("id", value: memberId.uuidString)
+            .eq("workspace_id", value: workspaceId.uuidString)
+            .execute()
+    }
+
+    func updateChannelMemberNotification(
+        memberId: UUID,
+        workspaceId: UUID,
+        level: String
+    ) async throws {
+        struct Patch: Encodable { let notification_level: String }
+        _ = try await client
+            .from("chat_channel_members")
+            .update(Patch(notification_level: level))
+            .eq("id", value: memberId.uuidString)
+            .eq("workspace_id", value: workspaceId.uuidString)
             .execute()
     }
 

@@ -47,12 +47,40 @@ struct TitlebarChromeActionBar: View {
 
     private var profileMenu: some View {
         Menu {
-            if let name = auth.profile?.displayName?.nonEmptyOrNil {
-                Text(name)
-                    .font(.headline)
+            if let profile = auth.profile {
+                HStack(spacing: 10) {
+                    ChatProfileAvatar(
+                        profile: profile,
+                        displayName: profile.displayName ?? profile.email,
+                        size: 36,
+                        presence: chat.myStatus
+                    )
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(profile.displayName ?? profile.email)
+                            .font(.headline)
+                        HStack(spacing: 4) {
+                            ChatPresenceDot(status: chat.myStatus, size: 8)
+                            Text(chat.myStatus.label)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
+                .padding(.vertical, 4)
             }
-            if let email = auth.profile?.email {
-                Text(email)
+            Divider()
+            Text("Set status")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            ForEach(ChatPresenceStatus.allCases.filter { $0 != .invisible }, id: \.self) { status in
+                Button {
+                    Task { await chat.setStatus(status) }
+                } label: {
+                    Label(
+                        status.label,
+                        systemImage: status == chat.myStatus ? "checkmark.circle.fill" : "circle.fill"
+                    )
+                }
             }
             Divider()
             Button("Account & profile") {
@@ -61,15 +89,30 @@ struct TitlebarChromeActionBar: View {
             Button("Workspace settings") {
                 NotificationCenter.default.post(name: .publshrOpenSettings, object: SettingsSection.workspace.rawValue)
             }
+            if module == .chat {
+                Button("Chat permissions") {
+                    chat.showPermissionsSheet = true
+                }
+            }
             Divider()
             Button("Sign out", role: .destructive) {
                 Task { await auth.signOut() }
             }
         } label: {
-            TitlebarChromeMenuLabel(title: profileShortTitle)
+            HStack(spacing: 6) {
+                if let profile = auth.profile {
+                    ChatProfileAvatar(
+                        profile: profile,
+                        displayName: profile.displayName ?? profile.email,
+                        size: 22,
+                        presence: chat.myStatus
+                    )
+                }
+                TitlebarChromeMenuLabel(title: profileShortTitle)
+            }
         }
         .menuStyle(.borderlessButton)
-        .help("Account")
+        .help("Profile & presence")
     }
 
     private var profileShortTitle: String {

@@ -15,7 +15,7 @@ struct ChatConversationView: View {
                 ChatThreadPanelView(chat: chat)
             }
         }
-        .background(CursorMacShellDesign.editorBoxBackground)
+        .background(CursorMacShellDesign.editorColumnBackground)
         .fileImporter(
             isPresented: $showFileImporter,
             allowedContentTypes: [.image, .movie, .video, .pdf, .data],

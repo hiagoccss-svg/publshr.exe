@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Cursor Mac 3-column shell — per-column header colors, traffic controls, boxed editor column.
+/// Cursor Mac 3-column shell — glass bar, traffic controls, borderless chat column.
 struct LibraryShellView: View {
     @EnvironmentObject private var auth: AuthViewModel
     @EnvironmentObject private var chat: ChatViewModel
@@ -28,7 +28,7 @@ struct LibraryShellView: View {
             .frame(width: geometry.size.width, height: geometry.size.height)
         }
         .ignoresSafeArea(.container, edges: .top)
-        .background(CursorMacShellDesign.columnChromeBackground)
+        .background(Color.clear)
         .onAppear {
             tabStore.sidebarExpanded = true
             syncModulesIfNeeded()
@@ -54,7 +54,7 @@ struct LibraryShellView: View {
         HStack(alignment: .top, spacing: 0) {
             ShellColumnChromeStack(
                 headerKind: .trafficLeading(module: $module),
-                appliesSidebarChrome: true
+                appliesPrimaryBarGlass: true
             ) {
                 Group {
                     if tabStore.barMenuExpanded {
@@ -102,13 +102,20 @@ struct LibraryShellView: View {
                 showNotificationsPanel: $showNotificationsPanel
             )
         ) {
-            moduleContent
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .cursorEditorColumnBox()
-                .padding(CursorMacShellDesign.editorBoxPadding)
+            Group {
+                if module == .chat {
+                    moduleContent
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else {
+                    moduleContent
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .cursorEditorColumnBox()
+                        .padding(CursorMacShellDesign.editorBoxPadding)
+                }
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(CursorMacShellDesign.workspaceBackground)
+        .background(module == .chat ? CursorMacShellDesign.editorColumnBackground : CursorMacShellDesign.workspaceBackground)
     }
 
     @ViewBuilder
