@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct ChatSidebarView: View {
+    @EnvironmentObject private var tabStore: WorkspaceTabStore
     @ObservedObject var chat: ChatViewModel
     @Binding var showNewChannel: Bool
     @Binding var showNewDM: Bool
@@ -109,6 +110,7 @@ struct ChatSidebarView: View {
         let selected = chat.selectedChannel?.id == channel.id
         let unread = chat.unreadByChannel[channel.id] ?? 0
         return Button {
+            tabStore.openFromChannel(channel)
             chat.selectChannel(channel)
         } label: {
             HStack(spacing: 10) {

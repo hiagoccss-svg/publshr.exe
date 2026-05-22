@@ -177,6 +177,11 @@ enum CursorTheme {
     static let chatRowSpacing: CGFloat = 16
     static let chatSidebarRowHeight: CGFloat = 30
     static let tabBarHeight: CGFloat = 35
+    /// Header row with document tabs (content column, white bar).
+    static let workspaceHeaderHeight: CGFloat = 44
+    static let workspaceTabSpacing: CGFloat = 6
+    static let workspaceTabHorizontalPadding: CGFloat = 10
+    static let workspaceTabCornerRadius: CGFloat = 7
 }
 
 extension Color {

@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct SpacesNavSidebar: View {
+    @EnvironmentObject private var tabStore: WorkspaceTabStore
     @ObservedObject var spaces: SpacesViewModel
 
     var body: some View {
@@ -60,6 +61,7 @@ struct SpacesNavSidebar: View {
     private func spaceRow(_ space: SpaceRecord) -> some View {
         let selected = spaces.selectedSpaceId == space.id
         return Button {
+            tabStore.openFromSpace(space)
             Task { await spaces.selectSpace(space.id) }
         } label: {
             HStack(spacing: 10) {
