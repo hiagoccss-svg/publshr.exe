@@ -1,4 +1,4 @@
-@import '../../../shared/design/library-glass.css';
+@import '../../../../shared/design/library-glass.css';
 
 @tailwind base;
 @tailwind components;

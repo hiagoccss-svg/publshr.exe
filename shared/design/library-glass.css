@@ -1,6 +1,8 @@
 /**
  * Library glass design — spacing, cards, sidebar, masonry (reference UI).
- * Import from each app's index.css: @import '../../../shared/design/library-glass.css';
+ * Import paths (from each app's index.css):
+ *   desktop/spaces/src/renderer → ../../../../shared/design/library-glass.css
+ *   desktop/media-monitoring/src, planner/desktop/src → ../../../shared/design/library-glass.css
  */
 
 :root {
