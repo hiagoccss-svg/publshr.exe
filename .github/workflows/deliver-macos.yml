@@ -22,10 +22,12 @@ jobs:
           BASE="$(tr -d '[:space:]' < mac/publshr/VERSION)"
           BUILD="${GITHUB_RUN_NUMBER}"
           FULL="${BASE}.${BUILD}"
-          echo "base=$BASE" >> "$GITHUB_OUTPUT"
-          echo "build=$BUILD" >> "$GITHUB_OUTPUT"
-          echo "full=$FULL" >> "$GITHUB_OUTPUT"
-          echo "tag=v${FULL}" >> "$GITHUB_OUTPUT"
+          {
+            echo "base=$BASE"
+            echo "build=$BUILD"
+            echo "full=$FULL"
+            echo "tag=v${FULL}"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Sync icon and select Xcode
         run: |

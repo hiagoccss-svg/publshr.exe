@@ -20,4 +20,4 @@ jobs:
           curl -fsSL https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash | bash -s
           sudo mv actionlint /usr/local/bin/
       - name: Lint workflow files
-        run: actionlint -shellcheck=false -color
+        run: actionlint -color
