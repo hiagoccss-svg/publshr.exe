@@ -4,7 +4,7 @@ Real-time workspace communication integrated into the Publshr macOS IDE.
 
 ## Phase 1
 
-- Channels, DMs, realtime messages, presence, notifications, SQLite cache
+- Channels, DMs, realtime messages, presence, macOS Notification Center alerts (live Supabase inserts), in-app notification feed, SQLite cache
 
 ## Phase 2
 
