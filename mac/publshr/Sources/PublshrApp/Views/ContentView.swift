@@ -52,16 +52,18 @@ struct ContentView: View {
         )) {
             BiometricSetupSheet()
         }
-        .onAppear {
-            calls.bindPresentation(chat: chat, auth: auth)
-        }
-        .onChange(of: auth.selectedMembership?.id) { _, _ in
-            calls.bindPresentation(chat: chat, auth: auth)
-        }
         .onChange(of: calls.incomingInvite?.id) { oldId, newId in
             guard let newId, oldId != newId else { return }
             calls.bindPresentation(chat: chat, auth: auth)
             calls.presentIncomingRing(chat: chat, auth: auth)
+        }
+        .onChange(of: calls.activeRoom?.id) { _, roomId in
+            guard auth.flowState == .signedIn else { return }
+            if roomId != nil {
+                CallWindowManager.shared.present(calls: calls, chat: chat, auth: auth)
+            } else {
+                CallWindowManager.shared.dismiss()
+            }
         }
     }
 

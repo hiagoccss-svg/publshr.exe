@@ -16,35 +16,42 @@ struct WorkspaceHeaderView: View {
     @State private var hoveredTabId: String?
     @State private var tabDragOffsets: [String: CGSize] = [:]
 
-    private var chromeBarHeight: CGFloat {
-        max(safeAreaTop, CursorTheme.windowChromeTopInset) + CursorTheme.workspaceHeaderHeight
+    /// Top band reserved for macOS traffic lights (close / minimize / zoom).
+    private var trafficLightBandHeight: CGFloat {
+        safeAreaTop > 0 ? safeAreaTop : CursorTheme.windowChromeTopInset
+    }
+
+    private var totalHeaderHeight: CGFloat {
+        trafficLightBandHeight + CursorTheme.workspaceHeaderHeight
     }
 
     var body: some View {
-        HStack(alignment: .center, spacing: 0) {
+        VStack(spacing: 0) {
             Color.clear
-                .frame(width: CursorTheme.trafficLightLeadingPadding)
+                .frame(height: trafficLightBandHeight)
+                .frame(maxWidth: .infinity)
+                .accessibilityHidden(true)
 
-            HStack(spacing: 0) {
-                leadingControls
+            HStack(alignment: .center, spacing: 0) {
+                HStack(spacing: 0) {
+                    leadingControls
 
-                tabStrip
-                    .frame(maxWidth: .infinity)
+                    tabStrip
+                        .frame(maxWidth: .infinity)
 
-                trailingActions
-                    .padding(.trailing, 4)
+                    trailingActions
+                        .padding(.trailing, 4)
+                }
+                .padding(.leading, 8)
+                .frame(height: CursorTheme.workspaceHeaderHeight)
+
+                headerSettingsButton
+                    .padding(.trailing, 10)
             }
-            .padding(.leading, 4)
-            .frame(height: CursorTheme.workspaceHeaderHeight)
         }
-        .frame(height: chromeBarHeight, alignment: .bottom)
+        .frame(height: totalHeaderHeight)
         .frame(maxWidth: .infinity)
         .background(CursorTheme.titleBar)
-        .overlay(alignment: .bottom) {
-            Rectangle()
-                .fill(CursorTheme.hairline)
-                .frame(height: 1)
-        }
     }
 
     // MARK: - Leading
@@ -183,10 +190,26 @@ struct WorkspaceHeaderView: View {
         case .spaces:
             spacesTrailingActions
         case .settings:
-            Text("Settings")
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(CursorTheme.foregroundMuted)
+            EmptyView()
         }
+    }
+
+    private var headerSettingsButton: some View {
+        Button {
+            NotificationCenter.default.post(name: .publshrOpenSettings, object: nil)
+        } label: {
+            HStack(spacing: 5) {
+                Image(systemName: "gearshape")
+                    .font(.system(size: CursorTheme.toolbarIconSize, weight: .regular))
+                Text("Settings")
+                    .font(.system(size: 11, weight: .medium))
+            }
+            .foregroundStyle(CursorTheme.toolbarIconForeground)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 5)
+        }
+        .buttonStyle(.plain)
+        .help("Enterprise settings, security, chat options, and updates")
     }
 
     private var activeModule: AppModule {
@@ -236,7 +259,6 @@ struct WorkspaceHeaderView: View {
 
             profileMenuChip
             presenceMenuChip
-            appSettingsMenuChip
 
             HeaderActionDivider()
 
@@ -342,28 +364,6 @@ struct WorkspaceHeaderView: View {
         }
         .menuStyle(.borderlessButton)
         .help("Profile")
-    }
-
-    private var appSettingsMenuChip: some View {
-        Menu {
-            Button {
-                NotificationCenter.default.post(name: .publshrOpenSettings, object: nil)
-            } label: {
-                Label("App settings", systemImage: "gearshape")
-            }
-            Button {
-                chat.showPermissionsSheet = true
-            } label: {
-                Label("Channel permissions", systemImage: "lock.shield")
-            }
-        } label: {
-            Image(systemName: "gearshape")
-                .font(.system(size: CursorTheme.toolbarIconSize, weight: .regular))
-                .foregroundStyle(CursorTheme.toolbarIconForeground)
-                .frame(width: CursorTheme.toolbarIconHitSize, height: CursorTheme.toolbarIconHitSize)
-        }
-        .menuStyle(.borderlessButton)
-        .help("Settings")
     }
 
     private var presenceMenuChip: some View {

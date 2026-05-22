@@ -138,7 +138,6 @@ final class CallSignalingService: ObservableObject {
         isMuted = false
         mediaStatus = "Starting local media server (no cloud APIs)…"
         errorMessage = nil
-
         await requestMediaPermissions(video: video)
 
         let roomId = UUID()

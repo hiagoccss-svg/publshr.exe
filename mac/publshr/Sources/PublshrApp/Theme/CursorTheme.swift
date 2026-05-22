@@ -58,7 +58,7 @@ enum CursorTheme {
         activityBarForeground: Color(hex: 0x3B3B3B),
         activityBarForegroundDim: Color(hex: 0x9D9D9D),
         navSidebar: Color(hex: 0xFFFFFF),
-        titleBar: Color(hex: 0xF3F3F3),
+        titleBar: Color(hex: 0xFFFFFF),
         sideBar: Color(hex: 0xFFFFFF),
         sideBarSectionHeader: Color(hex: 0x6E6E6E),
         editorBackground: Color(hex: 0xFFFFFF),

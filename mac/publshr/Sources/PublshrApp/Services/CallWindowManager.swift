@@ -8,7 +8,11 @@ final class CallWindowManager: ObservableObject {
 
     private var window: NSWindow?
 
-    func present(calls: CallSignalingService, chat: ChatViewModel, auth: AuthViewModel) {
+    func present(
+        calls: CallSignalingService,
+        chat: ChatViewModel,
+        auth: AuthViewModel
+    ) {
         if let window {
             window.makeKeyAndOrderFront(nil)
             NSApp.activate(ignoringOtherApps: true)
@@ -23,32 +27,43 @@ final class CallWindowManager: ObservableObject {
 
         let hosting = NSHostingController(rootView: root)
         let window = NSWindow(contentViewController: hosting)
-        window.title = calls.activeRoom?.title ?? "Call"
+        let video = calls.activeRoom?.kind == "video"
+        window.title = calls.activeRoom?.title ?? (video ? "Video call" : "Voice call")
         window.setContentSize(NSSize(width: 520, height: 620))
         window.center()
         GlassWindowConfigurator.applyCallWindow(window)
         window.isReleasedWhenClosed = false
 
+        self.window = window
+
         NotificationCenter.default.addObserver(
             forName: NSWindow.willCloseNotification,
             object: window,
             queue: .main
-        ) { [weak self] _ in
+        ) { _ in
             DispatchQueue.main.async { [weak self] in
+                Task { await calls.leaveCall() }
                 if self?.window === window {
                     self?.window = nil
                 }
             }
         }
 
-        self.window = window
         window.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
     }
 
     func close() {
+        dismiss()
+    }
+
+    func dismiss() {
         window?.close()
         window = nil
+    }
+
+    func closeAll() {
+        dismiss()
     }
 }
 

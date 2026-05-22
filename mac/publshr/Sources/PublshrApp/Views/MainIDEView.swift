@@ -6,6 +6,8 @@ struct MainIDEView: View {
     @EnvironmentObject private var spaces: SpacesViewModel
     @EnvironmentObject private var updates: AppUpdateViewModel
     @EnvironmentObject private var subscription: SubscriptionService
+    @EnvironmentObject private var enterprise: EnterpriseWorkspaceService
+    @EnvironmentObject private var calls: CallSignalingService
     @EnvironmentObject private var tabStore: WorkspaceTabStore
     @AppStorage("publshr.selectedModule") private var storedModule = AppModule.chat.rawValue
     @State private var module: AppModule = .chat
@@ -20,11 +22,12 @@ struct MainIDEView: View {
 
     var body: some View {
         GeometryReader { geometry in
+            let topSafe = geometry.safeAreaInsets.top
             VStack(spacing: 0) {
                 WorkspaceHeaderView(
                     spaces: spaces,
                     module: $module,
-                    safeAreaTop: geometry.safeAreaInsets.top
+                    safeAreaTop: topSafe
                 )
 
                 HStack(alignment: .top, spacing: 0) {
@@ -39,19 +42,28 @@ struct MainIDEView: View {
             }
             .frame(width: geometry.size.width, height: geometry.size.height)
         }
+        .ignoresSafeArea(.container, edges: .top)
         .background(CursorTheme.editorBackground)
         .background(WindowChromeConfigurator())
         .onAppear {
             _ = AppShellIdentity.distributionTag
-            if let restored = AppModule(rawValue: storedModule) {
+            if let restored = AppModule(rawValue: storedModule), restored != .settings {
                 module = restored
+            } else if storedModule == AppModule.settings.rawValue {
+                module = .chat
+                storedModule = AppModule.chat.rawValue
             }
+            tabStore.removeSettingsTabs()
             tabStore.ensureDefaultTabs(module: module)
             tabStore.openFromModule(module, activate: true)
             chat.attach(auth: auth)
             spaces.attach(auth: auth)
         }
         .onChange(of: module) { _, newModule in
+            guard newModule != .settings else {
+                module = .chat
+                return
+            }
             storedModule = newModule.rawValue
             if newModule != .chat { chat.chatFocusMode = false }
             if newModule != .spaces { spaces.spacesFocusMode = false }
@@ -84,8 +96,15 @@ struct MainIDEView: View {
         .sheet(isPresented: $showNewChannel) { newChannelSheet }
         .sheet(isPresented: $showNewDM) { newDMSheet }
         .onReceive(NotificationCenter.default.publisher(for: .publshrOpenSettings)) { _ in
-            module = .settings
-            tabStore.openFromModule(.settings, activate: true)
+            WorkspaceModuleWindowManager.shared.openSettings(
+                auth: auth,
+                chat: chat,
+                spaces: spaces,
+                updates: updates,
+                subscription: subscription,
+                enterprise: enterprise,
+                calls: calls
+            )
         }
     }
 
@@ -93,15 +112,13 @@ struct MainIDEView: View {
         HStack(spacing: 0) {
             ActivityBarView(module: $module)
 
-            if module != .settings {
-                AppSecondarySidebar(
-                    module: module,
-                    chat: chat,
-                    spaces: spaces,
-                    showNewChannel: $showNewChannel,
-                    showNewDM: $showNewDM
-                )
-            }
+            AppSecondarySidebar(
+                module: module,
+                chat: chat,
+                spaces: spaces,
+                showNewChannel: $showNewChannel,
+                showNewDM: $showNewDM
+            )
         }
         .frame(maxHeight: .infinity)
     }
@@ -141,8 +158,10 @@ struct MainIDEView: View {
                 )
             }
         case .settings:
-            SettingsRootView()
-                .onAppear { Task { await updates.performLiveSync() } }
+            EnterpriseModuleGate(
+                moduleName: "Settings",
+                planName: subscription.features.planName
+            )
         }
     }
 

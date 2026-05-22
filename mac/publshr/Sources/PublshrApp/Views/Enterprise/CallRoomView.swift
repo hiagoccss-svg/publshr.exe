@@ -18,6 +18,7 @@ struct CallRoomView: View {
             Divider().opacity(0.35)
             controls
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .glassPanel(cornerRadius: 14, opacity: 0.82)
         .onChange(of: calls.isMuted) { _, _ in
             Task { await calls.onMuteChanged() }

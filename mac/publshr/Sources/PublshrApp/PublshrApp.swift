@@ -157,10 +157,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
            let window = NSApp.windows.first {
             window.setFrame(frame, display: true)
         }
+        DispatchQueue.main.async {
+            MainWindowChrome.applyWithRetries(to: NSApp.mainWindow ?? NSApp.windows.first)
+        }
         NotificationCenter.default.post(name: .publshrPerformLiveSync, object: nil)
     }
 
     func applicationDidBecomeActive(_ notification: Notification) {
+        MainWindowChrome.apply(to: NSApp.mainWindow ?? NSApp.windows.first)
         NotificationCenter.default.post(name: .publshrPerformLiveSync, object: nil)
     }
 
@@ -169,6 +173,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             AppWindowStateStore.saveMainWindowFrame(window.frame)
         }
         ChatWindowManager.shared.closeAll()
+        CallWindowManager.shared.closeAll()
+        WorkspaceModuleWindowManager.shared.closeAll()
         AppLifecycleService.shared.stop()
     }
 }
