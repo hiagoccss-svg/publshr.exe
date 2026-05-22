@@ -4,12 +4,11 @@ import {
   FolderOpen,
   Newspaper,
   Bookmark,
-  Settings,
-  Sparkles
+  Settings
 } from 'lucide-react'
 import { useMonitoringStore } from '@/store/monitoringStore'
 import type { SidebarSection } from '@/types'
-import { cursor } from '@/theme/cursor'
+import { shell } from '@/theme/shellTheme'
 
 const ITEMS: { id: SidebarSection; icon: typeof Radio; label: string }[] = [
   { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
@@ -26,9 +25,9 @@ export function ActivityBar() {
     <div
       className="flex flex-col items-center py-1 shrink-0 border-r relative"
       style={{
-        width: cursor.activityBarWidth,
-        backgroundColor: cursor.activityBar,
-        borderColor: cursor.border
+        width: shell.activityBarWidth,
+        backgroundColor: shell.activityBar,
+        borderColor: shell.border
       }}
     >
       {ITEMS.map(({ id, icon: Icon, label }) => (
@@ -39,23 +38,20 @@ export function ActivityBar() {
           onClick={() => setSection(id)}
           className="flex items-center justify-center w-12 h-12 transition-colors"
           style={{
-            color: section === id ? cursor.foreground : cursor.foregroundDim,
-            backgroundColor: section === id ? `${cursor.sideBar}80` : 'transparent'
+            color: section === id ? shell.foreground : shell.foregroundDim,
+            backgroundColor: section === id ? `${shell.sideBar}80` : 'transparent'
           }}
         >
           <Icon size={20} strokeWidth={1.5} />
         </button>
       ))}
       <div className="flex-1" />
-      <button type="button" title="AI" className="w-12 h-12 flex items-center justify-center text-content-dim">
-        <Sparkles size={18} />
-      </button>
       <button
         type="button"
         title="Settings"
         onClick={() => setSection('settings')}
         className="w-12 h-12 flex items-center justify-center"
-        style={{ color: section === 'settings' ? cursor.foreground : cursor.foregroundDim }}
+        style={{ color: section === 'settings' ? shell.foreground : shell.foregroundDim }}
       >
         <Settings size={18} />
       </button>

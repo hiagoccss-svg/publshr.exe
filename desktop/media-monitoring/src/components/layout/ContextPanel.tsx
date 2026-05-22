@@ -5,6 +5,7 @@ import { useMonitoringStore } from '@/store/monitoringStore'
 import { formatCurrency, formatCompactNumber } from '@/lib/format'
 import { parseKeywordMatches, highlightKeywords } from '@/lib/keywordHighlight'
 import type { MonitorResult, Sentiment } from '@/types'
+import { shell } from '@/theme/shellTheme'
 
 const SENTIMENTS: Sentiment[] = ['positive', 'neutral', 'negative', 'mixed']
 
@@ -35,7 +36,11 @@ export function ContextPanel() {
     return (
       <aside
         className="flex flex-col shrink-0 border-l"
-        style={{ width: 380, backgroundColor: '#181818', borderColor: '#2B2B2B' }}
+        style={{
+          width: shell.contextPanelWidth,
+          backgroundColor: shell.panel,
+          borderColor: shell.border
+        }}
       >
         <div className="p-4 text-center text-content-dim text-sm mt-12">
           <p>Select coverage to view metadata, tags, and actions.</p>
@@ -56,7 +61,11 @@ export function ContextPanel() {
   return (
     <aside
       className="flex flex-col shrink-0 border-l overflow-hidden"
-      style={{ width: 380, backgroundColor: '#181818', borderColor: '#2B2B2B' }}
+      style={{
+        width: shell.contextPanelWidth,
+        backgroundColor: shell.panel,
+        borderColor: shell.border
+      }}
     >
       <div className="px-4 py-3 border-b border-border">
         <h2 className="text-sm font-medium text-content line-clamp-2">{article.title}</h2>

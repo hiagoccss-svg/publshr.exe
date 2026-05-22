@@ -12,7 +12,7 @@ export function MonitoringWorkspace() {
   const { loadMonitors } = useMonitoringBootstrap()
 
   return (
-    <main className="flex-1 flex flex-col min-w-0 relative bg-surface-editor">
+    <main className="flex-1 flex flex-col min-w-0 relative bg-surface-workspace">
       {section === 'dashboard' && <DashboardView />}
       {section === 'monitoring' && <ArticleFeed />}
       {section === 'coverage' && <CoverageView />}

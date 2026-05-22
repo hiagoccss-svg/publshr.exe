@@ -48,7 +48,7 @@ export function DashboardView() {
 
 function StatCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg border border-border p-4 bg-surface-editor">
+    <div className="rounded-lg border border-border p-4 bg-surface-workspace">
       <p className="text-2xs uppercase tracking-wide text-content-header">{label}</p>
       <p className="text-xl font-medium text-content mt-1">{value}</p>
     </div>

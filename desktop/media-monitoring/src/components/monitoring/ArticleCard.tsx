@@ -32,12 +32,12 @@ export function ArticleCard({ article, index }: Props) {
         'group animate-slide-up rounded-lg border transition-all cursor-pointer',
         selected
           ? 'border-accent/50 bg-surface-highlight'
-          : 'border-border/80 bg-surface-editor hover:border-border-subtle hover:bg-surface-highlight/60'
+          : 'border-border/80 bg-surface-workspace hover:border-border-subtle hover:bg-surface-highlight/60'
       )}
       style={{ animationDelay: `${Math.min(index, 8) * 40}ms` }}
     >
       <div className="flex gap-3 p-3">
-        <div className="w-10 h-10 rounded-md bg-surface-tabInactive flex items-center justify-center text-xs font-semibold text-content-muted shrink-0">
+        <div className="w-10 h-10 rounded-md bg-surface-tile flex items-center justify-center text-xs font-semibold text-content-muted shrink-0">
           {publicationInitials(article.publication_name ?? '?')}
         </div>
 
@@ -83,7 +83,7 @@ export function ArticleCard({ article, index }: Props) {
           </div>
         </div>
 
-        <div className="w-20 h-14 rounded bg-surface-tabInactive/80 shrink-0 hidden sm:block" aria-hidden />
+        <div className="w-20 h-14 rounded bg-surface-tile/80 shrink-0 hidden sm:block" aria-hidden />
       </div>
     </article>
   )
