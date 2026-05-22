@@ -99,7 +99,7 @@ struct TrafficLightLayoutRefreshView: NSViewRepresentable {
 final class TrafficLightLayoutRefreshNSView: NSView {
     override var intrinsicContentSize: NSSize {
         let store = TrafficLightLayoutStore.shared
-        NSSize(
+        return NSSize(
             width: NSView.noIntrinsicMetric,
             height: store.titlebarTopPadding + store.rowHeight
         )
