@@ -37,6 +37,7 @@ struct AvailableUpdate: Sendable, Equatable {
     let downloadURL: URL
     let releasePage: URL
     let assetName: String
+    let packageDigest: String?
 }
 
 enum AppUpdateError: LocalizedError {
@@ -96,36 +97,13 @@ final class AppUpdateService: @unchecked Sendable {
     }
 
     func checkForUpdate() async throws -> AvailableUpdate? {
-        // Primary: VERSION.txt on the live channel (no GitHub API — avoids silent failures from API errors).
         if let update = try await checkForUpdateViaLiveManifest() {
             return update
         }
-
-        guard let live = try await fetchLiveRelease() else {
-            throw AppUpdateError.noReleases
-        }
-
-        if let update = try await parseLiveRelease(live) {
-            return update
-        }
-
-        // Fallback: newest versioned tag (e.g. v0.2.0.51) when live metadata is stale.
-        let localBuild = AppReleaseConfig.buildNumber
-        let releases = try await fetchRecentReleases()
-        var best: AvailableUpdate?
-        for release in releases where release.tagName != AppReleaseConfig.liveTag {
-            guard let candidate = parseVersionedRelease(release) else { continue }
-            if candidate.build <= localBuild { continue }
-            if let current = best {
-                if candidate.build > current.build { best = candidate }
-            } else {
-                best = candidate
-            }
-        }
-        return best
+        return await checkVersionedFallbackSilently()
     }
 
-    /// Compares installed build/version/commit against `live/VERSION.txt` (published on every push to main).
+    /// Compares installed build/version/commit/digest against `live/VERSION.txt` (published on every push to main).
     private func checkForUpdateViaLiveManifest() async throws -> AvailableUpdate? {
         guard let manifest = await fetchLiveManifestFromURL() else {
             appendSyncLog("VERSION.txt check: unavailable")
@@ -135,7 +113,7 @@ final class AppUpdateService: @unchecked Sendable {
         appendSyncLog(
             "VERSION.txt check: local=\(AppReleaseConfig.installedLabel) "
                 + "remote=\(manifest.fullVersion) build=\(manifest.build) "
-                + "commit=\(manifest.commit.prefix(7))"
+                + "commit=\(manifest.commit.prefix(7)) digest=\(manifest.packageDigest?.prefix(12) ?? "—")"
         )
 
         guard manifest.isNewerThanInstalled() else { return nil }
@@ -149,13 +127,20 @@ final class AppUpdateService: @unchecked Sendable {
             throw AppUpdateError.noCompatibleAsset
         }
 
+        if let assetBytes = await headAssetByteCount(url: downloadURL),
+           assetBytes < AppReleaseConfig.minAppAssetBytes {
+            appendSyncLog("VERSION.txt check: asset too small (\(assetBytes) bytes)")
+            return nil
+        }
+
         return AvailableUpdate(
             version: manifest.fullVersion,
             build: manifest.build,
             tag: AppReleaseConfig.liveTag,
             downloadURL: downloadURL,
             releasePage: pageURL,
-            assetName: assetName
+            assetName: assetName,
+            packageDigest: manifest.packageDigest
         )
     }
 
@@ -235,7 +220,7 @@ final class AppUpdateService: @unchecked Sendable {
     }
 
     func applyUpdate(treeURL: URL, parentPID: Int32) throws {
-        guard let script = Bundle.main.url(forResource: "apply-macos-update", withExtension: "sh") else {
+        guard let script = resolveApplyUpdateScript() else {
             throw AppUpdateError.applyScriptMissing
         }
 
@@ -258,7 +243,19 @@ final class AppUpdateService: @unchecked Sendable {
         return base.appendingPathComponent("Publshr/updates", isDirectory: true)
     }
 
-    private func appendSyncLog(_ line: String) {
+    private func resolveApplyUpdateScript() -> URL? {
+        if let url = Bundle.main.url(forResource: "apply-macos-update", withExtension: "sh") {
+            return url
+        }
+        let resources = Bundle.main.resourceURL?
+            .appendingPathComponent("apply-macos-update.sh")
+        if let resources, fileManager.fileExists(atPath: resources.path) {
+            return resources
+        }
+        return nil
+    }
+
+    func appendSyncLog(_ line: String) {
         let log = supportUpdatesDirectory().appendingPathComponent("last-sync.log")
         try? fileManager.createDirectory(at: log.deletingLastPathComponent(), withIntermediateDirectories: true)
         let stamp = ISO8601DateFormatter().string(from: Date())
@@ -341,8 +338,58 @@ final class AppUpdateService: @unchecked Sendable {
             tag: AppReleaseConfig.liveTag,
             downloadURL: downloadURL,
             releasePage: pageURL,
-            assetName: assetName
+            assetName: assetName,
+            packageDigest: manifest.packageDigest
         )
+    }
+
+    private func headAssetByteCount(url: URL) async -> Int? {
+        var request = URLRequest(url: url)
+        request.httpMethod = "HEAD"
+        request.setValue("Publshr/1.0", forHTTPHeaderField: "User-Agent")
+        request.cachePolicy = .reloadIgnoringLocalCacheData
+        do {
+            let (_, response) = try await session.data(for: request)
+            guard let http = response as? HTTPURLResponse, (200 ... 399).contains(http.statusCode) else {
+                return nil
+            }
+            if let length = http.value(forHTTPHeaderField: "Content-Length"), let bytes = Int(length) {
+                return bytes
+            }
+            return nil
+        } catch {
+            return nil
+        }
+    }
+
+    private func checkVersionedFallbackSilently() async -> AvailableUpdate? {
+        do {
+            guard let live = try await fetchLiveRelease(),
+                  let update = try await parseLiveRelease(live) else {
+                return nil
+            }
+            return update
+        } catch {
+            appendSyncLog("API fallback skipped: \(error.localizedDescription)")
+        }
+        do {
+            let localBuild = AppReleaseConfig.buildNumber
+            let releases = try await fetchRecentReleases()
+            var best: AvailableUpdate?
+            for release in releases where release.tagName != AppReleaseConfig.liveTag {
+                guard let candidate = parseVersionedRelease(release) else { continue }
+                if candidate.build <= localBuild { continue }
+                if let current = best {
+                    if candidate.build > current.build { best = candidate }
+                } else {
+                    best = candidate
+                }
+            }
+            return best
+        } catch {
+            appendSyncLog("versioned fallback skipped: \(error.localizedDescription)")
+            return nil
+        }
     }
 
     private func manifestFromReleaseNotes(_ live: GitHubRelease) -> LiveChannelManifest? {
@@ -432,7 +479,16 @@ final class AppUpdateService: @unchecked Sendable {
             tag: tag,
             downloadURL: downloadURL,
             releasePage: pageURL,
-            assetName: assetName
+            assetName: assetName,
+            packageDigest: nil
         )
+    }
+
+    func recordAppliedLiveManifest(_ update: AvailableUpdate) {
+        UserDefaults.standard.set(update.version, forKey: "publshr.appliedLiveVersion")
+        UserDefaults.standard.set(update.build, forKey: "publshr.appliedLiveBuild")
+        if let digest = update.packageDigest, !digest.isEmpty {
+            UserDefaults.standard.set(digest, forKey: "publshr.appliedLiveDigest")
+        }
     }
 }

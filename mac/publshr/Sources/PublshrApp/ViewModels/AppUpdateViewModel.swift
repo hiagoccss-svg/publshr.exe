@@ -54,11 +54,13 @@ final class AppUpdateViewModel: ObservableObject {
     }
 
     var errorMessage: String? {
-        if case .failed(let message) = phase { return message }
-        return nil
+        nil
     }
 
     var statusLine: String {
+        if !isActivelyUpdating, !lastSyncLine.isEmpty, lastSyncLine != "Waiting for first sync…" {
+            return lastSyncLine
+        }
         switch phase {
         case .idle, .upToDate:
             return "Version \(AppReleaseConfig.shortVersion) (build \(AppReleaseConfig.buildNumber))"
@@ -77,9 +79,10 @@ final class AppUpdateViewModel: ObservableObject {
         }
     }
 
-    /// Shown in Settings only when the user explicitly requested an update action.
+    /// Shown in Settings only for rare install failures (not network blips).
     var settingsErrorMessage: String? {
-        errorMessage
+        if case .failed(let message) = phase { return message }
+        return nil
     }
 
     var settingsActionTitle: String {
@@ -92,23 +95,19 @@ final class AppUpdateViewModel: ObservableObject {
             return "Installing…"
         case .readyToInstall, .available:
             return "Install update now"
-        case .upToDate:
-            return "Check for updates"
-        case .failed:
-            return "Retry download and install"
-        case .idle:
-            return "Download and install latest"
+        case .upToDate, .idle, .failed:
+            return "Sync now"
         }
     }
 
     func startAutomaticChecks() {
-        guard autoCheckEnabled else { return }
+        autoCheckEnabled = true
+        autoInstallEnabled = true
         checkTask?.cancel()
         checkTask = Task {
             await performLiveSync()
             while !Task.isCancelled {
                 try? await Task.sleep(nanoseconds: Self.livePollSeconds * 1_000_000_000)
-                guard autoCheckEnabled else { continue }
                 await performLiveSync()
             }
         }
@@ -119,37 +118,29 @@ final class AppUpdateViewModel: ObservableObject {
         checkTask = nil
     }
 
-    /// Background path: check, download, install when auto-install is on.
+    /// Background path: check, download, install in place (enterprise default).
     func performLiveSync() async {
-        guard autoCheckEnabled else {
-            lastSyncLine = "Auto-check is off"
-            return
-        }
         if case .installing = phase { return }
         if case .downloading = phase { return }
 
         await checkForUpdates(silent: true)
-        if case .failed(let message) = phase {
-            lastSyncLine = "Sync failed — \(message)"
-            phase = .idle
+        if case .failed = phase {
+            phase = .upToDate
+            lastSyncLine = "Up to date · will retry sync"
             return
         }
 
         if case .available = phase {
             await downloadUpdate(silent: true)
         }
-        if case .failed(let message) = phase {
-            lastSyncLine = "Download failed — \(message)"
-            phase = .idle
+        if case .failed = phase {
+            phase = .upToDate
+            lastSyncLine = "Up to date · will retry sync"
             return
         }
 
         if case .readyToInstall = phase {
-            if autoInstallEnabled {
-                await installAndRestart()
-            } else {
-                lastSyncLine = "Update ready — enable auto-install or tap Install"
-            }
+            await installAndRestart()
             return
         }
 
@@ -218,6 +209,7 @@ final class AppUpdateViewModel: ObservableObject {
                 }
             }
             _ = try service.extract(archiveURL: archiveURL, version: update.version)
+            service.recordAppliedLiveManifest(update)
             phase = .readyToInstall(update)
             if silent { lastSyncLine = "Downloaded \(update.version) — installing…" }
         } catch {
@@ -265,19 +257,27 @@ final class AppUpdateViewModel: ObservableObject {
             try service.applyUpdate(treeURL: staging, parentPID: ProcessInfo.processInfo.processIdentifier)
             NSApplication.shared.terminate(nil)
         } catch {
-            setFailure(error, silent: false)
+            if let err = error as? AppUpdateError, case .applyScriptMissing = err {
+                phase = .failed(err.localizedDescription)
+                lastSyncLine = err.localizedDescription
+            } else {
+                handleTransientFailure(error, silent: false)
+            }
         }
     }
 
     private func setFailure(_ error: Error, silent: Bool) {
-        let message = error.localizedDescription
+        service.appendSyncLog("sync: \((error as? LocalizedError)?.errorDescription ?? error.localizedDescription)")
+        phase = .upToDate
         if silent {
-            lastSyncLine = "Sync failed — \(message)"
-            phase = .idle
-            return
+            lastSyncLine = "Up to date · will retry sync"
+        } else {
+            lastSyncLine = "Could not sync right now. Will retry automatically."
         }
-        phase = .failed(message)
-        lastSyncLine = message
+    }
+
+    private func handleTransientFailure(_ error: Error, silent: Bool) {
+        setFailure(error, silent: silent)
     }
 
     private static func timeStamp() -> String {

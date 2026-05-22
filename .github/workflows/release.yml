@@ -4,6 +4,7 @@ on:
   push:
     tags:
       - "v*"
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -39,6 +40,8 @@ jobs:
 
       - name: Package release
         working-directory: mac/publshr
+        env:
+          PUBLSHR_COMMIT_SHA: ${{ github.sha }}
         run: |
           chmod +x scripts/package-release.sh
           bash scripts/package-release.sh "${GITHUB_REF_NAME#v}"
@@ -65,18 +68,24 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
+          REPO="${{ github.repository }}"
           mapfile -t assets < <(find artifacts -name '*.tar.gz' -type f)
           if [[ ${#assets[@]} -eq 0 ]]; then
             echo "No release tarballs found under artifacts/" >&2
             find artifacts -type f >&2 || true
             exit 1
           fi
+          cat > /tmp/publshr-release-notes.md <<EOF
+          Native macOS Publshr.app (enterprise IDE + Supabase).
+
+          Install once:
+          curl -fsSL "https://raw.githubusercontent.com/${REPO}/refs/heads/main/install-macos.sh" | bash
+
+          After that, every push to main publishes the live channel; installed apps auto-update in place.
+          See mac/publshr/docs/AUTO_UPDATE.md.
+          EOF
           gh release create "$GITHUB_REF_NAME" \
-            --repo "${{ github.repository }}" \
+            --repo "$REPO" \
             --title "publshr $VERSION" \
-            --notes "Native macOS Publshr.app (Cursor-style UI + Supabase auth).
-
-**Install once:** \`curl -fsSL https://raw.githubusercontent.com/${{ github.repository }}/main/install-publshr.sh | bash\`
-
-**After that:** push to \`main\` and the installed app auto-updates from GitHub Releases (see mac/publshr/docs/AUTO_UPDATE.md)." \
+            --notes-file /tmp/publshr-release-notes.md \
             "${assets[@]}"
