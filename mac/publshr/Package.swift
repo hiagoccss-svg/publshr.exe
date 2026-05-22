@@ -3,7 +3,7 @@ import PackageDescription
 
 let package = Package(
     name: "publshr",
-    platforms: [.macOS(.v13)],
+    platforms: [.macOS(.v14)],
     products: [
         .executable(name: "publshr", targets: ["publshrCLI"]),
         .executable(name: "PublshrApp", targets: ["PublshrApp"]),

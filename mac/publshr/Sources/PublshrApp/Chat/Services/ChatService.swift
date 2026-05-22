@@ -2,7 +2,8 @@ import Foundation
 import Supabase
 
 /// Supabase-backed chat sync, send, and realtime subscriptions.
-actor ChatService {
+@MainActor
+final class ChatService {
     private let client: SupabaseClient
     private let store: ChatLocalStore
     private var realtimeTask: Task<Void, Never>?
