@@ -4,41 +4,55 @@ struct AppUpdateBannerView: View {
     @ObservedObject var updates: AppUpdateViewModel
 
     var body: some View {
-        if updates.hasPendingUpdate {
-            HStack(spacing: 10) {
-                Image(systemName: "arrow.down.circle.fill")
-                    .foregroundStyle(CursorTheme.accent)
-                Text(updates.statusLine)
-                    .font(.system(size: 11, weight: .medium))
-                Spacer()
-                Button("Download") {
-                    Task { await updates.downloadUpdate() }
+        Group {
+            if updates.hasPendingUpdate || updates.errorMessage != nil {
+                bannerContent
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var bannerContent: some View {
+        HStack(spacing: 10) {
+            Image(systemName: updates.errorMessage != nil ? "exclamationmark.triangle.fill" : "arrow.down.circle.fill")
+                .foregroundStyle(updates.errorMessage != nil ? CursorTheme.error : CursorTheme.accent)
+
+            Text(updates.statusLine)
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(CursorTheme.foreground)
+                .lineLimit(2)
+
+            Spacer()
+
+            if updates.errorMessage != nil {
+                Button("Retry") {
+                    Task { await updates.checkForUpdates(silent: false) }
                 }
                 .buttonStyle(.bordered)
                 .controlSize(.small)
-                .disabled({
-                    if case .downloading = updates.phase { return true }
-                    if case .installing = updates.phase { return true }
-                    return false
-                }())
-
-                Button("Restart to update") {
-                    Task { await updates.installAndRestart() }
+            } else if updates.canInstallNow {
+                Button("Update now") {
+                    Task { await updates.updateNow() }
                 }
                 .buttonStyle(.borderedProminent)
                 .controlSize(.small)
-                .disabled({
-                    switch updates.phase {
-                    case .readyToInstall, .available:
-                        return false
-                    default:
-                        return true
-                    }
-                }())
+                .disabled(isBusy)
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 6)
-            .background(CursorTheme.accent.opacity(0.12))
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 7)
+        .background(updates.errorMessage != nil ? CursorTheme.error.opacity(0.1) : CursorTheme.accent.opacity(0.12))
+        .overlay(alignment: .bottom) {
+            Rectangle().fill(CursorTheme.border).frame(height: 1)
+        }
+    }
+
+    private var isBusy: Bool {
+        switch updates.phase {
+        case .downloading, .installing, .checking:
+            return true
+        default:
+            return false
         }
     }
 }

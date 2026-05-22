@@ -9,14 +9,18 @@ struct StatusBarView: View {
     var body: some View {
         HStack(spacing: 16) {
             Button {
-                Task { await updates.checkForUpdates(silent: false) }
+                if updates.canInstallNow {
+                    Task { await updates.updateNow() }
+                } else {
+                    Task { await updates.checkForUpdates(silent: false) }
+                }
             } label: {
                 Text(updates.statusLine)
                     .font(.system(size: 11))
                     .lineLimit(1)
             }
             .buttonStyle(.plain)
-            .help("Check for updates from GitHub")
+            .help(updates.canInstallNow ? "Download and install update" : "Check for updates from GitHub")
 
             if module == .chat {
                 HStack(spacing: 6) {
@@ -44,9 +48,9 @@ struct StatusBarView: View {
 
             Spacer()
 
-            if updates.hasPendingUpdate {
-                Button("Update") {
-                    Task { await updates.installAndRestart() }
+            if updates.canInstallNow {
+                Button("Update now") {
+                    Task { await updates.updateNow() }
                 }
                 .buttonStyle(.borderless)
                 .font(.system(size: 11, weight: .semibold))

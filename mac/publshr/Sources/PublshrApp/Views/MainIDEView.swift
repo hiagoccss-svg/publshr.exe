@@ -5,6 +5,7 @@ struct MainIDEView: View {
     @EnvironmentObject private var chat: ChatViewModel
     @EnvironmentObject private var spaces: SpacesViewModel
     @EnvironmentObject private var updates: AppUpdateViewModel
+    @AppStorage("publshr.selectedModule") private var storedModule = AppModule.chat.rawValue
     @State private var module: AppModule = .chat
 
     var body: some View {
@@ -26,9 +27,13 @@ struct MainIDEView: View {
         }
         .background(CursorTheme.editorBackground)
         .onAppear {
+            if let restored = AppModule(rawValue: storedModule) {
+                module = restored
+            }
             chat.attach(auth: auth)
         }
         .onChange(of: module) { _, newModule in
+            storedModule = newModule.rawValue
             if newModule == .chat {
                 chat.attach(auth: auth)
             }

@@ -74,24 +74,30 @@ struct SettingsView: View {
                 .font(.system(size: 13))
                 .foregroundStyle(CursorTheme.foreground)
 
+            if let err = updates.errorMessage {
+                Text(err)
+                    .font(.system(size: 11))
+                    .foregroundStyle(CursorTheme.error)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
             HStack(spacing: 8) {
                 Button("Check for updates") {
                     Task { await updates.checkForUpdates(silent: false) }
                 }
                 .buttonStyle(.bordered)
 
-                if updates.hasPendingUpdate {
-                    Button("Download") {
-                        Task { await updates.downloadUpdate() }
-                    }
-                    .buttonStyle(.bordered)
-
-                    Button("Install and restart") {
-                        Task { await updates.installAndRestart() }
-                    }
-                    .buttonStyle(.borderedProminent)
+                Button("Download and install") {
+                    Task { await updates.updateNow() }
                 }
+                .buttonStyle(.borderedProminent)
+                .disabled(updateActionBusy)
             }
+
+            Text("Updates install from the GitHub live channel (same build as install-macos.sh). After install, the app restarts automatically.")
+                .font(.system(size: 11))
+                .foregroundStyle(CursorTheme.foregroundMuted)
+                .fixedSize(horizontal: false, vertical: true)
 
             Toggle("Check automatically every 10 minutes", isOn: $updates.autoCheckEnabled)
                 .font(.system(size: 12))
@@ -177,6 +183,15 @@ struct SettingsView: View {
         }
         .padding(.horizontal, 20)
         .padding(.bottom, 8)
+    }
+
+    private var updateActionBusy: Bool {
+        switch updates.phase {
+        case .checking, .downloading, .installing:
+            return true
+        default:
+            return false
+        }
     }
 
     private func labeledRow(_ label: String, _ value: String) -> some View {

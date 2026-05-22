@@ -22,11 +22,25 @@ final class AppUpdateViewModel: ObservableObject {
 
     var hasPendingUpdate: Bool {
         switch phase {
-        case .available, .readyToInstall:
+        case .available, .readyToInstall, .downloading:
             return true
         default:
             return false
         }
+    }
+
+    var canInstallNow: Bool {
+        switch phase {
+        case .readyToInstall, .available:
+            return true
+        default:
+            return false
+        }
+    }
+
+    var errorMessage: String? {
+        if case .failed(let message) = phase { return message }
+        return nil
     }
 
     var statusLine: String {
@@ -38,7 +52,7 @@ final class AppUpdateViewModel: ObservableObject {
         case .upToDate:
             return "Up to date · v\(AppReleaseConfig.installedLabel)"
         case .available(let update):
-            return "Update \(update.version) available"
+            return "Update \(update.version) available — download to install"
         case .downloading(let progress):
             return "Downloading update… \(Int(progress * 100))%"
         case .readyToInstall(let update):
@@ -64,13 +78,13 @@ final class AppUpdateViewModel: ObservableObject {
 
     func checkForUpdates(silent: Bool = false) async {
         if case .checking = phase { return }
+        if case .downloading = phase { return }
+        if case .installing = phase { return }
         if !silent { phase = .checking }
 
         do {
             if let update = try await service.checkForUpdate() {
-                if case .readyToInstall = phase {
-                    return
-                }
+                if case .readyToInstall = phase { return }
                 phase = .available(update)
                 if silent {
                     await downloadUpdate()
@@ -79,14 +93,21 @@ final class AppUpdateViewModel: ObservableObject {
                 phase = .upToDate
             }
         } catch {
-            if !silent {
-                phase = .failed(error.localizedDescription)
-            }
+            phase = .failed(error.localizedDescription)
         }
     }
 
     func downloadUpdate() async {
-        guard case .available(let update) = phase else { return }
+        let update: AvailableUpdate
+        switch phase {
+        case .available(let u):
+            update = u
+        case .readyToInstall(let u):
+            return
+        default:
+            return
+        }
+
         phase = .downloading(progress: 0)
 
         do {
@@ -104,15 +125,37 @@ final class AppUpdateViewModel: ObservableObject {
         }
     }
 
-    func installAndRestart() async {
-        guard case .readyToInstall(let update) = phase else {
-            if case .available = phase {
-                await downloadUpdate()
-                guard case .readyToInstall = phase else { return }
+    /// Check → download → install → restart (Settings / banner primary action).
+    func updateNow() async {
+        if case .readyToInstall = phase {
+            await installAndRestart()
+            return
+        }
+        if case .available = phase {
+            await downloadUpdate()
+            if case .readyToInstall = phase {
                 await installAndRestart()
             }
             return
         }
+        await checkForUpdates(silent: false)
+        guard case .available = phase else {
+            if case .readyToInstall = phase {
+                await installAndRestart()
+            }
+            return
+        }
+        await downloadUpdate()
+        if case .readyToInstall = phase {
+            await installAndRestart()
+        }
+    }
+
+    func installAndRestart() async {
+        if case .available = phase {
+            await downloadUpdate()
+        }
+        guard case .readyToInstall(let update) = phase else { return }
 
         phase = .installing
         do {

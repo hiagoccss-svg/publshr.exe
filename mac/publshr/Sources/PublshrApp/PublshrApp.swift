@@ -19,7 +19,6 @@ struct PublshrApp: App {
                 .environmentObject(chat)
                 .environmentObject(spaces)
                 .environmentObject(updates)
-                .preferredColorScheme(.dark)
                 .onOpenURL { url in
                     auth.handleIncomingURL(url)
                 }
@@ -37,9 +36,16 @@ struct PublshrApp: App {
                     Task { await updates.checkForUpdates(silent: false) }
                 }
                 Button("Install Update and Restart") {
-                    Task { await updates.installAndRestart() }
+                    Task { await updates.updateNow() }
                 }
-                .disabled(!updates.hasPendingUpdate)
+                .disabled({
+                    switch updates.phase {
+                    case .checking, .downloading, .installing:
+                        return true
+                    default:
+                        return false
+                    }
+                }())
             }
             CommandMenu("Chat") {
                 Button("Search…") {

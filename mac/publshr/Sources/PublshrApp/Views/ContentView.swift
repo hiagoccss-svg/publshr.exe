@@ -19,6 +19,7 @@ struct ContentView: View {
         }
         .frame(minWidth: 1100, minHeight: 700)
         .background(CursorTheme.editorBackground)
+        .preferredColorScheme(CursorTheme.appearance == .light ? .light : .dark)
         .onAppear {
             applyAppearance()
             syncChatWorkspace()

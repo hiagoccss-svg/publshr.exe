@@ -69,7 +69,7 @@ final class SpacesViewModel: ObservableObject {
                 tasks = []
             }
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = friendlySpacesError(error)
         }
     }
 

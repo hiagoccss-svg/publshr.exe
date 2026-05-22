@@ -141,14 +141,34 @@ final class AppUpdateService: @unchecked Sendable {
             throw AppUpdateError.extractFailed
         }
 
-        let entries = try fileManager.contentsOfDirectory(at: staging, includingPropertiesForKeys: nil)
-        if let tree = entries.first(where: { $0.lastPathComponent.hasPrefix("publshr-") }) {
-            return tree
-        }
-        if entries.contains(where: { $0.lastPathComponent == "Publshr.app" }) {
+        if let bundle = findAppBundle(under: staging) {
+            let flatApp = staging.appendingPathComponent("Publshr.app", isDirectory: true)
+            if bundle != flatApp {
+                try? fileManager.removeItem(at: flatApp)
+                try fileManager.moveItem(at: bundle, to: flatApp)
+            }
             return staging
         }
         throw AppUpdateError.extractFailed
+    }
+
+    private func findAppBundle(under root: URL) -> URL? {
+        let direct = root.appendingPathComponent("Publshr.app", isDirectory: true)
+        if fileManager.fileExists(atPath: direct.path) { return direct }
+        guard let entries = try? fileManager.contentsOfDirectory(
+            at: root,
+            includingPropertiesForKeys: [.isDirectoryKey],
+            options: [.skipsHiddenFiles]
+        ) else { return nil }
+        for entry in entries {
+            var isDir: ObjCBool = false
+            guard fileManager.fileExists(atPath: entry.path, isDirectory: &isDir), isDir.boolValue else {
+                continue
+            }
+            let nested = entry.appendingPathComponent("Publshr.app", isDirectory: true)
+            if fileManager.fileExists(atPath: nested.path) { return nested }
+        }
+        return nil
     }
 
     func applyUpdate(treeURL: URL, parentPID: Int32) throws {
