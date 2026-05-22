@@ -58,7 +58,7 @@ enum CursorTheme {
         activityBarForeground: Color(hex: 0x3B3B3B),
         activityBarForegroundDim: Color(hex: 0x9D9D9D),
         navSidebar: Color(hex: 0xFFFFFF),
-        titleBar: Color(hex: 0xFFFFFF),
+        titleBar: Color(hex: 0xF3F3F3),
         sideBar: Color(hex: 0xFFFFFF),
         sideBarSectionHeader: Color(hex: 0x6E6E6E),
         editorBackground: Color(hex: 0xFFFFFF),
@@ -170,7 +170,9 @@ enum CursorTheme {
     /// Settings / module nav column inside the main window.
     static let settingsSidebarWidth: CGFloat = 212
     static let navSidebarWidth: CGFloat = 240
-    /// Space for macOS traffic lights when using full-size content view.
+    /// Leading reserve for macOS traffic lights (toolbar shares the title-bar row).
+    static let trafficLightLeadingPadding: CGFloat = 72
+    /// @deprecated Use traffic-light padding on the unified toolbar only.
     static let windowChromeTopInset: CGFloat = 28
     static let sideBarWidth: CGFloat = 260
     static let chatPanelWidth: CGFloat = 520
@@ -180,8 +182,11 @@ enum CursorTheme {
     static let chatRowSpacing: CGFloat = 16
     static let chatSidebarRowHeight: CGFloat = 30
     static let tabBarHeight: CGFloat = 35
-    /// Header row with document tabs (content column, white bar).
-    static let workspaceHeaderHeight: CGFloat = 44
+    /// Unified title-bar / toolbar row (icons align with traffic lights).
+    static let workspaceHeaderHeight: CGFloat = 38
+    static let toolbarIconSize: CGFloat = 11
+    static let toolbarIconHitSize: CGFloat = 24
+    static var toolbarIconForeground: Color { foregroundMuted }
     static let workspaceTabSpacing: CGFloat = 6
     static let workspaceTabHorizontalPadding: CGFloat = 10
     static let workspaceTabCornerRadius: CGFloat = 7

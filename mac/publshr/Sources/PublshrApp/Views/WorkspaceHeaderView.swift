@@ -10,73 +10,75 @@ struct WorkspaceHeaderView: View {
     @EnvironmentObject private var calls: CallSignalingService
     @ObservedObject var spaces: SpacesViewModel
     @Binding var module: AppModule
-    var topInset: CGFloat
+    /// Height of the macOS title-bar safe area (traffic lights live here).
+    var safeAreaTop: CGFloat
 
     @State private var hoveredTabId: String?
     @State private var tabDragOffsets: [String: CGSize] = [:]
 
+    private var chromeBarHeight: CGFloat {
+        max(safeAreaTop, CursorTheme.windowChromeTopInset) + CursorTheme.workspaceHeaderHeight
+    }
+
     var body: some View {
-        VStack(spacing: 0) {
-            Color.clear.frame(height: topInset)
+        HStack(alignment: .center, spacing: 0) {
+            Color.clear
+                .frame(width: CursorTheme.trafficLightLeadingPadding)
 
             HStack(spacing: 0) {
                 leadingControls
-                    .padding(.leading, 12)
 
                 tabStrip
                     .frame(maxWidth: .infinity)
 
                 trailingActions
-                    .padding(.trailing, 12)
+                    .padding(.trailing, 4)
             }
+            .padding(.leading, 4)
             .frame(height: CursorTheme.workspaceHeaderHeight)
-            .background(CursorTheme.titleBar)
-            .overlay(alignment: .bottom) {
-                Rectangle()
-                    .fill(CursorTheme.hairline)
-                    .frame(height: 1)
-            }
+        }
+        .frame(height: chromeBarHeight, alignment: .bottom)
+        .frame(maxWidth: .infinity)
+        .background(CursorTheme.titleBar)
+        .overlay(alignment: .bottom) {
+            Rectangle()
+                .fill(CursorTheme.hairline)
+                .frame(height: 1)
         }
     }
 
     // MARK: - Leading
 
     private var leadingControls: some View {
-        HStack(spacing: 6) {
-            sidebarToggleButton
+        HStack(spacing: 4) {
+            ToolbarIconButton(
+                systemName: tabStore.sidebarExpanded ? "sidebar.left" : "sidebar.right",
+                help: tabStore.sidebarExpanded ? "Collapse sidebar" : "Expand sidebar"
+            ) {
+                withAnimation(.easeInOut(duration: 0.15)) {
+                    tabStore.sidebarExpanded.toggle()
+                }
+            }
 
-            HStack(spacing: 2) {
-                headerIconButton(
-                    "chevron.left",
+            ToolbarIconButton(systemName: "magnifyingglass", help: "Search") {
+                if module == .chat {
+                    chat.showSearchSheet = true
+                }
+            }
+
+            HStack(spacing: 0) {
+                ToolbarIconButton(
+                    systemName: "chevron.left",
                     enabled: navigationBackEnabled,
                     help: "Back"
                 ) { performNavigateBack() }
-                headerIconButton(
-                    "chevron.right",
+                ToolbarIconButton(
+                    systemName: "chevron.right",
                     enabled: navigationForwardEnabled,
                     help: "Forward"
                 ) { performNavigateForward() }
             }
         }
-    }
-
-    private var sidebarToggleButton: some View {
-        Button {
-            withAnimation(.easeInOut(duration: 0.2)) {
-                tabStore.sidebarExpanded.toggle()
-            }
-        } label: {
-            Image(systemName: tabStore.sidebarExpanded ? "sidebar.left" : "sidebar.right")
-                .font(.system(size: 13, weight: .medium))
-                .foregroundStyle(CursorTheme.foregroundMuted)
-                .frame(width: 30, height: 30)
-                .background(
-                    RoundedRectangle(cornerRadius: 7)
-                        .strokeBorder(CursorTheme.hairline, lineWidth: 1)
-                )
-        }
-        .buttonStyle(.plain)
-        .help(tabStore.sidebarExpanded ? "Collapse main menu" : "Expand main menu")
     }
 
     // MARK: - Tab strip
@@ -117,8 +119,8 @@ struct WorkspaceHeaderView: View {
 
                 addTabMenu
             }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 6)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
         }
     }
 
@@ -163,13 +165,9 @@ struct WorkspaceHeaderView: View {
             }
         } label: {
             Image(systemName: "plus")
-                .font(.system(size: 12, weight: .semibold))
+                .font(.system(size: 11, weight: .medium))
                 .foregroundStyle(CursorTheme.foregroundDim)
-                .frame(width: 28, height: 28)
-                .background(
-                    RoundedRectangle(cornerRadius: 6)
-                        .strokeBorder(CursorTheme.hairline, lineWidth: 1)
-                )
+                .frame(width: CursorTheme.toolbarIconHitSize, height: CursorTheme.toolbarIconHitSize)
         }
         .menuStyle(.borderlessButton)
         .help("Open tab")
@@ -199,7 +197,7 @@ struct WorkspaceHeaderView: View {
     }
 
     private var chatTrailingActions: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 4) {
             compactSearchField(
                 placeholder: "Search in channel",
                 text: $chat.searchQuery
@@ -213,26 +211,26 @@ struct WorkspaceHeaderView: View {
             }
 
             if chat.selectedChannel != nil {
-                headerIconButton(chat.showPinnedPanel ? "pin.fill" : "pin", enabled: true, help: "Pinned") {
-                    chat.showPinnedPanel.toggle()
-                }
+                ToolbarIconButton(
+                    systemName: chat.showPinnedPanel ? "pin.fill" : "pin",
+                    help: "Pinned"
+                ) { chat.showPinnedPanel.toggle() }
             }
 
-            headerIconButton(
-                chat.chatFocusMode ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right",
-                enabled: true,
+            ToolbarIconButton(
+                systemName: chat.chatFocusMode ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right",
                 help: chat.chatFocusMode ? "Show sidebars" : "Focus"
             ) {
-                withAnimation(.easeInOut(duration: 0.2)) { chat.chatFocusMode.toggle() }
+                withAnimation(.easeInOut(duration: 0.15)) { chat.chatFocusMode.toggle() }
             }
 
             if let tab = tabStore.selectedTab, tab.kind.isChat {
-                headerIconButton("arrow.up.forward.square", enabled: true, help: "Open in new window") {
+                ToolbarIconButton(systemName: "arrow.up.forward.square", help: "Open in new window") {
                     detachTab(tab)
                 }
             }
 
-            headerIconButton("sparkles", enabled: true, help: "AI") { chat.showAISheet = true }
+            ToolbarIconButton(systemName: "sparkles", help: "AI") { chat.showAISheet = true }
 
             HeaderActionDivider()
 
@@ -247,7 +245,7 @@ struct WorkspaceHeaderView: View {
     }
 
     private var spacesTrailingActions: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 4) {
             compactSearchField(
                 placeholder: "Search spaces",
                 text: $spaces.searchQuery
@@ -258,25 +256,21 @@ struct WorkspaceHeaderView: View {
 
             if spaces.selectedSpace != nil {
                 viewModePicker
-                headerIconButton(
-                    spaces.selectedSpace?.isPinned == true ? "pin.fill" : "pin",
-                    enabled: true,
+                ToolbarIconButton(
+                    systemName: spaces.selectedSpace?.isPinned == true ? "pin.fill" : "pin",
                     help: "Pin"
-                ) {
-                    Task { await spaces.togglePinSelectedSpace() }
-                }
+                ) { Task { await spaces.togglePinSelectedSpace() } }
             }
 
-            headerIconButton(
-                spaces.spacesFocusMode ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right",
-                enabled: true,
-                help: "Focus"
+            ToolbarIconButton(
+                systemName: spaces.spacesFocusMode ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right",
+                help: spaces.spacesFocusMode ? "Show sidebars" : "Focus"
             ) {
-                withAnimation(.easeInOut(duration: 0.2)) { spaces.spacesFocusMode.toggle() }
+                withAnimation(.easeInOut(duration: 0.15)) { spaces.spacesFocusMode.toggle() }
             }
 
             if let tab = tabStore.selectedTab, tab.kind.isSpace {
-                headerIconButton("arrow.up.forward.square", enabled: true, help: "Open in new window") {
+                ToolbarIconButton(systemName: "arrow.up.forward.square", help: "Open in new window") {
                     detachTab(tab)
                 }
             }
@@ -288,13 +282,13 @@ struct WorkspaceHeaderView: View {
     }
 
     private var viewModePicker: some View {
-        HStack(spacing: 2) {
+        HStack(spacing: 0) {
             ForEach(SpacesViewModel.TaskViewMode.allCases) { mode in
                 Button { spaces.taskView = mode } label: {
                     Image(systemName: mode.icon)
-                        .font(.system(size: 11))
+                        .font(.system(size: CursorTheme.toolbarIconSize))
                         .foregroundStyle(spaces.taskView == mode ? CursorTheme.accent : CursorTheme.foregroundMuted)
-                        .frame(width: 26, height: 26)
+                        .frame(width: CursorTheme.toolbarIconHitSize, height: CursorTheme.toolbarIconHitSize)
                 }
                 .buttonStyle(.plain)
             }
@@ -364,9 +358,9 @@ struct WorkspaceHeaderView: View {
             }
         } label: {
             Image(systemName: "gearshape")
-                .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(CursorTheme.foregroundMuted)
-                .frame(width: 28, height: 28)
+                .font(.system(size: CursorTheme.toolbarIconSize, weight: .regular))
+                .foregroundStyle(CursorTheme.toolbarIconForeground)
+                .frame(width: CursorTheme.toolbarIconHitSize, height: CursorTheme.toolbarIconHitSize)
         }
         .menuStyle(.borderlessButton)
         .help("Settings")
@@ -416,37 +410,24 @@ struct WorkspaceHeaderView: View {
     }
 
     private func compactSearchField(placeholder: String, text: Binding<String>) -> some View {
-        HStack(spacing: 6) {
+        HStack(spacing: 5) {
             Image(systemName: "magnifyingglass")
-                .font(.system(size: 11))
+                .font(.system(size: 10))
                 .foregroundStyle(CursorTheme.foregroundDim)
             TextField(placeholder, text: text)
                 .textFieldStyle(.plain)
-                .font(.system(size: 12))
+                .font(.system(size: 11))
         }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 6)
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
+        .background(
+            RoundedRectangle(cornerRadius: 5, style: .continuous)
+                .fill(CursorTheme.editorBackground)
+        )
         .overlay(
-            RoundedRectangle(cornerRadius: 8)
+            RoundedRectangle(cornerRadius: 5, style: .continuous)
                 .strokeBorder(CursorTheme.hairline, lineWidth: 1)
         )
-    }
-
-    private func headerIconButton(
-        _ symbol: String,
-        enabled: Bool,
-        help: String,
-        action: @escaping () -> Void
-    ) -> some View {
-        Button(action: action) {
-            Image(systemName: symbol)
-                .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(enabled ? CursorTheme.foregroundMuted : CursorTheme.foregroundDim.opacity(0.35))
-                .frame(width: 28, height: 28)
-        }
-        .buttonStyle(.plain)
-        .disabled(!enabled)
-        .help(help)
     }
 
     // MARK: - Actions
@@ -537,13 +518,13 @@ private struct WorkspaceTabChip: View {
     var body: some View {
         HStack(spacing: 6) {
             Image(systemName: tab.iconSystemName)
-                .font(.system(size: 11, weight: .medium))
+                .font(.system(size: 10, weight: .medium))
                 .foregroundStyle(isSelected ? CursorTheme.accent : CursorTheme.foregroundMuted)
-                .frame(width: 14)
+                .frame(width: 12)
 
             VStack(alignment: .leading, spacing: 0) {
                 Text(tab.title)
-                    .font(.system(size: 12, weight: isSelected ? .semibold : .medium))
+                    .font(.system(size: 11, weight: isSelected ? .semibold : .regular))
                     .foregroundStyle(isSelected ? CursorTheme.foreground : CursorTheme.foregroundMuted)
                     .lineLimit(1)
                 if let subtitle = tab.subtitle, isSelected || isHovered {
@@ -566,9 +547,9 @@ private struct WorkspaceTabChip: View {
                 .help("Close tab")
             }
         }
-        .padding(.horizontal, CursorTheme.workspaceTabHorizontalPadding)
-        .padding(.vertical, 6)
-        .frame(minWidth: 88, maxWidth: 200)
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
+        .frame(minWidth: 80, maxWidth: 180)
         .background(chipBackground)
         .clipShape(RoundedRectangle(cornerRadius: CursorTheme.workspaceTabCornerRadius))
         .overlay(alignment: .bottom) {

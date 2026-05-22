@@ -83,4 +83,10 @@ if [[ ! -f "$ICON" ]]; then
     exit 1
 fi
 
+UPDATE_SH="${APP}/Contents/Resources/apply-macos-update.sh"
+if [[ ! -f "$UPDATE_SH" ]]; then
+    echo "ERROR: Missing apply-macos-update.sh in Resources (in-place live updates will fail)" >&2
+    exit 1
+fi
+
 echo "OK: $APP — native GUI Publshr ($SIZE bytes)" >&2

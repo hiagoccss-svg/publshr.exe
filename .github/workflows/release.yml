@@ -1,4 +1,5 @@
-name: Release
+# Versioned releases only (v* tags). Live channel uses deliver-macos.yml on every main push.
+name: Release tagged version
 
 on:
   push:

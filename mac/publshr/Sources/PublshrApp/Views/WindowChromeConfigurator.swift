@@ -1,7 +1,7 @@
 import AppKit
 import SwiftUI
 
-/// Cursor-style window: transparent title bar, content flush to edges; sidebars run full height.
+/// Cursor-style window: traffic lights share the unified toolbar row (no empty title strip).
 struct WindowChromeConfigurator: NSViewRepresentable {
     func makeNSView(context: Context) -> NSView {
         let view = NSView(frame: .zero)
@@ -22,7 +22,12 @@ struct WindowChromeConfigurator: NSViewRepresentable {
         window.titlebarAppearsTransparent = true
         window.titleVisibility = .hidden
         window.styleMask.insert(.fullSizeContentView)
-        window.isMovableByWindowBackground = false
+        window.isMovableByWindowBackground = true
+        window.toolbarStyle = .unifiedCompact
+        window.titlebarSeparatorStyle = .none
         window.backgroundColor = NSColor(CursorTheme.editorBackground)
+        if #available(macOS 14.0, *) {
+            window.titlebarAccessoryViewControllers = []
+        }
     }
 }
