@@ -25,7 +25,7 @@ struct SpacesOverviewView: View {
             .padding(SpacesClickUpDesign.overviewPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .background(Color.clear)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 
     private var openCount: Int {

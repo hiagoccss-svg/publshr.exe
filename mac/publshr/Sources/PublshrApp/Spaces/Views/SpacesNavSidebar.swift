@@ -9,8 +9,9 @@ struct SpacesNavSidebar: View {
         LibraryUniversalSubmenuContainer(width: LibraryUniversalSubmenu.width) {
             VStack(alignment: .leading, spacing: 0) {
                 spacesListSection
+                    .layoutPriority(spaces.selectedSpaceId == nil ? 0 : 1)
                     .frame(
-                        minHeight: spaces.selectedSpaceId == nil ? 120 : 0,
+                        minHeight: spaces.selectedSpaceId == nil ? 120 : 80,
                         maxHeight: spaces.selectedSpaceId == nil ? .infinity : 200
                     )
 
@@ -19,12 +20,13 @@ struct SpacesNavSidebar: View {
                     ScrollView {
                         SpacesHierarchyTreeView(spaces: spaces)
                     }
-                    .frame(minHeight: 0, maxHeight: .infinity)
+                    .frame(minHeight: 120, maxHeight: .infinity)
+                    .layoutPriority(2)
                 } else {
                     Spacer(minLength: 0)
                 }
             }
-            .frame(minHeight: 0, maxHeight: .infinity)
+            .frame(minHeight: 0, maxHeight: .infinity, alignment: .topLeading)
         } footer: {
             createSpaceField
         }
@@ -35,7 +37,7 @@ struct SpacesNavSidebar: View {
             LibraryUniversalSubmenu.sectionHeader("Spaces")
 
             ScrollView {
-                VStack(spacing: 2) {
+                LazyVStack(spacing: 2) {
                     let pinned = spaces.filteredSpaces.filter(\.isPinned)
                     let rest = spaces.filteredSpaces.filter { !$0.isPinned }
                     if spaces.filteredSpaces.isEmpty {
@@ -86,7 +88,7 @@ struct SpacesNavSidebar: View {
                 }
                 .padding(.vertical, 4)
             }
-            .frame(minHeight: 0, maxHeight: .infinity)
+            .frame(maxHeight: spaces.selectedSpaceId == nil ? .infinity : 200)
             .animation(nil, value: spaces.selectedSpaceId)
         }
     }

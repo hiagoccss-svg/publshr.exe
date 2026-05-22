@@ -4,6 +4,7 @@ import SwiftUI
 struct ShellUnifiedTitlebar: View {
     @EnvironmentObject private var tabStore: WorkspaceTabStore
     @EnvironmentObject private var chat: ChatViewModel
+    @EnvironmentObject private var spaces: SpacesViewModel
     @ObservedObject private var layout = TrafficLightLayoutStore.shared
 
     @Binding var module: AppModule
@@ -13,6 +14,10 @@ struct ShellUnifiedTitlebar: View {
     var submenuHidden: Bool
 
     private var submenuWidth: CGFloat { LibraryGlassDesign.sidebarWidthWide }
+
+    private var barColumnWidth: CGFloat {
+        LibraryGlassDesign.barMenuColumnWidth(expanded: tabStore.barMenuExpanded)
+    }
 
     private var titlebarBandHeight: CGFloat {
         layout.titlebarTopPadding + layout.rowHeight
@@ -59,7 +64,7 @@ struct ShellUnifiedTitlebar: View {
             )
         }
         .padding(.trailing, 4)
-        .frame(minWidth: CursorMacShellDesign.barMenuIconRailWidth, alignment: .leading)
+        .frame(width: barColumnWidth, alignment: .leading)
         .frame(height: layout.rowHeight)
         .background { GlassPrimaryBarChrome() }
     }
@@ -71,6 +76,9 @@ struct ShellUnifiedTitlebar: View {
         Group {
             if module == .chat {
                 ChatSidebarTitlebarChrome(chat: chat)
+                    .padding(.horizontal, 12)
+            } else if module == .spaces {
+                SpacesSidebarTitlebarChrome(spaces: spaces)
                     .padding(.horizontal, 12)
             } else {
                 Color.clear

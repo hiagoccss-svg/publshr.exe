@@ -20,7 +20,9 @@ struct SpacesRootView: View {
                         .frame(width: SpacesClickUpDesign.inspectorWidth)
                 }
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .onAppear { spaces.attach(auth: auth) }
         .onChange(of: auth.selectedMembership?.workspace.id) { _, _ in
             spaces.attach(auth: auth)

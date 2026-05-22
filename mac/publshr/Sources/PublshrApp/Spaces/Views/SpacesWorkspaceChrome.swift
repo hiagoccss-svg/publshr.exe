@@ -17,7 +17,9 @@ struct SpacesWorkspaceChrome<Content: View>: View {
                 SpacesViewsBar(spaces: spaces)
             }
             content()
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
-        .background(Color.clear)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .background(CursorMacShellDesign.editorBoxBackground)
     }
 }

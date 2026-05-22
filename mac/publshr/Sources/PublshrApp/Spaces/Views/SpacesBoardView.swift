@@ -14,7 +14,7 @@ struct SpacesBoardView: View {
             .padding(.horizontal, SpacesClickUpDesign.chromeHorizontalPadding)
             .padding(.vertical, 14)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 
     private func column(_ status: SpaceTaskStatus) -> some View {

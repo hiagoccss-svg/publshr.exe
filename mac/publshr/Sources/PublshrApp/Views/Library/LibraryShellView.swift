@@ -119,15 +119,9 @@ struct LibraryShellView: View {
     private var editorColumn: some View {
         ShellColumnChromeStack(showsTitlebar: false) {
             Group {
-                if module == .chat {
-                    moduleContent
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                } else {
-                    moduleContent
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .cursorEditorColumnBox()
-                        .padding(CursorMacShellDesign.editorBoxPadding)
-                }
+                moduleContent
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .modifier(SpacesEditorChromeModifier(module: module))
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -171,6 +165,24 @@ struct LibraryShellView: View {
             if spaces.spaces.isEmpty, auth.selectedWorkspace != nil {
                 await spaces.reload()
             }
+        }
+    }
+}
+
+/// Chat fills the editor column; Spaces uses the white ClickUp-style card with padding.
+private struct SpacesEditorChromeModifier: ViewModifier {
+    let module: AppModule
+
+    func body(content: Content) -> some View {
+        switch module {
+        case .chat:
+            content
+        case .spaces:
+            content
+                .cursorEditorColumnBox()
+                .padding(CursorMacShellDesign.editorBoxPadding)
+        case .settings:
+            content
         }
     }
 }

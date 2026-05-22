@@ -18,7 +18,7 @@ struct SpacesListView: View {
                     .buttonStyle(.bordered)
                 }
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         } else {
             ScrollView {
                 LazyVStack(spacing: 2) {
@@ -28,6 +28,7 @@ struct SpacesListView: View {
                 }
                 .padding(.vertical, 10)
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
     }
 
