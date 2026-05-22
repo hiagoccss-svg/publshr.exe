@@ -96,9 +96,22 @@ final class ChatLocalStore {
         )
     }
 
-    func searchMessages(query searchQuery: String) -> [LocalSearchRow] {
+    func searchMessages(query searchQuery: String, channelId: UUID? = nil) -> [LocalSearchRow] {
         let q = "%\(searchQuery.lowercased())%"
-        return fetchRows("SELECT message_id, channel_id, channel_name, snippet FROM search_index WHERE LOWER(snippet) LIKE ? LIMIT 50;", q)
+        let rows: [[String: String]]
+        if let channelId {
+            rows = fetchRows(
+                "SELECT message_id, channel_id, channel_name, snippet FROM search_index WHERE channel_id = ? AND LOWER(snippet) LIKE ? LIMIT 50;",
+                channelId.uuidString,
+                q
+            )
+        } else {
+            rows = fetchRows(
+                "SELECT message_id, channel_id, channel_name, snippet FROM search_index WHERE LOWER(snippet) LIKE ? LIMIT 50;",
+                q
+            )
+        }
+        return rows
             .compactMap { row -> LocalSearchRow? in
                 guard let mid = row["message_id"],
                       let cid = row["channel_id"], let uuid = UUID(uuidString: cid),
@@ -156,6 +169,21 @@ final class ChatLocalStore {
         )
         let decoded = rows.compactMap { decode(ChatMessage.self, from: $0["payload"]) }
         return decoded.sorted { $0.createdAt < $1.createdAt }
+    }
+
+    func loadMessagesInPeriod(channelId: UUID, from start: Date, to end: Date) -> [ChatMessage] {
+        let calendar = Calendar.current
+        let rangeStart = calendar.startOfDay(for: start).timeIntervalSince1970
+        let rangeEnd = (calendar.date(bySettingHour: 23, minute: 59, second: 59, of: end) ?? end).timeIntervalSince1970
+        let rows = fetchRows(
+            """
+            SELECT payload FROM messages
+            WHERE channel_id = ? AND created_at >= ? AND created_at <= ?
+            ORDER BY created_at ASC;
+            """,
+            channelId.uuidString, String(rangeStart), String(rangeEnd)
+        )
+        return rows.compactMap { decode(ChatMessage.self, from: $0["payload"]) }
     }
 
     func upsertMessage(_ message: ChatMessage) {

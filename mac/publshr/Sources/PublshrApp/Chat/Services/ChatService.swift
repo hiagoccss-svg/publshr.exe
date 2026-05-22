@@ -222,6 +222,43 @@ final class ChatService {
         return channel
     }
 
+    func createGroupChat(
+        workspaceId: UUID,
+        currentUserId: UUID,
+        memberProfiles: [Profile]
+    ) async throws -> ChatChannel {
+        let memberIds = memberProfiles.map(\.id)
+        let slug = ([currentUserId] + memberIds).map(\.uuidString).sorted().joined(separator: ":")
+        let existing: [ChatChannel] = try await client
+            .from("chat_channels")
+            .select()
+            .eq("workspace_id", value: workspaceId.uuidString)
+            .eq("kind", value: ChatChannelKind.group.rawValue)
+            .eq("name", value: "group:\(slug)")
+            .limit(1)
+            .execute()
+            .value
+        if let channel = existing.first { return channel }
+
+        let label = memberProfiles
+            .map { $0.displayName ?? $0.email }
+            .sorted()
+            .joined(separator: ", ")
+        let channel = try await createChannel(
+            workspaceId: workspaceId,
+            name: "group:\(slug)",
+            kind: .group,
+            visibility: .private,
+            description: "Group: \(label)",
+            createdBy: currentUserId
+        )
+        try await addChannelMember(workspaceId: workspaceId, channelId: channel.id, userId: currentUserId, role: "owner")
+        for profile in memberProfiles {
+            try await addChannelMember(workspaceId: workspaceId, channelId: channel.id, userId: profile.id)
+        }
+        return channel
+    }
+
     func addChannelMember(
         workspaceId: UUID,
         channelId: UUID,

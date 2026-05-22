@@ -16,7 +16,7 @@ struct PublshrApp: App {
     }
 
     var body: some Scene {
-        WindowGroup {
+        WindowGroup(id: "main") {
             ContentView()
                 .environmentObject(auth)
                 .environmentObject(chat)
@@ -52,9 +52,14 @@ struct PublshrApp: App {
         .commands {
             CommandGroup(replacing: .newItem) {}
             CommandGroup(after: .appInfo) {
+                Button("Sync now") {
+                    NotificationCenter.default.post(name: .publshrPerformLiveSync, object: nil)
+                }
+                .keyboardShortcut("u", modifiers: [.command, .shift])
                 Button("Download and Install Latest") {
                     Task { await updates.installLiveUpdateNow() }
                 }
+                .keyboardShortcut("u", modifiers: [.command, .option])
             }
             CommandMenu("Spaces") {
                 Button("New Space…") {
@@ -179,6 +184,13 @@ struct PublshrApp: App {
                 ChatWindowManager.shared.openChannel(channel, chat: chat, auth: auth)
             }
         }
+        ChatNotificationService.shared.onNotificationQuickReply = { channelId, text in
+            guard auth.isAuthenticated else { return }
+            NSApp.activate(ignoringOtherApps: true)
+            Task {
+                await chat.sendQuickReply(channelId: channelId, text: text)
+            }
+        }
         ChatWindowManager.shared.onSelectChannelInIDE = { channelId in
             chat.selectChannelById(channelId)
         }
@@ -214,9 +226,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NotificationCenter.default.post(name: .publshrPerformLiveSync, object: nil)
     }
 
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        MainWindowPresenter.restoreMainWindow()
+        return true
+    }
+
     func applicationDidBecomeActive(_ notification: Notification) {
         ChatNotificationFocusState.shared.setAppActive(true)
-        MainWindowChrome.apply(to: NSApp.mainWindow ?? NSApp.windows.first)
+        if NSApp.windows.contains(where: { $0.isMiniaturized }) {
+            MainWindowPresenter.restoreMainWindow()
+        } else {
+            MainWindowChrome.apply(to: NSApp.mainWindow ?? NSApp.windows.first)
+        }
         NotificationCenter.default.post(name: .publshrPerformLiveSync, object: nil)
     }
 

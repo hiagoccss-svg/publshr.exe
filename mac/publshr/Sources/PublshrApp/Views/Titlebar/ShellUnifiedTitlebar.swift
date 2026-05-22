@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// One full-width titlebar row — traffic lights, shell controls, submenu search, and editor actions share a single centerline.
+/// One full-width titlebar row — column bands match the shell below; controls share one baseline (Cursor Mac).
 struct ShellUnifiedTitlebar: View {
     @EnvironmentObject private var tabStore: WorkspaceTabStore
     @EnvironmentObject private var chat: ChatViewModel
@@ -11,47 +11,57 @@ struct ShellUnifiedTitlebar: View {
     @Binding var showCommandPalette: Bool
     @Binding var showNotificationsPanel: Bool
 
+    var barColumnWidth: CGFloat
+    var submenuColumnWidth: CGFloat
     var submenuHidden: Bool
 
-    private var submenuWidth: CGFloat { LibraryGlassDesign.sidebarWidthWide }
-
-    private var barColumnWidth: CGFloat {
-        LibraryGlassDesign.barMenuColumnWidth(expanded: tabStore.barMenuExpanded)
+    private var titlebarTopPadding: CGFloat {
+        min(layout.titlebarTopPadding, AppWindowChromeMetrics.maxTitlebarTopPadding)
     }
 
     private var titlebarBandHeight: CGFloat {
-        layout.titlebarTopPadding + layout.rowHeight
+        titlebarTopPadding + layout.rowHeight
+    }
+
+    private var barColumnCompact: Bool {
+        !tabStore.barMenuExpanded
+            || barColumnWidth <= LibraryGlassDesign.barMenuCollapsedWidth + AppWindowChromeMetrics.controlSize
     }
 
     var body: some View {
         HStack(alignment: .center, spacing: 0) {
             leadingBand
+                .frame(width: barColumnWidth, alignment: .leading)
+
             if !submenuHidden {
+                ShellColumnVerticalRule()
                 submenuBand
-                    .frame(width: submenuWidth)
+                    .frame(width: submenuColumnWidth, alignment: .leading)
             }
+
+            ShellColumnVerticalRule()
             editorBand
-                .frame(maxWidth: .infinity)
+                .frame(maxWidth: .infinity, alignment: .leading)
         }
         .frame(height: layout.rowHeight, alignment: .center)
-        .padding(.top, layout.titlebarTopPadding)
+        .padding(.top, titlebarTopPadding)
         .frame(height: titlebarBandHeight, alignment: .top)
         .frame(maxWidth: .infinity)
         .background(TrafficLightLayoutRefreshView().frame(width: 0, height: 0))
     }
 
-    // MARK: - Leading (traffic reserve + sidebar + back/forward)
+    // MARK: - Column 1 (traffic reserve + shell controls)
 
     private var leadingBand: some View {
-        HStack(alignment: .center, spacing: AppWindowChromeMetrics.toolbarItemSpacing) {
+        TitlebarToolbarRow(trailingPadding: 6) {
             Color.clear
-                .frame(width: layout.leadingInset)
+                .frame(width: min(layout.leadingInset, max(0, barColumnWidth - AppWindowChromeMetrics.controlSize * 2)))
                 .accessibilityHidden(true)
             TitlebarChromeIconButton(
                 systemName: tabStore.sidebarExpanded ? "sidebar.left" : "sidebar.right",
                 help: tabStore.sidebarExpanded
-                    ? "Hide chat/spaces submenu"
-                    : "Show chat/spaces submenu",
+                    ? "Hide submenu"
+                    : "Show submenu",
                 isActive: !tabStore.sidebarExpanded
             ) {
                 withAnimation(.easeInOut(duration: 0.15)) {
@@ -60,36 +70,24 @@ struct ShellUnifiedTitlebar: View {
             }
             ShellTrafficLeadingActions(
                 module: $module,
-                compact: !tabStore.barMenuExpanded
+                compact: !tabStore.barMenuExpanded || barColumnCompact
             )
         }
-        .padding(.trailing, 4)
-        .frame(width: barColumnWidth, alignment: .leading)
         .frame(height: layout.rowHeight)
         .background { GlassPrimaryBarChrome() }
     }
 
-    // MARK: - Submenu (channel search)
+    // MARK: - Column 2 (search — flat, no boxed field)
 
     @ViewBuilder
     private var submenuBand: some View {
-        Group {
-            if module == .chat {
-                ChatSidebarTitlebarChrome(chat: chat)
-                    .padding(.horizontal, 12)
-            } else if module == .spaces {
-                SpacesSidebarTitlebarChrome(spaces: spaces)
-                    .padding(.horizontal, 12)
-            } else {
-                Color.clear
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .frame(height: layout.rowHeight)
-        .background { GlassSubmenuChrome() }
+        UniversalSubmenuTitlebarChrome(module: module, chat: chat, spaces: spaces)
+            .padding(.horizontal, 10)
+            .frame(height: layout.rowHeight)
+            .background(LibraryGlassDesign.submenuColumnBackground)
     }
 
-    // MARK: - Editor (channel chrome or spaces actions)
+    // MARK: - Column 3 (channel / actions)
 
     @ViewBuilder
     private var editorBand: some View {
@@ -99,10 +97,10 @@ struct ShellUnifiedTitlebar: View {
                     showCommandPalette: $showCommandPalette,
                     showNotificationsPanel: $showNotificationsPanel
                 )
-                .padding(.leading, CursorMacShellDesign.editorHorizontalPadding)
-                .padding(.trailing, 14)
+                .padding(.leading, 10)
+                .padding(.trailing, 12)
             } else {
-                HStack(alignment: .center, spacing: AppWindowChromeMetrics.toolbarItemSpacing) {
+                TitlebarToolbarRow(trailingPadding: 12) {
                     Spacer(minLength: 0)
                     TitlebarChromeActionBar(
                         module: $module,
@@ -111,10 +109,19 @@ struct ShellUnifiedTitlebar: View {
                         placement: .trailing
                     )
                 }
-                .padding(.trailing, 14)
             }
         }
         .frame(height: layout.rowHeight)
         .background(CursorMacShellDesign.editorColumnBackground)
+    }
+}
+
+/// Hairline between titlebar column bands (matches body column dividers).
+struct ShellColumnVerticalRule: View {
+    var body: some View {
+        Rectangle()
+            .fill(LibraryGlassDesign.hairline.opacity(0.85))
+            .frame(width: CursorMacShellDesign.columnDividerWidth)
+            .frame(maxHeight: .infinity)
     }
 }

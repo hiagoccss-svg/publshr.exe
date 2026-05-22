@@ -1,21 +1,58 @@
 import SwiftUI
 
-/// Reference library UI — proportions from Pinterest / notes-app glass shell (~1200px wide).
+/// Reference library UI — proportions from Pinterest / notes-app glass shell (~1280px wide).
 enum LibraryGlassDesign {
-    /// Primary bar menu (labeled: Daily Note, Inbox, Notes…) — not a 48px icon strip.
-    static let barMenuWidth: CGFloat = 200
-    /// Universal submenu (Areas, Recent Notes, Channels…) — single width everywhere.
-    static let sidebarWidthWide: CGFloat = 272
+    /// Primary bar menu expanded width (`ShellColumnLayout.barExpandedWidth`).
+    static let barMenuWidth: CGFloat = ShellColumnLayout.barExpandedWidth
+    /// Universal submenu — fixed width (ClickUp / Spaces sidebar ~272pt; same in every module).
+    static let sidebarWidthWide: CGFloat = ShellColumnLayout.submenuWidth
     static let sidebarWidth: CGFloat = sidebarWidthWide
-    /// Collapsed primary column — matches macOS traffic-light inset (green button row).
-    static let barMenuCollapsedWidth: CGFloat = 72
+    /// Collapsed primary column (icon rail); see `ShellColumnLayout.barCollapsedMax`.
+    static let barMenuCollapsedWidth: CGFloat = ShellColumnLayout.barCollapsedMax
 
-    /// Fixed shell column widths (prevents HStack from stretching sidebars to ⅓ window each).
-    static func barMenuColumnWidth(expanded: Bool) -> CGFloat {
-        expanded ? barMenuWidth : barMenuCollapsedWidth
+    /// Horizontal inset for bar-menu rows (tighter than submenu rows).
+    static let barMenuRowHorizontal: CGFloat = 10
+
+    /// Column 1 — fixed expanded width; compact icon rail capped below titlebar traffic reserve.
+    static func barMenuColumnWidth(
+        expanded: Bool,
+        windowWidth: CGFloat,
+        trafficInset: CGFloat,
+        submenuVisible: Bool = true
+    ) -> CGFloat {
+        ShellColumnLayout.barMenuColumnWidth(
+            expanded: expanded,
+            windowWidth: windowWidth,
+            trafficInset: trafficInset,
+            submenuVisible: submenuVisible
+        )
     }
 
-    static let submenuColumnWidth: CGFloat = sidebarWidthWide
+    /// Column 2 — fixed universal submenu; shrinks only if the window cannot fit editor minimum.
+    static func submenuColumnWidth(
+        for windowWidth: CGFloat,
+        barWidth: CGFloat,
+        submenuVisible: Bool = true
+    ) -> CGFloat {
+        ShellColumnLayout.submenuColumnWidth(
+            windowWidth: windowWidth,
+            barWidth: barWidth,
+            submenuVisible: submenuVisible
+        )
+    }
+
+    /// Backward-compatible submenu width (assumes default bar + visible submenu).
+    static func submenuColumnWidth(for windowWidth: CGFloat) -> CGFloat {
+        let bar = barMenuColumnWidth(
+            expanded: true,
+            windowWidth: windowWidth,
+            trafficInset: AppWindowChromeMetrics.trafficLightLeadingInset,
+            submenuVisible: true
+        )
+        return submenuColumnWidth(for: windowWidth, barWidth: bar, submenuVisible: true)
+    }
+    /// Column 2 + editor — pure white (Cursor Mac content columns).
+    static let submenuColumnBackground = Color.white
 
     @available(*, deprecated, message: "Use barMenuWidth for the reference shell")
     static let activityBarWidth: CGFloat = 48
@@ -23,11 +60,11 @@ enum LibraryGlassDesign {
     /// Selected sidebar row (reference: warm beige pill on Chat).
     static let sidebarSelection = Color(hex: 0xE8E4DC)
     static let sidebarGlassFill = Color(hex: 0xF7F6F3).opacity(0.88)
-    /// Primary bar menu (~200px) — readable labels while wallpaper still tints through.
-    static let primaryBarGlassFill = Color(hex: 0xF7F6F3).opacity(0.52)
-    static let primaryBarGlassStroke = Color.white.opacity(0.18)
-    /// Universal submenu (chat channels, spaces tree) — softer than primary bar.
-    static let submenuGlassFill = Color(hex: 0xF7F6F3).opacity(0.52)
+    /// Primary bar menu (~200px) — light tint so the desktop wallpaper tints through.
+    static let primaryBarGlassFill = Color(hex: 0xF7F6F3).opacity(0.10)
+    static let primaryBarGlassStroke = Color.white.opacity(0.12)
+    /// @deprecated Submenu uses `submenuColumnBackground` (solid white).
+    static let submenuGlassFill = Color.white
     /// Main chat/spaces floating panel — near-opaque white card on gray shell.
     static let panelGlassFill = Color.white.opacity(0.96)
 

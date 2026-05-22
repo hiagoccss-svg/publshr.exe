@@ -1,8 +1,29 @@
 import SwiftUI
 
-/// ClickUp-style top band for the chat submenu column — search in the titlebar row (no boxed field).
-struct ChatSidebarTitlebarChrome: View {
+/// Column-2 titlebar band — search for the active module (Chat or Spaces).
+struct UniversalSubmenuTitlebarChrome: View {
+    var module: AppModule
     @ObservedObject var chat: ChatViewModel
+    @ObservedObject var spaces: SpacesViewModel
+
+    var body: some View {
+        Group {
+            switch module {
+            case .chat:
+                ChatSidebarTitlebarChrome(chat: chat)
+            case .spaces:
+                SpacesSubmenuTitlebarChrome(spaces: spaces)
+            case .settings:
+                Color.clear
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+    }
+}
+
+/// Spaces universal submenu — search in the titlebar row (matches Chat).
+struct SpacesSubmenuTitlebarChrome: View {
+    @ObservedObject var spaces: SpacesViewModel
 
     var body: some View {
         TitlebarToolbarRow(leadingPadding: 0, trailingPadding: 0) {
@@ -11,15 +32,15 @@ struct ChatSidebarTitlebarChrome: View {
                     .font(.system(size: AppWindowChromeMetrics.controlIconSize, weight: .medium))
                     .foregroundStyle(LibraryGlassDesign.inkMuted)
             }
-            TextField("Search channels and people", text: $chat.sidebarSearchQuery)
+            TextField("Search spaces and tasks", text: $spaces.searchQuery)
                 .textFieldStyle(.plain)
                 .font(.system(size: MacSystemChrome.fieldFontSize))
                 .foregroundStyle(LibraryGlassDesign.ink)
                 .frame(maxWidth: .infinity, alignment: .leading)
-            if !chat.sidebarSearchQuery.isEmpty {
+            if !spaces.searchQuery.isEmpty {
                 TitlebarToolbarSlot {
                     Button {
-                        chat.sidebarSearchQuery = ""
+                        spaces.searchQuery = ""
                     } label: {
                         Image(systemName: "xmark.circle.fill")
                             .font(.system(size: AppWindowChromeMetrics.controlIconSize))
@@ -29,6 +50,5 @@ struct ChatSidebarTitlebarChrome: View {
                 }
             }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
     }
 }

@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct ContentView: View {
+    @Environment(\.openWindow) private var openWindow
     @EnvironmentObject private var auth: AuthViewModel
     @EnvironmentObject private var chat: ChatViewModel
     @EnvironmentObject private var spaces: SpacesViewModel
@@ -22,13 +23,19 @@ struct ContentView: View {
                 MainIDEView()
             }
         }
-        .frame(minWidth: 1280, minHeight: 760, maxWidth: .infinity, maxHeight: .infinity)
+        .frame(minWidth: 1280, maxWidth: .infinity, minHeight: 760, maxHeight: .infinity)
         .background(Color.clear)
         .preferredColorScheme(.light)
         .onAppear {
             applyAppearance()
             syncEnterpriseData()
             evaluateOnboarding()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .publshrRestoreMainWindow)) { _ in
+            openWindow(id: "main")
+            DispatchQueue.main.async {
+                MainWindowPresenter.restoreMainWindow()
+            }
         }
         .onChange(of: auth.flowState) { _, _ in
             applyAppearance()

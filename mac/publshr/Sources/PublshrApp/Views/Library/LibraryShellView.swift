@@ -7,6 +7,7 @@ struct LibraryShellView: View {
     @EnvironmentObject private var spaces: SpacesViewModel
     @EnvironmentObject private var subscription: SubscriptionService
     @EnvironmentObject private var tabStore: WorkspaceTabStore
+    @ObservedObject private var trafficLayout = TrafficLightLayoutStore.shared
     @Binding var module: AppModule
     @Binding var showNewChannel: Bool
     @Binding var showNewDM: Bool
@@ -22,9 +23,17 @@ struct LibraryShellView: View {
     }
 
     var body: some View {
-        ZStack(alignment: .topLeading) {
-            WorkspaceDesktopBackdrop()
-            shellBody
+        GeometryReader { geometry in
+            ZStack(alignment: .top) {
+                WorkspaceDesktopBackdrop()
+                shellBody(windowWidth: geometry.size.width)
+                    .frame(
+                        width: geometry.size.width,
+                        height: geometry.size.height,
+                        alignment: .top
+                    )
+            }
+            .frame(width: geometry.size.width, height: geometry.size.height)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .ignoresSafeArea(.container, edges: .top)
@@ -50,33 +59,51 @@ struct LibraryShellView: View {
         }
     }
 
-    private var barColumnWidth: CGFloat {
-        LibraryGlassDesign.barMenuColumnWidth(expanded: tabStore.barMenuExpanded)
+    private func shellColumnWidths(windowWidth: CGFloat) -> (bar: CGFloat, submenu: CGFloat) {
+        let subVisible = !submenuHidden
+        let bar = LibraryGlassDesign.barMenuColumnWidth(
+            expanded: tabStore.barMenuExpanded,
+            windowWidth: windowWidth,
+            trafficInset: trafficLayout.leadingInset,
+            submenuVisible: subVisible
+        )
+        let sub = LibraryGlassDesign.submenuColumnWidth(
+            for: windowWidth,
+            barWidth: bar,
+            submenuVisible: subVisible
+        )
+        return (bar, sub)
     }
 
-    private var shellBody: some View {
-        VStack(spacing: 0) {
+    private func shellBody(windowWidth: CGFloat) -> some View {
+        let (barW, subW) = shellColumnWidths(windowWidth: windowWidth)
+
+        return VStack(spacing: 0) {
             ShellUnifiedTitlebar(
                 module: $module,
                 showCommandPalette: $showCommandPalette,
                 showNotificationsPanel: $showNotificationsPanel,
+                barColumnWidth: barW,
+                submenuColumnWidth: subW,
                 submenuHidden: submenuHidden
             )
 
             HStack(alignment: .top, spacing: 0) {
                 ShellColumnChromeStack(
                     showsTitlebar: false,
-                    columnWidth: barColumnWidth,
+                    columnWidth: barW,
                     appliesPrimaryBarGlass: true
                 ) {
                     Group {
                         if tabStore.barMenuExpanded {
                             LibraryBarMenuColumn(
+                                barWidth: barW,
                                 module: $module,
                                 profilePresentation: $profilePresentation
                             )
                         } else {
                             LibraryBarMenuIconRail(
+                                barWidth: barW,
                                 module: $module,
                                 profilePresentation: $profilePresentation
                             )
@@ -84,14 +111,18 @@ struct LibraryShellView: View {
                     }
                 }
                 .layoutPriority(3)
+                .transition(.move(edge: .leading).combined(with: .opacity))
+
+                ShellColumnVerticalRule()
 
                 if !submenuHidden {
                     ShellColumnChromeStack(
                         showsTitlebar: false,
-                        columnWidth: LibraryGlassDesign.submenuColumnWidth,
+                        columnWidth: subW,
                         appliesSidebarChrome: true
                     ) {
                         AppSecondarySidebar(
+                            submenuWidth: subW,
                             module: module,
                             chat: chat,
                             spaces: spaces,
@@ -101,10 +132,16 @@ struct LibraryShellView: View {
                     }
                     .layoutPriority(3)
                     .transition(.move(edge: .leading).combined(with: .opacity))
+
+                    ShellColumnVerticalRule()
                 }
 
                 editorColumn
-                    .frame(minWidth: 420, maxWidth: .infinity, maxHeight: .infinity)
+                    .frame(
+                        minWidth: ShellColumnLayout.editorMinWidth,
+                        maxWidth: .infinity,
+                        maxHeight: .infinity
+                    )
                     .layoutPriority(0)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)

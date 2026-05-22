@@ -320,6 +320,41 @@ final class SpacesService {
         return row
     }
 
+    // MARK: - Whiteboards
+
+    func fetchWhiteboards(spaceId: UUID) async throws -> [SpaceWhiteboardRecord] {
+        try await client
+            .from("whiteboards")
+            .select("id,workspace_id,space_id,name,updated_at")
+            .eq("space_id", value: spaceId.uuidString)
+            .eq("is_archived", value: false)
+            .order("updated_at", ascending: false)
+            .execute()
+            .value
+    }
+
+    func createWhiteboard(
+        workspaceId: UUID,
+        spaceId: UUID,
+        name: String,
+        createdBy: UUID
+    ) async throws -> SpaceWhiteboardRecord {
+        struct Insert: Encodable {
+            let workspace_id: UUID
+            let space_id: UUID
+            let name: String
+            let created_by: UUID
+        }
+        let row: SpaceWhiteboardRecord = try await client
+            .from("whiteboards")
+            .insert(Insert(workspace_id: workspaceId, space_id: spaceId, name: name, created_by: createdBy))
+            .select("id,workspace_id,space_id,name,updated_at")
+            .single()
+            .execute()
+            .value
+        return row
+    }
+
     // MARK: - Profiles
 
     func fetchWorkspaceProfiles(workspaceId: UUID) async throws -> [Profile] {

@@ -9,22 +9,30 @@ import SwiftUI
 /// - Channel titles use `toolbarTitleFontSize` inside the same row height (no second toolbar band).
 enum AppWindowChromeMetrics {
     /// Leading reserve for standard macOS close / minimize / zoom cluster (Ventura+).
-    static let trafficLightLeadingInset: CGFloat = 78
+    static let trafficLightLeadingInset: CGFloat = 84
+    /// Gap between the green zoom button and the first app toolbar icon (Cursor Mac).
+    static let afterTrafficLightGap: CGFloat = 12
+    /// Vertical pad around measured traffic-light cluster inside the toolbar row.
+    static let trafficLightVerticalPad: CGFloat = 8
+    /// Minimum toolbar row height (matches native titlebar — do not go below ~44pt).
+    static let minimumTitlebarRowHeight: CGFloat = 44
     /// Fallback when SwiftUI reports zero safe-area (pre-layout).
     static let fallbackTitlebarHeight: CGFloat = 28
-    /// Height of the unified titlebar row (aligned with system traffic-light band).
-    static let trafficLightRowHeight: CGFloat = 38
+    /// Default height of the unified titlebar row (overridden by live traffic-light measurement).
+    static let trafficLightRowHeight: CGFloat = minimumTitlebarRowHeight
     /// Fallback top inset when traffic lights are not measurable yet (pre-layout).
-    static let trafficLightVerticalAlignPadding: CGFloat = 6
+    static let trafficLightVerticalAlignPadding: CGFloat = 8
+    /// Hard cap so a bad traffic-light measure cannot consume the whole window.
+    static let maxTitlebarTopPadding: CGFloat = 18
     /// Square chrome control — Cursor Mac titlebar hit target.
-    static let controlSize: CGFloat = 28
-    static let controlIconSize: CGFloat = 12
+    static let controlSize: CGFloat = 32
+    static let controlIconSize: CGFloat = 13
     static let controlCornerRadius: CGFloat = 6
     /// Channel glyph inside the title slot.
-    static let channelIconSize: CGFloat = 16
+    static let channelIconSize: CGFloat = 17
     static let toolbarTitleFontSize: CGFloat = 13
     /// Gap between toolbar slots (sidebar toggle, icons, title cluster).
-    static let toolbarItemSpacing: CGFloat = 6
+    static let toolbarItemSpacing: CGFloat = 8
     /// Ask AI pill — same vertical footprint as chrome controls.
     static let askAIPillHeight: CGFloat = 24
     static let askAIPillHorizontalPadding: CGFloat = 10

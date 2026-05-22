@@ -1,5 +1,7 @@
+import AppKit
 import Foundation
 import Supabase
+import UniformTypeIdentifiers
 
 @MainActor
 final class ChatViewModel: ObservableObject {
@@ -55,8 +57,15 @@ final class ChatViewModel: ObservableObject {
     @Published var defaultNotificationLevel: String = ChatUserPreferences.loadDefaultNotificationLevel()
     @Published var globalSearchQuery = ""
     @Published var searchResults: [ChatSearchHit] = []
+    /// When set, search sheet filters hits to this channel (toolbar / channel menu).
+    @Published var searchScopeChannelId: UUID?
+    @Published var receiptsByMessageId: [UUID: [ChatReadReceipt]] = [:]
+    @Published var scrollTargetMessageId: UUID?
     @Published var aiResult: ChatAIResult?
     @Published var isAILoading = false
+    @Published var summaryPeriodStart = Calendar.current.date(byAdding: .day, value: -7, to: Date()) ?? Date()
+    @Published var summaryPeriodEnd = Date()
+    @Published var summaryPeriodError: String?
 
     // ClickUp parity hubs & composer
     @Published var sidebarHub: ChatSidebarHub = .channels
@@ -546,6 +555,7 @@ final class ChatViewModel: ObservableObject {
             messages = try await service.fetchMainChannelMessages(channelId: channel.id, workspaceId: workspace.id)
             await loadChannelExtras()
             await markMessagesSeen()
+            await refreshReadReceipts()
         } catch {
             if messages.isEmpty {
                 errorMessage = error.localizedDescription
@@ -711,6 +721,50 @@ final class ChatViewModel: ObservableObject {
                 directMessages.insert(dm, at: 0)
             }
             selectChannel(dm)
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func openGroupDM(with profiles: [Profile]) async {
+        guard permissions.canCreateGroupChats,
+              permissions.canDM,
+              let service, let workspace, let userId = currentUserId else { return }
+        let others = profiles.filter { $0.id != userId }
+        guard !others.isEmpty else { return }
+        do {
+            let group = try await service.createGroupChat(
+                workspaceId: workspace.id,
+                currentUserId: userId,
+                memberProfiles: others
+            )
+            if !directMessages.contains(where: { $0.id == group.id }) {
+                directMessages.insert(group, at: 0)
+            }
+            selectChannel(group)
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func exportSelectedChannel() async {
+        guard permissions.canExportChats,
+              let channel = selectedChannel else {
+            errorMessage = "Export is disabled for this workspace."
+            return
+        }
+        let panel = NSSavePanel()
+        panel.title = "Export chat"
+        panel.nameFieldStringValue = ChatExportService.suggestedFilename(channel: channel)
+        panel.allowedContentTypes = [.plainText]
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        do {
+            let text = ChatExportService.buildTranscript(
+                channel: channel,
+                messages: mainChannelMessages,
+                displayName: { [weak self] id in self?.displayName(for: id) ?? "Member" }
+            )
+            try text.write(to: url, atomically: true, encoding: .utf8)
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -1063,12 +1117,64 @@ final class ChatViewModel: ObservableObject {
 
     var canPostInSelectedChannel: Bool {
         guard let channel = selectedChannel else { return false }
-        switch channel.visibility {
-        case .announcement, .readOnly:
-            return permissions.canDeleteMessages || permissions.canPinMessages
-        default:
-            return true
+        return canPost(in: channel)
+    }
+
+    func openWorkspaceSearch() {
+        searchScopeChannelId = nil
+        showSearchSheet = true
+    }
+
+    func openChannelSearch() {
+        searchScopeChannelId = selectedChannel?.id
+        showSearchSheet = true
+    }
+
+    var searchScopeLabel: String {
+        if let id = searchScopeChannelId,
+           let ch = (channels + directMessages).first(where: { $0.id == id }) {
+            return ch.sidebarTitle
         }
+        return "Workspace"
+    }
+
+    func jumpToMessage(_ messageId: UUID) {
+        scrollTargetMessageId = messageId
+    }
+
+    func pinnedPreview(for item: ChatPinnedItem) -> String {
+        if let note = item.note, !note.isEmpty { return note }
+        guard let mid = item.messageId,
+              let msg = messages.first(where: { $0.id == mid }) else {
+            return "Pinned message"
+        }
+        if msg.isDeleted { return "Deleted message" }
+        if let body = msg.body, !body.isEmpty {
+            return String(body.prefix(120))
+        }
+        if msg.attachments.contains(where: \.isVoice) { return "Voice note" }
+        if msg.attachments.contains(where: \.isImage) { return "Image" }
+        if msg.attachments.contains(where: \.isVideo) { return "Video" }
+        return "Attachment"
+    }
+
+    func seenByLabel(for messageId: UUID) -> String? {
+        guard permissions.readReceiptsEnabled,
+              let receipts = receiptsByMessageId[messageId],
+              !receipts.isEmpty else { return nil }
+        let names = receipts
+            .filter { $0.userId != currentUserId }
+            .map { displayName(for: $0.userId) }
+        guard !names.isEmpty else { return nil }
+        if names.count == 1 { return "Seen by \(names[0])" }
+        if names.count == 2 { return "Seen by \(names[0]) and \(names[1])" }
+        return "Seen by \(names[0]) and \(names.count - 1) others"
+    }
+
+    func sendQuickReply(channelId: UUID, text: String) async {
+        selectChannelById(channelId)
+        composerText = text
+        await sendMessage()
     }
 
     func reloadPinnedSidebarChannels() {
