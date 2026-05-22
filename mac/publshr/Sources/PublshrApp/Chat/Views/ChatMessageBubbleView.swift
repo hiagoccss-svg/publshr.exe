@@ -134,7 +134,7 @@ struct ChatMessageBubbleView: View {
                     ProgressView().controlSize(.small)
                 }
             }
-            Text(image.name)
+            Text(image.name ?? "Image")
                 .font(.system(size: 10))
                 .foregroundStyle(CursorTheme.foregroundDim)
         } else {

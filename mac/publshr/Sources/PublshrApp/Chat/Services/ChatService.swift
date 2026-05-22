@@ -350,8 +350,8 @@ final class ChatService {
                 }
                 group.addTask {
                     for await action in deletes {
-                        guard let id = try? action.decodeOldRecord(as: ChatMessage.self, decoder: self.jsonDecoder)?.id else { continue }
-                        onDelete(id)
+                        guard let record = try? action.decodeOldRecord(as: ChatMessage.self, decoder: self.jsonDecoder) else { continue }
+                        onDelete(record.id)
                     }
                 }
             }
