@@ -20,7 +20,7 @@ struct ChatConversationView: View {
             allowedContentTypes: [.image, .pdf, .data],
             allowsMultipleSelection: false
         ) { result in
-            if case .success(let url) = result {
+            if case .success(let urls) = result, let url = urls.first {
                 Task { await chat.uploadFile(from: url) }
             }
         }

@@ -2,12 +2,16 @@ import Foundation
 
 struct GitHubRelease: Decodable, Sendable {
     let tagName: String
+    let name: String?
+    let body: String?
     let htmlURL: String
     let publishedAt: String
     let assets: [GitHubAsset]
 
     enum CodingKeys: String, CodingKey {
         case tagName = "tag_name"
+        case name
+        case body
         case htmlURL = "html_url"
         case publishedAt = "published_at"
         case assets
@@ -26,7 +30,7 @@ struct GitHubAsset: Decodable, Sendable {
     }
 }
 
-struct AvailableUpdate: Sendable {
+struct AvailableUpdate: Sendable, Equatable {
     let version: String
     let build: Int
     let tag: String
@@ -55,7 +59,7 @@ enum AppUpdateError: LocalizedError {
     }
 }
 
-/// Checks GitHub Releases and installs updates into /Applications/Publshr.app.
+/// Checks GitHub `live` release (same as install-publshr.sh) and installs updates.
 final class AppUpdateService: @unchecked Sendable {
     static let shared = AppUpdateService()
 
@@ -82,20 +86,21 @@ final class AppUpdateService: @unchecked Sendable {
 
         let releases = try JSONDecoder().decode([GitHubRelease].self, from: data)
         let localBuild = AppReleaseConfig.buildNumber
-        var best: AvailableUpdate?
 
-        for release in releases {
-            guard let candidate = parseRelease(release) else { continue }
+        if let live = parseLiveRelease(releases, localBuild: localBuild) {
+            return live
+        }
+
+        var best: AvailableUpdate?
+        for release in releases where release.tagName != AppReleaseConfig.liveTag {
+            guard let candidate = parseVersionedRelease(release) else { continue }
             if candidate.build <= localBuild { continue }
             if let current = best {
-                if candidate.build > current.build {
-                    best = candidate
-                }
+                if candidate.build > current.build { best = candidate }
             } else {
                 best = candidate
             }
         }
-
         return best
     }
 
@@ -164,7 +169,54 @@ final class AppUpdateService: @unchecked Sendable {
         return base.appendingPathComponent("Publshr/updates", isDirectory: true)
     }
 
-    private func parseRelease(_ release: GitHubRelease) -> AvailableUpdate? {
+    private func parseLiveRelease(_ releases: [GitHubRelease], localBuild: Int) -> AvailableUpdate? {
+        guard let live = releases.first(where: { $0.tagName == AppReleaseConfig.liveTag }) else {
+            return nil
+        }
+        let assetName = AppReleaseConfig.liveAssetName()
+        guard let asset = live.assets.first(where: { $0.name == assetName }),
+              asset.size >= AppReleaseConfig.minAppAssetBytes,
+              let downloadURL = URL(string: asset.browserDownloadURL),
+              let pageURL = URL(string: live.htmlURL) else {
+            return nil
+        }
+        let build = parseBuildNumber(from: live) ?? 0
+        guard build > localBuild else { return nil }
+        let version = parseVersionLabel(from: live) ?? "live.\(build)"
+        return AvailableUpdate(
+            version: version,
+            build: build,
+            tag: AppReleaseConfig.liveTag,
+            downloadURL: downloadURL,
+            releasePage: pageURL,
+            assetName: assetName
+        )
+    }
+
+    private func parseBuildNumber(from release: GitHubRelease) -> Int? {
+        let text = "\(release.body ?? "")\n\(release.name ?? "")"
+        for line in text.split(separator: "\n") {
+            let s = String(line)
+            guard s.contains("build_number:") else { continue }
+            let value = s.split(separator: ":", maxSplits: 1).last?
+                .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            if let n = Int(value) { return n }
+        }
+        return nil
+    }
+
+    private func parseVersionLabel(from release: GitHubRelease) -> String? {
+        if let body = release.body,
+           let line = body.split(separator: "\n").first(where: { $0.contains("version:") }) {
+            let value = line.split(separator: ":").last.map { $0.trimmingCharacters(in: .whitespaces) }
+            if let value, !value.isEmpty { return value }
+        }
+        return release.name?.replacingOccurrences(of: "Publshr live (", with: "")
+            .replacingOccurrences(of: ")", with: "")
+            .trimmingCharacters(in: .whitespaces)
+    }
+
+    private func parseVersionedRelease(_ release: GitHubRelease) -> AvailableUpdate? {
         let tag = release.tagName
         let trimmed = tag.hasPrefix("v") ? String(tag.dropFirst()) : tag
         let parts = trimmed.split(separator: ".", omittingEmptySubsequences: false)
@@ -173,6 +225,7 @@ final class AppUpdateService: @unchecked Sendable {
         let version = trimmed
         let assetName = AppReleaseConfig.platformAssetName(version: version)
         guard let asset = release.assets.first(where: { $0.name == assetName }),
+              asset.size >= AppReleaseConfig.minAppAssetBytes,
               let downloadURL = URL(string: asset.browserDownloadURL),
               let pageURL = URL(string: release.htmlURL) else {
             return nil

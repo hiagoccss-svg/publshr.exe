@@ -2,9 +2,10 @@ import Foundation
 import Supabase
 
 /// Supabase-backed chat sync, send, and realtime subscriptions.
-actor ChatService {
-    private let client: SupabaseClient
-    private let store: ChatLocalStore
+@MainActor
+final class ChatService {
+    let client: SupabaseClient
+    let store: ChatLocalStore
     private var realtimeTask: Task<Void, Never>?
     private let jsonDecoder: JSONDecoder = {
         let d = JSONDecoder()
@@ -293,7 +294,7 @@ actor ChatService {
             )
             await channel.subscribe()
             for await action in stream {
-                guard let record = try? action.decodeRecord(as: ChatMessage.self, decoder: jsonDecoder) else { continue }
+                guard let record = try? action.decodeRecord(as: ChatMessage.self, decoder: self.jsonDecoder) else { continue }
                 store.upsertMessage(record)
                 onInsert(record)
             }
@@ -322,13 +323,13 @@ actor ChatService {
             await withTaskGroup(of: Void.self) { group in
                 group.addTask {
                     for await action in inserts {
-                        guard let record = try? action.decodeRecord(as: ChatPresence.self, decoder: jsonDecoder) else { continue }
+                        guard let record = try? action.decodeRecord(as: ChatPresence.self, decoder: self.jsonDecoder) else { continue }
                         onChange(record)
                     }
                 }
                 group.addTask {
                     for await action in updates {
-                        guard let record = try? action.decodeRecord(as: ChatPresence.self, decoder: jsonDecoder) else { continue }
+                        guard let record = try? action.decodeRecord(as: ChatPresence.self, decoder: self.jsonDecoder) else { continue }
                         onChange(record)
                     }
                 }

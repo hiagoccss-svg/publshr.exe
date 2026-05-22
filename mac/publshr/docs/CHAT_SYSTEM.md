@@ -18,7 +18,7 @@ Real-time workspace communication integrated into the Publshr macOS IDE.
 ## Phase 3
 
 - **Voice notes** — `AVAudioRecorder`, waveform preview, upload + `chat_voice_transcripts`
-- **Dedicated chat window (Slack-style)** — borderless `ChatFloatingWindow`, custom close, resizable; `ChatChannelSession` per window; double-click sidebar or ⌘⇧O
+- **Multi-window** — `ChatWindowManager` pops channel into `NSWindow`
 - **Permissions UI** — workspace `settings.chat` toggles (local + model)
 - **Planner integration** — share `tasks` into chat with link preview cards
 

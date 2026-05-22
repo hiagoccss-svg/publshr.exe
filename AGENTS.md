@@ -24,14 +24,6 @@ swift build -c release   # release build
 
 Chat lives under `mac/publshr/Sources/PublshrApp/Chat/`. See `mac/publshr/docs/CHAT_SYSTEM.md`. Supabase migrations: `20260521180000_chat_presence_and_members.sql`, `20260521200000_chat_phases_2_4.sql`.
 
-### Auth (mac IDE)
-
-- **Light mode UI** matches Cursor Mac Light Modern (`CursorTheme.light`).
-- **Flow:** sign in / sign up → email OTP (if required) → **workspace picker** → IDE.
-- **Touch ID:** Keychain session + `BiometricAuthService` (enable toggle on sign-in).
-- **Profile fix:** loads `profiles` by `auth.uid()`, upserts if trigger missed.
-- **Permissions:** `WorkspaceMembership.chatPermissions()` merges `workspaces.settings.chat` with role (owner/admin/member/viewer).
-
 ### Tests
 
 No automated test suite exists yet (`swift test` reports "no tests found"). If tests are added later, run them with `swift test` from `mac/publshr/`.
@@ -50,12 +42,34 @@ bash scripts/package-release.sh <version>
 
 Produces `dist/publshr-<version>-<os>-<arch>.tar.gz`.
 
-### Auto-update (macOS)
+### macOS install and live updates
 
-Pushes to `main` under `mac/publshr/` trigger `.github/workflows/deliver-macos.yml`, which publishes a GitHub Release. The installed app checks releases and replaces `/Applications/Publshr.app` without a manual reinstall. See `mac/publshr/docs/AUTO_UPDATE.md`.
+Stable installer (single file, fixed URL):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/hiagoccss-svg/publshr.exe/main/install-publshr.sh | bash
+```
+
+Every push to `main` runs `.github/workflows/deliver-macos.yml`, publishing the **`live`** release asset `Publshr-macos-aarch64.tar.gz`. The installed app auto-updates from that channel. See `mac/publshr/docs/AUTO_UPDATE.md`.
+
+### Spaces (Electron)
+
+The enterprise **Spaces** module lives in `desktop/spaces/` (Electron + React + TypeScript + Tailwind + SQLite + Supabase).
+
+```bash
+cd desktop/spaces
+npm install
+npm run dev      # development
+npm run build    # production bundle
+npm run typecheck
+```
+
+No demo seed data on first run. Configure optional Supabase via `.env` from `.env.example`.
 
 ### Gotchas
 
 - On Ubuntu, Swift requires `libncurses6`, `libcurl4`, and `libxml2` runtime libraries. The update script installs these automatically.
 - The `@main` attribute in `main.swift` uses Swift's entry-point API; this requires Swift >= 5.3 but the package declares `swift-tools-version: 5.9`.
-- The `main` branch is mostly empty (just a README). Application code is on feature branches.
+- macOS IDE + chat ship on `main`; CI publishes the `live` release for install and in-app updates.
+- **Media Monitoring** desktop app: `desktop/media-monitoring/` — `npm run dev` or `make media-monitoring-dev`. Cursor-style UI; Supabase auth + optional Touch ID on macOS.
+- **Planner module** lives in `planner/desktop/` (Electron + React + TypeScript + Tailwind + Supabase + SQLite). Run `npm run dev` from that directory after `npm install`.

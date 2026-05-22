@@ -1,18 +1,22 @@
 # publshr
 
-Native desktop tools for **Publshr** — a Cursor-style macOS IDE with Supabase auth, plus a **ClickUp-style App Space** for project management.
+Native desktop tools for **Publshr** — a Cursor-style macOS IDE with Supabase auth, plus **Spaces** (enterprise operations hub), **Media Monitoring**, **Planner**, and a legacy Swift App Space.
 
-| Platform | Default install | App Space (ClickUp-style) |
-|----------|-----------------|---------------------------|
-| **macOS** | `mac/publshr` → **Publshr.app** (IDE + auth) | `native/publshr` → `./install-mac-app.sh` |
-| **Linux** | CLI via `./install.sh` | — |
-| **Windows** | [`windows/`](windows/) — `publshr.exe` from [Releases](https://github.com/hiagoccss-svg/publshr.exe/releases) | — |
+| Platform | Default install | Spaces (Electron) | Media Monitoring | Legacy App Space (Swift) |
+|----------|-----------------|-------------------|------------------|--------------------------|
+| **macOS** | `mac/publshr` → **Publshr.app** (IDE + auth) | `desktop/spaces` | `desktop/media-monitoring` | `native/publshr` → `./install-mac-app.sh` |
+| **Linux** | CLI via `./install.sh` | `desktop/spaces` | `desktop/media-monitoring` | — |
+| **Windows** | [`windows/`](windows/) — `publshr.exe` from [Releases](https://github.com/hiagoccss-svg/publshr.exe/releases) | `desktop/spaces` | `desktop/media-monitoring` | — |
 
-## macOS — IDE app (main)
+## macOS — native desktop IDE (Swift/SwiftUI, not a web app)
+
+**One install command** (always the same URL):
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/hiagoccss-svg/publshr.exe/main/install-publshr.sh | bash
 ```
+
+Installs **Publshr.app** to `/Applications` — a real macOS desktop application (Launchpad, native windows, offline cache). This is **not** Electron or a browser wrapper.
 
 Or from a clone:
 
@@ -21,9 +25,7 @@ Or from a clone:
 open /Applications/Publshr.app
 ```
 
-### Auto-update from GitHub
-
-Install once, then **push to `main`** — GitHub Actions builds a new release and the open app downloads and installs it (no Terminal reinstall). Details: [`mac/publshr/docs/AUTO_UPDATE.md`](mac/publshr/docs/AUTO_UPDATE.md).
+**Push to `main` → live app updates.** The same install URL always works; GitHub Actions publishes the `live` release and the installed app applies it automatically ([docs](mac/publshr/docs/AUTO_UPDATE.md)).
 
 ### Features (mac/publshr)
 
@@ -34,7 +36,43 @@ Install once, then **push to `main`** — GitHub Actions builds a new release an
 
 Redirect URL: `com.publshr.app://auth/callback` in [Auth URL configuration](https://supabase.com/dashboard/project/lboesdtsrqfvosznjpdy/auth/url-configuration).
 
-## macOS — App Space (ClickUp-style)
+## Spaces — Enterprise operations module
+
+Cross-platform **Electron** desktop app: project + operations management, local-first SQLite, optional Supabase realtime.
+
+```bash
+cd desktop/spaces
+npm install
+npm run dev
+```
+
+See [`desktop/spaces/README.md`](desktop/spaces/README.md) for architecture, Phase 1 features, and Supabase setup.
+
+## Media Monitoring — Enterprise media intelligence (Electron)
+
+Cross-platform desktop module for PR and communications teams: monitor profiles, live coverage feed, saved articles, publication database, Supabase sync.
+
+```bash
+cd desktop/media-monitoring
+npm install
+npm run dev          # hot reload
+# OR: npm run build && npm run start
+make media-monitoring-start   # from repo root
+```
+
+Sign in with your Publshr account (create account + email OTP). Optional Touch ID unlock on macOS. See [`desktop/media-monitoring/README.md`](desktop/media-monitoring/README.md).
+
+## Planner (communications OS)
+
+Electron desktop module for PR, media, and editorial teams — timeline, board, calendar, editor windows, Supabase + SQLite local-first sync.
+
+```bash
+cd planner/desktop && npm install && npm run dev
+```
+
+See [planner/README.md](planner/README.md).
+
+## macOS — App Space (ClickUp-style, Swift legacy)
 
 Build from repo root (uses `native/publshr`, not the IDE package):
 
@@ -64,9 +102,12 @@ publshr --version
 ## Project layout
 
 ```
-mac/publshr/      # Canonical macOS IDE + Supabase (Publshr.app releases)
-native/publshr/   # App Space + Git sync shell (install-mac-app.sh)
-windows/          # Windows .exe from releases
+mac/publshr/                  # Canonical macOS IDE + Supabase (Publshr.app releases)
+desktop/spaces/               # Spaces — Electron operations hub (Phase 1+)
+desktop/media-monitoring/     # Media Monitoring desktop module (Electron)
+planner/desktop/              # Communications Planner (Electron + React)
+native/publshr/               # Legacy Swift App Space + Git sync (install-mac-app.sh)
+windows/                      # Windows .exe from releases
 ```
 
 ## Build from source (IDE)
@@ -85,4 +126,5 @@ make help
 make build
 make install-local
 make install
+make media-monitoring-dev    # Media Monitoring Electron app
 ```

@@ -47,11 +47,9 @@ final class ChatViewModel: ObservableObject {
     @Published var isAILoading = false
 
     private var auth: AuthViewModel?
-    private var service: ChatService?
+    var service: ChatService?
     private var draftSaveTask: Task<Void, Never>?
     private var presenceHeartbeat: Task<Void, Never>?
-    private var typingBroadcast: ChatTypingBroadcaster?
-    private var typingTask: Task<Void, Never>?
     private var didAttach = false
 
     var currentUserId: UUID? { auth?.profile?.id }
@@ -62,32 +60,6 @@ final class ChatViewModel: ObservableObject {
         self.auth = auth
         service = ChatService(client: auth.client)
         Task { await bootstrap() }
-    }
-
-    /// Called when user picks a workspace — uses that workspace + role permissions.
-    func applyWorkspaceContext(workspace: Workspace?, permissions: ChatWorkspacePermissions, auth: AuthViewModel) {
-        self.auth = auth
-        if service == nil {
-            service = ChatService(client: auth.client)
-        }
-        self.permissions = permissions
-        if let workspace {
-            self.workspace = workspace
-            service?.localStore().setMeta("last_workspace_id", value: workspace.id.uuidString)
-            Task { await reloadWorkspace(workspaceId: workspace.id) }
-        }
-    }
-
-    private func reloadWorkspace(workspaceId: UUID) async {
-        guard let service, let userId = currentUserId else { return }
-        channels = []
-        directMessages = []
-        messages = []
-        selectedChannel = nil
-        await loadWorkspaceData(workspaceId: workspaceId, userId: userId)
-        startRealtime(workspaceId: workspaceId)
-        startPresenceHeartbeat(workspaceId: workspaceId, userId: userId)
-        setupTyping(workspaceId: workspaceId)
     }
 
     func detach() {
@@ -104,18 +76,6 @@ final class ChatViewModel: ObservableObject {
         defer { isLoading = false }
 
         await ChatNotificationService.shared.requestAuthorization()
-
-        if let ws = auth.selectedWorkspace {
-            workspace = ws
-            permissions = auth.workspaceChatPermissions
-            await loadWorkspaceData(workspaceId: ws.id, userId: userId)
-            startRealtime(workspaceId: ws.id)
-            startPresenceHeartbeat(workspaceId: ws.id, userId: userId)
-            setupTyping(workspaceId: ws.id)
-            wireNotificationDeepLinks(auth: auth)
-            isOffline = false
-            return
-        }
 
         do {
             var workspaces = try await service?.fetchMemberWorkspaces(userId: userId) ?? []
@@ -136,8 +96,6 @@ final class ChatViewModel: ObservableObject {
             await loadWorkspaceData(workspaceId: ws.id, userId: userId)
             startRealtime(workspaceId: ws.id)
             startPresenceHeartbeat(workspaceId: ws.id, userId: userId)
-            setupTyping(workspaceId: ws.id)
-            wireNotificationDeepLinks(auth: auth)
         } catch {
             errorMessage = error.localizedDescription
             isOffline = true
@@ -219,10 +177,7 @@ final class ChatViewModel: ObservableObject {
         } else {
             composerText = ""
         }
-        Task {
-            await typingBroadcast?.subscribe(channelId: channel.id)
-            await loadMessages(for: channel)
-        }
+        Task { await loadMessages(for: channel) }
     }
 
     func loadMessages(for channel: ChatChannel) async {
@@ -233,8 +188,10 @@ final class ChatViewModel: ObservableObject {
             messages = try await service.fetchMainChannelMessages(channelId: channel.id, workspaceId: workspace.id)
             await loadChannelExtras()
             await markMessagesSeen()
-        } catch if messages.isEmpty {
-            errorMessage = error.localizedDescription
+        } catch {
+            if messages.isEmpty {
+                errorMessage = error.localizedDescription
+            }
         }
     }
 
@@ -308,51 +265,6 @@ final class ChatViewModel: ObservableObject {
                 updatedAt: Date()
             ))
         }
-        broadcastTyping()
-    }
-
-    private func broadcastTyping() {
-        typingTask?.cancel()
-        guard let channelId = selectedChannel?.id, let userId = currentUserId else { return }
-        typingTask = Task {
-            try? await Task.sleep(nanoseconds: 350_000_000)
-            guard !Task.isCancelled else { return }
-            await typingBroadcast?.sendTyping(
-                channelId: channelId,
-                userId: userId,
-                displayName: displayName(for: userId)
-            )
-        }
-    }
-
-    private func setupTyping(workspaceId: UUID) {
-        guard let auth else { return }
-        typingBroadcast = ChatTypingBroadcaster(client: auth.client, workspaceId: workspaceId)
-        typingBroadcast?.onTyping = { [weak self] channelId, name in
-            Task { @MainActor in
-                guard self?.selectedChannel?.id == channelId else { return }
-                self?.typingUsers = [
-                    ChatTypingState(channelId: channelId, userId: UUID(), displayName: name, expiresAt: Date().addingTimeInterval(3))
-                ]
-            }
-        }
-        typingBroadcast?.onStop = { [weak self] channelId in
-            Task { @MainActor in
-                if self?.selectedChannel?.id == channelId { self?.typingUsers = [] }
-            }
-        }
-        if let channelId = selectedChannel?.id {
-            Task { await typingBroadcast?.subscribe(channelId: channelId) }
-        }
-    }
-
-    private func wireNotificationDeepLinks(auth: AuthViewModel) {
-        ChatNotificationService.shared.onOpenChannel = { [weak self] channelId in
-            Task { @MainActor in
-                guard let self else { return }
-                ChatWindowManager.shared.openChannelById(channelId, shared: self, auth: auth)
-            }
-        }
     }
 
     // MARK: - Channels / DMs
@@ -419,19 +331,6 @@ final class ChatViewModel: ObservableObject {
         return profiles[userId]?.displayName ?? profiles[userId]?.email ?? "Member"
     }
 
-    func dmDisplayName(for channel: ChatChannel) -> String {
-        if channel.kind != .dm { return channel.displayTitle }
-        if let desc = channel.description?.replacingOccurrences(of: "Direct message with ", with: ""),
-           !desc.isEmpty { return desc }
-        let parts = channel.name.replacingOccurrences(of: "dm:", with: "").split(separator: ":")
-        let ids = parts.compactMap { UUID(uuidString: String($0)) }
-        if ids.count == 2, let me = currentUserId {
-            let other = ids.first { $0 != me } ?? ids[0]
-            return displayName(for: other)
-        }
-        return "Direct Message"
-    }
-
     private func startPresenceHeartbeat(workspaceId: UUID, userId: UUID) {
         presenceHeartbeat?.cancel()
         presenceHeartbeat = Task {
@@ -445,45 +344,13 @@ final class ChatViewModel: ObservableObject {
     // MARK: - Realtime
 
     private func startRealtime(workspaceId: UUID) {
-        service?.subscribeMessages(workspaceId: workspaceId) { [weak self] message in
-            Task { @MainActor in
-                self?.handleIncomingMessage(message)
-            }
-        }
-        service?.subscribePresence(workspaceId: workspaceId) { [weak self] record in
-            Task { @MainActor in
-                self?.presence[record.userId] = record
-            }
-        }
-        service?.subscribeReactions(workspaceId: workspaceId) { [weak self] in
-            Task { @MainActor in
-                await self?.loadChannelExtras()
-            }
-        }
-        service?.subscribeMessageUpdates(workspaceId: workspaceId) { [weak self] message in
-            Task { @MainActor in self?.applyRemoteMessageUpdate(message) }
-        } onDelete: { [weak self] messageId, channelId in
-            Task { @MainActor in self?.applyRemoteMessageDelete(messageId: messageId, channelId: channelId) }
-        }
+        let handler = IncomingMessageHandler(viewModel: self)
+        service?.subscribeMessages(workspaceId: workspaceId, onInsert: handler.handleMessage)
+        service?.subscribePresence(workspaceId: workspaceId, onChange: handler.handlePresence)
+        service?.subscribeReactions(workspaceId: workspaceId, onChange: handler.handleReactions)
     }
 
-    private func applyRemoteMessageUpdate(_ message: ChatMessage) {
-        if let i = messages.firstIndex(where: { $0.id == message.id }) { messages[i] = message }
-        ChatWindowManager.shared.routeMessageUpdate(message)
-    }
-
-    private func applyRemoteMessageDelete(messageId: UUID, channelId: UUID) {
-        if let i = messages.firstIndex(where: { $0.id == messageId }) {
-            var m = messages[i]
-            m.isDeleted = true
-            m.body = nil
-            messages[i] = m
-        }
-        ChatWindowManager.shared.routeMessageDelete(messageId, channelId: channelId)
-    }
-
-    private func handleIncomingMessage(_ message: ChatMessage) {
-        ChatWindowManager.shared.routeIncomingMessage(message)
+    func handleIncomingMessage(_ message: ChatMessage) {
         if selectedChannel?.id == message.channelId {
             if !messages.contains(where: { $0.id == message.id }) {
                 messages.append(message)
@@ -542,5 +409,32 @@ final class ChatViewModel: ObservableObject {
 
     var totalUnread: Int {
         unreadByChannel.values.reduce(0, +)
+    }
+}
+
+/// Bridges realtime callbacks into the main-actor view model without Swift 6 capture errors.
+private final class IncomingMessageHandler: @unchecked Sendable {
+    private weak var viewModel: ChatViewModel?
+
+    init(viewModel: ChatViewModel) {
+        self.viewModel = viewModel
+    }
+
+    func handleMessage(_ message: ChatMessage) {
+        Task { @MainActor [weak viewModel] in
+            viewModel?.handleIncomingMessage(message)
+        }
+    }
+
+    func handlePresence(_ record: ChatPresence) {
+        Task { @MainActor [weak viewModel] in
+            viewModel?.presence[record.userId] = record
+        }
+    }
+
+    func handleReactions() {
+        Task { @MainActor [weak viewModel] in
+            await viewModel?.loadChannelExtras()
+        }
     }
 }

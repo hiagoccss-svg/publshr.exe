@@ -86,9 +86,9 @@ final class ChatLocalStore {
         )
     }
 
-    func searchMessages(query: String) -> [LocalSearchRow] {
-        let q = "%\(query.lowercased())%"
-        return query("SELECT message_id, channel_id, channel_name, snippet FROM search_index WHERE LOWER(snippet) LIKE ? LIMIT 50;", q)
+    func searchMessages(query searchQuery: String) -> [LocalSearchRow] {
+        let q = "%\(searchQuery.lowercased())%"
+        return fetchRows("SELECT message_id, channel_id, channel_name, snippet FROM search_index WHERE LOWER(snippet) LIKE ? LIMIT 50;", q)
             .compactMap { row -> LocalSearchRow? in
                 guard let mid = row["message_id"],
                       let cid = row["channel_id"], let uuid = UUID(uuidString: cid),
@@ -102,13 +102,13 @@ final class ChatLocalStore {
             guard let json = encode(ch) else { continue }
             exec(
                 "INSERT OR REPLACE INTO channels (id, workspace_id, payload, updated_at) VALUES (?, ?, ?, ?);",
-                ch.id.uuidString, ch.workspaceId.uuidString, json, ch.updatedAt.timeIntervalSince1970
+                ch.id.uuidString, ch.workspaceId.uuidString, json, String(ch.updatedAt.timeIntervalSince1970)
             )
         }
     }
 
     func loadChannels(workspaceId: UUID) -> [ChatChannel] {
-        let rows = query(
+        let rows = fetchRows(
             "SELECT payload FROM channels WHERE workspace_id = ? ORDER BY updated_at DESC;",
             workspaceId.uuidString
         )
@@ -123,7 +123,7 @@ final class ChatLocalStore {
                 INSERT OR REPLACE INTO messages (id, channel_id, workspace_id, payload, created_at)
                 VALUES (?, ?, ?, ?, ?);
                 """,
-                msg.id.uuidString, channelId.uuidString, msg.workspaceId.uuidString, json, msg.createdAt.timeIntervalSince1970
+                msg.id.uuidString, channelId.uuidString, msg.workspaceId.uuidString, json, String(msg.createdAt.timeIntervalSince1970)
             )
             if let body = msg.body, !body.isEmpty {
                 indexMessageForSearch(
@@ -137,7 +137,7 @@ final class ChatLocalStore {
     }
 
     func loadMessages(channelId: UUID, limit: Int = 200) -> [ChatMessage] {
-        let rows = query(
+        let rows = fetchRows(
             """
             SELECT payload FROM messages WHERE channel_id = ?
             ORDER BY created_at DESC LIMIT ?;
@@ -156,19 +156,19 @@ final class ChatLocalStore {
             VALUES (?, ?, ?, ?, ?);
             """,
             message.id.uuidString, message.channelId.uuidString, message.workspaceId.uuidString,
-            json, message.createdAt.timeIntervalSince1970
+            json, String(message.createdAt.timeIntervalSince1970)
         )
     }
 
     func saveDraft(_ draft: ChatDraft) {
         exec(
             "INSERT OR REPLACE INTO drafts (channel_id, body, updated_at) VALUES (?, ?, ?);",
-            draft.channelId.uuidString, draft.body, draft.updatedAt.timeIntervalSince1970
+            draft.channelId.uuidString, draft.body, String(draft.updatedAt.timeIntervalSince1970)
         )
     }
 
     func loadDraft(channelId: UUID) -> ChatDraft? {
-        let rows = query("SELECT body, updated_at FROM drafts WHERE channel_id = ?;", channelId.uuidString)
+        let rows = fetchRows("SELECT body, updated_at FROM drafts WHERE channel_id = ?;", channelId.uuidString)
         guard let row = rows.first,
               let body = row["body"],
               let ts = Double(row["updated_at"] ?? "") else { return nil }
@@ -176,7 +176,7 @@ final class ChatLocalStore {
     }
 
     func unreadCount(channelId: UUID) -> Int {
-        Int(query("SELECT count FROM unread WHERE channel_id = ?;", channelId.uuidString).first?["count"] ?? "0") ?? 0
+        Int(fetchRows("SELECT count FROM unread WHERE channel_id = ?;", channelId.uuidString).first?["count"] ?? "0") ?? 0
     }
 
     func setUnreadCount(channelId: UUID, count: Int) {
@@ -194,7 +194,7 @@ final class ChatLocalStore {
     }
 
     func loadPresence(workspaceId: UUID) -> [ChatPresence] {
-        query("SELECT payload FROM presence WHERE workspace_id = ?;", workspaceId.uuidString)
+        fetchRows("SELECT payload FROM presence WHERE workspace_id = ?;", workspaceId.uuidString)
             .compactMap { decode(ChatPresence.self, from: $0["payload"]) }
     }
 
@@ -203,7 +203,7 @@ final class ChatLocalStore {
     }
 
     func meta(_ key: String) -> String? {
-        query("SELECT value FROM meta WHERE key = ?;", key).first?["value"]
+        fetchRows("SELECT value FROM meta WHERE key = ?;", key).first?["value"]
     }
 
     // MARK: - SQLite helpers
@@ -219,7 +219,7 @@ final class ChatLocalStore {
         sqlite3_step(stmt)
     }
 
-    private func query(_ sql: String, _ args: String...) -> [[String: String]] {
+    private func fetchRows(_ sql: String, _ args: String...) -> [[String: String]] {
         guard let db else { return [] }
         var stmt: OpaquePointer?
         guard sqlite3_prepare_v2(db, sql, -1, &stmt, nil) == SQLITE_OK else { return [] }

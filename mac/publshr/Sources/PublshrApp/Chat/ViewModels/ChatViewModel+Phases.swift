@@ -225,7 +225,7 @@ extension ChatViewModel {
             _ = try await service.attachLink(
                 workspaceId: workspace.id,
                 messageId: msg.id,
-                linkType: .task,
+                linkType: ChatLinkType.task,
                 linkId: task.id,
                 preview: preview
             )
@@ -266,7 +266,7 @@ extension ChatViewModel {
                 workspaceId: workspace.id,
                 channelId: channel.id,
                 userId: userId,
-                body: nil,
+                body: Optional<String>.none,
                 attachments: [attachment]
             )
             _ = try await service.saveVoiceTranscript(
@@ -278,7 +278,7 @@ extension ChatViewModel {
             )
             let transcript = ChatAIService.mockTranscribeVoice(durationMs: durationMs)
             if let vt = try? await service.fetchVoiceTranscript(messageId: msg.id) {
-                try? await service.updateTranscript(id: vt.id, transcript: transcript, status: .ready)
+                try? await service.updateTranscript(id: vt.id, transcript: transcript, status: ChatTranscriptStatus.ready)
                 voiceTranscripts[msg.id] = transcript
             }
             messages.append(msg)
@@ -368,22 +368,24 @@ extension ChatViewModel {
 
     func popOutCurrentChannel(auth: AuthViewModel) {
         guard let channel = selectedChannel else { return }
-        openChannelInWindow(channel, auth: auth)
-    }
-
-    func openChannelInWindow(_ channel: ChatChannel, auth: AuthViewModel) {
-        ChatWindowManager.shared.openChannel(channel, auth: auth, shared: self)
+        ChatWindowManager.shared.openChannel(channel, chat: self, auth: auth)
     }
 
     // MARK: - Permissions persistence
 
     func savePermissionsToWorkspace() async {
-        guard let ws = workspace, let service else { return }
-        do {
-            let updated = try await service.updateWorkspaceChatSettings(workspaceId: ws.id, permissions: permissions)
-            workspace = updated
-        } catch {
-            errorMessage = error.localizedDescription
-        }
+        guard var ws = workspace else { return }
+        var chatSettings: [String: JSONValue] = [:]
+        chatSettings["can_create_channels"] = .bool(permissions.canCreateChannels)
+        chatSettings["can_dm"] = .bool(permissions.canDM)
+        chatSettings["can_use_voice_notes"] = .bool(permissions.canUseVoiceNotes)
+        chatSettings["read_receipts_enabled"] = .bool(permissions.readReceiptsEnabled)
+        chatSettings["can_upload_files"] = .bool(permissions.canUploadFiles)
+        chatSettings["can_pin_messages"] = .bool(permissions.canPinMessages)
+        chatSettings["can_export_chats"] = .bool(permissions.canExportChats)
+        var settings = ws.settings ?? [:]
+        settings["chat"] = .object(chatSettings)
+        ws.settings = settings
+        workspace = ws
     }
 }

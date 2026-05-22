@@ -3,7 +3,7 @@ import PackageDescription
 
 let package = Package(
     name: "publshr",
-    platforms: [.macOS(.v13)],
+    platforms: [.macOS(.v14)],
     products: [
         .executable(name: "publshr", targets: ["publshrCLI"]),
         .executable(name: "PublshrApp", targets: ["PublshrApp"]),
@@ -22,6 +22,9 @@ let package = Package(
                 .product(name: "Supabase", package: "supabase-swift"),
             ],
             path: "Sources/PublshrApp",
+            swiftSettings: [
+                .unsafeFlags(["-Xfrontend", "-strict-concurrency=minimal"]),
+            ],
             linkerSettings: [
                 .linkedLibrary("sqlite3"),
             ]

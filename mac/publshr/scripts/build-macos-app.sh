@@ -25,10 +25,11 @@ DIR="$(cd "$(dirname "$0")" && pwd)"
 exec "${DIR}/PublshrApp" "$@"
 LAUNCHER
 chmod 755 "${MACOS_DIR}/Publshr"
+ln -sf Publshr "${MACOS_DIR}/publshr"
 
-sed -e "s/@@SHORT_VERSION@@/${SHORT_VERSION}/g" \
-    -e "s/@@BUILD@@/${BUILD}/g" \
-    -e "s/@@GITHUB_REPO@@/${GITHUB_REPO}/g" \
+sed -e "s#@@SHORT_VERSION@@#${SHORT_VERSION}#g" \
+    -e "s#@@BUILD@@#${BUILD}#g" \
+    -e "s#@@GITHUB_REPO@@#${GITHUB_REPO}#g" \
     "${SCRIPT_DIR}/../app/Info.plist.template" >"${APP_ROOT}/Contents/Info.plist"
 
 mkdir -p "${APP_ROOT}/Contents/Resources"

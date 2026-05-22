@@ -13,8 +13,13 @@ resolve_version() {
         BUILD="${PUBLSHR_BUILD_NUMBER:-0}"
         FULL="${BASE}.${BUILD}"
     fi
-    SHORT="${FULL%.*}"
-    BUILD_NUM="${FULL##*.}"
+    if [[ "$FULL" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+        SHORT="$FULL"
+        BUILD_NUM="${PUBLSHR_BUILD_NUMBER:-0}"
+    else
+        SHORT="${FULL%.*}"
+        BUILD_NUM="${FULL##*.}"
+    fi
     echo "$FULL $SHORT $BUILD_NUM"
 }
 
@@ -40,7 +45,9 @@ esac
 echo "Building publshr $VERSION ($os-$arch) ..." >&2
 
 if [[ "$os" == "macos" ]]; then
-    swift build -c release --product publshr --product PublshrApp
+    # Desktop delivery: PublshrApp is required; CLI is optional.
+    swift build -c release --product PublshrApp
+    swift build -c release --product publshr 2>/dev/null || true
 else
     swift build -c release --product publshr
 fi
@@ -49,19 +56,25 @@ STAGE="$SCRIPT_DIR/dist/publshr-${VERSION}-${os}-${arch}"
 rm -rf "$STAGE"
 mkdir -p "$STAGE/bin" "$STAGE/lib"
 
-CLI_BIN="$SCRIPT_DIR/.build/release/publshr"
-cp "$CLI_BIN" "$STAGE/bin/publshr"
-chmod 755 "$STAGE/bin/publshr"
+if [[ -f "$SCRIPT_DIR/.build/release/publshr" ]]; then
+    cp "$SCRIPT_DIR/.build/release/publshr" "$STAGE/bin/publshr"
+    chmod 755 "$STAGE/bin/publshr"
+fi
 
 if [[ "$os" == "macos" ]]; then
     APP_BIN="$SCRIPT_DIR/.build/release/PublshrApp"
     cp "$APP_BIN" "$STAGE/bin/PublshrApp"
     chmod 755 "$STAGE/bin/PublshrApp"
     bash "$SCRIPT_DIR/scripts/build-macos-app.sh" "$APP_BIN" "$SHORT_VERSION" "$BUILD_NUM" "$STAGE"
+    if [[ -f "$SCRIPT_DIR/.build/release/publshr" ]]; then
+        rm -f "$STAGE/Publshr.app/Contents/MacOS/publshr"
+        cp "$SCRIPT_DIR/.build/release/publshr" "$STAGE/Publshr.app/Contents/MacOS/publshr"
+        chmod 755 "$STAGE/Publshr.app/Contents/MacOS/publshr"
+    fi
 fi
 
-if [[ "$os" == "linux" ]]; then
-    mapfile -t swift_libs < <(ldd "$CLI_BIN" | awk '/libswift|libdispatch|libBlocksRuntime/ {print $3}' | sort -u)
+if [[ "$os" == "linux" && -f "$SCRIPT_DIR/.build/release/publshr" ]]; then
+    mapfile -t swift_libs < <(ldd "$SCRIPT_DIR/.build/release/publshr" | awk '/libswift|libdispatch|libBlocksRuntime/ {print $3}' | sort -u)
     for lib in "${swift_libs[@]}"; do
         [[ -n "$lib" && -f "$lib" ]] && cp -L "$lib" "$STAGE/lib/"
     done
