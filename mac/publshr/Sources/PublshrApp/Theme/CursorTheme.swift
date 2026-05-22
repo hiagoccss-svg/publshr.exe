@@ -8,6 +8,7 @@ enum AppAppearance: String, CaseIterable {
 
 struct ThemePalette {
     let activityBar: Color
+    let navSidebar: Color
     let titleBar: Color
     let sideBar: Color
     let sideBarSectionHeader: Color
@@ -51,9 +52,10 @@ enum CursorTheme {
     // MARK: - Light Modern (Cursor Mac default light — VS Code Light Modern)
 
     static let light = ThemePalette(
-        activityBar: Color(hex: 0xF8F8F8),
-        titleBar: Color(hex: 0xF8F8F8),
-        sideBar: Color(hex: 0xF3F3F3),
+        activityBar: Color(hex: 0xE8E8E8),
+        navSidebar: Color(hex: 0xFFFFFF),
+        titleBar: Color(hex: 0xFFFFFF),
+        sideBar: Color(hex: 0xFFFFFF),
         sideBarSectionHeader: Color(hex: 0x6E6E6E),
         editorBackground: Color(hex: 0xFFFFFF),
         editorLineHighlight: Color(hex: 0xE8E8E8),
@@ -87,8 +89,9 @@ enum CursorTheme {
     // MARK: - Dark Modern
 
     static let dark = ThemePalette(
-        activityBar: Color(hex: 0x181818),
-        titleBar: Color(hex: 0x181818),
+        activityBar: Color(hex: 0x2D2D2D),
+        navSidebar: Color(hex: 0x252526),
+        titleBar: Color(hex: 0x1E1E1E),
         sideBar: Color(hex: 0x252526),
         sideBarSectionHeader: Color(hex: 0xBBBBBB),
         editorBackground: Color(hex: 0x1E1E1E),
@@ -122,6 +125,7 @@ enum CursorTheme {
 
     // Convenience forwards (existing code uses CursorTheme.foreground etc.)
     static var activityBar: Color { palette.activityBar }
+    static var navSidebar: Color { palette.navSidebar }
     static var titleBar: Color { palette.titleBar }
     static var sideBar: Color { palette.sideBar }
     static var sideBarSectionHeader: Color { palette.sideBarSectionHeader }
@@ -153,7 +157,8 @@ enum CursorTheme {
     static var success: Color { palette.success }
     static var biometricTint: Color { palette.biometricTint }
 
-    static let activityBarWidth: CGFloat = 48
+    static let activityBarWidth: CGFloat = 52
+    static let navSidebarWidth: CGFloat = 240
     static let sideBarWidth: CGFloat = 260
     static let chatPanelWidth: CGFloat = 520
     static let titleBarHeight: CGFloat = 38

@@ -6,16 +6,9 @@ struct SpacesRootView: View {
 
     var body: some View {
         HStack(spacing: 0) {
-            SpacesNavSidebar(spaces: spaces)
-                .frame(width: 220)
-
-            Rectangle()
-                .fill(CursorTheme.border)
-                .frame(width: 1)
-
             VStack(spacing: 0) {
                 spacesToolbar
-                Rectangle().fill(CursorTheme.border).frame(height: 1)
+                Rectangle().fill(CursorTheme.borderSubtle).frame(height: 1)
                 workspaceContent
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -23,7 +16,7 @@ struct SpacesRootView: View {
 
             if spaces.selectedTask != nil {
                 Rectangle()
-                    .fill(CursorTheme.border)
+                    .fill(CursorTheme.borderSubtle)
                     .frame(width: 1)
                 SpacesTaskDetailPanel(spaces: spaces)
                     .frame(width: 300)
