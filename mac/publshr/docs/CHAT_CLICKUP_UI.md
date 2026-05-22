@@ -18,9 +18,7 @@ Settings opens in a **separate sheet/window** (not in the activity strip), match
 
 ```
 ┌─────────────────────────────┐
-│ 💬 Chat              [+]    │  ← Header + new channel/DM menu
-├─────────────────────────────┤
-│ 🔍 Search channels…         │
+│ 🔍 Search channels…         │  ← Titlebar row (`ChatSidebarTitlebarChrome`)
 ├─────────────────────────────┤
 │ [All][Unread][Pinned][DMs][Ch] │  ← Filters (tap again to clear)
 ├─────────────────────────────┤
@@ -29,7 +27,9 @@ Settings opens in a **separate sheet/window** (not in the activity strip), match
 │ DIRECT MESSAGES       [+]   │
 │ PLANNER                     │
 ├─────────────────────────────┤
-│ [≡][🕐]  Organized    [⚙️]  │  ← Bottom: layout + settings (ClickUp)
+│ Organized · Recents    [+][⚙️] │  ← Bottom: layout toggles, new, settings
+│ Create channel              │  ← Flat footer rows (`LibrarySubmenuTextButtonStyle`)
+│ New message                 │
 └─────────────────────────────┘
 ```
 
@@ -102,12 +102,17 @@ Per [Notification settings](https://help.clickup.com/hc/en-us/articles/632591895
 | File | Role |
 |------|------|
 | `Chat/Utilities/ChatClickUpDesign.swift` | Layout tokens, filter/layout enums |
-| `Chat/Views/ChatSidebarView.swift` | Sidebar + bottom footer + settings menu |
+| `Chat/Views/ChatSidebarTitlebarChrome.swift` | Search in submenu titlebar row |
+| `Chat/Views/ChatSidebarView.swift` | Filters, sections, flat footer + settings gear |
 | `Chat/Views/ChatNotificationSettingsSheet.swift` | Notification defaults sheet |
 | `Chat/Views/ChatComposerView.swift` | Composer toolbar |
 | `Chat/Views/ChatEnterpriseUI.swift` | Status bar, typing indicator |
 | `Chat/Views/ChatChannelActionsMenu.swift` | Row + toolbar actions |
+| `Theme/WorkspaceShellBackground.swift` | `GlassSubmenuChrome`, primary bar transparency |
+| `Theme/LibrarySubmenuButtonStyle.swift` | Flat footer actions (no pill boxes) |
+| `Chat/Views/ChatWorkspaceChannelTabs.swift` | Open channel tab strip |
 | `Chat/ViewModels/ChatViewModel.swift` | Filters, layout, unread, notifications |
+| `Views/ActivityBarView.swift` | Module icons + chat badge |
 
 ## Deploy
 

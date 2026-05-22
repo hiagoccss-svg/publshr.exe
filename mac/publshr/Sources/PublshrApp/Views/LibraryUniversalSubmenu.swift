@@ -21,17 +21,17 @@ enum LibraryUniversalSubmenu {
                 .buttonStyle(.plain)
             }
         }
-        .padding(.horizontal, LibraryGlassDesign.sidebarRowHorizontal + 2)
-        .padding(.top, LibraryGlassDesign.sectionLabelTop + 4)
-        .padding(.bottom, LibraryGlassDesign.sectionLabelBottom)
+        .padding(.horizontal, 12)
+        .padding(.top, 8)
+        .padding(.bottom, 2)
     }
 
     static func sectionDivider() -> some View {
         Rectangle()
-            .fill(LibraryGlassDesign.hairline)
+            .fill(LibraryGlassDesign.contentDivider.opacity(0.65))
             .frame(height: 1)
-            .padding(.horizontal, 14)
-            .padding(.vertical, 10)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
     }
 }
 
@@ -57,9 +57,14 @@ struct LibraryUniversalSubmenuContainer<Content: View, Footer: View>: View {
                 .frame(minHeight: 0, maxHeight: .infinity)
 
             footer()
-                .padding(.horizontal, LibraryGlassDesign.sidebarRowHorizontal)
-                .padding(.top, 8)
-                .padding(.bottom, 14)
+                .padding(.horizontal, 10)
+                .padding(.top, 6)
+                .padding(.bottom, 8)
+                .overlay(alignment: .top) {
+                    Rectangle()
+                        .fill(LibraryGlassDesign.contentDivider.opacity(0.65))
+                        .frame(height: 1)
+                }
         }
         .frame(width: width)
         .frame(minHeight: 0, maxHeight: .infinity)

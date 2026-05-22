@@ -69,7 +69,7 @@ struct LibraryShellView: View {
 
             if !submenuHidden {
                 ShellColumnChromeStack(
-                    headerKind: .secondaryChrome,
+                    headerKind: module == .chat ? .chatSubmenu : .secondaryChrome,
                     appliesSidebarChrome: true
                 ) {
                     AppSecondarySidebar(

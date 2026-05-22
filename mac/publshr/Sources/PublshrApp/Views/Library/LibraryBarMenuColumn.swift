@@ -20,8 +20,9 @@ struct LibraryBarMenuColumn: View {
                     }
                 }
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 10)
+            .padding(.horizontal, 10)
+            .padding(.top, 6)
+            .padding(.bottom, 8)
 
             Spacer(minLength: 0)
         }
@@ -63,8 +64,8 @@ struct LibraryBarMenuColumn: View {
             .padding(.horizontal, 12)
             .frame(height: LibraryGlassDesign.barMenuRowHeight)
             .background(
-                RoundedRectangle(cornerRadius: LibraryGlassDesign.sidebarRowRadius, style: .continuous)
-                    .fill(selected ? LibraryGlassDesign.sidebarSelection : Color.clear)
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(selected ? LibraryGlassDesign.sidebarSelection.opacity(0.72) : Color.clear)
             )
         }
         .buttonStyle(.plain)
