@@ -374,11 +374,11 @@ extension ChatViewModel {
     // MARK: - Permissions persistence
 
     func savePermissionsToWorkspace() async {
-        guard var ws = workspace, let auth else { return }
+        guard var ws = workspace, let client = attachedClient else { return }
         let enterprise = EnterpriseWorkspaceService()
         do {
             try await enterprise.persistChatPermissions(
-                client: auth.client,
+                client: client,
                 workspace: &ws,
                 permissions: permissions
             )

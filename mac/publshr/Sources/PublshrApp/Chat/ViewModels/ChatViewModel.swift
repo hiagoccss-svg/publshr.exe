@@ -56,6 +56,7 @@ final class ChatViewModel: ObservableObject {
     private var navigationForwardStack: [UUID] = []
 
     var currentUserId: UUID? { auth?.profile?.id }
+    var attachedClient: SupabaseClient? { auth?.client }
 
     func attach(auth: AuthViewModel) {
         self.auth = auth
