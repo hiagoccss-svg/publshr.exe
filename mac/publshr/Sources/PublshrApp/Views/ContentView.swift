@@ -115,6 +115,9 @@ struct ContentView: View {
         while !Task.isCancelled {
             try? await Task.sleep(nanoseconds: 60 * 1_000_000_000)
             guard auth.flowState == .signedIn else { continue }
+            if !auth.isCloudValidated, AppLifecycleService.shared.isNetworkReachable {
+                await auth.reconcileCloudSession(unlockMethod: nil)
+            }
             NotificationCenter.default.post(name: .publshrPerformCloudSync, object: nil)
         }
     }

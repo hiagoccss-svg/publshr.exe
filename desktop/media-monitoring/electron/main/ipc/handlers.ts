@@ -22,6 +22,7 @@ export function registerIpcHandlers(engine: MonitoringEngine, sync: SyncService)
 
   // Auth & sync
   ipcMain.handle('auth:restore', () => sync.restoreSession())
+  ipcMain.handle('auth:reconcile-cloud', () => sync.reconcileCloudSession())
   ipcMain.handle('auth:sign-in', (_, email: string, password: string) => sync.signIn(email, password))
   ipcMain.handle('auth:sign-up', (_, email: string, password: string, displayName: string) =>
     sync.signUp(email, password, displayName)
