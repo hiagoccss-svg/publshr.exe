@@ -151,6 +151,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
            let window = NSApp.windows.first {
             window.setFrame(frame, display: true)
         }
+        DispatchQueue.main.async {
+            MainWindowChrome.apply(to: NSApp.mainWindow ?? NSApp.windows.first)
+        }
         NotificationCenter.default.post(name: .publshrPerformLiveSync, object: nil)
     }
 
