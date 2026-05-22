@@ -10,18 +10,24 @@ struct ChatSidebarView: View {
     var body: some View {
         LibraryUniversalSubmenuContainer(width: LibraryUniversalSubmenu.width) {
             VStack(spacing: 0) {
-                filterBar
-                submenuSoftRule
+                if chat.sidebarHub == .channels {
+                    filterBar
+                    submenuSoftRule
+                }
 
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 0) {
-                        if chat.sidebarLayout == .recents {
-                            recentsContent
-                        } else {
-                            organizedContent
-                        }
-                        if !chat.filteredProjects.isEmpty || chat.sidebarSearchQuery.isEmpty {
-                            plannerSection
+                        ChatSidebarHubStrip(chat: chat)
+                        hubContent
+                        if chat.sidebarHub == .channels {
+                            if chat.sidebarLayout == .recents {
+                                recentsContent
+                            } else {
+                                organizedContent
+                            }
+                            if !chat.filteredProjects.isEmpty || chat.sidebarSearchQuery.isEmpty {
+                                plannerSection
+                            }
                         }
                     }
                     .padding(.bottom, 4)
@@ -91,6 +97,20 @@ struct ChatSidebarView: View {
     }
 
     // MARK: - Content
+
+    @ViewBuilder
+    private var hubContent: some View {
+        switch chat.sidebarHub {
+        case .channels:
+            EmptyView()
+        case .activity:
+            ChatActivityHubView(chat: chat)
+        case .drafts:
+            ChatDraftsHubView(chat: chat)
+        case .sent:
+            ChatSentHubView(chat: chat)
+        }
+    }
 
     private var organizedContent: some View {
         Group {

@@ -67,6 +67,17 @@ struct ChatEditorToolbarContent: View {
                 chat.showPinnedPanel.toggle()
             }
 
+            if let channel = chat.selectedChannel,
+               channel.kind == .dm || channel.kind == .group {
+                TitlebarChromeIconButton(
+                    systemName: "info.circle",
+                    help: "Conversation details",
+                    isActive: chat.showDMInspector
+                ) {
+                    chat.showDMInspector.toggle()
+                }
+            }
+
             if let channel = chat.selectedChannel {
                 channelMoreMenu(channel)
             }

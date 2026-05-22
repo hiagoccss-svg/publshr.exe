@@ -7,12 +7,16 @@ struct ChatConversationView: View {
     @State private var showFileImporter = false
     @State private var showVoiceSheet = false
     @State private var editText = ""
+    @State private var assignTargetMessage: ChatMessage?
 
     var body: some View {
         HStack(spacing: 0) {
             mainColumn
             if chat.showThreadPanel {
                 ChatThreadPanelView(chat: chat)
+            }
+            if chat.showInspectorForSelectedChannel {
+                ChatDMInspectorPanel(chat: chat)
             }
         }
         .background(CursorMacShellDesign.editorColumnBackground)
@@ -35,6 +39,9 @@ struct ChatConversationView: View {
             if let msgId = chat.editingMessageId {
                 editSheet(messageId: msgId)
             }
+        }
+        .sheet(item: $assignTargetMessage) { message in
+            ChatAssignMessageSheet(chat: chat, message: message)
         }
     }
 
@@ -158,7 +165,9 @@ struct ChatConversationView: View {
             onThread: { Task { await chat.openThread(for: message) } },
             onPin: { Task { await chat.pinMessage(message) } },
             onEdit: { chat.editingMessageId = message.id; editText = message.body ?? "" },
-            onDelete: { Task { await chat.deleteMessage(message) } }
+            onDelete: { Task { await chat.deleteMessage(message) } },
+            assigneeName: chat.assignedDisplayName(for: message),
+            onAssign: { assignTargetMessage = message }
         )
     }
 

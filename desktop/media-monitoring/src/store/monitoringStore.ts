@@ -44,7 +44,7 @@ interface MonitoringState {
 }
 
 export const useMonitoringStore = create<MonitoringState>((set, get) => ({
-  section: 'monitoring',
+  section: 'reports',
   sidebarCollapsed: false,
   topBarMode: 'live',
   monitors: [],
@@ -61,7 +61,11 @@ export const useMonitoringStore = create<MonitoringState>((set, get) => ({
   userEmail: null,
   displayName: null,
 
-  setSection: (section) => set({ section, topBarMode: section === 'monitoring' ? 'live' : 'default' }),
+  setSection: (section) =>
+    set({
+      section,
+      topBarMode: section === 'monitoring' ? 'live' : section === 'reports' ? 'report' : 'default'
+    }),
   toggleSidebar: () => set((s) => ({ sidebarCollapsed: !s.sidebarCollapsed })),
   setTopBarMode: (topBarMode) => set({ topBarMode }),
   setMonitors: (monitors) => set({ monitors }),

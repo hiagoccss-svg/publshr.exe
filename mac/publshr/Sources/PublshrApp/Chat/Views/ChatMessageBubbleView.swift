@@ -21,6 +21,8 @@ struct ChatMessageBubbleView: View {
     var onPin: (() -> Void)?
     var onEdit: (() -> Void)?
     var onDelete: (() -> Void)?
+    var assigneeName: String?
+    var onAssign: (() -> Void)?
 
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
@@ -40,6 +42,16 @@ struct ChatMessageBubbleView: View {
                     headerRow
                 }
                 contentBody
+                if let assigneeName {
+                    HStack(spacing: 4) {
+                        Image(systemName: "person.crop.circle.badge.checkmark")
+                            .font(.system(size: 10))
+                        Text("Assigned to \(assigneeName)")
+                            .font(.system(size: 10, weight: .medium))
+                    }
+                    .foregroundStyle(CursorTheme.accent)
+                    .padding(.top, 2)
+                }
                 ForEach(links) { link in
                     ChatLinkPreviewCard(link: link)
                 }
@@ -82,6 +94,9 @@ struct ChatMessageBubbleView: View {
                 }
             }
             Button("Pin") { onPin?() }
+            if onAssign != nil {
+                Button("Assign to…") { onAssign?() }
+            }
             if isOwn, let body = message.body, !body.isEmpty, !message.isDeleted {
                 Button("Edit") { onEdit?() }
             }
