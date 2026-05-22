@@ -56,7 +56,7 @@ struct ContentView: View {
 
     private var bootstrappingView: some View {
         ZStack {
-            CursorTheme.activityBar.ignoresSafeArea()
+            AuthChromeLayout.screenBackground
             VStack(spacing: 10) {
                 ProgressView()
                     .controlSize(.regular)

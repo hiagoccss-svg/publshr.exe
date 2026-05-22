@@ -97,10 +97,15 @@ struct SettingsView: View {
         .padding(.bottom, 8)
     }
 
-    // MARK: - Pinned live update footer
+    // MARK: - Software updates
 
     private var liveUpdateFooter: some View {
         VStack(alignment: .leading, spacing: 10) {
+            Text("Software updates")
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundStyle(CursorTheme.foregroundDim)
+                .tracking(0.5)
+
             HStack(spacing: 8) {
                 if updates.isActivelyUpdating {
                     ProgressView()
@@ -112,14 +117,14 @@ struct SettingsView: View {
                     .lineLimit(2)
             }
 
-            if let err = updates.errorMessage {
+            if let err = updates.settingsErrorMessage {
                 Text(err)
                     .font(.system(size: 11))
                     .foregroundStyle(CursorTheme.error)
                     .fixedSize(horizontal: false, vertical: true)
             }
 
-            Text("Installed: \(AppReleaseConfig.installedLabel) at \(AppReleaseConfig.installedAppPath). Live updates install in place — no password when the app is in your Applications folder.")
+            Text("Updates download and install automatically. Build \(AppReleaseConfig.buildNumber).")
                 .font(.system(size: 10))
                 .foregroundStyle(CursorTheme.foregroundDim)
                 .fixedSize(horizontal: false, vertical: true)
@@ -166,12 +171,10 @@ struct SettingsView: View {
         VStack(alignment: .leading, spacing: 6) {
             labeledRow("Shell", AppShellIdentity.distributionTag)
             labeledRow("Bundle", Bundle.main.bundleURL.lastPathComponent)
-            if Bundle.main.object(forInfoDictionaryKey: "PublshrShellVersion") as? String != "enterprise-4" {
-                Text("This build is outdated. Use the button below to install the latest live release.")
-                    .font(.system(size: 11))
-                    .foregroundStyle(CursorTheme.foregroundMuted)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
+            Text("Use Software updates below to install the latest version from your organization.")
+                .font(.system(size: 11))
+                .foregroundStyle(CursorTheme.foregroundMuted)
+                .fixedSize(horizontal: false, vertical: true)
         }
         .padding(.horizontal, 20)
         .padding(.bottom, 8)

@@ -3,6 +3,8 @@ import SwiftUI
 /// Borderless chat chrome — integrated with the conversation (native desktop, not web cards).
 struct ChatWorkspaceChrome<Content: View>: View {
     @EnvironmentObject private var auth: AuthViewModel
+    @EnvironmentObject private var subscription: SubscriptionService
+    @EnvironmentObject private var calls: CallSignalingService
     @ObservedObject var chat: ChatViewModel
     var topInset: CGFloat = 0
     @ViewBuilder var content: () -> Content
@@ -55,6 +57,9 @@ struct ChatWorkspaceChrome<Content: View>: View {
             .padding(.vertical, 5)
 
             HStack(spacing: 14) {
+                if chat.selectedChannel != nil, subscription.canUseCalls(workspace: auth.selectedWorkspace) {
+                    callMenu
+                }
                 if chat.selectedChannel != nil {
                     chromeAction(chat.showPinnedPanel ? "pin.fill" : "pin") {
                         chat.showPinnedPanel.toggle()
@@ -114,6 +119,37 @@ struct ChatWorkspaceChrome<Content: View>: View {
             ChatPresenceDot(status: chat.myStatus, size: 8)
         }
         .menuStyle(.borderlessButton)
+    }
+
+    private var callMenu: some View {
+        Menu {
+            Button { startCall(video: false) } label: {
+                Label("Voice call", systemImage: "phone.fill")
+            }
+            Button { startCall(video: true) } label: {
+                Label("Video call", systemImage: "video.fill")
+            }
+        } label: {
+            Image(systemName: "phone")
+                .font(.system(size: 13))
+                .foregroundStyle(CursorTheme.foregroundMuted)
+        }
+        .menuStyle(.borderlessButton)
+        .help("Start a call")
+    }
+
+    private func startCall(video: Bool) {
+        guard let ws = auth.selectedWorkspace?.id,
+              let channel = chat.selectedChannel else { return }
+        Task {
+            await calls.startChannelCall(
+                workspaceId: ws,
+                channelId: channel.id,
+                title: channel.displayTitle,
+                video: video,
+                workspaceSettings: auth.selectedWorkspace?.settings
+            )
+        }
     }
 
     private var workspaceMenu: some View {

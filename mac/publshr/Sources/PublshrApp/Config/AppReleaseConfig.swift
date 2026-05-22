@@ -67,6 +67,15 @@ enum AppReleaseConfig {
         #endif
     }
 
+    /// Same URL as install-macos.sh — avoids GitHub API asset endpoints that return 403 without special headers.
+    static func releaseDownloadURL(tag: String, assetName: String) -> URL? {
+        let parts = githubRepo.split(separator: "/", omittingEmptySubsequences: true)
+        guard parts.count == 2 else { return nil }
+        let encodedTag = tag.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? tag
+        let encodedAsset = assetName.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? assetName
+        return URL(string: "https://github.com/\(parts[0])/\(parts[1])/releases/download/\(encodedTag)/\(encodedAsset)")
+    }
+
     static func platformAssetName(version: String) -> String {
         #if arch(arm64)
         let arch = "aarch64"

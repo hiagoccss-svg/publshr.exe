@@ -3,31 +3,23 @@ import SwiftUI
 struct SpacesRootView: View {
     @EnvironmentObject private var auth: AuthViewModel
     @ObservedObject var spaces: SpacesViewModel
+    var topInset: CGFloat = 0
 
     var body: some View {
-        HStack(spacing: 0) {
-            VStack(spacing: 0) {
-                if spaces.selectedSpaceId != nil {
-                    SpacesHierarchyBar(spaces: spaces)
-                    Divider().opacity(0.35)
-                }
+        SpacesWorkspaceChrome(spaces: spaces, topInset: topInset) {
+            HStack(spacing: 0) {
                 workspaceContent
-                if spaces.selectedSpaceId != nil {
-                    SpacesQuickAddBar(spaces: spaces)
-                }
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(CursorTheme.editorBackground)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-            if spaces.showTaskPanel, spaces.selectedTask != nil {
-                Rectangle()
-                    .fill(CursorTheme.borderSubtle.opacity(0.5))
-                    .frame(width: 1)
-                SpacesTaskDetailPanel(spaces: spaces)
-                    .frame(width: 320)
+                if spaces.showTaskPanel, spaces.selectedTask != nil {
+                    Rectangle()
+                        .fill(CursorTheme.borderSubtle)
+                        .frame(width: 1)
+                    SpacesTaskDetailPanel(spaces: spaces)
+                        .frame(width: 320)
+                }
             }
         }
-        .background(CursorTheme.editorBackground)
         .onAppear { spaces.attach(auth: auth) }
         .onChange(of: auth.selectedMembership?.workspace.id) { _, _ in
             spaces.attach(auth: auth)
@@ -42,28 +34,37 @@ struct SpacesRootView: View {
 
     @ViewBuilder
     private var workspaceContent: some View {
-        if spaces.isLoading && spaces.spaces.isEmpty {
-            ProgressView()
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-        } else if let error = spaces.errorMessage, spaces.spaces.isEmpty {
-            emptyError(error)
-        } else if spaces.spaces.isEmpty {
-            emptyNoSpaces
-        } else if spaces.selectedSpace == nil {
-            Text("Select a space")
-                .font(.system(size: 13))
-                .foregroundStyle(CursorTheme.foregroundMuted)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-        } else {
-            switch spaces.taskView {
-            case .board:
-                SpacesBoardView(spaces: spaces)
-            case .list:
-                SpacesListView(spaces: spaces)
-            case .overview:
-                SpacesOverviewView(spaces: spaces)
-            case .calendar:
-                SpacesCalendarView(spaces: spaces)
+        VStack(spacing: 0) {
+            Group {
+                if spaces.isLoading && spaces.spaces.isEmpty {
+                    ProgressView()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else if let error = spaces.errorMessage, spaces.spaces.isEmpty {
+                    emptyError(error)
+                } else if spaces.spaces.isEmpty {
+                    emptyNoSpaces
+                } else if spaces.selectedSpace == nil {
+                    Text("Select a space")
+                        .font(.system(size: 13))
+                        .foregroundStyle(CursorTheme.foregroundMuted)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else {
+                    switch spaces.taskView {
+                    case .board:
+                        SpacesBoardView(spaces: spaces)
+                    case .list:
+                        SpacesListView(spaces: spaces)
+                    case .overview:
+                        SpacesOverviewView(spaces: spaces)
+                    case .calendar:
+                        SpacesCalendarView(spaces: spaces)
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+            if spaces.selectedSpaceId != nil {
+                SpacesQuickAddBar(spaces: spaces)
             }
         }
     }
@@ -90,7 +91,7 @@ struct SpacesRootView: View {
                 .foregroundStyle(CursorTheme.foregroundDim)
             Text("No spaces yet")
                 .font(.system(size: 15, weight: .medium))
-            Text("Create a space for clients, campaigns, launches, and editorial work — like ClickUp Spaces.")
+            Text("Create a space for clients, campaigns, launches, and editorial work.")
                 .font(.system(size: 12))
                 .foregroundStyle(CursorTheme.foregroundMuted)
                 .multilineTextAlignment(.center)
@@ -100,7 +101,7 @@ struct SpacesRootView: View {
     }
 }
 
-/// Inline quick-add for tasks (toolbar holds navigation; composer lives here).
+/// Inline quick-add for tasks (composer below board/list).
 struct SpacesQuickAddBar: View {
     @ObservedObject var spaces: SpacesViewModel
 
@@ -126,5 +127,8 @@ struct SpacesQuickAddBar: View {
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
         .background(CursorTheme.panelBackground)
+        .overlay(alignment: .top) {
+            Rectangle().fill(CursorTheme.borderSubtle).frame(height: 1)
+        }
     }
 }
