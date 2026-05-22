@@ -931,7 +931,7 @@ final class ChatViewModel: ObservableObject {
         if let body = message.body?.trimmingCharacters(in: .whitespacesAndNewlines), !body.isEmpty {
             return String(body.prefix(240))
         }
-        if message.attachments.contains(where: { $0.kind == "voice" || $0.mimeType?.hasPrefix("audio") == true }) {
+        if message.attachments.contains(where: \.isVoice) {
             return "Voice message"
         }
         if !message.attachments.isEmpty {
