@@ -5,7 +5,7 @@ struct ChatSidebarTitlebarChrome: View {
     @ObservedObject var chat: ChatViewModel
 
     var body: some View {
-        HStack(alignment: .center, spacing: 8) {
+        TitlebarToolbarRow(leadingPadding: 0, trailingPadding: 0) {
             TitlebarToolbarSlot {
                 Image(systemName: "magnifyingglass")
                     .font(.system(size: AppWindowChromeMetrics.controlIconSize, weight: .medium))
@@ -29,7 +29,6 @@ struct ChatSidebarTitlebarChrome: View {
                 }
             }
         }
-        .frame(height: AppWindowChromeMetrics.controlSize)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
     }
 }
