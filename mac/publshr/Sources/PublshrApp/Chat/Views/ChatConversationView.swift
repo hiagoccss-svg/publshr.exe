@@ -17,7 +17,7 @@ struct ChatConversationView: View {
         .background(Color.clear)
         .fileImporter(
             isPresented: $showFileImporter,
-            allowedContentTypes: [.image, .pdf, .data],
+            allowedContentTypes: [.image, .movie, .video, .pdf, .data],
             allowsMultipleSelection: false
         ) { result in
             if case .success(let urls) = result, let url = urls.first {
@@ -47,6 +47,21 @@ struct ChatConversationView: View {
                     Text(chat.workspace?.name ?? "Chat")
                         .font(.system(size: 16, weight: .semibold))
                         .foregroundStyle(CursorTheme.foreground)
+                    if let err = chat.errorMessage, !err.isEmpty {
+                        Text(err)
+                            .font(.system(size: 12))
+                            .foregroundStyle(CursorTheme.error)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 24)
+                        Button("Retry sync") {
+                            Task { await chat.refreshAfterReconnect() }
+                        }
+                        .buttonStyle(.bordered)
+                    }
+                    if chat.isLoading {
+                        ProgressView()
+                            .controlSize(.regular)
+                    }
                     Text("Select a channel or direct message.")
                         .font(.system(size: 13))
                         .foregroundStyle(CursorTheme.foregroundMuted)

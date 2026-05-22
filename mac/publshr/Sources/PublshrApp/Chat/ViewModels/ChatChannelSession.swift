@@ -205,8 +205,10 @@ final class ChatChannelSession: ObservableObject {
             var m = messages[i]
             m.isDeleted = true
             m.body = nil
+            m.attachments = []
             messages[i] = m
         }
+        threadMessages.removeAll { $0.id == messageId }
     }
 
     func toggleReaction(messageId: UUID, emoji: String) async {
