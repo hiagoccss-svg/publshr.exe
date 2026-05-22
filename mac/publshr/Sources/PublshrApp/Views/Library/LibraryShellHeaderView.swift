@@ -6,7 +6,9 @@ enum ShellColumnHeaderKind {
     case trafficLeading(module: Binding<AppModule>)
     /// Middle submenu column: empty band matching sidebar chrome.
     case secondaryChrome
-    /// Right column: profile, notifications, command only (editor gutter color).
+    /// Chat submenu: search in the titlebar row (ClickUp).
+    case chatSubmenu
+    /// Right column: channel title + actions (chat) or profile cluster (spaces).
     case editorTrailing(
         module: Binding<AppModule>,
         showCommandPalette: Binding<Bool>,
@@ -15,6 +17,7 @@ enum ShellColumnHeaderKind {
 }
 
 struct LibraryShellHeaderView: View {
+    @EnvironmentObject private var chat: ChatViewModel
     let kind: ShellColumnHeaderKind
 
     var body: some View {
@@ -28,8 +31,8 @@ struct LibraryShellHeaderView: View {
         switch kind {
         case .trafficLeading:
             GlassPrimaryBarChrome()
-        case .secondaryChrome:
-            CursorMacShellDesign.columnChromeBackground
+        case .secondaryChrome, .chatSubmenu:
+            GlassSubmenuChrome()
         case .editorTrailing:
             CursorMacShellDesign.editorColumnBackground
         }
@@ -50,6 +53,12 @@ struct LibraryShellHeaderView: View {
             TitlebarToolbarRow {
                 Color.clear
                     .frame(maxWidth: .infinity)
+            }
+
+        case .chatSubmenu:
+            TitlebarToolbarRow(leadingPadding: 12, trailingPadding: 6) {
+                ChatSidebarTitlebarChrome(chat: chat)
+                Spacer(minLength: 0)
             }
 
         case .editorTrailing(let module, let showCommandPalette, let showNotificationsPanel):
@@ -100,9 +109,7 @@ private struct ShellColumnChromeBackground: ViewModifier {
         if appliesPrimaryBarGlass {
             content.glassPrimaryBar()
         } else if appliesSidebarChrome {
-            content
-                .background(CursorMacShellDesign.columnChromeBackground)
-                .cursorColumnDividerTrailing()
+            content.glassSubmenu()
         } else {
             content
         }

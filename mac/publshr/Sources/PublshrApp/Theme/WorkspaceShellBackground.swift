@@ -30,7 +30,21 @@ struct GlassPrimaryBarChrome: View {
                 blendingMode: .behindWindow
             )
             LibraryGlassDesign.primaryBarGlassFill
-            CursorMacShellDesign.columnChromeBackground.opacity(0.18)
+            CursorMacShellDesign.columnChromeBackground.opacity(0.10)
+        }
+    }
+}
+
+/// Chat / Spaces submenu column — lighter glass than the primary bar, wallpaper tints through.
+struct GlassSubmenuChrome: View {
+    var body: some View {
+        ZStack {
+            VisualEffectBlur(
+                material: .sidebar,
+                blendingMode: .behindWindow
+            )
+            LibraryGlassDesign.submenuGlassFill
+            CursorMacShellDesign.columnChromeBackground.opacity(0.08)
         }
     }
 }
@@ -79,6 +93,14 @@ struct GlassDisconnectedFooterBackground: ViewModifier {
     }
 }
 
+struct GlassSubmenuBackground: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .background { GlassSubmenuChrome() }
+            .cursorColumnDividerTrailing()
+    }
+}
+
 extension View {
     func glassDisconnectedFooter() -> some View {
         modifier(GlassDisconnectedFooterBackground())
@@ -86,5 +108,9 @@ extension View {
 
     func glassPrimaryBar() -> some View {
         modifier(GlassPrimaryBarBackground())
+    }
+
+    func glassSubmenu() -> some View {
+        modifier(GlassSubmenuBackground())
     }
 }
