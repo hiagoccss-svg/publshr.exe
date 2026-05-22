@@ -75,8 +75,13 @@ extension ChatViewModel {
                 var m = messages[i]
                 m.isDeleted = true
                 m.body = nil
+                m.attachments = []
                 messages[i] = m
             }
+            if activeThreadParent?.id == message.id || threadMessages.contains(where: { $0.id == message.id }) {
+                threadMessages.removeAll { $0.id == message.id }
+            }
+            voiceTranscripts.removeValue(forKey: message.id)
         } catch { errorMessage = error.localizedDescription }
     }
 
@@ -189,8 +194,13 @@ extension ChatViewModel {
                 data: data
             )
             uploadProgress = 0.7
+            let attachmentType: String = {
+                if mime.hasPrefix("image/") { return "image" }
+                if mime.hasPrefix("video/") { return "video" }
+                return "file"
+            }()
             let attachment = ChatAttachment(
-                type: mime.hasPrefix("image/") ? "image" : "file",
+                type: attachmentType,
                 url: result.publicURL.absoluteString,
                 name: name,
                 size: data.count

@@ -29,9 +29,21 @@ struct LibraryShellHeaderView: View {
                 }
             }
 
+            ToolbarIconButton(systemName: "chevron.left", enabled: canGoBack, help: "Back") {
+                navigateBack()
+            }
+            ToolbarIconButton(systemName: "chevron.right", enabled: canGoForward, help: "Forward") {
+                navigateForward()
+            }
+            ToolbarIconButton(systemName: "house", help: "Home") {
+                tabStore.openFromModule(module, activate: true)
+            }
+
             tabStrip
 
             paneTitleCluster
+
+            moduleUtilityIcons
 
             Spacer(minLength: 8)
 
@@ -46,6 +58,26 @@ struct LibraryShellHeaderView: View {
             Rectangle()
                 .fill(LibraryGlassDesign.hairline)
                 .frame(height: 1)
+        }
+    }
+
+    // MARK: - Module utilities (from main — list/filter/search without top tab strip)
+
+    private var moduleUtilityIcons: some View {
+        HStack(spacing: 2) {
+            ToolbarIconButton(systemName: "square.grid.2x2", help: "Spaces") {
+                module = .spaces
+                tabStore.openFromModule(.spaces, activate: true)
+            }
+            ToolbarIconButton(systemName: "list.bullet", help: "List") {
+                if module == .chat { chat.setSidebarLayout(.organized) }
+            }
+            ToolbarIconButton(systemName: "line.3.horizontal.decrease", help: "Filter") {
+                if module == .chat { chat.showSearchSheet = true }
+            }
+            ToolbarIconButton(systemName: "magnifyingglass", help: "Search") {
+                if module == .chat { chat.showSearchSheet = true }
+            }
         }
     }
 
@@ -96,7 +128,7 @@ struct LibraryShellHeaderView: View {
         .help("New tab")
     }
 
-    // MARK: - Pane title (left of trailing cluster, same baseline as Ask AI)
+    // MARK: - Pane title (same baseline as Ask AI)
 
     @ViewBuilder
     private var paneTitleCluster: some View {
@@ -171,7 +203,27 @@ struct LibraryShellHeaderView: View {
         }
     }
 
-    // MARK: - Actions
+    // MARK: - Navigation
+
+    private var canGoBack: Bool {
+        module == .chat ? chat.canNavigateBack : spaces.canNavigateBack
+    }
+
+    private var canGoForward: Bool {
+        module == .chat ? chat.canNavigateForward : spaces.canNavigateForward
+    }
+
+    private func navigateBack() {
+        if module == .chat { chat.navigateBack() }
+        else { Task { await spaces.navigateBack() } }
+    }
+
+    private func navigateForward() {
+        if module == .chat { chat.navigateForward() }
+        else { Task { await spaces.navigateForward() } }
+    }
+
+    // MARK: - Tab actions
 
     private func selectTab(_ tab: WorkspaceTab) {
         tabStore.selectTab(id: tab.id)

@@ -24,11 +24,16 @@ extension ChatService {
 
     func deleteMessage(messageId: UUID, workspaceId: UUID, soft: Bool = true) async throws {
         if soft {
-            struct Patch: Encodable { let is_deleted: Bool = true; let body: String? = nil }
+            struct Patch: Encodable {
+                let is_deleted: Bool = true
+                let body: String? = nil
+                let attachments: [ChatAttachment] = []
+            }
             _ = try await client
                 .from("chat_messages")
                 .update(Patch())
                 .eq("id", value: messageId.uuidString)
+                .eq("workspace_id", value: workspaceId.uuidString)
                 .execute()
         }
     }

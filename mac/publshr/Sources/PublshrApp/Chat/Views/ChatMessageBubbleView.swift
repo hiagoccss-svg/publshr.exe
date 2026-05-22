@@ -1,4 +1,5 @@
 import SwiftUI
+import AppKit
 
 struct ChatMessageBubbleView: View {
     let message: ChatMessage
@@ -74,15 +75,38 @@ struct ChatMessageBubbleView: View {
                 }
             }
             Button("Pin") { onPin?() }
-            if isOwn {
+            if isOwn, let body = message.body, !body.isEmpty, !message.isDeleted {
                 Button("Edit") { onEdit?() }
-                Button("Delete", role: .destructive) { onDelete?() }
+            }
+            if canDeleteMessage {
+                Button(deleteActionTitle, role: .destructive) { onDelete?() }
             }
         }
     }
 
     private var voiceAttachment: ChatAttachment? {
-        message.attachments.first { $0.type == "voice" }
+        message.attachments.first { $0.isVoice }
+    }
+
+    private var primaryAttachment: ChatAttachment? {
+        message.attachments.first
+    }
+
+    private var canDeleteMessage: Bool {
+        isOwn && !message.isDeleted && onDelete != nil
+    }
+
+    private var deleteActionTitle: String {
+        if message.attachments.contains(where: \.isVideo) {
+            return "Delete video"
+        }
+        if message.attachments.contains(where: \.isVoice) {
+            return "Delete voice note"
+        }
+        if message.attachments.contains(where: \.isImage) {
+            return "Delete image"
+        }
+        return "Delete message"
     }
 
     private var headerRow: some View {
@@ -117,6 +141,11 @@ struct ChatMessageBubbleView: View {
                 .textSelection(.enabled)
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.top, showAvatar ? 0 : 2)
+            if voiceAttachment == nil, !message.attachments.isEmpty {
+                attachmentContent
+                    .libraryCard(glass: true, padding: 10)
+                    .padding(.top, 4)
+            }
         } else if !message.attachments.isEmpty, voiceAttachment == nil {
             attachmentContent
                 .libraryCard(glass: true, padding: 10)
@@ -125,31 +154,60 @@ struct ChatMessageBubbleView: View {
 
     @ViewBuilder
     private var attachmentContent: some View {
-        if let image = message.attachments.first(where: { $0.type == "image" }),
-           let urlString = image.url,
+        if let video = message.attachments.first(where: \.isVideo),
+           let urlString = video.url,
            let url = URL(string: urlString) {
+            videoAttachmentView(url: url, name: video.name)
+        } else if let image = message.attachments.first(where: \.isImage),
+                  let urlString = image.url,
+                  let url = URL(string: urlString) {
             AsyncImage(url: url) { phase in
                 switch phase {
                 case .success(let img):
                     img.resizable().scaledToFit().frame(maxHeight: 220).clipShape(RoundedRectangle(cornerRadius: 8))
                 case .failure:
-                    attachmentLabel
+                    attachmentLabel(icon: "photo", title: image.name ?? "Image")
                 default:
                     ProgressView().controlSize(.small)
                 }
             }
-            Text(image.name ?? "Image")
-                .font(.system(size: 10))
-                .foregroundStyle(CursorTheme.foregroundDim)
-        } else {
-            attachmentLabel
+        } else if let att = primaryAttachment {
+            attachmentLabel(
+                icon: att.isVideo ? "video.fill" : "paperclip",
+                title: att.name ?? "Attachment"
+            )
         }
     }
 
-    private var attachmentLabel: some View {
+    private func videoAttachmentView(url: URL, name: String?) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 8) {
+                Image(systemName: "video.fill")
+                    .font(.system(size: 20))
+                    .foregroundStyle(CursorTheme.accent)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(name ?? "Video")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(CursorTheme.foreground)
+                    Text(url.lastPathComponent)
+                        .font(.system(size: 10))
+                        .foregroundStyle(CursorTheme.foregroundDim)
+                        .lineLimit(1)
+                }
+                Spacer(minLength: 0)
+                Button("Open") {
+                    NSWorkspace.shared.open(url)
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+            }
+        }
+    }
+
+    private func attachmentLabel(icon: String, title: String) -> some View {
         HStack(spacing: 6) {
-            Image(systemName: "paperclip")
-            Text(message.attachments.first?.name ?? "Attachment")
+            Image(systemName: icon)
+            Text(title)
         }
         .font(.system(size: 13))
         .foregroundStyle(CursorTheme.foregroundMuted)

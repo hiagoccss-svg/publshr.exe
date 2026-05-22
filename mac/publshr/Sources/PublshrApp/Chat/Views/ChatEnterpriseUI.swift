@@ -71,6 +71,8 @@ struct JoinActiveCallBanner: View {
 
 /// Channel strip under workspace header — members, typing, join call.
 struct ChatChannelStatusBar: View {
+    @EnvironmentObject private var auth: AuthViewModel
+    @EnvironmentObject private var subscription: SubscriptionService
     @EnvironmentObject private var calls: CallSignalingService
     @ObservedObject var chat: ChatViewModel
 
@@ -120,6 +122,30 @@ struct ChatChannelStatusBar: View {
     @ViewBuilder
     private func channelQuickActions(_ channel: ChatChannel) -> some View {
         HStack(spacing: 4) {
+            if subscription.canUseCalls(workspace: auth.selectedWorkspace) {
+                Button {
+                    Task { await startCall(channel: channel, video: false) }
+                } label: {
+                    Image(systemName: "phone.fill")
+                        .font(.system(size: 12))
+                        .foregroundStyle(CursorTheme.foregroundMuted)
+                        .frame(width: 28, height: 28)
+                }
+                .buttonStyle(.plain)
+                .help("Start voice call")
+
+                Button {
+                    Task { await startCall(channel: channel, video: true) }
+                } label: {
+                    Image(systemName: "video.fill")
+                        .font(.system(size: 12))
+                        .foregroundStyle(CursorTheme.foregroundMuted)
+                        .frame(width: 28, height: 28)
+                }
+                .buttonStyle(.plain)
+                .help("Start video call")
+            }
+
             Button {
                 chat.showSearchSheet = true
             } label: {
@@ -129,7 +155,7 @@ struct ChatChannelStatusBar: View {
                     .frame(width: 28, height: 28)
             }
             .buttonStyle(.plain)
-            .help("Search in workspace")
+            .help("Search in channel")
 
             Button {
                 chat.showPinnedPanel.toggle()
@@ -141,7 +167,32 @@ struct ChatChannelStatusBar: View {
             }
             .buttonStyle(.plain)
             .help("Pinned messages")
+
+            Menu {
+                ChatChannelActionsMenu(chat: chat, channel: channel)
+            } label: {
+                Image(systemName: "ellipsis.circle")
+                    .font(.system(size: 12))
+                    .foregroundStyle(CursorTheme.foregroundMuted)
+                    .frame(width: 28, height: 28)
+            }
+            .menuStyle(.borderlessButton)
+            .menuIndicator(.hidden)
+            .help("More channel actions")
         }
+    }
+
+    private func startCall(channel: ChatChannel, video: Bool) async {
+        guard let ws = auth.selectedWorkspace?.id else { return }
+        await calls.startChannelCall(
+            workspaceId: ws,
+            channelId: channel.id,
+            title: channel.displayTitle,
+            video: video,
+            scope: .meeting,
+            workspaceSettings: auth.selectedWorkspace?.settings,
+            userDisplayName: auth.profile?.displayName ?? auth.displayName
+        )
     }
 }
 
