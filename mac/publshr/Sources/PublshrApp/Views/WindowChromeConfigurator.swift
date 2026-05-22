@@ -86,9 +86,9 @@ enum MainWindowChrome {
         let reportedTop = contentView.safeAreaInsets.top
         let target = AppWindowChromeMetrics.trafficLightRowHeight
         guard reportedTop > target + 0.5 else { return }
-        var extra = window.additionalSafeAreaInsets
+        var extra = contentView.additionalSafeAreaInsets
         extra.top = target - reportedTop
-        window.additionalSafeAreaInsets = extra
+        contentView.additionalSafeAreaInsets = extra
     }
 
     /// Re-apply after SwiftUI finishes configuring the hosting window.
