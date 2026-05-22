@@ -87,12 +87,8 @@ struct ShellColumnChromeStack<Content: View>: View {
                     alignment: .topLeading
                 )
         }
-        .frame(
-            width: columnWidth,
-            maxWidth: columnWidth ?? .infinity,
-            maxHeight: .infinity,
-            alignment: .topLeading
-        )
+        .frame(width: columnWidth, alignment: .leading)
+        .frame(maxWidth: columnWidth ?? .infinity, maxHeight: .infinity, alignment: .topLeading)
         .modifier(ShellColumnChromeBackground(
             appliesSidebarChrome: appliesSidebarChrome,
             appliesPrimaryBarGlass: appliesPrimaryBarGlass
