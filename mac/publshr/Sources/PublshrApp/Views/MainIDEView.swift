@@ -20,8 +20,6 @@ struct MainIDEView: View {
             let topInset = max(geometry.safeAreaInsets.top, CursorTheme.windowChromeTopInset)
 
             VStack(spacing: 0) {
-                AppUpdateBannerView(updates: updates)
-
                 HStack(alignment: .top, spacing: 0) {
                     if !sidebarHidden {
                         leftRail(topInset: topInset)
@@ -86,7 +84,7 @@ struct MainIDEView: View {
 
     private func contentColumn(topInset: CGFloat) -> some View {
         VStack(spacing: 0) {
-            if module != .chat {
+            if module == .settings {
                 VStack(spacing: 0) {
                     Color.clear.frame(height: topInset)
                     ContentToolbarView(spaces: spaces, module: module)
@@ -119,7 +117,7 @@ struct MainIDEView: View {
             }
         case .spaces:
             if subscription.canUseSpaces(workspace: auth.selectedWorkspace) {
-                SpacesRootView(spaces: spaces)
+                SpacesRootView(spaces: spaces, topInset: topInset)
             } else {
                 EnterpriseModuleGate(
                     moduleName: "Spaces",

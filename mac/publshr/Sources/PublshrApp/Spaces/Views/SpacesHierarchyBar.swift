@@ -54,7 +54,9 @@ struct SpacesHierarchyBar: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 8)
-        .background(CursorTheme.panelBackground.opacity(0.6))
+        .overlay(alignment: .bottom) {
+            Rectangle().fill(CursorTheme.borderSubtle).frame(height: 1)
+        }
     }
 
     private var selectedListLabel: String {

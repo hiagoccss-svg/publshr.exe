@@ -47,6 +47,12 @@ struct ContentView: View {
             EnterpriseOnboardingView(isPresented: $showEnterpriseOnboarding)
         }
         .sheet(isPresented: Binding(
+            get: { auth.showBiometricSetupOffer },
+            set: { if !$0 { auth.dismissBiometricSetupOffer(enable: false) } }
+        )) {
+            BiometricSetupSheet()
+        }
+        .sheet(isPresented: Binding(
             get: { calls.activeRoom != nil },
             set: { if !$0 { Task { await calls.leaveCall() } } }
         )) {
@@ -56,7 +62,7 @@ struct ContentView: View {
 
     private var bootstrappingView: some View {
         ZStack {
-            CursorTheme.activityBar.ignoresSafeArea()
+            AuthChromeLayout.screenBackground
             VStack(spacing: 10) {
                 ProgressView()
                     .controlSize(.regular)

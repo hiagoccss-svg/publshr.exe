@@ -266,12 +266,16 @@ struct SettingsSecurityPane: View {
             }
             if BiometricAuthService.isAvailable {
                 Section(BiometricAuthService.biometricLabel) {
+                    Toggle(isOn: Binding(
+                        get: { auth.biometricUnlockEnabled },
+                        set: { auth.setBiometricUnlockEnabled($0) }
+                    )) {
+                        Text("Quick unlock with \(BiometricAuthService.biometricLabel)")
+                    }
                     if auth.prefersBiometricUnlock {
-                        Label("Enabled", systemImage: "checkmark.circle.fill")
-                    } else {
-                        Button("Enable \(BiometricAuthService.biometricLabel)") {
-                            auth.persistSessionToKeychain()
-                        }
+                        Text("You will be asked for \(BiometricAuthService.biometricLabel) when opening Publshr.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
                     }
                 }
             }

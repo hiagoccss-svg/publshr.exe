@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Borderless macOS sign-in — no card chrome; session persists via Supabase.
+/// macOS-native sign-in — light auth surface, card layout, readable contrast.
 struct AuthView: View {
     @EnvironmentObject private var auth: AuthViewModel
     @FocusState private var focusedField: Field?
@@ -11,87 +11,73 @@ struct AuthView: View {
 
     var body: some View {
         ZStack {
-            CursorTheme.activityBar.ignoresSafeArea()
+            AuthChromeLayout.screenBackground
 
             VStack(spacing: 0) {
-                Spacer(minLength: 48)
+                Color.clear.frame(height: AuthChromeLayout.topChromeInset)
+                Spacer(minLength: 24)
 
-                VStack(alignment: .leading, spacing: 28) {
+                AuthChromeLayout.card {
                     brandHeader
-
-                    if auth.screen != .confirmEmail {
-                        modePicker
-                    }
-
+                    if auth.screen != .confirmEmail { modePicker }
                     formContent
-
                     messages
-
                     primaryAction
                 }
-                .frame(maxWidth: 380, alignment: .leading)
 
-                Spacer(minLength: 48)
-
+                Spacer(minLength: 24)
                 footerHint
+                    .padding(.horizontal, AuthChromeLayout.horizontalPadding)
+                    .frame(maxWidth: AuthChromeLayout.cardMaxWidth + 56, alignment: .leading)
             }
-            .padding(.horizontal, 48)
+            .padding(.horizontal, AuthChromeLayout.horizontalPadding)
         }
     }
 
     private var brandHeader: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 10) {
                 Image(systemName: "chevron.left.forwardslash.chevron.right")
-                    .font(.system(size: 22, weight: .medium))
-                    .foregroundStyle(CursorTheme.foreground)
+                    .font(.system(size: 20, weight: .medium))
+                    .foregroundStyle(CursorTheme.accent)
                 Text("Publshr")
-                    .font(.system(size: 26, weight: .semibold))
+                    .font(.system(size: 24, weight: .semibold))
                     .foregroundStyle(CursorTheme.foreground)
             }
             Text(auth.screen == .confirmEmail ? "Confirm your email" : "Enterprise workspace for your team")
                 .font(.system(size: 13))
                 .foregroundStyle(CursorTheme.foregroundMuted)
         }
+        .padding(.bottom, 8)
     }
 
     private var modePicker: some View {
-        HStack(spacing: 20) {
-            modeLink("Sign in", screen: .signIn)
-            modeLink("Create account", screen: .signUp)
+        HStack(spacing: 4) {
+            AuthChromeLayout.modeSegment(title: "Sign in", selected: auth.screen == .signIn) {
+                auth.screen = .signIn
+                auth.errorMessage = nil
+                auth.infoMessage = nil
+            }
+            AuthChromeLayout.modeSegment(title: "Create account", selected: auth.screen == .signUp) {
+                auth.screen = .signUp
+                auth.errorMessage = nil
+                auth.infoMessage = nil
+            }
         }
-    }
-
-    private func modeLink(_ title: String, screen: AuthScreen) -> some View {
-        Button {
-            auth.screen = screen
-            auth.errorMessage = nil
-            auth.infoMessage = nil
-        } label: {
-            Text(title)
-                .font(.system(size: 13, weight: auth.screen == screen ? .semibold : .regular))
-                .foregroundStyle(auth.screen == screen ? CursorTheme.foreground : CursorTheme.foregroundDim)
-                .overlay(alignment: .bottom) {
-                    if auth.screen == screen {
-                        Rectangle()
-                            .fill(CursorTheme.accent)
-                            .frame(height: 2)
-                            .offset(y: 6)
-                    }
-                }
-                .padding(.bottom, 8)
-        }
-        .buttonStyle(.plain)
+        .padding(4)
+        .background(
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .fill(CursorTheme.editorLineHighlight.opacity(0.5))
+        )
+        .padding(.bottom, 4)
     }
 
     @ViewBuilder
     private var formContent: some View {
-        VStack(alignment: .leading, spacing: 18) {
+        VStack(alignment: .leading, spacing: 16) {
             switch auth.screen {
             case .signIn:
-                if auth.canOfferBiometricUnlock {
-                    biometricRow
-                }
+                if auth.canOfferBiometricUnlock { biometricRow }
                 authField("Email", text: $auth.email, field: .email, contentType: authEmailContentType)
                 authSecureField("Password", text: $auth.password, field: .password)
             case .signUp:
@@ -107,36 +93,32 @@ struct AuthView: View {
                     .foregroundStyle(CursorTheme.foregroundMuted)
                     .fixedSize(horizontal: false, vertical: true)
                 authField("Code", text: $auth.otpCode, field: .otp, contentType: authOTPContentType)
-                HStack(spacing: 16) {
+                HStack(spacing: 12) {
                     Button("Resend code") { Task { await auth.resendConfirmation() } }
-                        .buttonStyle(.plain)
+                        .buttonStyle(.borderless)
                         .font(.system(size: 12))
-                        .foregroundStyle(CursorTheme.accent)
                     Button("Back to sign in") {
                         auth.screen = .signIn
                         auth.otpCode = ""
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.borderless)
                     .font(.system(size: 12))
-                    .foregroundStyle(CursorTheme.foregroundDim)
                 }
             }
         }
+        .padding(.vertical, 4)
     }
 
     private var biometricRow: some View {
-        Button {
-            Task { await auth.unlockWithBiometrics() }
-        } label: {
+        Button { Task { await auth.unlockWithBiometrics() } } label: {
             HStack(spacing: 8) {
                 Image(systemName: "touchid")
-                    .font(.system(size: 15))
                 Text("Unlock with \(BiometricAuthService.biometricLabel)")
                     .font(.system(size: 13, weight: .medium))
             }
-            .foregroundStyle(CursorTheme.accent)
+            .foregroundStyle(CursorTheme.biometricTint)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.borderless)
         .disabled(auth.isLoading)
     }
 
@@ -157,7 +139,7 @@ struct AuthView: View {
     }
 
     private var primaryAction: some View {
-        Button {
+        AuthChromeLayout.primaryButton(title: primaryTitle, isLoading: auth.isLoading) {
             Task {
                 switch auth.screen {
                 case .signIn: await auth.signIn()
@@ -165,21 +147,9 @@ struct AuthView: View {
                 case .confirmEmail: await auth.confirmEmailOTP()
                 }
             }
-        } label: {
-            HStack(spacing: 8) {
-                if auth.isLoading {
-                    ProgressView().controlSize(.small)
-                }
-                Text(primaryTitle)
-                    .font(.system(size: 14, weight: .semibold))
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.vertical, 4)
-            .foregroundStyle(CursorTheme.accent)
         }
-        .buttonStyle(.plain)
-        .disabled(auth.isLoading)
         .keyboardShortcut(.return, modifiers: .command)
+        .padding(.top, 4)
     }
 
     private var primaryTitle: String {
@@ -191,10 +161,9 @@ struct AuthView: View {
     }
 
     private var footerHint: some View {
-        Text("Signed-in sessions stay active on this Mac. Enable Touch ID in Settings for optional quick unlock.")
+        Text("Sessions stay active on this Mac. Enable Touch ID in Settings for quick unlock.")
             .font(.system(size: 11))
             .foregroundStyle(CursorTheme.foregroundDim)
-            .frame(maxWidth: 380, alignment: .leading)
     }
 
     private var authEmailContentType: NSTextContentType? {
@@ -213,21 +182,10 @@ struct AuthView: View {
         field: Field,
         contentType: NSTextContentType? = nil
     ) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(label)
-                .font(.system(size: 11, weight: .medium))
-                .foregroundStyle(CursorTheme.foregroundDim)
+        AuthChromeLayout.labeledField(label) {
             TextField("", text: text)
                 .textFieldStyle(.plain)
-                .font(.system(size: 15))
-                .foregroundStyle(CursorTheme.foreground)
                 .focused($focusedField, equals: field)
-                .padding(.vertical, 6)
-                .overlay(alignment: .bottom) {
-                    Rectangle()
-                        .fill(focusedField == field ? CursorTheme.accent : CursorTheme.border.opacity(0.6))
-                        .frame(height: 1)
-                }
                 #if os(macOS)
                 .textContentType(contentType)
                 #endif
@@ -235,21 +193,10 @@ struct AuthView: View {
     }
 
     private func authSecureField(_ label: String, text: Binding<String>, field: Field) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(label)
-                .font(.system(size: 11, weight: .medium))
-                .foregroundStyle(CursorTheme.foregroundDim)
+        AuthChromeLayout.labeledField(label) {
             SecureField("", text: text)
                 .textFieldStyle(.plain)
-                .font(.system(size: 15))
-                .foregroundStyle(CursorTheme.foreground)
                 .focused($focusedField, equals: field)
-                .padding(.vertical, 6)
-                .overlay(alignment: .bottom) {
-                    Rectangle()
-                        .fill(focusedField == field ? CursorTheme.accent : CursorTheme.border.opacity(0.6))
-                        .frame(height: 1)
-                }
         }
     }
 }

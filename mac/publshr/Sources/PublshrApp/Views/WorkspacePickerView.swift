@@ -1,17 +1,18 @@
 import SwiftUI
 
-/// Choose or create a workspace — borderless macOS layout.
+/// Choose or create a workspace — native card layout on auth background.
 struct WorkspacePickerView: View {
     @EnvironmentObject private var auth: AuthViewModel
 
     var body: some View {
         ZStack {
-            CursorTheme.activityBar.ignoresSafeArea()
+            AuthChromeLayout.screenBackground
 
             VStack(spacing: 0) {
-                Spacer(minLength: 40)
+                Color.clear.frame(height: AuthChromeLayout.topChromeInset)
+                Spacer(minLength: 24)
 
-                VStack(alignment: .leading, spacing: 24) {
+                AuthChromeLayout.card {
                     header
                     workspaceList
                     createSection
@@ -22,31 +23,44 @@ struct WorkspacePickerView: View {
                             .foregroundStyle(CursorTheme.error)
                     }
 
-                    continueButton
+                    AuthChromeLayout.primaryButton(
+                        title: "Continue",
+                        isLoading: auth.isLoading
+                    ) {
+                        Task { await auth.confirmWorkspaceSelection() }
+                    }
+                    .disabled(auth.selectedMembership == nil)
 
-                    Button("Sign out") { Task { await auth.signOut() } }
-                        .buttonStyle(.plain)
-                        .font(.system(size: 12))
-                        .foregroundStyle(CursorTheme.foregroundDim)
+                    AuthChromeLayout.secondaryButton(title: "Sign out") {
+                        Task { await auth.signOut() }
+                    }
+                    .padding(.top, 4)
                 }
-                .frame(maxWidth: 420, alignment: .leading)
 
-                Spacer(minLength: 40)
+                Spacer(minLength: 24)
             }
-            .padding(.horizontal, 48)
+            .padding(.horizontal, AuthChromeLayout.horizontalPadding)
         }
         .task { await auth.loadWorkspaces() }
+        .overlay {
+            if auth.isLoading && auth.workspaceMemberships.isEmpty {
+                ProgressView("Loading workspaces…")
+                    .padding(20)
+                    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 10))
+            }
+        }
     }
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("Workspace")
-                .font(.system(size: 26, weight: .semibold))
+                .font(.system(size: 24, weight: .semibold))
                 .foregroundStyle(CursorTheme.foreground)
             Text("Your role controls chat, channels, and admin access.")
                 .font(.system(size: 13))
                 .foregroundStyle(CursorTheme.foregroundMuted)
         }
+        .padding(.bottom, 4)
     }
 
     @ViewBuilder
@@ -54,11 +68,12 @@ struct WorkspacePickerView: View {
         if auth.workspaceMemberships.isEmpty {
             emptyState
         } else {
-            VStack(spacing: 2) {
+            VStack(spacing: 4) {
                 ForEach(auth.workspaceMemberships) { membership in
                     workspaceRow(membership)
                 }
             }
+            .padding(.vertical, 4)
         }
     }
 
@@ -70,10 +85,10 @@ struct WorkspacePickerView: View {
             HStack(spacing: 12) {
                 Text(String(membership.workspace.name.prefix(1)).uppercased())
                     .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(CursorTheme.accent)
-                    .frame(width: 32, height: 32)
-                    .background(CursorTheme.editorLineHighlight.opacity(0.8))
-                    .clipShape(RoundedRectangle(cornerRadius: 6))
+                    .foregroundStyle(CursorTheme.buttonForeground)
+                    .frame(width: 36, height: 36)
+                    .background(CursorTheme.accent)
+                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(membership.workspace.name)
@@ -89,15 +104,20 @@ struct WorkspacePickerView: View {
                     .font(.system(size: 10, weight: .medium))
                     .foregroundStyle(CursorTheme.foregroundDim)
                 if selected {
-                    Image(systemName: "checkmark")
-                        .font(.system(size: 12, weight: .semibold))
+                    Image(systemName: "checkmark.circle.fill")
                         .foregroundStyle(CursorTheme.accent)
                 }
             }
+            .padding(.horizontal, 12)
             .padding(.vertical, 10)
-            .padding(.horizontal, 4)
-            .background(selected ? CursorTheme.accent.opacity(0.06) : Color.clear)
-            .contentShape(Rectangle())
+            .background(
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(selected ? CursorTheme.accent.opacity(0.08) : CursorTheme.inputBackground)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .stroke(selected ? CursorTheme.accent.opacity(0.35) : CursorTheme.inputBorder, lineWidth: 1)
+            )
         }
         .buttonStyle(.plain)
     }
@@ -116,7 +136,6 @@ struct WorkspacePickerView: View {
         VStack(alignment: .leading, spacing: 6) {
             Text("No workspace yet")
                 .font(.system(size: 14, weight: .medium))
-                .foregroundStyle(CursorTheme.foreground)
             Text("Create one for your team — you'll be the owner with full permissions.")
                 .font(.system(size: 12))
                 .foregroundStyle(CursorTheme.foregroundMuted)
@@ -128,37 +147,30 @@ struct WorkspacePickerView: View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Create workspace")
                 .font(.system(size: 11, weight: .medium))
-                .foregroundStyle(CursorTheme.foregroundDim)
-            HStack(spacing: 12) {
-                TextField("Company or team name", text: $auth.newWorkspaceName)
-                    .textFieldStyle(.plain)
-                    .font(.system(size: 14))
-                    .padding(.vertical, 6)
-                    .overlay(alignment: .bottom) {
-                        Rectangle().fill(CursorTheme.border.opacity(0.6)).frame(height: 1)
-                    }
+                .foregroundStyle(CursorTheme.foregroundMuted)
+            HStack(spacing: 10) {
+                AuthChromeLayout.labeledField("Name") {
+                    TextField("Company or team name", text: $auth.newWorkspaceName)
+                        .textFieldStyle(.plain)
+                }
+                .frame(maxWidth: .infinity)
                 Button {
                     Task { await auth.createWorkspaceAndContinue() }
                 } label: {
                     Text("Create")
                         .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(CursorTheme.accent)
+                        .foregroundStyle(CursorTheme.buttonForeground)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 10)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                .fill(CursorTheme.buttonBackground)
+                        )
                 }
                 .buttonStyle(.plain)
                 .disabled(auth.isCreatingWorkspace || auth.newWorkspaceName.trimmingCharacters(in: .whitespaces).isEmpty)
             }
         }
-    }
-
-    private var continueButton: some View {
-        Button {
-            Task { await auth.confirmWorkspaceSelection() }
-        } label: {
-            Text("Continue")
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundStyle(auth.selectedMembership == nil ? CursorTheme.foregroundDim : CursorTheme.accent)
-        }
-        .buttonStyle(.plain)
-        .disabled(auth.selectedMembership == nil || auth.isLoading)
+        .padding(.vertical, 4)
     }
 }
