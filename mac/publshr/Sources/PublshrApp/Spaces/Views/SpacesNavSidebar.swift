@@ -6,7 +6,7 @@ struct SpacesNavSidebar: View {
     @ObservedObject var spaces: SpacesViewModel
 
     var body: some View {
-        LibraryUniversalSubmenuContainer {
+        LibraryUniversalSubmenuContainer(width: LibraryUniversalSubmenu.width) {
             VStack(alignment: .leading, spacing: 0) {
                 if let error = spaces.errorMessage, !error.isEmpty {
                     Text(error)
@@ -17,17 +17,19 @@ struct SpacesNavSidebar: View {
                 }
 
                 spacesListSection
+                    .frame(maxHeight: spaces.selectedSpaceId == nil ? .infinity : 160)
 
                 if spaces.selectedSpaceId != nil {
                     LibraryUniversalSubmenu.sectionDivider()
                     ScrollView {
                         SpacesHierarchyTreeView(spaces: spaces)
                     }
-                    .frame(maxHeight: .infinity)
+                    .frame(minHeight: 0, maxHeight: .infinity)
                 } else {
                     Spacer(minLength: 0)
                 }
             }
+            .frame(minHeight: 0, maxHeight: .infinity)
         } footer: {
             createSpaceField
         }
@@ -41,19 +43,45 @@ struct SpacesNavSidebar: View {
                 VStack(spacing: 2) {
                     let pinned = spaces.filteredSpaces.filter(\.isPinned)
                     let rest = spaces.filteredSpaces.filter { !$0.isPinned }
-                    if !pinned.isEmpty {
-                        subsectionLabel("Pinned")
-                        ForEach(pinned) { space in
-                            spaceRow(space)
+                    if spaces.filteredSpaces.isEmpty {
+                        if let err = spaces.errorMessage, !err.isEmpty {
+                            Text(err)
+                                .font(.system(size: 11))
+                                .foregroundStyle(CursorTheme.error)
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 8)
+                            Button("Retry") {
+                                Task { await spaces.reload() }
+                            }
+                            .buttonStyle(.bordered)
+                            .controlSize(.small)
+                            .padding(.horizontal, 16)
+                        } else if spaces.isLoading {
+                            ProgressView()
+                                .controlSize(.small)
+                                .padding(12)
+                        } else {
+                            Text("No spaces yet")
+                                .font(.system(size: 11))
+                                .foregroundStyle(LibraryGlassDesign.inkMuted)
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 8)
+                        }
+                    } else {
+                        if !pinned.isEmpty {
+                            subsectionLabel("Pinned")
+                            ForEach(pinned) { space in
+                                spaceRow(space)
+                            }
+                        }
+                        if !rest.isEmpty {
+                            if !pinned.isEmpty { subsectionLabel("All spaces") }
+                            ForEach(rest) { space in
+                                spaceRow(space)
+                            }
                         }
                     }
-                    if !rest.isEmpty {
-                        if !pinned.isEmpty { subsectionLabel("All spaces") }
-                        ForEach(rest) { space in
-                            spaceRow(space)
-                        }
-                    }
-                    if spaces.filteredSpaces.isEmpty && !spaces.searchQuery.isEmpty {
+                    if spaces.filteredSpaces.isEmpty, !spaces.searchQuery.isEmpty {
                         Text("No matches")
                             .font(.system(size: 11))
                             .foregroundStyle(LibraryGlassDesign.inkMuted)

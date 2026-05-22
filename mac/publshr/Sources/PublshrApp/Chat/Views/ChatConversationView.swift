@@ -89,6 +89,7 @@ struct ChatConversationView: View {
                 onVoiceNote: { showVoiceSheet = true }
             )
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .onDrop(of: [.fileURL], isTargeted: nil) { providers in
             handleDrop(providers)
         }

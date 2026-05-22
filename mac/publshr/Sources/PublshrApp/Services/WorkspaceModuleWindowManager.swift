@@ -47,11 +47,13 @@ final class WorkspaceModuleWindowManager: ObservableObject {
         let root: AnyView = {
             switch module {
             case .chat:
-                return AnyView(
-                    EnterpriseChatView(chat: chat, topInset: 12, embedInPopOut: true)
-                        .environmentObject(auth)
-                        .environmentObject(subscription)
-                )
+                let chatRoot = EnterpriseChatView(chat: chat, topInset: 12, embedInPopOut: true)
+                    .environmentObject(auth)
+                    .environmentObject(subscription)
+                if let calls {
+                    return AnyView(chatRoot.environmentObject(calls))
+                }
+                return AnyView(chatRoot)
             case .spaces:
                 return AnyView(
                     SpacesRootView(spaces: spaces, topInset: 12, embedInPopOut: true)

@@ -187,14 +187,20 @@ struct LibraryBarMenuColumn: View {
     }
 
     private func openFirstUnread() {
-        let all = chat.filteredChannels + chat.filteredDMs
-        if let ch = all.first(where: { chat.unreadCount(for: $0.id) > 0 }) {
+        tabStore.sidebarExpanded = true
+        chat.setSidebarFilter(.unread)
+        let all = chat.channels + chat.directMessages
+        if let ch = all.first(where: {
+            chat.unreadCount(for: $0.id) > 0 || chat.hasUnreadThreadReplies(for: $0.id)
+        }) {
             tabStore.openFromChannel(ch)
             chat.selectChannel(ch)
         } else if let first = all.first {
+            chat.setSidebarFilter(.all)
             tabStore.openFromChannel(first)
             chat.selectChannel(first)
         } else {
+            chat.setSidebarFilter(.all)
             showNewDM = true
         }
     }

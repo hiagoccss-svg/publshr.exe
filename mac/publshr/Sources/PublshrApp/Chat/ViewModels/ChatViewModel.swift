@@ -230,9 +230,14 @@ final class ChatViewModel: ObservableObject {
             errorMessage = nil
             selectFirstChannelIfNeeded()
             await loadPlannerTasks()
+            if filteredChannels.isEmpty, filteredDMs.isEmpty,
+               sidebarFilter != .all, !channels.isEmpty || !directMessages.isEmpty {
+                setSidebarFilter(.all)
+            }
         } catch {
             if channels.isEmpty { errorMessage = error.localizedDescription }
             isOffline = true
+            if sidebarFilter != .all { setSidebarFilter(.all) }
         }
     }
 

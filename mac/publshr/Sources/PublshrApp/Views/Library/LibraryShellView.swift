@@ -53,9 +53,10 @@ struct LibraryShellView: View {
                         }
 
                         mainStage
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            .frame(minWidth: 420, maxWidth: .infinity, maxHeight: .infinity)
+                            .layoutPriority(0)
                     }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .frame(maxWidth: .infinity, minHeight: 0, maxHeight: .infinity)
                     .animation(.easeInOut(duration: 0.15), value: submenuHidden)
 
                     shellStatusLine
@@ -73,6 +74,22 @@ struct LibraryShellView: View {
             }
         }
         .background(Color.clear)
+        .onAppear {
+            tabStore.sidebarExpanded = true
+            syncModulesIfNeeded()
+        }
+        .onChange(of: tabStore.sidebarExpanded) { _, _ in
+            withAnimation(.easeInOut(duration: 0.2)) {}
+        }
+        .onChange(of: chat.chatFocusMode) { _, _ in
+            withAnimation(.easeInOut(duration: 0.2)) {}
+        }
+        .onChange(of: spaces.spacesFocusMode) { _, _ in
+            withAnimation(.easeInOut(duration: 0.2)) {}
+        }
+        .onChange(of: auth.selectedMembership?.workspace.id) { _, _ in
+            syncModulesIfNeeded()
+        }
     }
 
     private var mainStage: some View {
@@ -125,5 +142,25 @@ struct LibraryShellView: View {
         .padding(.horizontal, LibraryGlassDesign.outerMargin + 4)
         .padding(.vertical, 6)
         .background(Color.clear)
+    }
+
+    private func syncModulesIfNeeded() {
+        guard auth.flowState == .signedIn else { return }
+        chat.attach(auth: auth)
+        chat.applyWorkspaceContext(
+            workspace: auth.selectedWorkspace,
+            permissions: auth.workspaceChatPermissions,
+            auth: auth
+        )
+        spaces.attach(auth: auth)
+        Task {
+            await subscription.refresh(client: auth.client, workspace: auth.selectedWorkspace)
+            if chat.channels.isEmpty, chat.directMessages.isEmpty {
+                await chat.refreshAfterReconnect()
+            }
+            if spaces.spaces.isEmpty, auth.selectedWorkspace != nil {
+                await spaces.reload()
+            }
+        }
     }
 }
