@@ -32,7 +32,7 @@ Shortcuts: **⌘⇧O** or Chat menu → “Pop Out Channel”
 ### High priority
 
 1. **Mention push notifications** — detect `@user` and notify mentioned users (not only generic message toast).
-2. **Channel member management UI** — invite, remove, roles; guest/client mode enforcement in queries.
+2. ~~**Channel member management UI**~~ — `ChatChannelSettingsSheet`: invite, remove, leave, notification level; workspace admin override. Guest/client query filtering still TODO.
 3. ~~**End-to-end file upload from pop-out**~~ — implemented on `ChatChannelSession.uploadFile`.
 4. ~~**Image inline preview**~~ — `ChatMessageBubbleView` renders image attachments.
 5. **Workspace switcher** — multiple workspaces per account.
