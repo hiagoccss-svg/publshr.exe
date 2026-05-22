@@ -124,15 +124,11 @@ final class AppUpdateService: @unchecked Sendable {
             assetName: assetName
         ),
         let pageURL = URL(string: "https://github.com/\(AppReleaseConfig.githubRepo)/releases/tag/live") else {
-            throw AppUpdateError.noCompatibleAsset
-        }
-
-        if let assetBytes = await headAssetByteCount(url: downloadURL),
-           assetBytes < AppReleaseConfig.minAppAssetBytes {
-            appendSyncLog("VERSION.txt check: asset too small (\(assetBytes) bytes)")
+            appendSyncLog("VERSION.txt check: live download URL unavailable")
             return nil
         }
 
+        // Do not HEAD the tarball — GitHub returns 302 with Content-Length: 0; download validates size.
         return AvailableUpdate(
             version: manifest.fullVersion,
             build: manifest.build,
@@ -233,8 +229,18 @@ final class AppUpdateService: @unchecked Sendable {
         var env = ProcessInfo.processInfo.environment
         env["PUBLSHR_MAC_APP"] = bundlePath
         process.environment = env
-        process.standardOutput = nil
-        process.standardError = nil
+        let logURL = supportUpdatesDirectory().appendingPathComponent("last-update.log")
+        if let logHandle = try? FileHandle(forWritingTo: logURL) {
+            logHandle.seekToEndOfFile()
+            process.standardOutput = logHandle
+            process.standardError = logHandle
+        } else {
+            try? Data().write(to: logURL)
+            if let logHandle = try? FileHandle(forWritingTo: logURL) {
+                process.standardOutput = logHandle
+                process.standardError = logHandle
+            }
+        }
         try process.run()
     }
 
@@ -341,25 +347,6 @@ final class AppUpdateService: @unchecked Sendable {
             assetName: assetName,
             packageDigest: manifest.packageDigest
         )
-    }
-
-    private func headAssetByteCount(url: URL) async -> Int? {
-        var request = URLRequest(url: url)
-        request.httpMethod = "HEAD"
-        request.setValue("Publshr/1.0", forHTTPHeaderField: "User-Agent")
-        request.cachePolicy = .reloadIgnoringLocalCacheData
-        do {
-            let (_, response) = try await session.data(for: request)
-            guard let http = response as? HTTPURLResponse, (200 ... 399).contains(http.statusCode) else {
-                return nil
-            }
-            if let length = http.value(forHTTPHeaderField: "Content-Length"), let bytes = Int(length) {
-                return bytes
-            }
-            return nil
-        } catch {
-            return nil
-        }
     }
 
     private func checkVersionedFallbackSilently() async -> AvailableUpdate? {
