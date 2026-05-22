@@ -115,6 +115,28 @@ struct ChatMessageBubbleView: View {
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.top, showAvatar ? 0 : 2)
         } else if !message.attachments.isEmpty, voiceAttachment == nil {
+            attachmentContent
+        }
+    }
+
+    @ViewBuilder
+    private var attachmentContent: some View {
+        if let image = message.attachments.first(where: { $0.type == "image" }),
+           let url = URL(string: image.url) {
+            AsyncImage(url: url) { phase in
+                switch phase {
+                case .success(let img):
+                    img.resizable().scaledToFit().frame(maxHeight: 220).clipShape(RoundedRectangle(cornerRadius: 8))
+                case .failure:
+                    attachmentLabel
+                default:
+                    ProgressView().controlSize(.small)
+                }
+            }
+            Text(image.name)
+                .font(.system(size: 10))
+                .foregroundStyle(CursorTheme.foregroundDim)
+        } else {
             attachmentLabel
         }
     }

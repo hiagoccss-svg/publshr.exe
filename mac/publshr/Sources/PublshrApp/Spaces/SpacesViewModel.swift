@@ -4,6 +4,8 @@ import Supabase
 @MainActor
 final class SpacesViewModel: ObservableObject {
     @Published private(set) var spaces: [SpaceRecord] = []
+    @Published private(set) var folders: [SpaceFolderRecord] = []
+    @Published private(set) var lists: [SpaceListRecord] = []
     @Published private(set) var tasks: [SpaceTaskRecord] = []
     @Published private(set) var activity: [SpaceActivityRecord] = []
     @Published private(set) var documents: [SpaceDocumentRecord] = []
@@ -11,6 +13,8 @@ final class SpacesViewModel: ObservableObject {
     @Published var profiles: [UUID: Profile] = [:]
 
     @Published var selectedSpaceId: UUID?
+    @Published var selectedFolderId: UUID?
+    @Published var selectedListId: UUID?
     @Published var selectedTaskId: UUID?
     @Published var taskView: TaskViewMode = .board
     @Published var searchQuery = ""
@@ -21,11 +25,13 @@ final class SpacesViewModel: ObservableObject {
     @Published private(set) var isLoading = false
     @Published var errorMessage: String?
     @Published var newSpaceName = ""
+    @Published var newFolderName = ""
+    @Published var newListName = ""
     @Published var newTaskTitle = ""
     @Published var newDocumentTitle = ""
 
     enum TaskViewMode: String, CaseIterable, Identifiable {
-        case overview, list, board
+        case overview, list, board, calendar
         var id: String { rawValue }
 
         var label: String {
@@ -33,6 +39,7 @@ final class SpacesViewModel: ObservableObject {
             case .overview: return "Overview"
             case .list: return "List"
             case .board: return "Board"
+            case .calendar: return "Calendar"
             }
         }
 
@@ -41,6 +48,7 @@ final class SpacesViewModel: ObservableObject {
             case .overview: return "square.grid.2x2"
             case .list: return "list.bullet"
             case .board: return "rectangle.split.3x1"
+            case .calendar: return "calendar"
             }
         }
     }
@@ -148,21 +156,71 @@ final class SpacesViewModel: ObservableObject {
             navigationForwardStack.removeAll()
         }
         selectedSpaceId = id
+        selectedFolderId = nil
+        selectedListId = nil
         selectedTaskId = nil
         comments = []
         await loadSpaceContext(id)
     }
 
     func loadSpaceContext(_ spaceId: UUID) async {
+        await loadHierarchy(for: spaceId)
         await loadTasks(for: spaceId)
         await loadActivity(for: spaceId)
         await loadDocuments(for: spaceId)
     }
 
+    func loadHierarchy(for spaceId: UUID) async {
+        guard let service else { return }
+        do {
+            folders = try await service.fetchFolders(spaceId: spaceId)
+            lists = try await service.fetchLists(spaceId: spaceId)
+            if selectedListId == nil, let first = lists.first {
+                selectedListId = first.id
+            }
+        } catch {
+            folders = []
+            lists = []
+        }
+    }
+
     func loadTasks(for spaceId: UUID) async {
         guard let service else { return }
         do {
-            tasks = try await service.fetchTasks(spaceId: spaceId)
+            tasks = try await service.fetchTasks(spaceId: spaceId, listId: selectedListId)
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func selectList(_ listId: UUID?) async {
+        selectedListId = listId
+        guard let spaceId = selectedSpaceId else { return }
+        await loadTasks(for: spaceId)
+    }
+
+    func createFolder() async {
+        guard let service, let spaceId = selectedSpaceId else { return }
+        let name = newFolderName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !name.isEmpty else { return }
+        do {
+            let folder = try await service.createFolder(spaceId: spaceId, name: name)
+            newFolderName = ""
+            folders.append(folder)
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func createList() async {
+        guard let service, let spaceId = selectedSpaceId else { return }
+        let name = newListName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !name.isEmpty else { return }
+        do {
+            let list = try await service.createList(spaceId: spaceId, folderId: selectedFolderId, name: name)
+            newListName = ""
+            lists.append(list)
+            await selectList(list.id)
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -256,7 +314,7 @@ final class SpacesViewModel: ObservableObject {
         let title = newTaskTitle.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !title.isEmpty else { return }
         do {
-            let task = try await service.createTask(spaceId: spaceId, title: title)
+            let task = try await service.createTask(spaceId: spaceId, title: title, listId: selectedListId)
             newTaskTitle = ""
             tasks.append(task)
             selectedTaskId = task.id
@@ -475,7 +533,7 @@ final class SpacesViewModel: ObservableObject {
     private func friendlySpacesError(_ error: Error) -> String {
         let text = error.localizedDescription.lowercased()
         if text.contains("does not exist") || text.contains("42p01") || text.contains("relation") {
-            return "Spaces tables are missing in Supabase. Apply desktop/spaces/supabase/migrations/001_spaces_schema.sql to your project."
+            return "Spaces tables are missing in Supabase. Apply supabase/migrations/20260522010000_spaces_clickup_enterprise.sql to your project."
         }
         return error.localizedDescription
     }

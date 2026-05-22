@@ -7,6 +7,10 @@ struct SpacesRootView: View {
     var body: some View {
         HStack(spacing: 0) {
             VStack(spacing: 0) {
+                if spaces.selectedSpaceId != nil {
+                    SpacesHierarchyBar(spaces: spaces)
+                    Divider().opacity(0.35)
+                }
                 workspaceContent
                 if spaces.selectedSpaceId != nil {
                     SpacesQuickAddBar(spaces: spaces)
@@ -52,6 +56,8 @@ struct SpacesRootView: View {
                 SpacesListView(spaces: spaces)
             case .overview:
                 SpacesOverviewView(spaces: spaces)
+            case .calendar:
+                SpacesCalendarView(spaces: spaces)
             }
         }
     }

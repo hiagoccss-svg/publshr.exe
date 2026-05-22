@@ -70,6 +70,16 @@ final class ChatWindowManager: ObservableObject {
         session.mergeIncoming(message)
     }
 
+    func forwardMessageUpdate(_ message: ChatMessage) {
+        sessions[message.channelId]?.applyMessageUpdate(message)
+    }
+
+    func forwardMessageDelete(_ messageId: UUID) {
+        for session in sessions.values {
+            session.applyMessageDelete(messageId)
+        }
+    }
+
     func closeAll() {
         windows.values.forEach { $0.close() }
         sessions.values.forEach { $0.teardown() }

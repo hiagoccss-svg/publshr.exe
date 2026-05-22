@@ -1,0 +1,29 @@
+name: Verify Spaces desktop
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'desktop/spaces/**'
+      - 'supabase/migrations/**'
+  pull_request:
+    paths:
+      - 'desktop/spaces/**'
+      - 'supabase/migrations/**'
+
+jobs:
+  typecheck-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: desktop/spaces/package-lock.json
+      - name: Install and verify
+        working-directory: desktop/spaces
+        run: |
+          npm ci
+          npm run typecheck
+          npm run build

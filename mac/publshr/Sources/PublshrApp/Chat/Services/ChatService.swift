@@ -7,6 +7,7 @@ final class ChatService {
     let client: SupabaseClient
     let store: ChatLocalStore
     private var realtimeTask: Task<Void, Never>?
+    private var messageUpdateTask: Task<Void, Never>?
     private let jsonDecoder: JSONDecoder = {
         let d = JSONDecoder()
         d.dateDecodingStrategy = .iso8601
@@ -21,6 +22,19 @@ final class ChatService {
     func stopRealtime() {
         realtimeTask?.cancel()
         realtimeTask = nil
+        messageUpdateTask?.cancel()
+        messageUpdateTask = nil
+    }
+
+    func updateWorkspaceSettings(workspaceId: UUID, settings: [String: JSONValue]) async throws {
+        struct Patch: Encodable {
+            let settings: [String: JSONValue]
+        }
+        try await client
+            .from("workspaces")
+            .update(Patch(settings: settings))
+            .eq("id", value: workspaceId.uuidString)
+            .execute()
     }
 
     // MARK: - Workspace
@@ -297,6 +311,49 @@ final class ChatService {
                 guard let record = try? action.decodeRecord(as: ChatMessage.self, decoder: self.jsonDecoder) else { continue }
                 store.upsertMessage(record)
                 onInsert(record)
+            }
+        }
+    }
+
+    func subscribeMessageUpdates(
+        workspaceId: UUID,
+        onUpdate: @escaping @Sendable (ChatMessage) -> Void,
+        onDelete: @escaping @Sendable (UUID) -> Void
+    ) {
+        messageUpdateTask?.cancel()
+        messageUpdateTask = Task {
+            let channel = await client.channel("chat-msg-updates-\(workspaceId.uuidString)")
+            let updates = await channel.postgresChange(
+                UpdateAction.self,
+                schema: "public",
+                table: "chat_messages",
+                filter: "workspace_id=eq.\(workspaceId.uuidString)"
+            )
+            let deletes = await channel.postgresChange(
+                DeleteAction.self,
+                schema: "public",
+                table: "chat_messages",
+                filter: "workspace_id=eq.\(workspaceId.uuidString)"
+            )
+            await channel.subscribe()
+            await withTaskGroup(of: Void.self) { group in
+                group.addTask {
+                    for await action in updates {
+                        guard let record = try? action.decodeRecord(as: ChatMessage.self, decoder: self.jsonDecoder) else { continue }
+                        self.store.upsertMessage(record)
+                        if record.isDeleted {
+                            onDelete(record.id)
+                        } else {
+                            onUpdate(record)
+                        }
+                    }
+                }
+                group.addTask {
+                    for await action in deletes {
+                        guard let id = try? action.decodeOldRecord(as: ChatMessage.self, decoder: self.jsonDecoder)?.id else { continue }
+                        onDelete(id)
+                    }
+                }
             }
         }
     }
