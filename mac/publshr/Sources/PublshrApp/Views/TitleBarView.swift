@@ -21,10 +21,30 @@ struct TitleBarView: View {
                 .background(CursorTheme.inputBackground.opacity(0.6))
                 .clipShape(RoundedRectangle(cornerRadius: 4))
 
+            if !auth.workspaceMemberships.isEmpty {
+                Menu {
+                    ForEach(auth.workspaceMemberships) { m in
+                        Button {
+                            auth.switchWorkspace(m)
+                        } label: {
+                            Text("\(m.workspace.name) · \(m.role.label)")
+                        }
+                    }
+                } label: {
+                    HStack(spacing: 4) {
+                        Text(auth.selectedMembership?.workspace.name ?? "Workspace")
+                            .font(.system(size: 11, weight: .medium))
+                        Image(systemName: "chevron.down")
+                            .font(.system(size: 8))
+                    }
+                    .foregroundStyle(CursorTheme.foregroundMuted)
+                }
+                .menuStyle(.borderlessButton)
+            }
             if let profile = auth.profile {
                 Text(profile.displayName ?? profile.email)
                     .font(.system(size: 11))
-                    .foregroundStyle(CursorTheme.foregroundMuted)
+                    .foregroundStyle(CursorTheme.foregroundDim)
                     .lineLimit(1)
             }
 
