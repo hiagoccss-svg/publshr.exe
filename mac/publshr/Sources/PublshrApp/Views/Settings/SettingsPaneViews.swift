@@ -8,11 +8,13 @@ struct SettingsUpdatesPane: View {
 
     var body: some View {
         Form {
-            Section("Live channel") {
-                LabeledContent("Status", value: updates.statusLine)
-                LabeledContent("Sync", value: updates.lastSyncLine)
+            Section("GitHub live channel") {
+                LabeledContent("Status", value: updates.githubStatusLine)
+                LabeledContent("Installed", value: AppReleaseConfig.installedLabel)
                 LabeledContent("Installed build", value: "\(AppReleaseConfig.buildNumber)")
-                LabeledContent("Shell", value: AppShellIdentity.distributionTag)
+                LabeledContent("Installed shell", value: AppReleaseConfig.liveShellTag)
+                LabeledContent("Installed commit", value: commitLabel(AppReleaseConfig.liveCommit))
+                LabeledContent("Remote (live)", value: remoteDetailLabel)
                 Toggle("Auto-check every minute", isOn: $updates.autoCheckEnabled)
                     .onChange(of: updates.autoCheckEnabled) { _, on in
                         if on {
@@ -22,10 +24,23 @@ struct SettingsUpdatesPane: View {
                         }
                     }
                 Toggle("Install updates automatically", isOn: $updates.autoInstallEnabled)
-                Button("Sync now") {
-                    Task { await updates.installLiveUpdateNow() }
+            }
+            Section("Supabase (Chat & Spaces)") {
+                LabeledContent("Cloud sync", value: updates.cloudSyncLine)
+                Text("Refreshes messages, channels, spaces, subscription, and devices from your Supabase project on the same schedule as the live channel check.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Section {
+                Button(updates.settingsActionTitle) {
+                    NotificationCenter.default.post(name: .publshrPerformLiveSync, object: nil)
                 }
                 .disabled(updates.isActivelyUpdating)
+                if let err = updates.settingsErrorMessage {
+                    Text(err)
+                        .font(.caption)
+                        .foregroundStyle(.red)
+                }
             }
         }
         .formStyle(.grouped)
@@ -34,8 +49,20 @@ struct SettingsUpdatesPane: View {
             if updates.autoCheckEnabled {
                 updates.startAutomaticChecks()
             }
-            Task { await updates.performLiveSync() }
+            NotificationCenter.default.post(name: .publshrPerformLiveSync, object: nil)
         }
+    }
+
+    private var remoteDetailLabel: String {
+        if let remote = updates.remoteManifest {
+            return remote.detailLabel
+        }
+        return "— (check live channel)"
+    }
+
+    private func commitLabel(_ commit: String) -> String {
+        if commit.isEmpty { return "—" }
+        return String(commit.prefix(7))
     }
 }
 

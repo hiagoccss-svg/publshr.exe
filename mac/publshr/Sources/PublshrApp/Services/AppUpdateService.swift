@@ -71,6 +71,9 @@ enum AppUpdateError: LocalizedError {
 final class AppUpdateService: @unchecked Sendable {
     static let shared = AppUpdateService()
 
+    /// Last `live/VERSION.txt` successfully read (used by Settings for remote detail).
+    private(set) var lastRemoteManifest: LiveChannelManifest?
+
     private let session: URLSession
     private let fileManager = FileManager.default
     private let decoder = JSONDecoder()
@@ -138,10 +141,10 @@ final class AppUpdateService: @unchecked Sendable {
             return .unavailable
         }
 
+        lastRemoteManifest = manifest
         appendSyncLog(
             "VERSION.txt check: local=\(AppReleaseConfig.installedLabel) "
-                + "remote=\(manifest.fullVersion) build=\(manifest.build) "
-                + "commit=\(manifest.commit.prefix(7)) digest=\(manifest.packageDigest?.prefix(12) ?? "—")"
+                + "remote=\(manifest.detailLabel)"
         )
 
         guard manifest.isNewerThanInstalled() else {
@@ -386,10 +389,10 @@ final class AppUpdateService: @unchecked Sendable {
             return nil
         }
 
+        lastRemoteManifest = manifest
         appendSyncLog(
             "live check: local=\(AppReleaseConfig.installedLabel) "
-                + "remote=\(manifest.fullVersion) build=\(manifest.build) "
-                + "commit=\(manifest.commit.prefix(7)) asset=\(asset.size)"
+                + "remote=\(manifest.detailLabel) asset=\(asset.size)"
         )
 
         guard manifest.isNewerThanInstalled() else { return nil }
@@ -441,7 +444,26 @@ final class AppUpdateService: @unchecked Sendable {
         guard let build = parseBuildNumber(from: live) else { return nil }
         let version = parseVersionLabel(from: live) ?? "\(AppReleaseConfig.shortVersion).\(build)"
         let commit = parseCommitSha(from: live) ?? ""
-        return LiveChannelManifest(fullVersion: version, build: build, commit: commit, packageDigest: nil)
+        let shell = parseShellTag(from: live) ?? AppShellIdentity.distributionTag
+        return LiveChannelManifest(
+            fullVersion: version,
+            build: build,
+            commit: commit,
+            packageDigest: nil,
+            shellTag: shell
+        )
+    }
+
+    private func parseShellTag(from release: GitHubRelease) -> String? {
+        let text = release.body ?? ""
+        for line in text.split(separator: "\n") {
+            let s = String(line)
+            guard s.contains("shell:") else { continue }
+            let value = s.split(separator: ":", maxSplits: 1).last?
+                .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            if !value.isEmpty { return value }
+        }
+        return nil
     }
 
     private func parseCommitSha(from release: GitHubRelease) -> String? {
