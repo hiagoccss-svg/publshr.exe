@@ -32,6 +32,27 @@ CREATE TABLE IF NOT EXISTS spaces (
   sync_pending INTEGER NOT NULL DEFAULT 0
 );
 
+CREATE TABLE IF NOT EXISTS space_folders (
+  id TEXT PRIMARY KEY,
+  space_id TEXT NOT NULL REFERENCES spaces(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  sort_order REAL NOT NULL DEFAULT 0,
+  is_archived INTEGER NOT NULL DEFAULT 0,
+  updated_at TEXT NOT NULL,
+  sync_pending INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS space_lists (
+  id TEXT PRIMARY KEY,
+  space_id TEXT NOT NULL REFERENCES spaces(id) ON DELETE CASCADE,
+  folder_id TEXT REFERENCES space_folders(id) ON DELETE SET NULL,
+  name TEXT NOT NULL,
+  sort_order REAL NOT NULL DEFAULT 0,
+  is_archived INTEGER NOT NULL DEFAULT 0,
+  updated_at TEXT NOT NULL,
+  sync_pending INTEGER NOT NULL DEFAULT 0
+);
+
 CREATE TABLE IF NOT EXISTS space_members (
   id TEXT PRIMARY KEY,
   space_id TEXT NOT NULL REFERENCES spaces(id) ON DELETE CASCADE,
@@ -46,6 +67,7 @@ CREATE TABLE IF NOT EXISTS space_members (
 CREATE TABLE IF NOT EXISTS tasks (
   id TEXT PRIMARY KEY,
   space_id TEXT NOT NULL REFERENCES spaces(id) ON DELETE CASCADE,
+  list_id TEXT REFERENCES space_lists(id) ON DELETE SET NULL,
   title TEXT NOT NULL,
   description TEXT NOT NULL DEFAULT '',
   status TEXT NOT NULL DEFAULT 'todo',
@@ -154,6 +176,9 @@ CREATE TABLE IF NOT EXISTS search_index (
 );
 
 CREATE INDEX IF NOT EXISTS idx_tasks_space ON tasks(space_id);
+CREATE INDEX IF NOT EXISTS idx_tasks_list ON tasks(list_id);
+CREATE INDEX IF NOT EXISTS idx_folders_space ON space_folders(space_id);
+CREATE INDEX IF NOT EXISTS idx_lists_space ON space_lists(space_id);
 CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status);
 CREATE INDEX IF NOT EXISTS idx_activity_space ON space_activity(space_id);
 CREATE INDEX IF NOT EXISTS idx_search_title ON search_index(title);

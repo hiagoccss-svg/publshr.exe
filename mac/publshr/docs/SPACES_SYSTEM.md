@@ -34,9 +34,9 @@ Apply enterprise schema: `supabase/migrations/20260522010000_spaces_clickup_ente
 
 ## Live features
 
-- **Spaces** CRUD, pin, search; sidebar 272pt with pinned sections
-- **Folders** create (auto-creates default List, ClickUp-style); expand/collapse tree
-- **Lists** create in space or folder; filter tasks by list; “All tasks” view
+- **Spaces** CRUD, pin, search; sidebar 272pt with pinned sections; inline + sheet create
+- **Folders** create (auto-creates default List, ClickUp-style); expand/collapse tree; rename API
+- **Lists** create in space or folder; filter tasks by list; “All tasks” view; rename API
 - **Tasks** board (280pt columns), list, calendar, overview; drag status; inspector 340pt
 - **Documents** create, sidebar + overview links, editor sheet (560×520)
 - **Comments**, activity log, assignee, priority, due, tags, checklist

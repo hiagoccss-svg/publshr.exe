@@ -59,7 +59,9 @@ export function CommandPalette(): React.ReactElement {
 
           <Command.Group heading="Actions" className="text-[10px] font-semibold uppercase text-ink-muted">
             <CommandItem onSelect={() => run(() => void createTask('New task'))}>Create task</CommandItem>
-            <CommandItem onSelect={() => run(() => void createSpace('New Space'))}>Create Space</CommandItem>
+            <CommandItem onSelect={() => run(() => void createSpace({ name: 'New Space' }))}>
+              Create Space
+            </CommandItem>
             <CommandItem onSelect={() => run(() => setTaskView('board'))}>Open board view</CommandItem>
             <CommandItem onSelect={() => run(() => setTaskView('list'))}>Open list view</CommandItem>
             <CommandItem onSelect={() => run(() => setTaskView('timeline' as TaskViewMode))}>

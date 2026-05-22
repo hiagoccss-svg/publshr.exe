@@ -114,6 +114,30 @@ final class SpacesService {
             .value
     }
 
+    func updateFolder(id: UUID, name: String) async throws -> SpaceFolderRecord {
+        struct Patch: Encodable { let name: String }
+        return try await client
+            .from("space_folders")
+            .update(Patch(name: name))
+            .eq("id", value: id.uuidString)
+            .select()
+            .single()
+            .execute()
+            .value
+    }
+
+    func updateList(id: UUID, name: String) async throws -> SpaceListRecord {
+        struct Patch: Encodable { let name: String }
+        return try await client
+            .from("space_lists")
+            .update(Patch(name: name))
+            .eq("id", value: id.uuidString)
+            .select()
+            .single()
+            .execute()
+            .value
+    }
+
     // MARK: - Tasks
 
     func fetchTasks(spaceId: UUID, listId: UUID? = nil) async throws -> [SpaceTaskRecord] {

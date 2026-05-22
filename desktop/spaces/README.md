@@ -12,16 +12,13 @@ Enterprise operations and project management module for Publshr — a desktop-na
 
 ## Phase 1 (implemented)
 
-- Full desktop shell: top bar, sidebar, workspace, context panel
-- Spaces CRUD (empty states — no demo seed data)
-- Task system with statuses, priorities, checklists
-- **List** and **Board** views with drag-and-drop
-- Space **Overview** dashboard
-- Command palette (`⌘K` / `Ctrl+K`)
-- Global search via local SQLite index
-- Multi-window: main, per-Space, per-Document
-- Offline-first writes with `sync_queue`
-- Supabase migration + realtime subscription scaffold
+- Full desktop shell: top bar, **272px** Spaces sidebar, workspace, **340px** context panel
+- **ClickUp hierarchy**: Space → Folder → List → Tasks (`space_folders`, `space_lists`, `list_id`)
+- Spaces create modal; folder/list tree; breadcrumbs; quick-add task
+- Task inspector: status, priority, assignee, due date, tags, checklist, comments
+- **Overview**, **List**, **Board**, **Calendar** views; board drag-and-drop status
+- Command palette (`⌘K` / `Ctrl+K`); global search via SQLite index
+- Multi-window scaffold; offline `sync_queue`; optional Supabase sync
 
 ## Phase 2–4 (planned)
 

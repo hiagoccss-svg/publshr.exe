@@ -18,6 +18,7 @@ import {
 } from 'lucide-react'
 import clsx from 'clsx'
 import { useSpacesStore } from '../../stores/spaces-store'
+import { SpacesHierarchyTree } from '../spaces/SpacesHierarchyTree'
 import type { SidebarSection } from '../../../shared/types'
 
 const NAV: { id: SidebarSection; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
@@ -43,10 +44,10 @@ export function Sidebar({ collapsed }: SidebarProps): React.ReactElement {
   const activeSection = useSpacesStore((s) => s.activeSection)
   const setActiveSection = useSpacesStore((s) => s.setActiveSection)
   const spaces = useSpacesStore((s) => s.spaces)
-  const activeSpaceId = useSpacesStore((s) => s.activeSpaceId)
   const setActiveSpace = useSpacesStore((s) => s.setActiveSpace)
   const setSidebarCollapsed = useSpacesStore((s) => s.setSidebarCollapsed)
-  const createSpace = useSpacesStore((s) => s.createSpace)
+  const setNewSpaceModalOpen = useSpacesStore((s) => s.setNewSpaceModalOpen)
+  const activeSpaceId = useSpacesStore((s) => s.activeSpaceId)
 
   const pinned = spaces.filter((s) => s.isPinned)
   const recent = spaces.filter((s) => !s.isPinned && !s.isArchived).slice(0, 8)
@@ -55,7 +56,7 @@ export function Sidebar({ collapsed }: SidebarProps): React.ReactElement {
     <aside
       className={clsx(
         'flex shrink-0 flex-col border-r border-surface-border bg-surface-raised transition-[width] duration-200',
-        collapsed ? 'w-14' : 'w-56'
+        collapsed ? 'w-14' : activeSection === 'spaces' && activeSpaceId ? 'w-[272px]' : 'w-56'
       )}
     >
       <div className="flex items-center justify-between px-3 py-2">
@@ -108,14 +109,12 @@ export function Sidebar({ collapsed }: SidebarProps): React.ReactElement {
             />
             <button
               type="button"
-              onClick={() => {
-                const name = window.prompt('Space name')
-                if (name?.trim()) void createSpace(name.trim())
-              }}
+              onClick={() => setNewSpaceModalOpen(true)}
               className="w-full rounded-lg border border-dashed border-surface-border py-2 text-xs text-ink-muted hover:border-accent/30 hover:text-accent"
             >
               + New Space
             </button>
+            {activeSpaceId && <SpacesHierarchyTree />}
           </div>
         )}
       </nav>

@@ -82,6 +82,25 @@ export interface Space {
   createdAt: string
 }
 
+export interface SpaceFolder {
+  id: string
+  spaceId: string
+  name: string
+  sortOrder: number
+  isArchived: boolean
+  updatedAt: string
+}
+
+export interface SpaceList {
+  id: string
+  spaceId: string
+  folderId: string | null
+  name: string
+  sortOrder: number
+  isArchived: boolean
+  updatedAt: string
+}
+
 export interface SpaceMember {
   id: string
   spaceId: string
@@ -96,6 +115,7 @@ export interface SpaceMember {
 export interface Task {
   id: string
   spaceId: string
+  listId: string | null
   title: string
   description: string
   status: TaskStatus
@@ -196,6 +216,7 @@ export interface SearchResult {
 
 export interface CreateTaskInput {
   spaceId: string
+  listId?: string | null
   title: string
   status?: TaskStatus
   priority?: TaskPriority
@@ -210,6 +231,7 @@ export interface UpdateTaskInput {
   status?: TaskStatus
   priority?: TaskPriority
   assigneeId?: string | null
+  listId?: string | null
   startDate?: string | null
   dueDate?: string | null
   tags?: string[]
@@ -223,8 +245,20 @@ export interface SpacesAPI {
   getSpace: (id: string) => Promise<Space | null>
   createSpace: (input: Partial<Space> & { name: string }) => Promise<Space>
   updateSpace: (id: string, patch: Partial<Space>) => Promise<Space>
-  listTasks: (spaceId: string) => Promise<Task[]>
+  listFolders: (spaceId: string) => Promise<SpaceFolder[]>
+  createFolder: (spaceId: string, name: string) => Promise<SpaceFolder>
+  updateFolder: (id: string, patch: { name?: string }) => Promise<SpaceFolder>
+  listLists: (spaceId: string) => Promise<SpaceList[]>
+  createList: (spaceId: string, name: string, folderId?: string | null) => Promise<SpaceList>
+  updateList: (id: string, patch: { name?: string }) => Promise<SpaceList>
+  listTasks: (spaceId: string, listId?: string | null) => Promise<Task[]>
   createTask: (input: CreateTaskInput) => Promise<Task>
+  listComments: (taskId: string) => Promise<SpaceComment[]>
+  createComment: (input: {
+    spaceId: string
+    taskId: string
+    body: string
+  }) => Promise<SpaceComment>
   updateTask: (input: UpdateTaskInput) => Promise<Task>
   deleteTask: (id: string) => Promise<void>
   listActivity: (spaceId: string, limit?: number) => Promise<SpaceActivity[]>
