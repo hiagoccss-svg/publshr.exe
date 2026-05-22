@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Cursor Mac 3-column shell — grey side columns, white boxed editor column, minimal titlebar.
+/// Cursor Mac 3-column shell — per-column title bands, no global header divider.
 struct LibraryShellView: View {
     @EnvironmentObject private var auth: AuthViewModel
     @EnvironmentObject private var chat: ChatViewModel
@@ -23,10 +23,7 @@ struct LibraryShellView: View {
         GeometryReader { geometry in
             ZStack(alignment: .top) {
                 WorkspaceDesktopBackdrop()
-
                 shellBody
-
-                titlebarOverlay
             }
             .frame(width: geometry.size.width, height: geometry.size.height)
         }
@@ -50,35 +47,26 @@ struct LibraryShellView: View {
         }
     }
 
-    private var titlebarOverlay: some View {
-        LibraryShellHeaderView(
-            spaces: spaces,
-            module: $module,
-            showNewChannel: $showNewChannel,
-            showNewDM: $showNewDM,
-            showCommandPalette: $showCommandPalette,
-            showNotificationsPanel: $showNotificationsPanel,
-            reservesTrafficLightLeadingInset: false
-        )
-        .frame(height: AppWindowChromeMetrics.unifiedTitlebarRowHeight)
-        .frame(maxWidth: .infinity, alignment: .top)
-    }
-
     private var shellBody: some View {
-        VStack(spacing: 0) {
-            Color.clear
-                .frame(height: AppWindowChromeMetrics.unifiedTitlebarRowHeight)
-                .accessibilityHidden(true)
-
-            HStack(alignment: .top, spacing: 0) {
+        HStack(alignment: .top, spacing: 0) {
+            ShellColumnChromeStack(
+                headerKind: .primaryLeading,
+                appliesSidebarChrome: true
+            ) {
                 LibraryBarMenuColumn(
                     module: $module,
                     showNewChannel: $showNewChannel,
                     showNewDM: $showNewDM
                 )
-                .cursorColumnDividerTrailing()
+            }
+            .fixedSize(horizontal: true, vertical: false)
+            .layoutPriority(2)
 
-                if !submenuHidden {
+            if !submenuHidden {
+                ShellColumnChromeStack(
+                    headerKind: .secondaryChrome,
+                    appliesSidebarChrome: true
+                ) {
                     AppSecondarySidebar(
                         module: module,
                         chat: chat,
@@ -86,26 +74,50 @@ struct LibraryShellView: View {
                         showNewChannel: $showNewChannel,
                         showNewDM: $showNewDM
                     )
-                    .cursorColumnDividerTrailing()
-                    .transition(.move(edge: .leading).combined(with: .opacity))
                 }
-
-                mainStage
-                    .frame(minWidth: 420, maxWidth: .infinity, maxHeight: .infinity)
-                    .layoutPriority(0)
+                .fixedSize(horizontal: true, vertical: false)
+                .layoutPriority(2)
+                .transition(.move(edge: .leading).combined(with: .opacity))
             }
-            .frame(maxWidth: .infinity, minHeight: 0, maxHeight: .infinity)
-            .animation(.easeInOut(duration: 0.15), value: submenuHidden)
+
+            editorColumn
+                .frame(minWidth: 420, maxWidth: .infinity, maxHeight: .infinity)
+                .layoutPriority(0)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .animation(.easeInOut(duration: 0.15), value: submenuHidden)
     }
 
-    private var mainStage: some View {
-        moduleContent
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .cursorEditorColumnBox()
-            .padding(CursorMacShellDesign.editorBoxPadding)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(CursorMacShellDesign.workspaceBackground)
+    private var editorColumn: some View {
+        ShellColumnChromeStack(
+            headerKind: .editor(
+                title: editorColumnTitle,
+                module: $module,
+                showCommandPalette: $showCommandPalette,
+                showNotificationsPanel: $showNotificationsPanel
+            )
+        ) {
+            moduleContent
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .cursorEditorColumnBox()
+                .padding(CursorMacShellDesign.editorBoxPadding)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(CursorMacShellDesign.workspaceBackground)
+    }
+
+    private var editorColumnTitle: String {
+        switch module {
+        case .chat:
+            if let channel = chat.selectedChannel {
+                return channel.displayTitle
+            }
+            return auth.selectedWorkspace?.name ?? "Chat"
+        case .spaces:
+            return spaces.selectedSpace?.name ?? "Spaces"
+        case .settings:
+            return "Settings"
+        }
     }
 
     @ViewBuilder

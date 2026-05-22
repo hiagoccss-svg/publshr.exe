@@ -14,7 +14,7 @@ struct LibraryBarMenuColumn: View {
         VStack(spacing: 0) {
             dateBlock
                 .padding(.horizontal, 16)
-                .padding(.top, 14)
+                .padding(.top, 10)
                 .padding(.bottom, 12)
 
             primaryCTA
@@ -70,9 +70,6 @@ struct LibraryBarMenuColumn: View {
         }
         .frame(width: LibraryGlassDesign.barMenuWidth)
         .frame(maxHeight: .infinity)
-        .fixedSize(horizontal: true, vertical: false)
-        .layoutPriority(2)
-        .glassSidebar()
     }
 
     private var dateBlock: some View {
