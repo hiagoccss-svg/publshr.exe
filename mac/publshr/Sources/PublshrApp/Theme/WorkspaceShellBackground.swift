@@ -3,7 +3,7 @@ import SwiftUI
 
 /// Desktop wallpaper bleed-through + layered glass for the library shell.
 enum WorkspaceShellBackground {
-    static let desktopBlurMaterial: NSVisualEffectView.Material = .hudWindow
+    static let desktopBlurMaterial: NSVisualEffectView.Material = .underWindowBackground
     static let desktopBlurBlending: NSVisualEffectView.BlendingMode = .behindWindow
 }
 
@@ -18,7 +18,7 @@ struct WorkspaceDesktopBackdrop: View {
             // Subtle warm tint only — must not read as solid white.
             LinearGradient(
                 colors: [
-                    LibraryGlassDesign.shellBackground.opacity(0.08),
+                    LibraryGlassDesign.shellBackground.opacity(0.04),
                     Color.clear,
                 ],
                 startPoint: .topLeading,

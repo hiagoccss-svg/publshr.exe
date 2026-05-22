@@ -21,42 +21,35 @@ struct WorkspaceHeaderView: View {
         safeAreaTop > 0 ? safeAreaTop : CursorTheme.windowChromeTopInset
     }
 
-    private var totalHeaderHeight: CGFloat {
-        trafficLightBandHeight + CursorTheme.workspaceHeaderHeight
+    private var titlebarHeight: CGFloat {
+        AppWindowChromeMetrics.titlebarHeight(safeAreaTop: trafficLightBandHeight)
     }
 
     var body: some View {
-        VStack(spacing: 0) {
+        HStack(alignment: .bottom, spacing: AppWindowChromeMetrics.rowSpacing) {
             Color.clear
-                .frame(height: trafficLightBandHeight)
-                .frame(maxWidth: .infinity)
-                .accessibilityHidden(true)
+                .frame(width: AppWindowChromeMetrics.trafficLightLeadingInset)
 
-            HStack(alignment: .center, spacing: 0) {
-                HStack(spacing: 0) {
-                    leadingControls
+            HStack(alignment: .bottom, spacing: 0) {
+                leadingControls
+                tabStrip
+                    .frame(maxWidth: .infinity)
+                trailingActions
+            }
+            .padding(.leading, 4)
 
-                    tabStrip
-                        .frame(maxWidth: .infinity)
+            Spacer(minLength: 8)
 
-                    trailingActions
-                        .padding(.trailing, 4)
-                }
-                .padding(.leading, 8)
-                .frame(height: CursorTheme.workspaceHeaderHeight)
-
+            HStack(alignment: .bottom, spacing: AppWindowChromeMetrics.trailingClusterSpacing) {
+                AskAIChromeButton { chat.showAISheet = true }
                 headerSettingsButton
-                    .padding(.trailing, 10)
             }
         }
-        .frame(height: totalHeaderHeight)
+        .padding(.trailing, 12)
+        .padding(.bottom, AppWindowChromeMetrics.trafficLightBaselineInset)
+        .frame(height: titlebarHeight, alignment: .bottom)
         .frame(maxWidth: .infinity)
-        .background {
-            Rectangle()
-                .fill(.ultraThinMaterial)
-                .background(LibraryGlassDesign.headerGlass)
-        }
-        .background(Color.clear)
+        .background { AppWindowChromeBackground() }
         .overlay(alignment: .bottom) {
             Rectangle()
                 .fill(LibraryGlassDesign.hairline)
@@ -262,8 +255,6 @@ struct WorkspaceHeaderView: View {
                     detachTab(tab)
                 }
             }
-
-            ToolbarIconButton(systemName: "sparkles", help: "AI") { chat.showAISheet = true }
 
             HeaderActionDivider()
 
