@@ -7,6 +7,7 @@ struct LibraryShellView: View {
     @EnvironmentObject private var spaces: SpacesViewModel
     @EnvironmentObject private var subscription: SubscriptionService
     @EnvironmentObject private var tabStore: WorkspaceTabStore
+    @ObservedObject private var trafficLayout = TrafficLightLayoutStore.shared
     @Binding var module: AppModule
     @Binding var showNewChannel: Bool
     @Binding var showNewDM: Bool
@@ -25,7 +26,7 @@ struct LibraryShellView: View {
         GeometryReader { geometry in
             ZStack(alignment: .top) {
                 WorkspaceDesktopBackdrop()
-                shellBody
+                shellBody(windowWidth: geometry.size.width)
                     .frame(
                         width: geometry.size.width,
                         height: geometry.size.height,
@@ -57,25 +58,32 @@ struct LibraryShellView: View {
         }
     }
 
-    private var barColumnWidth: CGFloat {
-        LibraryGlassDesign.barMenuColumnWidth(expanded: tabStore.barMenuExpanded)
+    private func barColumnWidth(for windowWidth: CGFloat) -> CGFloat {
+        LibraryGlassDesign.barMenuColumnWidth(
+            expanded: tabStore.barMenuExpanded,
+            windowWidth: windowWidth,
+            trafficInset: trafficLayout.leadingInset
+        )
     }
 
-    private var shellBody: some View {
-        VStack(spacing: 0) {
+    private func shellBody(windowWidth: CGFloat) -> some View {
+        let barW = barColumnWidth(for: windowWidth)
+        let subW = LibraryGlassDesign.submenuColumnWidth(for: windowWidth)
+
+        return VStack(spacing: 0) {
             ShellUnifiedTitlebar(
                 module: $module,
                 showCommandPalette: $showCommandPalette,
                 showNotificationsPanel: $showNotificationsPanel,
-                barColumnWidth: barColumnWidth,
-                submenuColumnWidth: LibraryGlassDesign.submenuColumnWidth,
+                barColumnWidth: barW,
+                submenuColumnWidth: subW,
                 submenuHidden: submenuHidden
             )
 
             HStack(alignment: .top, spacing: 0) {
                 ShellColumnChromeStack(
                     showsTitlebar: false,
-                    columnWidth: barColumnWidth,
+                    columnWidth: barW,
                     appliesPrimaryBarGlass: true
                 ) {
                     Group {
@@ -99,7 +107,7 @@ struct LibraryShellView: View {
                 if !submenuHidden {
                     ShellColumnChromeStack(
                         showsTitlebar: false,
-                        columnWidth: LibraryGlassDesign.submenuColumnWidth,
+                        columnWidth: subW,
                         appliesSidebarChrome: true
                     ) {
                         AppSecondarySidebar(

@@ -19,7 +19,8 @@ struct ShellUnifiedTitlebar: View {
     }
 
     private var barColumnCompact: Bool {
-        barColumnWidth <= LibraryGlassDesign.barMenuCollapsedWidth + 4
+        !tabStore.barMenuExpanded
+            || barColumnWidth <= LibraryGlassDesign.barMenuCollapsedWidth + AppWindowChromeMetrics.controlSize
     }
 
     var body: some View {
@@ -48,11 +49,9 @@ struct ShellUnifiedTitlebar: View {
 
     private var leadingBand: some View {
         TitlebarToolbarRow(trailingPadding: 6) {
-            if !barColumnCompact {
-                Color.clear
-                    .frame(width: layout.leadingInset)
-                    .accessibilityHidden(true)
-            }
+            Color.clear
+                .frame(width: min(layout.leadingInset, max(0, barColumnWidth - AppWindowChromeMetrics.controlSize * 2)))
+                .accessibilityHidden(true)
             TitlebarChromeIconButton(
                 systemName: tabStore.sidebarExpanded ? "sidebar.left" : "sidebar.right",
                 help: tabStore.sidebarExpanded

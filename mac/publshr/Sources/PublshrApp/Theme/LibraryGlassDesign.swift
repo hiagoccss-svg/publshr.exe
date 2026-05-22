@@ -2,20 +2,27 @@ import SwiftUI
 
 /// Reference library UI — proportions from Pinterest / notes-app glass shell (~1200px wide).
 enum LibraryGlassDesign {
-    /// Primary bar menu (labeled: Daily Note, Inbox, Notes…) — not a 48px icon strip.
-    static let barMenuWidth: CGFloat = 200
-    /// Universal submenu (Areas, Recent Notes, Channels…) — single width everywhere.
-    static let sidebarWidthWide: CGFloat = 272
+    /// Primary bar menu — ~20% of a 1280px window (Cursor Mac agent column).
+    static let barMenuWidth: CGFloat = 248
+    /// Universal submenu — ~30% of a 1280px window (Cursor Mac chat/context column).
+    static let sidebarWidthWide: CGFloat = 360
     static let sidebarWidth: CGFloat = sidebarWidthWide
-    /// Collapsed primary column — matches macOS traffic-light inset (green button row).
-    static let barMenuCollapsedWidth: CGFloat = 72
+    /// Minimum collapsed primary column when the bar menu is icon-only.
+    static let barMenuCollapsedWidth: CGFloat = 80
 
-    /// Fixed shell column widths (prevents HStack from stretching sidebars to ⅓ window each).
-    static func barMenuColumnWidth(expanded: Bool) -> CGFloat {
-        expanded ? barMenuWidth : barMenuCollapsedWidth
+    /// Column 1 width — expanded uses ~19.5% of window; collapsed fits traffic lights + sidebar toggle.
+    static func barMenuColumnWidth(expanded: Bool, windowWidth: CGFloat, trafficInset: CGFloat) -> CGFloat {
+        if expanded {
+            return max(barMenuWidth, floor(windowWidth * 0.195))
+        }
+        let compact = trafficInset + AppWindowChromeMetrics.afterTrafficLightGap + AppWindowChromeMetrics.controlSize
+        return max(barMenuCollapsedWidth, compact)
     }
 
-    static let submenuColumnWidth: CGFloat = sidebarWidthWide
+    /// Column 2 width — ~30% of window (min 360px for universal chat menu).
+    static func submenuColumnWidth(for windowWidth: CGFloat) -> CGFloat {
+        max(sidebarWidthWide, floor(windowWidth * 0.30))
+    }
     /// Column 2 + editor — pure white (Cursor Mac content columns).
     static let submenuColumnBackground = Color.white
 
