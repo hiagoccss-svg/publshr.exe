@@ -207,6 +207,22 @@ final class ChatViewModel: ObservableObject {
         Task { await loadMessages(for: channel) }
     }
 
+    func selectChannelById(_ channelId: UUID) {
+        let all = channels + directMessages
+        guard let channel = all.first(where: { $0.id == channelId }) else { return }
+        selectChannel(channel)
+    }
+
+    func refreshAfterReconnect() async {
+        guard let workspace, let userId = currentUserId else { return }
+        isOffline = false
+        await loadWorkspaceData(workspaceId: workspace.id, userId: userId)
+        startRealtime(workspaceId: workspace.id)
+        if let channel = selectedChannel {
+            await loadMessages(for: channel)
+        }
+    }
+
     func loadMessages(for channel: ChatChannel) async {
         guard let service, let workspace else { return }
         let cached = service.cachedMessages(channelId: channel.id)
@@ -378,6 +394,8 @@ final class ChatViewModel: ObservableObject {
     }
 
     func handleIncomingMessage(_ message: ChatMessage) {
+        ChatWindowManager.shared.forwardIncomingMessage(message)
+
         if selectedChannel?.id == message.channelId {
             if !messages.contains(where: { $0.id == message.id }) {
                 messages.append(message)

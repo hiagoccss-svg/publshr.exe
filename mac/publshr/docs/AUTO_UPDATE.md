@@ -39,6 +39,18 @@ No Terminal reinstall after the first install.
 - App in `/Applications/Publshr.app`
 - For source fallback: Xcode + Swift
 
+## Transactional install
+
+`apply-macos-update.sh` (bundled in the app) performs:
+
+1. Wait for the running app to exit
+2. **Backup** the current `/Applications/Publshr.app` to Application Support
+3. **Replace** the app with `ditto`
+4. **Verify** the new binary exists; **rollback** from backup on failure
+5. Relaunch Publshr
+
+User data (`~/Library/Application Support/Publshr/`) is never modified during updates.
+
 ## Logs
 
 `~/Library/Application Support/Publshr/updates/last-update.log`
