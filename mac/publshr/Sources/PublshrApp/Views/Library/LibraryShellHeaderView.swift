@@ -2,13 +2,12 @@ import SwiftUI
 
 /// Per-column titlebar band — background matches the column below; no full-width separator.
 enum ShellColumnHeaderKind {
-    /// Left column: empty band; reserves macOS traffic-light leading inset only.
-    case primaryLeading
+    /// Left column: traffic-light inset + sidebar / back / forward.
+    case trafficLeading(module: Binding<AppModule>)
     /// Middle submenu column: empty band matching sidebar chrome.
     case secondaryChrome
-    /// Right workspace column: context title + search / command / profile.
-    case editor(
-        title: String,
+    /// Right column: profile, notifications, command only (workspace gutter color).
+    case editorTrailing(
         module: Binding<AppModule>,
         showCommandPalette: Binding<Bool>,
         showNotificationsPanel: Binding<Bool>
@@ -31,9 +30,9 @@ struct LibraryShellHeaderView: View {
 
     private var headerBackground: Color {
         switch kind {
-        case .primaryLeading, .secondaryChrome:
+        case .trafficLeading, .secondaryChrome:
             return CursorMacShellDesign.columnChromeBackground
-        case .editor:
+        case .editorTrailing:
             return CursorMacShellDesign.workspaceBackground
         }
     }
@@ -41,28 +40,22 @@ struct LibraryShellHeaderView: View {
     @ViewBuilder
     private var rowContent: some View {
         switch kind {
-        case .primaryLeading:
-            HStack(spacing: 0) {
+        case .trafficLeading(let module):
+            HStack(alignment: .center, spacing: 10) {
                 Color.clear
                     .frame(width: AppWindowChromeMetrics.trafficLightLeadingInset)
+                ShellTrafficLeadingActions(module: module)
                 Spacer(minLength: 0)
             }
+            .padding(.trailing, 8)
 
         case .secondaryChrome:
             Color.clear
                 .frame(maxWidth: .infinity)
 
-        case .editor(let title, let module, let showCommandPalette, let showNotificationsPanel):
-            HStack(alignment: .center, spacing: 12) {
-                Spacer(minLength: 8)
-
-                Text(title)
-                    .font(CursorMacShellDesign.centerTitleFont)
-                    .foregroundStyle(CursorMacShellDesign.centerTitleColor)
-                    .lineLimit(1)
-
-                Spacer(minLength: 8)
-
+        case .editorTrailing(let module, let showCommandPalette, let showNotificationsPanel):
+            HStack(alignment: .center, spacing: 0) {
+                Spacer(minLength: 0)
                 TitlebarChromeActionBar(
                     module: module,
                     showCommandPalette: showCommandPalette,
