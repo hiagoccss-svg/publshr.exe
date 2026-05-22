@@ -13,6 +13,8 @@ struct LibraryShellHeaderView: View {
     @Binding var showNewDM: Bool
     @Binding var showCommandPalette: Bool
     @Binding var showNotificationsPanel: Bool
+    /// When hosted in `NSTitlebarAccessoryViewController`, AppKit already offsets for traffic lights.
+    var reservesTrafficLightLeadingInset: Bool = true
 
     private var rowHeight: CGFloat {
         AppWindowChromeMetrics.unifiedTitlebarRowHeight
@@ -20,7 +22,6 @@ struct LibraryShellHeaderView: View {
 
     var body: some View {
         titlebarRow
-            .padding(.top, AppWindowChromeMetrics.trafficLightVerticalAlignPadding)
             .frame(height: rowHeight, alignment: .center)
             .frame(maxWidth: .infinity)
             .background { AppWindowChromeBackground() }
@@ -33,8 +34,10 @@ struct LibraryShellHeaderView: View {
 
     private var titlebarRow: some View {
         HStack(alignment: .center, spacing: AppWindowChromeMetrics.rowSpacing) {
-            Color.clear
-                .frame(width: AppWindowChromeMetrics.trafficLightLeadingInset)
+            if reservesTrafficLightLeadingInset {
+                Color.clear
+                    .frame(width: AppWindowChromeMetrics.trafficLightLeadingInset)
+            }
 
             TitlebarChromeActionBar(
                 spaces: spaces,
