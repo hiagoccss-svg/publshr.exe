@@ -123,6 +123,7 @@ struct MainIDEView: View {
                 enterprise: enterprise
             )
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     private func onShellAppear() {

@@ -38,7 +38,8 @@ final class TrafficLightLayoutStore: ObservableObject {
 
         if let metrics = Self.measureTrafficLights(in: window, contentView: contentView) {
             leadingInset = metrics.leadingInset
-            titlebarTopPadding = max(0, metrics.midYFromTop - row * 0.5)
+            let raw = max(0, metrics.midYFromTop - row * 0.5)
+            titlebarTopPadding = min(raw, Self.maxTitlebarTopPadding)
         } else {
             leadingInset = AppWindowChromeMetrics.trafficLightLeadingInset
             titlebarTopPadding = AppWindowChromeMetrics.trafficLightVerticalAlignPadding
@@ -66,6 +67,9 @@ final class TrafficLightLayoutStore: ObservableObject {
         var midYFromTop: CGFloat
     }
 
+    /// Max top padding before we treat measurement as invalid (prevents shell pinned to window bottom).
+    private static let maxTitlebarTopPadding: CGFloat = 18
+
     private static func measureTrafficLights(in window: NSWindow, contentView: NSView) -> TrafficMetrics? {
         guard let close = window.standardWindowButton(.closeButton),
               let container = close.superview else { return nil }
@@ -75,8 +79,19 @@ final class TrafficLightLayoutStore: ObservableObject {
         let zoomRect = zoom.map { container.convert($0.frame, to: contentView) }
         let trailingX = (zoomRect?.maxX ?? closeRect.maxX) + 8
 
-        let contentHeight = contentView.bounds.height
-        let midYFromTop = contentHeight - closeRect.midY
+        let contentHeight = max(contentView.bounds.height, 1)
+        // SwiftUI hosting views are often flipped (origin top-left); AppKit windows are not.
+        let midYFromTop: CGFloat
+        if contentView.isFlipped {
+            midYFromTop = closeRect.midY
+        } else {
+            midYFromTop = contentHeight - closeRect.midY
+        }
+
+        guard midYFromTop.isFinite,
+              midYFromTop >= 0,
+              midYFromTop <= contentHeight * 0.25
+        else { return nil }
 
         return TrafficMetrics(
             leadingInset: max(trailingX, 68),

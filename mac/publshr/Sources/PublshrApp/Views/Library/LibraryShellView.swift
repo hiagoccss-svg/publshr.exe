@@ -22,13 +22,11 @@ struct LibraryShellView: View {
     }
 
     var body: some View {
-        GeometryReader { geometry in
-            ZStack(alignment: .top) {
-                WorkspaceDesktopBackdrop()
-                shellBody
-            }
-            .frame(width: geometry.size.width, height: geometry.size.height)
+        ZStack(alignment: .topLeading) {
+            WorkspaceDesktopBackdrop()
+            shellBody
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .ignoresSafeArea(.container, edges: .top)
         .background(Color.clear)
         .onAppear {
