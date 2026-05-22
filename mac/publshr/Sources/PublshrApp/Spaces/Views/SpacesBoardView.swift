@@ -6,12 +6,12 @@ struct SpacesBoardView: View {
 
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
-            HStack(alignment: .top, spacing: 14) {
+            HStack(alignment: .top, spacing: SpacesClickUpDesign.boardColumnSpacing) {
                 ForEach(SpaceTaskStatus.boardColumns) { status in
                     column(status)
                 }
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, SpacesClickUpDesign.chromeHorizontalPadding)
             .padding(.vertical, 14)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -40,10 +40,10 @@ struct SpacesBoardView: View {
                 }
             }
         }
-        .frame(width: 248)
-        .padding(12)
+        .frame(width: SpacesClickUpDesign.boardColumnWidth)
+        .padding(SpacesClickUpDesign.boardColumnPadding)
         .background(CursorTheme.panelBackground.opacity(0.45))
-        .clipShape(RoundedRectangle(cornerRadius: 10))
+        .clipShape(RoundedRectangle(cornerRadius: SpacesClickUpDesign.metricCardRadius))
         .onDrop(of: [.plainText], isTargeted: nil) { providers in
             handleDrop(providers, targetStatus: status)
         }
