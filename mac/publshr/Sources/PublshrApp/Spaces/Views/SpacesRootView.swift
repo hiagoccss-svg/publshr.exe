@@ -59,6 +59,8 @@ struct SpacesRootView: View {
                         SpacesOverviewView(spaces: spaces)
                     case .calendar:
                         SpacesCalendarView(spaces: spaces)
+                    case .whiteboard:
+                        SpacesWhiteboardView(spaces: spaces)
                     }
                 }
             }

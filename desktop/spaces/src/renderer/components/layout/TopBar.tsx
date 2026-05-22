@@ -16,6 +16,7 @@ const VIEW_LABELS: Record<TaskViewMode, string> = {
   overview: 'Overview',
   list: 'List',
   board: 'Board',
+  whiteboard: 'Whiteboard',
   timeline: 'Timeline',
   calendar: 'Calendar',
   workload: 'Workload',

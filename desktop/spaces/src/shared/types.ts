@@ -41,6 +41,23 @@ export type TaskViewMode =
   | 'workload'
   | 'priority'
   | 'document'
+  | 'whiteboard'
+
+export interface Whiteboard {
+  id: string
+  workspaceId: string
+  spaceId: string
+  listId: string | null
+  plannerProjectId: string | null
+  name: string
+  description: string
+  snapshot: Record<string, unknown>
+  isArchived: boolean
+  isPinned: boolean
+  createdBy: string
+  updatedAt: string
+  createdAt: string
+}
 
 export type SidebarSection =
   | 'dashboard'
