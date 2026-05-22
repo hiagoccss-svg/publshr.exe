@@ -2,9 +2,11 @@ import SwiftUI
 
 /// Collapsed primary column (~52px) — module icons only when the bar menu is minimized.
 struct LibraryBarMenuIconRail: View {
+    @EnvironmentObject private var auth: AuthViewModel
     @EnvironmentObject private var tabStore: WorkspaceTabStore
     @EnvironmentObject private var chat: ChatViewModel
     @Binding var module: AppModule
+    @Binding var profilePresentation: WorkspaceProfilePresentation?
 
     var body: some View {
         VStack(spacing: 8) {
@@ -38,6 +40,22 @@ struct LibraryBarMenuIconRail: View {
                 .help(item.label)
             }
             Spacer(minLength: 0)
+
+            Button {
+                profilePresentation = .currentUser
+            } label: {
+                if let profile = auth.profile {
+                    ChatProfileAvatar(
+                        profile: profile,
+                        displayName: profile.displayName ?? profile.email,
+                        size: 30,
+                        presence: chat.myStatus
+                    )
+                }
+            }
+            .buttonStyle(.plain)
+            .help("Your profile")
+            .padding(.bottom, 10)
         }
         .padding(.top, 10)
         .padding(.horizontal, 8)
