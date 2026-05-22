@@ -256,6 +256,7 @@ export function registerIpcHandlers(engine: MonitoringEngine, sync: SyncService)
   })
 
   ipcMain.handle('db:update-sentiment', async (_, resultId: string, sentiment: string) => {
+    db().prepare('UPDATE monitor_results SET sentiment = ? WHERE id = ?').run(sentiment, resultId)
     try {
       await sync.updateResultSentiment(resultId, sentiment)
     } catch (e) {
@@ -263,6 +264,157 @@ export function registerIpcHandlers(engine: MonitoringEngine, sync: SyncService)
     }
     return { ok: true }
   })
+
+  ipcMain.handle(
+    'db:get-report-analytics',
+    (_, options?: { days?: number; savedOnly?: boolean }) => {
+      const days = (options?.days as number) ?? 30
+      const savedOnly = Boolean(options?.savedOnly)
+      const since =
+        days > 0
+          ? new Date(Date.now() - days * 86400000).toISOString()
+          : null
+
+      let where = '1=1'
+      const params: unknown[] = []
+      if (since) {
+        where += ' AND (mr.published_at IS NULL OR mr.published_at >= ?)'
+        params.push(since)
+      }
+      if (savedOnly) {
+        where += ' AND mr.is_saved = 1'
+      }
+
+      const totals = db()
+        .prepare(
+          `SELECT COUNT(*) as mentions,
+            COALESCE(SUM(mr.reach), 0) as total_reach,
+            COALESCE(SUM(mr.pr_value), 0) as total_pr_value,
+            COALESCE(SUM(mr.media_value), 0) as total_media_value,
+            COALESCE(AVG(mr.relevance_score), 0) as avg_relevance
+           FROM monitor_results mr
+           WHERE ${where}`
+        )
+        .get(...params) as Record<string, number>
+
+      const bySentiment = db()
+        .prepare(
+          `SELECT mr.sentiment as sentiment, COUNT(*) as count
+           FROM monitor_results mr
+           WHERE ${where}
+           GROUP BY mr.sentiment`
+        )
+        .all(...params) as { sentiment: string; count: number }[]
+
+      const byPublication = db()
+        .prepare(
+          `SELECT COALESCE(ps.name, 'Unknown') as name,
+            COUNT(*) as count,
+            COALESCE(SUM(mr.pr_value), 0) as pr_value,
+            COALESCE(SUM(mr.reach), 0) as reach
+           FROM monitor_results mr
+           LEFT JOIN publication_sources ps ON mr.publication_id = ps.id
+           WHERE ${where}
+           GROUP BY ps.id, ps.name
+           ORDER BY count DESC
+           LIMIT 12`
+        )
+        .all(...params) as { name: string; count: number; pr_value: number; reach: number }[]
+
+      const byMediaType = db()
+        .prepare(
+          `SELECT COALESCE(ps.publication_type, mr.coverage_type, 'online') as media_type,
+            COUNT(*) as count
+           FROM monitor_results mr
+           LEFT JOIN publication_sources ps ON mr.publication_id = ps.id
+           WHERE ${where}
+           GROUP BY media_type
+           ORDER BY count DESC`
+        )
+        .all(...params) as { media_type: string; count: number }[]
+
+      const byMonitor = db()
+        .prepare(
+          `SELECT mp.name as name, COUNT(*) as count
+           FROM monitor_results mr
+           JOIN monitor_profiles mp ON mp.id = mr.monitor_profile_id
+           WHERE ${where}
+           GROUP BY mp.id, mp.name
+           ORDER BY count DESC
+           LIMIT 8`
+        )
+        .all(...params) as { name: string; count: number }[]
+
+      return {
+        periodDays: days,
+        savedOnly,
+        totals,
+        bySentiment,
+        byPublication,
+        byMediaType,
+        byMonitor
+      }
+    }
+  )
+
+  ipcMain.handle(
+    'db:get-workspace-clippings',
+    (_, options?: {
+      days?: number
+      savedOnly?: boolean
+      sentiment?: string
+      search?: string
+      sort?: string
+      limit?: number
+    }) => {
+      const days = (options?.days as number) ?? 30
+      const limit = (options?.limit as number) ?? 200
+      const since =
+        days > 0
+          ? new Date(Date.now() - days * 86400000).toISOString()
+          : null
+
+      let sql = `
+        SELECT mr.*, ps.name as publication_name, ps.logo_url, ps.website, ps.category,
+               ps.publication_type, ps.country, ps.authority_score,
+               mp.name as monitor_name,
+               sc.notes as saved_notes, sc.tags as saved_tags
+        FROM monitor_results mr
+        LEFT JOIN publication_sources ps ON mr.publication_id = ps.id
+        LEFT JOIN monitor_profiles mp ON mp.id = mr.monitor_profile_id
+        LEFT JOIN saved_coverage sc ON sc.monitor_result_id = mr.id
+        WHERE 1=1
+      `
+      const params: unknown[] = []
+
+      if (since) {
+        sql += ' AND (mr.published_at IS NULL OR mr.published_at >= ?)'
+        params.push(since)
+      }
+      if (options?.savedOnly) {
+        sql += ' AND mr.is_saved = 1'
+      }
+      if (options?.sentiment) {
+        sql += ' AND mr.sentiment = ?'
+        params.push(options.sentiment)
+      }
+      if (options?.search) {
+        sql += ' AND (mr.title LIKE ? OR mr.article_text LIKE ? OR ps.name LIKE ?)'
+        const q = `%${options.search}%`
+        params.push(q, q, q)
+      }
+
+      const sort = (options?.sort as string) ?? 'newest'
+      if (sort === 'oldest') sql += ' ORDER BY mr.published_at ASC'
+      else if (sort === 'reach') sql += ' ORDER BY mr.reach DESC'
+      else if (sort === 'pr_value') sql += ' ORDER BY mr.pr_value DESC'
+      else sql += ' ORDER BY mr.published_at DESC'
+
+      sql += ' LIMIT ?'
+      params.push(limit)
+      return db().prepare(sql).all(...params)
+    }
+  )
 
   ipcMain.handle('db:get-activity', (_, resultId: string) => {
     return db()
