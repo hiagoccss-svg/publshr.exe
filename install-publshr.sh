@@ -2,18 +2,19 @@
 # =============================================================================
 # Publshr — native macOS desktop IDE (Swift/SwiftUI, NOT a web app)
 #
-# Always use this exact command:
-#   curl -fsSL https://raw.githubusercontent.com/hiagoccss-svg/publshr.exe/main/install-publshr.sh | bash
+# Install (use refs/heads/main — avoids stale GitHub raw CDN on /main/ URLs):
+#   curl -fsSL "https://raw.githubusercontent.com/hiagoccss-svg/publshr.exe/refs/heads/main/install-publshr.sh" | bash
 #
-# Installs: /Applications/Publshr.app  (real Mac app, Launchpad, offline-capable)
-# Updates:  push to GitHub main → app auto-updates from the "live" release
+# Or download then run (most reliable):
+#   curl -fsSL "https://raw.githubusercontent.com/hiagoccss-svg/publshr.exe/refs/heads/main/install-publshr.sh" -o /tmp/publshr-install.sh && bash /tmp/publshr-install.sh
 # =============================================================================
+printf '%s\n' '[Publshr] Loading installer...' >&2
 set -euo pipefail
 
-INSTALLER_VERSION="4"
+INSTALLER_VERSION="5"
 PUBLSHR_REPO="${PUBLSHR_REPO:-hiagoccss-svg/publshr.exe}"
 PUBLSHR_BRANCH="${PUBLSHR_BRANCH:-main}"
-PUBLSHR_INSTALLER_URL="https://raw.githubusercontent.com/${PUBLSHR_REPO}/${PUBLSHR_BRANCH}/install-publshr.sh"
+PUBLSHR_INSTALLER_URL="https://raw.githubusercontent.com/${PUBLSHR_REPO}/refs/heads/${PUBLSHR_BRANCH}/install-publshr.sh"
 PUBLSHR_LIVE_TAG="${PUBLSHR_LIVE_TAG:-live}"
 PUBLSHR_MAC_APP="${PUBLSHR_MAC_APP:-/Applications/Publshr.app}"
 PUBLSHR_BIN_LINK="${PUBLSHR_BIN_LINK:-/usr/local/bin/publshr}"
@@ -189,10 +190,7 @@ publshr_install_main() {
     open "$PUBLSHR_MAC_APP" 2>/dev/null || true
 }
 
-# curl | bash leaves BASH_SOURCE[0] empty — old [[ BASH_SOURCE == $0 ]] guard never ran.
-if ! (return 0 2>/dev/null); then
-    log "Publshr native macOS desktop installer v${INSTALLER_VERSION}"
-    log "Swift/SwiftUI app — not a browser or Electron web app."
-    log ""
-    publshr_install_main "$@"
-fi
+log "Publshr native macOS desktop installer v${INSTALLER_VERSION}"
+log "Swift/SwiftUI app — not a browser or Electron web app."
+log ""
+publshr_install_main "$@"
