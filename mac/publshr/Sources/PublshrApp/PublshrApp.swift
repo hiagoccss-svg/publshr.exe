@@ -151,6 +151,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
            let window = NSApp.windows.first {
             window.setFrame(frame, display: true)
         }
+        NotificationCenter.default.post(name: .publshrPerformLiveSync, object: nil)
     }
 
     func applicationDidBecomeActive(_ notification: Notification) {
