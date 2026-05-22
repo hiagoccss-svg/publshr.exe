@@ -75,7 +75,7 @@ jobs:
 
           **Install (same command every time):**
           \`\`\`bash
-          curl -fsSL "https://raw.githubusercontent.com/${REPO}/refs/heads/main/install-publshr.sh" | bash
+          curl -fsSL "https://raw.githubusercontent.com/${REPO}/refs/heads/main/install-macos.sh" | bash
           \`\`\`
 
           Installed Publshr.app auto-updates from the \`live\` release when you push to \`main\`."

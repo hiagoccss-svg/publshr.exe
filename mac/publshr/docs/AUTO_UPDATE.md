@@ -3,7 +3,7 @@
 ## Stable install (always the same command)
 
 ```bash
-curl -fsSL "https://raw.githubusercontent.com/hiagoccss-svg/publshr.exe/refs/heads/main/install-publshr.sh" | bash
+curl -fsSL "https://raw.githubusercontent.com/hiagoccss-svg/publshr.exe/refs/heads/main/install-macos.sh" | bash
 ```
 
 - **One file** at a fixed URL: `install-publshr.sh` on branch `main` (logic is not split across moving scripts).

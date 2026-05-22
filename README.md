@@ -13,7 +13,7 @@ Native desktop tools for **Publshr** — a Cursor-style macOS IDE with Supabase 
 **One install command** (always the same URL):
 
 ```bash
-curl -fsSL "https://raw.githubusercontent.com/hiagoccss-svg/publshr.exe/refs/heads/main/install-publshr.sh" | bash
+curl -fsSL "https://raw.githubusercontent.com/hiagoccss-svg/publshr.exe/refs/heads/main/install-macos.sh" | bash
 ```
 
 Installs **Publshr.app** to `/Applications` — a real macOS desktop application (Launchpad, native windows, offline cache). This is **not** Electron or a browser wrapper.
