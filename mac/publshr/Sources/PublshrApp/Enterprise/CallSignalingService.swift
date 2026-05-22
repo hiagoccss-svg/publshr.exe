@@ -74,7 +74,7 @@ final class CallSignalingService: ObservableObject {
     func startChannelCall(workspaceId: UUID, channelId: UUID, title: String, video: Bool, workspaceSettings: [String: JSONValue]? = nil) async {
         guard let client, let userId else { return }
         if let settings = workspaceSettings,
-           case .string(let url)? = settings["livekit_url"],
+           case .string(let url) = settings["livekit_url"],
            !url.isEmpty {
             mediaStatus = "Connecting via LiveKit (\(url))…"
         } else {
