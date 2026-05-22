@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Chat content wrapper — chrome lives in `LibraryShellHeaderView`.
+/// Chat content wrapper — shell title band is per-column in `LibraryShellView`.
 struct ChatWorkspaceChrome<Content: View>: View {
     var topInset: CGFloat = 0
     var embedInPopOut: Bool = false
