@@ -5,116 +5,163 @@ struct SpacesOverviewView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
+            VStack(alignment: .leading, spacing: 24) {
                 if let space = spaces.selectedSpace {
                     header(space)
                 }
-
-                metricsGrid
-
+                metrics
+                approvalsSection
                 documentsSection
-
+                filesSection
                 activitySection
             }
             .padding(20)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
+        .background(SpacesNativeDesign.workspaceBackground)
     }
 
     @ViewBuilder
     private func header(_ space: SpaceRecord) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(space.name)
-                .font(.system(size: 20, weight: .semibold))
-                .foregroundStyle(CursorTheme.foreground)
+                .font(.system(size: 22, weight: .semibold))
             if !space.description.isEmpty {
                 Text(space.description)
-                    .font(.system(size: 13))
-                    .foregroundStyle(CursorTheme.foregroundMuted)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
             }
             Text(space.type.replacingOccurrences(of: "_", with: " ").capitalized)
-                .font(.system(size: 11, weight: .medium))
-                .foregroundStyle(CursorTheme.foregroundDim)
+                .font(.caption.weight(.medium))
                 .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(CursorTheme.panelBackground)
+                .padding(.vertical, 3)
+                .background(Color(nsColor: .controlBackgroundColor))
                 .clipShape(Capsule())
         }
     }
 
-    private var metricsGrid: some View {
+    private var metrics: some View {
         let open = spaces.tasks.filter { $0.status != .completed && $0.status != .archived }.count
         let done = spaces.tasks.filter { $0.status == .completed }.count
         let review = spaces.tasks.filter { $0.status == .review }.count
-        let urgent = spaces.tasks.filter { $0.priority == .urgent || $0.priority == .high }.count
+        let pendingApprovals = spaces.approvals.filter { $0.status != "approved" && $0.status != "rejected" }.count
 
-        return LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-            metricCard("Open", value: open)
-            metricCard("Completed", value: done)
-            metricCard("In review", value: review)
-            metricCard("High priority", value: urgent)
+        return LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 4), spacing: 12) {
+            metric("Open tasks", open)
+            metric("Completed", done)
+            metric("In review", review)
+            metric("Approvals", pendingApprovals)
         }
     }
 
-    private var documentsSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                Text("Documents")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(CursorTheme.foregroundMuted)
-                Spacer()
-                HStack(spacing: 6) {
-                    TextField("New doc", text: $spaces.newDocumentTitle)
-                        .textFieldStyle(.plain)
-                        .font(.system(size: 11))
-                        .frame(width: 120)
-                    Button("Add") {
-                        Task { await spaces.createDocument() }
-                    }
-                    .controlSize(.small)
-                    .disabled(spaces.newDocumentTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                }
-            }
-
-            if spaces.documents.isEmpty {
-                Text("No documents yet — add briefs, notes, or specs for this space.")
-                    .font(.system(size: 11))
-                    .foregroundStyle(CursorTheme.foregroundDim)
+    private var approvalsSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            SpacesNativeDesign.sectionHeader("Approvals")
+            if spaces.approvals.isEmpty {
+                Text("No approval requests in this space.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
             } else {
-                ForEach(spaces.documents.prefix(6)) { doc in
-                    HStack(spacing: 8) {
-                        Image(systemName: "doc.text")
-                            .font(.system(size: 12))
-                            .foregroundStyle(CursorTheme.accent)
+                ForEach(spaces.approvals.prefix(8)) { item in
+                    HStack {
+                        Image(systemName: "checkmark.seal")
+                            .foregroundStyle(.secondary)
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(doc.title)
+                            Text(item.title)
                                 .font(.system(size: 12, weight: .medium))
-                            Text(doc.docType)
-                                .font(.system(size: 10))
-                                .foregroundStyle(CursorTheme.foregroundDim)
+                            Text(item.statusLabel)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
                         }
                         Spacer()
                     }
                     .padding(10)
-                    .background(CursorTheme.panelBackground)
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                    .background(Color(nsColor: .controlBackgroundColor))
+                    .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                }
+            }
+        }
+    }
+
+    private var documentsSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                SpacesNativeDesign.sectionHeader("Documents")
+                Spacer()
+                TextField("Title", text: $spaces.newDocumentTitle)
+                    .textFieldStyle(.roundedBorder)
+                    .frame(width: 140)
+                Button("Add") { Task { await spaces.createDocument() } }
+                    .controlSize(.small)
+                    .disabled(spaces.newDocumentTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            }
+            if spaces.documents.isEmpty {
+                Text("Add briefs, specs, and notes for this space.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            } else {
+                ForEach(spaces.documents) { doc in
+                    Button {
+                        spaces.editingDocument = doc
+                    } label: {
+                        HStack {
+                            Image(systemName: "doc.text.fill")
+                                .foregroundStyle(CursorTheme.accent)
+                            VStack(alignment: .leading) {
+                                Text(doc.title)
+                                    .font(.system(size: 12, weight: .medium))
+                                Text(doc.docType)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .font(.caption)
+                                .foregroundStyle(.tertiary)
+                        }
+                        .padding(10)
+                        .background(Color(nsColor: .controlBackgroundColor))
+                        .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+    }
+
+    private var filesSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            SpacesNativeDesign.sectionHeader("Files")
+            if spaces.files.isEmpty {
+                Text("Attach files via Supabase Storage (URLs appear here).")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            } else {
+                ForEach(spaces.files.prefix(6)) { file in
+                    Link(destination: URL(string: file.fileUrl) ?? URL(string: "about:blank")!) {
+                        HStack {
+                            Image(systemName: "paperclip")
+                            Text(file.fileName)
+                                .lineLimit(1)
+                            Spacer()
+                        }
+                        .font(.system(size: 12))
+                    }
+                    .padding(8)
                 }
             }
         }
     }
 
     private var activitySection: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("Recent activity")
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(CursorTheme.foregroundMuted)
-
+        VStack(alignment: .leading, spacing: 8) {
+            SpacesNativeDesign.sectionHeader("Activity")
             if spaces.activity.isEmpty {
-                Text("Activity appears when tasks and documents change.")
-                    .font(.system(size: 11))
-                    .foregroundStyle(CursorTheme.foregroundDim)
+                Text("Live activity from your team appears here.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
             } else {
-                ForEach(spaces.activity.prefix(12)) { item in
+                ForEach(spaces.activity.prefix(15)) { item in
                     HStack(alignment: .top, spacing: 10) {
                         ChatProfileAvatar(
                             profile: spaces.profile(for: item.userId),
@@ -124,31 +171,27 @@ struct SpacesOverviewView: View {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(spaces.activityLabel(item))
                                 .font(.system(size: 12))
-                                .foregroundStyle(CursorTheme.foreground)
                             Text(item.createdAt, style: .relative)
-                                .font(.system(size: 10))
-                                .foregroundStyle(CursorTheme.foregroundDim)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
                         }
-                        Spacer()
                     }
-                    .padding(.vertical, 4)
                 }
             }
         }
     }
 
-    private func metricCard(_ label: String, value: Int) -> some View {
+    private func metric(_ label: String, _ value: Int) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(label.uppercased())
-                .font(.system(size: 10, weight: .semibold))
-                .foregroundStyle(CursorTheme.foregroundDim)
+            Text(label)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
             Text("\(value)")
-                .font(.system(size: 22, weight: .medium))
-                .foregroundStyle(CursorTheme.foreground)
+                .font(.system(size: 24, weight: .medium))
         }
         .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(CursorTheme.panelBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 10))
+        .background(Color(nsColor: .controlBackgroundColor))
+        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
     }
 }

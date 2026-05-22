@@ -44,6 +44,28 @@ struct PublshrApp: App {
                     Task { await updates.performLiveSync() }
                 }
             }
+            CommandMenu("Spaces") {
+                Button("New Space…") {
+                    spaces.showNewSpaceSheet = true
+                }
+                .keyboardShortcut("n", modifiers: [.command, .shift])
+                Button("New Task") {
+                    if spaces.newTaskTitle.isEmpty { spaces.newTaskTitle = "New task" }
+                    Task { await spaces.createTask() }
+                }
+                .keyboardShortcut("t", modifiers: [.command, .shift])
+                Divider()
+                Button("Board") { spaces.taskView = .board }
+                Button("List") { spaces.taskView = .list }
+                Button("Overview") { spaces.taskView = .overview }
+                Divider()
+                Button("Refresh") { Task { await spaces.reload() } }
+                .keyboardShortcut("r", modifiers: [.command, .shift])
+                Button(spaces.spacesFocusMode ? "Exit Focus" : "Focus on Space") {
+                    spaces.spacesFocusMode.toggle()
+                }
+                .keyboardShortcut("l", modifiers: [.command, .shift])
+            }
             CommandMenu("Chat") {
                 Button("Search…") {
                     chat.showSearchSheet = true

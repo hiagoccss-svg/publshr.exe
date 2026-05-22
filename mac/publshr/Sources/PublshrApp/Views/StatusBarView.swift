@@ -41,10 +41,16 @@ struct StatusBarView: View {
 
             if module == .spaces {
                 HStack(spacing: 6) {
-                    Image(systemName: spaces.isLoading ? "arrow.triangle.2.circlepath" : "checkmark.circle.fill")
+                    Image(systemName: spacesStatusIcon)
                         .font(.system(size: 10))
-                    Text(spaces.isLoading ? "Syncing…" : "Spaces")
+                        .foregroundStyle(spaces.isOffline ? CursorTheme.error : CursorTheme.success)
+                    Text(spacesStatusLine)
                         .font(.system(size: 11))
+                }
+                if let synced = spaces.lastSyncedAt, !spaces.isOffline {
+                    Text("Updated \(synced, style: .relative) ago")
+                        .font(.system(size: 10))
+                        .foregroundStyle(CursorTheme.statusBarForeground.opacity(0.7))
                 }
             }
 
@@ -64,5 +70,17 @@ struct StatusBarView: View {
         .padding(.horizontal, 12)
         .foregroundStyle(CursorTheme.statusBarForeground.opacity(0.95))
         .background(CursorTheme.statusBar)
+    }
+
+    private var spacesStatusIcon: String {
+        if spaces.isOffline { return "wifi.slash" }
+        if spaces.isLoading { return "arrow.triangle.2.circlepath" }
+        return "circle.fill"
+    }
+
+    private var spacesStatusLine: String {
+        if spaces.isOffline { return "Offline — showing cached data" }
+        if spaces.isLoading { return "Syncing spaces…" }
+        return "Spaces live"
     }
 }

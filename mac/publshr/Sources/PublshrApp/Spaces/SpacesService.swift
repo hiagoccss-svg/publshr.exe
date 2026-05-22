@@ -4,6 +4,7 @@ import Supabase
 @MainActor
 final class SpacesService {
     let client: SupabaseClient
+    let store: SpacesLocalStore
     private var realtimeTask: Task<Void, Never>?
     private let jsonDecoder: JSONDecoder = {
         let d = JSONDecoder()
@@ -11,8 +12,9 @@ final class SpacesService {
         return d
     }()
 
-    init(client: SupabaseClient) {
+    init(client: SupabaseClient, store: SpacesLocalStore = SpacesLocalStore()) {
         self.client = client
+        self.store = store
     }
 
     func stopRealtime() {
@@ -23,7 +25,7 @@ final class SpacesService {
     // MARK: - Spaces
 
     func fetchSpaces(workspaceId: UUID) async throws -> [SpaceRecord] {
-        try await client
+        let rows: [SpaceRecord] = try await client
             .from("spaces")
             .select()
             .eq("workspace_id", value: workspaceId.uuidString)
@@ -32,22 +34,42 @@ final class SpacesService {
             .order("name")
             .execute()
             .value
+        store.saveSpaces(rows, workspaceId: workspaceId)
+        return rows
     }
 
-    func createSpace(workspaceId: UUID, ownerId: UUID, name: String, type: String = "general") async throws -> SpaceRecord {
+    func createSpace(
+        workspaceId: UUID,
+        ownerId: UUID,
+        name: String,
+        type: String = "general",
+        description: String = ""
+    ) async throws -> SpaceRecord {
         struct Insert: Encodable {
             let workspace_id: UUID
             let owner_id: UUID
             let name: String
             let type: String
+            let description: String
         }
         let row: SpaceRecord = try await client
             .from("spaces")
-            .insert(Insert(workspace_id: workspaceId, owner_id: ownerId, name: name, type: type))
+            .insert(Insert(workspace_id: workspaceId, owner_id: ownerId, name: name, type: type, description: description))
             .select()
             .single()
             .execute()
             .value
+
+        struct MemberInsert: Encodable {
+            let space_id: UUID
+            let user_id: UUID
+            let role: String
+        }
+        try? await client
+            .from("space_members")
+            .insert(MemberInsert(space_id: row.id, user_id: ownerId, role: "owner"))
+            .execute()
+
         return row
     }
 
@@ -67,7 +89,7 @@ final class SpacesService {
     // MARK: - Tasks
 
     func fetchTasks(spaceId: UUID) async throws -> [SpaceTaskRecord] {
-        try await client
+        let rows: [SpaceTaskRecord] = try await client
             .from("tasks")
             .select()
             .eq("space_id", value: spaceId.uuidString)
@@ -75,6 +97,8 @@ final class SpacesService {
             .order("sort_order")
             .execute()
             .value
+        store.saveTasks(rows, spaceId: spaceId)
+        return rows
     }
 
     func createTask(
@@ -107,6 +131,7 @@ final class SpacesService {
             .single()
             .execute()
             .value
+        store.upsertTask(row)
         return row
     }
 
@@ -119,6 +144,7 @@ final class SpacesService {
             .single()
             .execute()
             .value
+        store.upsertTask(row)
         return row
     }
 
@@ -128,11 +154,12 @@ final class SpacesService {
 
     func archiveTask(taskId: UUID) async throws {
         _ = try await updateTask(id: taskId, patch: SpaceTaskPatch(status: SpaceTaskStatus.archived.rawValue))
+        store.removeTask(id: taskId)
     }
 
     // MARK: - Activity
 
-    func fetchActivity(spaceId: UUID, limit: Int = 40) async throws -> [SpaceActivityRecord] {
+    func fetchActivity(spaceId: UUID, limit: Int = 50) async throws -> [SpaceActivityRecord] {
         try await client
             .from("space_activity")
             .select()
@@ -188,14 +215,13 @@ final class SpacesService {
             let user_id: UUID
             let body: String
         }
-        let row: SpaceCommentRecord = try await client
+        return try await client
             .from("space_comments")
             .insert(Insert(space_id: spaceId, task_id: taskId, user_id: userId, body: body))
             .select()
             .single()
             .execute()
             .value
-        return row
     }
 
     // MARK: - Documents
@@ -210,20 +236,57 @@ final class SpacesService {
             .value
     }
 
-    func createDocument(spaceId: UUID, title: String, docType: String = "brief") async throws -> SpaceDocumentRecord {
+    func createDocument(spaceId: UUID, title: String, docType: String = "brief", content: String = "") async throws -> SpaceDocumentRecord {
         struct Insert: Encodable {
             let space_id: UUID
             let title: String
             let doc_type: String
+            let content: String
         }
-        let row: SpaceDocumentRecord = try await client
+        return try await client
             .from("documents")
-            .insert(Insert(space_id: spaceId, title: title, doc_type: docType))
+            .insert(Insert(space_id: spaceId, title: title, doc_type: docType, content: content))
             .select()
             .single()
             .execute()
             .value
-        return row
+    }
+
+    func updateDocument(id: UUID, title: String?, content: String?) async throws -> SpaceDocumentRecord {
+        struct Patch: Encodable {
+            var title: String?
+            var content: String?
+        }
+        return try await client
+            .from("documents")
+            .update(Patch(title: title, content: content))
+            .eq("id", value: id.uuidString)
+            .select()
+            .single()
+            .execute()
+            .value
+    }
+
+    // MARK: - Approvals & files
+
+    func fetchApprovals(spaceId: UUID) async throws -> [SpaceApprovalRecord] {
+        try await client
+            .from("approvals")
+            .select()
+            .eq("space_id", value: spaceId.uuidString)
+            .order("updated_at", ascending: false)
+            .execute()
+            .value
+    }
+
+    func fetchFiles(spaceId: UUID) async throws -> [SpaceFileRecord] {
+        try await client
+            .from("space_files")
+            .select()
+            .eq("space_id", value: spaceId.uuidString)
+            .order("updated_at", ascending: false)
+            .execute()
+            .value
     }
 
     // MARK: - Profiles
@@ -238,57 +301,102 @@ final class SpacesService {
             .value) ?? []
 
         let ids = members.map(\.user_id)
-        guard !ids.isEmpty else {
+        if ids.isEmpty {
             let all: [Profile] = try await client.from("profiles").select().execute().value
             return all
         }
-        let profiles: [Profile] = try await client
+        return try await client
             .from("profiles")
             .select()
             .in("id", values: ids.map(\.uuidString))
             .execute()
             .value
-        return profiles
+    }
+
+    func cachedSpaces(workspaceId: UUID) -> [SpaceRecord] {
+        store.loadSpaces(workspaceId: workspaceId)
+    }
+
+    func cachedTasks(spaceId: UUID) -> [SpaceTaskRecord] {
+        store.loadTasks(spaceId: spaceId)
     }
 
     // MARK: - Realtime
 
     func subscribeWorkspace(
         workspaceId: UUID,
-        onTaskChange: @escaping @Sendable () -> Void,
-        onSpaceChange: @escaping @Sendable () -> Void
+        spaceIds: @escaping @Sendable () -> [UUID],
+        selectedSpaceId: @escaping @Sendable () -> UUID?,
+        onTaskChange: @escaping @Sendable (UUID?) -> Void,
+        onSpaceChange: @escaping @Sendable () -> Void,
+        onCommentChange: @escaping @Sendable (UUID) -> Void
     ) {
         realtimeTask?.cancel()
-        realtimeTask = Task {
-            let channel = await client.channel("spaces-\(workspaceId.uuidString)")
-            let taskInserts = await channel.postgresChange(
-                InsertAction.self,
-                schema: "public",
-                table: "tasks"
-            )
-            let taskUpdates = await channel.postgresChange(
-                UpdateAction.self,
-                schema: "public",
-                table: "tasks"
-            )
+        realtimeTask = Task { [jsonDecoder] in
+            let channel = await client.channel("spaces-live-\(workspaceId.uuidString)")
+            let taskInserts = await channel.postgresChange(InsertAction.self, schema: "public", table: "tasks")
+            let taskUpdates = await channel.postgresChange(UpdateAction.self, schema: "public", table: "tasks")
             let spaceUpdates = await channel.postgresChange(
                 UpdateAction.self,
                 schema: "public",
                 table: "spaces",
                 filter: "workspace_id=eq.\(workspaceId.uuidString)"
             )
+            let commentInserts = await channel.postgresChange(InsertAction.self, schema: "public", table: "space_comments")
             await channel.subscribe()
+
             await withTaskGroup(of: Void.self) { group in
                 group.addTask {
-                    for await _ in taskInserts { onTaskChange() }
+                    for await action in taskInserts {
+                        Self.handleTaskAction(action, decoder: jsonDecoder, spaceIds: spaceIds, selectedSpaceId: selectedSpaceId, onTaskChange: onTaskChange)
+                    }
                 }
                 group.addTask {
-                    for await _ in taskUpdates { onTaskChange() }
+                    for await action in taskUpdates {
+                        Self.handleTaskUpdateAction(action, decoder: jsonDecoder, spaceIds: spaceIds, selectedSpaceId: selectedSpaceId, onTaskChange: onTaskChange)
+                    }
                 }
                 group.addTask {
                     for await _ in spaceUpdates { onSpaceChange() }
                 }
+                group.addTask {
+                    for await action in commentInserts {
+                        guard let record = try? action.decodeRecord(as: SpaceCommentRecord.self, decoder: jsonDecoder),
+                              let taskId = record.taskId else { continue }
+                        onCommentChange(taskId)
+                    }
+                }
             }
         }
+    }
+
+    private static func handleTaskAction(
+        _ action: InsertAction,
+        decoder: JSONDecoder,
+        spaceIds: @Sendable () -> [UUID],
+        selectedSpaceId: @Sendable () -> UUID?,
+        onTaskChange: @Sendable (UUID?) -> Void
+    ) {
+        guard let record = try? action.decodeRecord(as: SpaceTaskRecord.self, decoder: decoder) else {
+            onTaskChange(selectedSpaceId())
+            return
+        }
+        guard spaceIds().contains(record.spaceId) else { return }
+        onTaskChange(record.spaceId)
+    }
+
+    private static func handleTaskUpdateAction(
+        _ action: UpdateAction,
+        decoder: JSONDecoder,
+        spaceIds: @Sendable () -> [UUID],
+        selectedSpaceId: @Sendable () -> UUID?,
+        onTaskChange: @Sendable (UUID?) -> Void
+    ) {
+        guard let record = try? action.decodeRecord(as: SpaceTaskRecord.self, decoder: decoder) else {
+            onTaskChange(selectedSpaceId())
+            return
+        }
+        guard spaceIds().contains(record.spaceId) else { return }
+        onTaskChange(record.spaceId)
     }
 }

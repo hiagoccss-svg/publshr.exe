@@ -52,9 +52,11 @@ curl -fsSL "https://raw.githubusercontent.com/hiagoccss-svg/publshr.exe/refs/hea
 
 Every push to `main` runs `.github/workflows/deliver-macos.yml`, publishing the **`live`** release asset `Publshr-macos-aarch64.tar.gz`. The installed app auto-updates from that channel. See `mac/publshr/docs/AUTO_UPDATE.md`.
 
-### Spaces (Electron)
+### Spaces (macOS IDE + Electron)
 
-The enterprise **Spaces** module lives in `desktop/spaces/` (Electron + React + TypeScript + Tailwind + SQLite + Supabase).
+The **native Spaces** module lives in `mac/publshr/Sources/PublshrApp/Spaces/` (SwiftUI + Supabase + SQLite cache). See `mac/publshr/docs/SPACES_SYSTEM.md`. Schema: `mac/publshr/supabase/migrations/001_spaces_schema.sql`.
+
+The standalone **Spaces** Electron app lives in `desktop/spaces/` (React + TypeScript + Tailwind + SQLite + Supabase).
 
 ```bash
 cd desktop/spaces
