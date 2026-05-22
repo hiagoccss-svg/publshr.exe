@@ -252,9 +252,14 @@ final class AppUpdateService: @unchecked Sendable {
             throw AppUpdateError.noCompatibleAsset
         }
 
-        let build = parseBuildNumber(from: live)
-            ?? await fetchBuildFromVersionAsset(in: live.assets)
-            ?? 0
+        let build: Int
+        if let fromRelease = parseBuildNumber(from: live) {
+            build = fromRelease
+        } else if let fromAsset = await fetchBuildFromVersionAsset(in: live.assets) {
+            build = fromAsset
+        } else {
+            build = 0
+        }
 
         appendSyncLog("live check: local=\(localBuild) remote=\(build) asset=\(assetName) size=\(asset.size)")
 
