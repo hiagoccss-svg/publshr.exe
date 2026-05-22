@@ -6,72 +6,82 @@ set -euo pipefail
 REPO="${PUBLSHR_REPO:-hiagoccss-svg/publshr.exe}"
 BRANCH="${PUBLSHR_BRANCH:-main}"
 
-# Pick the newest GitHub release that actually ships a macOS app bundle (not CLI-only).
-resolve_latest_version() {
-    local api asset_name
+platform_asset_suffix() {
     case "$(uname -s)" in
         Darwin)
             case "$(uname -m)" in
-                arm64|aarch64) asset_name="macos-aarch64" ;;
-                *) asset_name="macos-x86_64" ;;
+                arm64|aarch64) echo "macos-aarch64" ;;
+                *) echo "macos-x86_64" ;;
             esac
             ;;
         Linux)
             case "$(uname -m)" in
-                arm64|aarch64) asset_name="linux-aarch64" ;;
-                *) asset_name="linux-x86_64" ;;
+                arm64|aarch64) echo "linux-aarch64" ;;
+                *) echo "linux-x86_64" ;;
             esac
             ;;
-        *) asset_name="" ;;
+        *) echo "" ;;
     esac
+}
 
-    python3 - "$REPO" "$asset_name" <<'PY' 2>/dev/null || true
+# Newest GitHub release with a full macOS app (>5MB), not CLI-only.
+resolve_latest_mac_app_version() {
+    local arch_suffix repo api
+    arch_suffix="$(platform_asset_suffix)"
+    [[ "$arch_suffix" == macos-* ]] || return 1
+    repo="$REPO"
+    api="https://api.github.com/repos/${repo}/releases?per_page=30"
+
+    if command -v python3 >/dev/null 2>&1; then
+        python3 - "$repo" "$arch_suffix" <<'PY' || return 1
 import json, sys, urllib.request
 
 repo, arch_suffix = sys.argv[1], sys.argv[2]
 url = f"https://api.github.com/repos/{repo}/releases?per_page=30"
 req = urllib.request.Request(
     url,
-    headers={
-        "Accept": "application/vnd.github+json",
-        "User-Agent": "Publshr-Installer/1.0",
-    },
+    headers={"Accept": "application/vnd.github+json", "User-Agent": "Publshr-Installer/1.0"},
 )
-with urllib.request.urlopen(req, timeout=30) as resp:
+with urllib.request.urlopen(req, timeout=60) as resp:
     releases = json.load(resp)
-
-def version_from_tag(tag: str) -> str:
-    return tag.lstrip("v")
 
 best = None
 for release in releases:
-    tag = release.get("tag_name") or ""
-    version = version_from_tag(tag)
+    tag = (release.get("tag_name") or "").lstrip("v")
     for asset in release.get("assets") or []:
         name = asset.get("name") or ""
         size = int(asset.get("size") or 0)
-        if arch_suffix and f"-{arch_suffix}.tar.gz" not in name:
+        if f"-{arch_suffix}.tar.gz" not in name:
             continue
-        if not name.startswith(f"publshr-{version}-"):
+        if not name.startswith(f"publshr-{tag}-"):
             continue
-        # macOS IDE releases include Publshr.app (> ~5 MB). Skip CLI-only tarballs.
-        if "macos" in name and size < 5_000_000:
+        if size < 5_000_000:
             continue
-        build = 0
-        parts = version.split(".")
-        if len(parts) >= 2 and parts[-1].isdigit():
-            build = int(parts[-1])
+        parts = tag.split(".")
+        build = int(parts[-1]) if len(parts) >= 2 and parts[-1].isdigit() else 0
         score = (build, size)
         if best is None or score > best[0]:
-            best = (score, version)
-
+            best = (score, tag)
 if best:
     print(best[1], end="")
 PY
+        return 0
+    fi
+    return 1
 }
 
-RESOLVED="$(resolve_latest_version)"
-VERSION="${PUBLSHR_VERSION:-${RESOLVED:-0.1.0}}"
+VERSION="${PUBLSHR_VERSION:-}"
+if [[ -z "$VERSION" && "$(uname -s)" == "Darwin" ]]; then
+    if RESOLVED="$(resolve_latest_mac_app_version 2>/dev/null)" && [[ -n "$RESOLVED" ]]; then
+        VERSION="$RESOLVED"
+    else
+        # No full Mac release on GitHub yet — install.sh will clone and compile.
+        VERSION=""
+    fi
+elif [[ -z "$VERSION" ]]; then
+    VERSION="0.1.0"
+fi
+
 INSTALLER_URL="https://raw.githubusercontent.com/${REPO}/${BRANCH}/mac/publshr/install.sh"
 TMP="$(mktemp)"
 trap 'rm -f "$TMP"' EXIT
@@ -84,7 +94,12 @@ if [[ "$(uname -s)" == "Darwin" ]]; then
     echo ""
     echo "This installs Publshr to /Applications (Launchpad + Finder → Applications)"
     echo "and adds the publshr command for Terminal."
-    echo "  Release: v${VERSION}"
+    if [[ -n "$VERSION" ]]; then
+        echo "  Release: v${VERSION}"
+    else
+        echo "  No pre-built Mac release found — will build from GitHub (${BRANCH})."
+        echo "  (Requires Xcode; first install takes a few minutes.)"
+    fi
     echo ""
 fi
 

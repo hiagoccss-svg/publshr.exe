@@ -3,7 +3,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-VERSION="${PUBLSHR_VERSION:-0.1.0}"
+VERSION="${PUBLSHR_VERSION:-}"
 REPO="${PUBLSHR_REPO:-hiagoccss-svg/publshr.exe}"
 BRANCH="${PUBLSHR_BRANCH:-main}"
 INSTALL_ROOT="${PUBLSHR_INSTALL_ROOT:-/opt/publshr}"
@@ -62,7 +62,7 @@ require_root() {
 }
 
 platform_asset() {
-    local os arch
+    local os arch ver="${1:-$VERSION}"
     case "$(uname -s)" in
         Darwin) os=macos ;;
         Linux) os=linux ;;
@@ -73,7 +73,18 @@ platform_asset() {
         arm64|aarch64) arch=aarch64 ;;
         *) echo "Unsupported arch: $(uname -m)" >&2; return 1 ;;
     esac
-    echo "publshr-${VERSION}-${os}-${arch}.tar.gz"
+    echo "publshr-${ver}-${os}-${arch}.tar.gz"
+}
+
+mac_release_is_full_app() {
+    local ver="${1:-$VERSION}"
+    local asset url size
+    [[ "$(uname -s)" == "Darwin" ]] || return 1
+    [[ -n "$ver" ]] || return 1
+    asset="$(platform_asset "$ver")"
+    url="https://github.com/${REPO}/releases/download/v${ver}/${asset}"
+    size="$(curl -fsSIL "$url" 2>/dev/null | awk 'tolower($1)=="content-length:" {print $2}' | tr -d '\r' | tail -1)"
+    [[ -n "${size:-}" && "$size" -gt 5000000 ]]
 }
 
 tree_has_mac_app() {
@@ -116,7 +127,7 @@ clone_and_build_tree() {
         return 1
     fi
 
-    local tmp repo_dir
+    local tmp repo_dir build_version
     tmp="$(mktemp -d)"
     echo "Cloning https://github.com/${REPO}.git (branch ${BRANCH}) ..." >&2
     if ! git clone --depth 1 --branch "$BRANCH" "https://github.com/${REPO}.git" "$tmp/repo"; then
@@ -132,13 +143,22 @@ clone_and_build_tree() {
         return 1
     fi
 
-    echo "Building Publshr from source (this takes a few minutes) ..." >&2
+    build_version="$VERSION"
+    if [[ -z "$build_version" && -f "$repo_dir/VERSION" ]]; then
+        build_version="$(tr -d '[:space:]' < "$repo_dir/VERSION")"
+    fi
+    if [[ -z "$build_version" ]]; then
+        build_version="0.2.0"
+    fi
+
+    echo "Building Publshr ${build_version} from source (several minutes) ..." >&2
     (
         cd "$repo_dir"
-        chmod +x scripts/package-release.sh scripts/build-macos-app.sh 2>/dev/null || true
-        bash scripts/package-release.sh "$VERSION"
+        chmod +x scripts/package-release.sh scripts/build-macos-app.sh scripts/apply-macos-update.sh 2>/dev/null || true
+        bash scripts/package-release.sh "$build_version"
     )
 
+    VERSION="$build_version"
     local asset tree
     asset="$(platform_asset)"
     tree="$repo_dir/dist/${asset%.tar.gz}"
@@ -260,15 +280,24 @@ acquire_tree() {
             tree="$(build_tree)" || exit 1
             ;;
         *)
-            if tree="$(download_release)"; then
+            if [[ "$(uname -s)" == "Darwin" ]] && { [[ -z "$VERSION" ]] || ! mac_release_is_full_app "$VERSION"; }; then
+                echo "No full Publshr.app release on GitHub for v${VERSION:-<auto>} — building from source." >&2
+                tree="$(clone_and_build_tree)" || tree="$(build_tree)" || {
+                    echo "Install failed: could not build Publshr.app." >&2
+                    echo "Install Xcode from the App Store, then: xcode-select --install" >&2
+                    exit 1
+                }
+                echo "Built Publshr from GitHub (${BRANCH})." >&2
+            elif [[ -n "$VERSION" ]] && tree="$(download_release)"; then
                 echo "Using GitHub release v${VERSION}." >&2
             elif tree="$(clone_and_build_tree)"; then
                 echo "Built Publshr from GitHub (${BRANCH})." >&2
             elif tree="$(build_tree)"; then
                 echo "Built Publshr from local source." >&2
             else
+                VERSION="${VERSION:-0.1.0}"
                 echo "Install failed: no release for v${VERSION} and could not build from source." >&2
-                echo "Install Xcode, then retry. Or set PUBLSHR_VERSION=0.1.0 if you only need the CLI." >&2
+                echo "Install Xcode, then retry." >&2
                 exit 1
             fi
             ;;
