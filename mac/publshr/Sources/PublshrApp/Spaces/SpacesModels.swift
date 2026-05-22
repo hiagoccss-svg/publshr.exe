@@ -113,6 +113,7 @@ struct SpaceRecord: Codable, Identifiable, Equatable {
     var status: String
     var color: String
     var isPinned: Bool
+    var isFavourite: Bool
     var isArchived: Bool
 
     enum CodingKeys: String, CodingKey {
@@ -120,6 +121,7 @@ struct SpaceRecord: Codable, Identifiable, Equatable {
         case workspaceId = "workspace_id"
         case name, description, type, status, color
         case isPinned = "is_pinned"
+        case isFavourite = "is_favourite"
         case isArchived = "is_archived"
     }
 
@@ -133,6 +135,7 @@ struct SpaceRecord: Codable, Identifiable, Equatable {
         status = try c.decodeIfPresent(String.self, forKey: .status) ?? "active"
         color = try c.decodeIfPresent(String.self, forKey: .color) ?? "#3d5a80"
         isPinned = try c.decodeIfPresent(Bool.self, forKey: .isPinned) ?? false
+        isFavourite = try c.decodeIfPresent(Bool.self, forKey: .isFavourite) ?? false
         isArchived = try c.decodeIfPresent(Bool.self, forKey: .isArchived) ?? false
     }
 
@@ -146,6 +149,7 @@ struct SpaceRecord: Codable, Identifiable, Equatable {
         try c.encode(status, forKey: .status)
         try c.encode(color, forKey: .color)
         try c.encode(isPinned, forKey: .isPinned)
+        try c.encode(isFavourite, forKey: .isFavourite)
         try c.encode(isArchived, forKey: .isArchived)
     }
 }

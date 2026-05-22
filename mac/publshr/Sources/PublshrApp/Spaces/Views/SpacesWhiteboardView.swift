@@ -85,15 +85,12 @@ struct SpacesWhiteboardView: View {
             Text(selectedTitle)
                 .font(.system(size: 16, weight: .semibold))
             Text(
-                "Collaborative canvas (shapes, sticky notes, connectors) is available in the Spaces desktop app with live Supabase sync. Native in-app canvas for the macOS IDE is Phase 2."
+                "The whiteboard canvas matches the Electron renderer (tldraw + Supabase). Use Spaces in desktop/spaces for editing; macOS embeds the same web bundle in Phase 2 (see shared/spaces/PARITY.md)."
             )
             .font(.system(size: 12))
             .foregroundStyle(CursorTheme.foregroundMuted)
             .multilineTextAlignment(.center)
             .frame(maxWidth: 420)
-            Text("Run: cd desktop/spaces && npm run dev")
-                .font(.system(size: 11, design: .monospaced))
-                .foregroundStyle(CursorTheme.foregroundDim)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding(24)

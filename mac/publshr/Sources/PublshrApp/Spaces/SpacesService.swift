@@ -50,15 +50,22 @@ final class SpacesService {
         return row
     }
 
-    func updateSpace(id: UUID, name: String? = nil, description: String? = nil, isPinned: Bool? = nil) async throws {
+    func updateSpace(
+        id: UUID,
+        name: String? = nil,
+        description: String? = nil,
+        isPinned: Bool? = nil,
+        isFavourite: Bool? = nil
+    ) async throws {
         struct Patch: Encodable {
             var name: String?
             var description: String?
             var is_pinned: Bool?
+            var is_favourite: Bool?
         }
         try await client
             .from("spaces")
-            .update(Patch(name: name, description: description, is_pinned: isPinned))
+            .update(Patch(name: name, description: description, is_pinned: isPinned, is_favourite: isFavourite))
             .eq("id", value: id.uuidString)
             .execute()
     }
