@@ -46,7 +46,6 @@ final class ChatViewModel: ObservableObject {
 
     // Phase 4
     @Published var showSearchSheet = false
-    @Published var showAISheet = false
     @Published var globalSearchQuery = ""
     @Published var searchResults: [ChatSearchHit] = []
     @Published var searchScope: ChatSearchScope = .workspace
@@ -55,9 +54,6 @@ final class ChatViewModel: ObservableObject {
     @Published var searchError: String?
     @Published var starredChannelIds: Set<UUID> = []
     @Published var membershipByChannel: [UUID: ChatChannelMember] = [:]
-    @Published var aiResult: ChatAIResult?
-    @Published var isAILoading = false
-
     private var auth: AuthViewModel?
     private var globalSearchTask: Task<Void, Never>?
     var service: ChatService?
@@ -862,10 +858,6 @@ final class ChatViewModel: ObservableObject {
             result = result.filter {
                 unreadCount(for: $0.id) > 0 || hasUnreadThreadReplies(for: $0.id)
             }
-        case .starred:
-            result = result.filter { starredChannelIds.contains($0.id) }
-        case .muted:
-            result = result.filter { notificationLevel(for: $0.id) == "muted" }
         case .dms:
             result = result.filter { $0.kind == .dm || $0.kind == .group }
         case .channels:

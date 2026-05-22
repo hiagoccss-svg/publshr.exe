@@ -1,8 +1,8 @@
 import AppKit
 
-/// Transparent title bar + vibrancy-friendly window chrome for call / ring popups.
+/// Transparent title bar + vibrancy-friendly window chrome for pop-out windows.
 enum GlassWindowConfigurator {
-    static func applyCallWindow(_ window: NSWindow) {
+    static func applyPopOutWindow(_ window: NSWindow) {
         window.styleMask = [.titled, .fullSizeContentView, .closable, .resizable, .miniaturizable]
         window.titlebarAppearsTransparent = true
         window.titleVisibility = .hidden

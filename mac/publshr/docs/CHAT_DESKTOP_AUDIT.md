@@ -1,88 +1,46 @@
 # Chat desktop audit (Publshr.app)
 
-Last reviewed: 2026-05-22. Native app only (`mac/publshr`) — not browser/Electron.
+Last updated: 2026-05-22. Native macOS app (`mac/publshr`).
 
-## Build status
+## Build
 
-- `swift build --product PublshrApp` — **passes**
-- Supabase migrations required on project `lboesdtsrqfvosznjpdy` for full chat (see `ENTERPRISE_CHAT_SPACES.md`)
+`swift build --product PublshrApp` — passes without LiveKit.
 
-## What works today
+## Product focus
 
-| Area | Status | Notes |
-|------|--------|--------|
-| Channels, DMs, realtime messages | OK | Supabase + SQLite cache |
-| Submenu (sidebar) | OK | Filter pills, organized/recents, sections |
-| Threads, reactions, pins, files, voice | OK | Phases 2–3 |
-| Pop-out window | OK | Isolated `ChatChannelSession` |
-| Command palette (⌘K) | OK | Opens palette; Search item opens workspace search |
-| Chat search (⌘⇧F) | **Improved** | Tabs, scope, live query, channels/people |
-| Star / mute / mark read | **Added** | Row menu + Starred section |
-| Permissions sheet | OK | `workspaces.settings.chat` |
-| AI sheet | OK | Heuristic summaries (not LLM gateway) |
-| Spaces module | OK | Separate submenu tree |
-| Auto-update (`live`) | OK | Independent of local dev build |
+**ClickUp-style team chat** — sidebar, channels, DMs, threads, search, files. No calls, no AI assistant, no voice-note recording in this build.
 
-## What was broken or weak (fixed this pass)
+## What works
 
-| Issue | Fix |
-|-------|-----|
-| Search sheet was minimal (button + flat list) | `ChatSearchSheet` — tabs, scope, debounced search, empty states |
-| “Favorites” were auto top-8, not user control | **Starred** — persisted per workspace |
-| Mute existed in DB, no UI | Row menu → mute/unmute via `notification_level` |
-| Sidebar search confused with global search | Placeholder: “Filter conversations…” |
-| No channel/people hits in search | Local channel name + profile matching |
-| `favoriteChannels` removed without updating bar menu | Bar menu uses `starredChannels` |
+| Area | Status |
+|------|--------|
+| ClickUp submenu | Header, search, All/Unread/DMs/Channels, Favorites, Organized/Recents |
+| Workspace search | Tabs, scope, ⌘⇧F |
+| Star / mute / mark read | Channel ⋯ menu + Favorites section |
+| Threads, reactions, pins, file attach | Yes |
+| Pop-out channel | Yes |
+| Supabase realtime + cache | Yes |
 
-## Still incomplete (enterprise backlog)
+## Removed in this pass
 
-| Priority | Item |
-|----------|------|
-| High | @mention push notifications |
-| High | Channel member invite/roles UI |
-| High | Custom collapsible sidebar sections (Slack) |
-| Medium | Search modifiers (`in:`, `from:`, `has:file`) |
-| Medium | Section ⋯ menus (sort/filter/browse) |
-| Medium | Read receipts UI |
-| Medium | Group DM creation UI |
-| Medium | Workspace switcher in chat |
-| Low | True STT / LLM for AI + voice |
+| Feature | Notes |
+|---------|--------|
+| Voice & video calls | `CallSignalingService`, LiveKit dependency, call UI |
+| AI assistant | `ChatAIService`, `ChatAISheet`, sparkles / Ask AI buttons |
+| Voice note recording | Mic removed; existing voice messages still play back |
+| Planner list in chat sidebar | Planner module unchanged |
 
-## How to test locally
+## Test locally
 
 ```bash
-cd mac/publshr
-swift build --product PublshrApp
-.build/debug/PublshrApp
+cd mac/publshr && swift build --product PublshrApp && .build/debug/PublshrApp
 ```
 
-Or install to `~/Applications/Publshr.app` via `bash scripts/package-release.sh` + `ditto`.
+1. Chat submenu matches ClickUp sections and filters.
+2. Star a channel → appears under **Favorites**.
+3. ⌘⇧F → search messages/channels/people.
+4. No phone/video/sparkles buttons in chat chrome.
 
-### Chat checklist
+## Reference
 
-1. Sign in → Chat module → submenu shows Channels / DMs.
-2. **Filter conversations** field narrows list only.
-3. **⌘⇧F** → search sheet → type query → tabs filter results → open hit.
-4. Row **⋯** → Star, Mute, Mark read, Search in channel / workspace.
-5. Starred section appears after starring.
-6. **Muted** filter pill shows muted channels only.
-7. Pop-out (⌘⇧O) still independent of IDE selection.
-
-## Submenu architecture (reference)
-
-```
-ChatSidebarView
-├── Filter field (sidebarSearchQuery)     → list filter only
-├── Pills: All | Unread | Starred | Muted | DMs | Channels
-├── Starred / Channels / DMs sections
-├── Planner share list
-└── Footer: Organized | Recents | +
-```
-
-Global search: `ChatSearchSheet` + `ChatViewModel.runGlobalSearch()` (RPC + SQLite + local channel/people).
-
-## Related docs
-
-- `CHAT_SYSTEM.md` — phases & tables
-- `CHAT_ENTERPRISE_GAPS.md` — roadmap
-- `APP_SHELL.md` — shell layout
+[ClickUp Chat Sidebar help](https://help.clickup.com/hc/en-us/articles/33491596671255-What-is-the-Chat-Sidebar)

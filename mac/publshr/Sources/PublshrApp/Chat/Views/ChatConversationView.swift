@@ -4,7 +4,6 @@ import UniformTypeIdentifiers
 struct ChatConversationView: View {
     @ObservedObject var chat: ChatViewModel
     @State private var showFileImporter = false
-    @State private var showVoiceSheet = false
     @State private var editText = ""
 
     var body: some View {
@@ -23,9 +22,6 @@ struct ChatConversationView: View {
             if case .success(let urls) = result, let url = urls.first {
                 Task { await chat.uploadFile(from: url) }
             }
-        }
-        .sheet(isPresented: $showVoiceSheet) {
-            ChatVoiceRecorderSheet(chat: chat)
         }
         .sheet(isPresented: Binding(
             get: { chat.editingMessageId != nil },
@@ -84,9 +80,7 @@ struct ChatConversationView: View {
             }
             ChatComposerView(
                 chat: chat,
-                canSendVoiceNotes: chat.permissions.canUseVoiceNotes,
-                onAttachFile: { attachFiles() },
-                onVoiceNote: { showVoiceSheet = true }
+                onAttachFile: { attachFiles() }
             )
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)

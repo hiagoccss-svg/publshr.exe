@@ -30,11 +30,10 @@ enum ChatClickUpDesign {
     static let horizontalPadding: CGFloat = 10
 }
 
+/// ClickUp Chat Sidebar filters: All, Unread, DMs, Channels (tap active pill again → All).
 enum ChatSidebarFilter: String, CaseIterable, Identifiable {
     case all
     case unread
-    case starred
-    case muted
     case dms
     case channels
 
@@ -44,8 +43,6 @@ enum ChatSidebarFilter: String, CaseIterable, Identifiable {
         switch self {
         case .all: "All"
         case .unread: "Unread"
-        case .starred: "Starred"
-        case .muted: "Muted"
         case .dms: "DMs"
         case .channels: "Channels"
         }

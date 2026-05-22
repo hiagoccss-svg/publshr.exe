@@ -4,21 +4,17 @@ import UniformTypeIdentifiers
 /// Root view for an isolated chat pop-out window.
 struct SessionPopOutRootView: View {
     @ObservedObject var session: ChatChannelSession
-    @State private var showVoice = false
     @State private var editText = ""
 
     var body: some View {
         HStack(spacing: 0) {
-            SessionConversationView(session: session, showVoice: $showVoice, editText: $editText)
+            SessionConversationView(session: session, editText: $editText)
             if session.showThreadPanel {
                 SessionThreadPanel(session: session)
             }
         }
         .background(CursorTheme.chatBackground)
         .preferredColorScheme(.light)
-        .sheet(isPresented: $showVoice) {
-            ChatVoiceRecorderSheetForSession(session: session)
-        }
         .sheet(isPresented: Binding(
             get: { session.editingMessageId != nil },
             set: { if !$0 { session.editingMessageId = nil } }
@@ -55,7 +51,6 @@ struct SessionPopOutRootView: View {
 /// Conversation surface for dedicated pop-out windows (`ChatChannelSession`).
 struct SessionConversationView: View {
     @ObservedObject var session: ChatChannelSession
-    @Binding var showVoice: Bool
     @Binding var editText: String
     @State private var showFileImporter = false
 
@@ -133,12 +128,6 @@ struct SessionConversationView: View {
     private var sessionComposer: some View {
         VStack(spacing: 6) {
             HStack(alignment: .bottom, spacing: 8) {
-                if session.permissions.canUseVoiceNotes {
-                    Button { showVoice = true } label: {
-                        Image(systemName: "mic").foregroundStyle(CursorTheme.foregroundDim)
-                    }
-                    .buttonStyle(.plain)
-                }
                 TextField("Message…", text: $session.composerText, axis: .vertical)
                     .textFieldStyle(.plain)
                     .font(.system(size: 13))
@@ -199,65 +188,5 @@ struct SessionThreadPanel: View {
         }
         .frame(width: 300)
         .background(Color.white)
-    }
-}
-
-struct ChatVoiceRecorderSheetForSession: View {
-    @ObservedObject var session: ChatChannelSession
-    @StateObject private var recorder = ChatVoiceRecorder()
-    @Environment(\.dismiss) private var dismiss
-
-    var body: some View {
-        ChatVoiceRecorderSheetContent(recorder: recorder) { url, ms, wave in
-            Task { await session.sendVoiceNote(url: url, durationMs: ms, waveform: wave) }
-            dismiss()
-        } onCancel: {
-            recorder.cancelRecording()
-            dismiss()
-        }
-    }
-}
-
-/// Shared voice sheet body for IDE + pop-out.
-struct ChatVoiceRecorderSheetContent: View {
-    @ObservedObject var recorder: ChatVoiceRecorder
-    let onFinish: (URL, Int, [Double]) -> Void
-    let onCancel: () -> Void
-
-    var body: some View {
-        VStack(spacing: 16) {
-            Text("Voice note").font(.headline)
-            if recorder.permissionDenied {
-                Text("Microphone access is required. Open System Settings → Privacy & Security → Microphone and enable Publshr.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-            }
-            Text(formatDuration(recorder.elapsedMs))
-                .font(.system(size: 28, weight: .light, design: .monospaced))
-            WaveformPreview(samples: recorder.waveformSamples).frame(height: 48)
-            HStack(spacing: 16) {
-                if recorder.isRecording {
-                    Button(recorder.isPaused ? "Resume" : "Pause") {
-                        recorder.isPaused ? recorder.resumeRecording() : recorder.pauseRecording()
-                    }
-                    Button("Stop") {
-                        if let r = recorder.stopRecording() { onFinish(r.url, r.durationMs, r.waveform) }
-                    }
-                    .buttonStyle(ChatPrimaryButtonStyle())
-                } else {
-                    Button("Record") { Task { try? await recorder.startRecording() } }
-                        .buttonStyle(ChatPrimaryButtonStyle())
-                }
-                Button("Cancel", action: onCancel)
-            }
-        }
-        .padding(24)
-        .frame(width: 320)
-    }
-
-    private func formatDuration(_ ms: Int) -> String {
-        let s = ms / 1000
-        return String(format: "%d:%02d", s / 60, s % 60)
     }
 }

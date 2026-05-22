@@ -58,16 +58,6 @@ enum TitlebarChromeCommands {
                 chat.openWorkspaceSearch(scope: .workspace)
             },
             TitlebarCommandPaletteItem(
-                id: "ai",
-                title: "Ask AI",
-                subtitle: "Open assistant",
-                systemImage: "sparkles",
-                shortcut: nil,
-                isEnabled: true
-            ) {
-                chat.showAISheet = true
-            },
-            TitlebarCommandPaletteItem(
                 id: "notifications",
                 title: "Notifications",
                 subtitle: chat.totalUnread > 0 ? "\(chat.totalUnread) unread" : "No unread",

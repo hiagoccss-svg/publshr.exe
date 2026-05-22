@@ -423,13 +423,6 @@ enum ChatSearchKind: String {
     case message, file, voice, user, channel, task
 }
 
-struct ChatAIResult: Equatable {
-    let title: String
-    let body: String
-    let actionItems: [String]
-    let deadlines: [String]
-}
-
 // MARK: - Planner task (for integration)
 
 struct PlannerTask: Codable, Identifiable, Equatable {

@@ -34,7 +34,7 @@ final class ChatWindowManager: ObservableObject {
             window.center()
         }
         window.styleMask = [.titled, .closable, .resizable, .miniaturizable]
-        GlassWindowConfigurator.applyCallWindow(window)
+        GlassWindowConfigurator.applyPopOutWindow(window)
         window.isReleasedWhenClosed = false
 
         let channelId = channel.id

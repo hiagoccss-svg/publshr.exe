@@ -259,63 +259,6 @@ extension ChatViewModel {
         plannerTasks = (try? await service.fetchTasks(workspaceId: workspace.id)) ?? []
     }
 
-    // MARK: - Voice
-
-    func sendVoiceNote(url: URL, durationMs: Int, waveform: [Double]) async {
-        guard permissions.canUseVoiceNotes,
-              let service, let workspace, let channel = selectedChannel,
-              let userId = currentUserId else { return }
-        do {
-            let data = try FileAccessService.readData(from: url)
-            let fileName = "voice-\(UUID().uuidString).m4a"
-            let localURL = try LocalVoiceNoteStore.saveRecording(
-                from: url,
-                workspaceId: workspace.id,
-                channelId: channel.id
-            )
-            var playbackURL = localURL.absoluteString
-            var storagePath = localURL.path
-            if let uploaded = try? await service.uploadChatFile(
-                workspaceId: workspace.id,
-                userId: userId,
-                fileName: fileName,
-                mimeType: "audio/mp4",
-                data: data
-            ) {
-                playbackURL = uploaded.publicURL.absoluteString
-                storagePath = uploaded.fileRecord.path
-            }
-            let attachment = ChatAttachment(
-                type: "voice",
-                url: playbackURL,
-                name: fileName,
-                size: data.count,
-                voiceNoteDurationMs: durationMs
-            )
-            let msg = try await service.sendMessageExtended(
-                workspaceId: workspace.id,
-                channelId: channel.id,
-                userId: userId,
-                body: Optional<String>.none,
-                attachments: [attachment]
-            )
-            _ = try await service.saveVoiceTranscript(
-                workspaceId: workspace.id,
-                messageId: msg.id,
-                storagePath: storagePath,
-                durationMs: durationMs,
-                waveform: waveform
-            )
-            let transcript = ChatAIService.mockTranscribeVoice(durationMs: durationMs)
-            if let vt = try? await service.fetchVoiceTranscript(messageId: msg.id) {
-                try? await service.updateTranscript(id: vt.id, transcript: transcript, status: ChatTranscriptStatus.ready)
-                voiceTranscripts[msg.id] = transcript
-            }
-            messages.append(msg)
-            await loadChannelExtras()
-        } catch { errorMessage = error.localizedDescription }
-    }
-
     // MARK: - Search
 
     func runGlobalSearch() async {
@@ -448,27 +391,6 @@ extension ChatViewModel {
                 selectChannel(ch)
             }
         }
-    }
-
-    // MARK: - AI
-
-    func runAISummary(unreadOnly: Bool = false) async {
-        isAILoading = true
-        defer { isAILoading = false }
-        let pool: [ChatMessage]
-        if unreadOnly {
-            pool = messages.filter { $0.threadParentId == nil }
-        } else if showThreadPanel, let parent = activeThreadParent {
-            aiResult = ChatAIService.summarizeThread(root: parent, replies: threadMessages, profiles: profiles)
-            return
-        } else {
-            pool = mainChannelMessages
-        }
-        aiResult = ChatAIService.summarizeMessages(pool, profiles: profiles)
-    }
-
-    func applySuggestedReply() {
-        composerText = ChatAIService.suggestReply(to: messages)
     }
 
     // MARK: - Read receipts

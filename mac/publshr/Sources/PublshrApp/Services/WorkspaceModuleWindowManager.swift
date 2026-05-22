@@ -13,8 +13,7 @@ final class WorkspaceModuleWindowManager: ObservableObject {
         spaces: SpacesViewModel,
         updates: AppUpdateViewModel,
         subscription: SubscriptionService,
-        enterprise: EnterpriseWorkspaceService,
-        calls: CallSignalingService
+        enterprise: EnterpriseWorkspaceService
     ) {
         open(
             module: .settings,
@@ -23,8 +22,7 @@ final class WorkspaceModuleWindowManager: ObservableObject {
             auth: auth,
             subscription: subscription,
             updates: updates,
-            enterprise: enterprise,
-            calls: calls
+            enterprise: enterprise
         )
         Task { await updates.performLiveSync() }
     }
@@ -36,8 +34,7 @@ final class WorkspaceModuleWindowManager: ObservableObject {
         auth: AuthViewModel,
         subscription: SubscriptionService,
         updates: AppUpdateViewModel? = nil,
-        enterprise: EnterpriseWorkspaceService? = nil,
-        calls: CallSignalingService? = nil
+        enterprise: EnterpriseWorkspaceService? = nil
     ) {
         if let existing = windows[module] {
             existing.makeKeyAndOrderFront(nil)
@@ -47,20 +44,18 @@ final class WorkspaceModuleWindowManager: ObservableObject {
         let root: AnyView = {
             switch module {
             case .chat:
-                let chatRoot = EnterpriseChatView(chat: chat, topInset: 12, embedInPopOut: true)
-                    .environmentObject(auth)
-                    .environmentObject(subscription)
-                if let calls {
-                    return AnyView(chatRoot.environmentObject(calls))
-                }
-                return AnyView(chatRoot)
+                return AnyView(
+                    EnterpriseChatView(chat: chat, topInset: 12, embedInPopOut: true)
+                        .environmentObject(auth)
+                        .environmentObject(subscription)
+                )
             case .spaces:
                 return AnyView(
                     SpacesRootView(spaces: spaces, topInset: 12, embedInPopOut: true)
                         .environmentObject(auth)
                 )
             case .settings:
-                guard let updates, let enterprise, let calls else {
+                guard let updates, let enterprise else {
                     return AnyView(Text("Settings unavailable").padding())
                 }
                 return AnyView(
@@ -71,37 +66,33 @@ final class WorkspaceModuleWindowManager: ObservableObject {
                         .environmentObject(subscription)
                         .environmentObject(updates)
                         .environmentObject(enterprise)
-                        .environmentObject(calls)
                 )
             }
         }()
 
         let hosting = NSHostingController(rootView: root.frame(minWidth: 900, minHeight: 640))
         let window = NSWindow(contentViewController: hosting)
-        window.title = module == .settings ? "Publshr Settings" : module.label
-        let size = module == .settings ? NSSize(width: 920, height: 680) : NSSize(width: 1100, height: 760)
-        window.setContentSize(size)
+        window.title = module.windowTitle
+        window.setContentSize(NSSize(width: 1100, height: 720))
         window.center()
-        window.styleMask = [.titled, .closable, .resizable, .miniaturizable]
-        window.isReleasedWhenClosed = false
-
-        windows[module] = window
-
-        NotificationCenter.default.addObserver(
-            forName: NSWindow.willCloseNotification,
-            object: window,
-            queue: .main
-        ) { [weak self] _ in
-            DispatchQueue.main.async {
-                self?.windows.removeValue(forKey: module)
-            }
-        }
-
         window.makeKeyAndOrderFront(nil)
+        windows[module] = window
     }
 
     func closeAll() {
-        windows.values.forEach { $0.close() }
+        for window in windows.values {
+            window.close()
+        }
         windows.removeAll()
+    }
+}
+
+private extension AppModule {
+    var windowTitle: String {
+        switch self {
+        case .chat: "Publshr Chat"
+        case .spaces: "Publshr Spaces"
+        case .settings: "Publshr Settings"
+        }
     }
 }

@@ -241,47 +241,6 @@ final class ChatChannelSession: ObservableObject {
         } catch { errorMessage = error.localizedDescription }
     }
 
-    func sendVoiceNote(url: URL, durationMs: Int, waveform: [Double]) async {
-        guard permissions.canUseVoiceNotes, let userId = currentUserId else { return }
-        do {
-            let data = try Data(contentsOf: url)
-            let fileName = "voice-\(UUID().uuidString).m4a"
-            let uploaded = try await service.uploadChatFile(
-                workspaceId: workspaceId,
-                userId: userId,
-                fileName: fileName,
-                mimeType: "audio/mp4",
-                data: data
-            )
-            let attachment = ChatAttachment(
-                type: "voice",
-                url: uploaded.publicURL.absoluteString,
-                name: fileName,
-                size: data.count,
-                voiceNoteDurationMs: durationMs
-            )
-            let msg = try await service.sendMessageExtended(
-                workspaceId: workspaceId,
-                channelId: channel.id,
-                userId: userId,
-                body: nil,
-                attachments: [attachment]
-            )
-            _ = try await service.saveVoiceTranscript(
-                workspaceId: workspaceId,
-                messageId: msg.id,
-                storagePath: uploaded.fileRecord.path,
-                durationMs: durationMs,
-                waveform: waveform
-            )
-            voiceTranscripts[msg.id] = ChatAIService.mockTranscribeVoice(durationMs: durationMs)
-            messages.append(msg)
-            await refreshExtras()
-        } catch {
-            errorMessage = error.localizedDescription
-        }
-    }
-
     func uploadFile(from url: URL) async {
         guard permissions.canUploadFiles, let userId = currentUserId else { return }
         uploadProgress = 0.1

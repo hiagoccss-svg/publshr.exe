@@ -2,9 +2,7 @@ import SwiftUI
 
 struct ChatComposerView: View {
     @ObservedObject var chat: ChatViewModel
-    var canSendVoiceNotes: Bool = false
     var onAttachFile: (() -> Void)?
-    var onVoiceNote: (() -> Void)?
 
     var body: some View {
         VStack(spacing: 4) {
@@ -18,13 +16,8 @@ struct ChatComposerView: View {
             }
 
             HStack(alignment: .bottom, spacing: 10) {
-                HStack(spacing: 2) {
-                    if chat.permissions.canUploadFiles {
-                        composerIcon("paperclip") { onAttachFile?() }
-                    }
-                    if canSendVoiceNotes {
-                        composerIcon("mic") { onVoiceNote?() }
-                    }
+                if chat.permissions.canUploadFiles {
+                    composerIcon("paperclip") { onAttachFile?() }
                 }
 
                 TextField(composerPlaceholder, text: $chat.composerText, axis: .vertical)

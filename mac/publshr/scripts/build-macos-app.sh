@@ -27,12 +27,6 @@ mkdir -p "$MACOS_DIR" "$RES_DIR"
 cp "$BINARY" "${MACOS_DIR}/Publshr"
 chmod 755 "${MACOS_DIR}/Publshr"
 
-PKG_ROOT="${SCRIPT_DIR}/.."
-if [[ "$(uname -s)" == "Darwin" ]]; then
-    chmod +x "${SCRIPT_DIR}/embed-macos-livekit-frameworks.sh"
-    bash "${SCRIPT_DIR}/embed-macos-livekit-frameworks.sh" "$APP_ROOT" "$PKG_ROOT"
-fi
-
 sed -e "s#@@SHORT_VERSION@@#${SHORT_VERSION}#g" \
     -e "s#@@BUILD@@#${BUILD}#g" \
     -e "s#@@GITHUB_REPO@@#${GITHUB_REPO}#g" \
@@ -60,11 +54,5 @@ fi
 cp "${SCRIPT_DIR}/apply-macos-update.sh" "${RES_DIR}/apply-macos-update.sh"
 cp "${SCRIPT_DIR}/lib-install-path.sh" "${RES_DIR}/lib-install-path.sh"
 chmod 755 "${RES_DIR}/apply-macos-update.sh" "${RES_DIR}/lib-install-path.sh"
-
-# Optional: embedded local SFU for voice/video (see docs/LOCAL_CALLS.md).
-if [[ -f "${SCRIPT_DIR}/../app/resources/livekit-server" ]]; then
-    cp "${SCRIPT_DIR}/../app/resources/livekit-server" "${RES_DIR}/livekit-server"
-    chmod 755 "${RES_DIR}/livekit-server"
-fi
 
 echo "Built ${APP_ROOT} (${SHORT_VERSION} build ${BUILD})" >&2

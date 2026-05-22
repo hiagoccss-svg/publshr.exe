@@ -8,7 +8,6 @@ struct PublshrApp: App {
     @StateObject private var updates = AppUpdateViewModel()
     @StateObject private var subscription = SubscriptionService()
     @StateObject private var enterprise = EnterpriseWorkspaceService()
-    @StateObject private var calls = CallSignalingService()
     @StateObject private var tabStore = WorkspaceTabStore()
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
@@ -25,7 +24,6 @@ struct PublshrApp: App {
                 .environmentObject(updates)
                 .environmentObject(subscription)
                 .environmentObject(enterprise)
-                .environmentObject(calls)
                 .environmentObject(tabStore)
                 .onOpenURL { url in
                     auth.handleIncomingURL(url)
@@ -37,8 +35,6 @@ struct PublshrApp: App {
                 .onChange(of: auth.flowState) { _, state in
                     if state == .signedIn {
                         Task { await performFullSync() }
-                    } else {
-                        calls.detach()
                     }
                 }
                 .onChange(of: auth.selectedMembership?.workspace.id) { _, _ in
@@ -121,9 +117,6 @@ struct PublshrApp: App {
                     NotificationCenter.default.post(name: .publshrTitlebarSearch, object: nil)
                 }
                 .keyboardShortcut("f", modifiers: [.command, .shift])
-                Button("AI Assistant") {
-                    chat.showAISheet = true
-                }
                 Button("Pop Out Channel") {
                     if auth.isAuthenticated {
                         chat.popOutCurrentChannel(auth: auth)
@@ -149,7 +142,6 @@ struct PublshrApp: App {
         await auth.refreshSupabaseConnection()
         await chat.refreshAfterReconnect()
         await spaces.reload()
-        await chat.loadPlannerTasks()
         await syncEnterpriseServices()
         updates.recordCloudSync(summary: auth.supabaseStatusLine)
     }
@@ -159,13 +151,6 @@ struct PublshrApp: App {
         guard auth.flowState == .signedIn else { return }
         await subscription.refresh(client: auth.client, workspace: auth.selectedWorkspace)
         if let uid = auth.profile?.id {
-            calls.attach(
-                client: auth.client,
-                userId: uid,
-                displayName: auth.profile?.displayName ?? auth.displayName,
-                workspaceId: auth.selectedWorkspace?.id
-            )
-            calls.bindPresentation(chat: chat, auth: auth)
             await DeviceIdentityService.register(
                 client: auth.client,
                 userId: uid,
@@ -226,7 +211,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             AppWindowStateStore.saveMainWindowFrame(window.frame)
         }
         ChatWindowManager.shared.closeAll()
-        CallWindowManager.shared.closeAll()
         WorkspaceModuleWindowManager.shared.closeAll()
         AppLifecycleService.shared.stop()
     }

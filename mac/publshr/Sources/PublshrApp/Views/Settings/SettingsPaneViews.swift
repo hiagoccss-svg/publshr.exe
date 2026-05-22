@@ -89,7 +89,7 @@ struct SettingsAccountPane: View {
                             showAvatarPicker = true
                         }
                         .disabled(isUploadingAvatar)
-                        Text("Shown in chat, calls, and spaces.")
+                        Text("Shown in chat and spaces.")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                         if let avatarError {
@@ -202,7 +202,6 @@ struct SettingsBillingPane: View {
             Section("Included") {
                 Toggle("Chat", isOn: .constant(subscription.features.chatEnabled)).disabled(true)
                 Toggle("Spaces", isOn: .constant(subscription.features.spacesEnabled)).disabled(true)
-                Toggle("Voice & video calls", isOn: .constant(subscription.features.callsEnabled)).disabled(true)
             }
             if let msg = subscription.billingMessage {
                 Section {

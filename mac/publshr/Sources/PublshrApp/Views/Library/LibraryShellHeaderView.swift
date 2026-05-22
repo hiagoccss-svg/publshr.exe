@@ -6,7 +6,6 @@ struct LibraryShellHeaderView: View {
     @EnvironmentObject private var auth: AuthViewModel
     @EnvironmentObject private var chat: ChatViewModel
     @EnvironmentObject private var subscription: SubscriptionService
-    @EnvironmentObject private var calls: CallSignalingService
     @ObservedObject var spaces: SpacesViewModel
     @Binding var module: AppModule
     @Binding var showNewChannel: Bool
@@ -124,20 +123,9 @@ struct LibraryShellHeaderView: View {
         switch module {
         case .chat:
             if let channel = chat.selectedChannel {
-                Menu {
-                    Button("Search in channel") { chat.openWorkspaceSearch(scope: .channel) }
-                    if subscription.canUseCalls(workspace: auth.selectedWorkspace) {
-                        Divider()
-                        Button("Start call") {
-                            startCall(video: false, scope: .meeting)
-                        }
-                    }
-                } label: {
-                    paneTitleLabel(channel.displayTitle)
-                }
-                .menuStyle(.borderlessButton)
+                paneTitleLabel(channel.displayTitle)
             } else {
-                paneTitleLabel("New AI Chat")
+                paneTitleLabel("Chat")
             }
         case .spaces:
             paneTitleLabel(spaces.selectedSpace?.name ?? "Spaces")
@@ -159,12 +147,14 @@ struct LibraryShellHeaderView: View {
         .frame(height: AppWindowChromeMetrics.controlSize)
     }
 
-    // MARK: - Trailing pane actions (Ask AI + tab chrome)
+    // MARK: - Trailing pane actions
 
     private var trailingPaneCluster: some View {
         HStack(alignment: .center, spacing: AppWindowChromeMetrics.trailingClusterSpacing) {
-            AskAIChromeButton {
-                chat.showAISheet = true
+            if module == .chat {
+                ChromeSquareButton(systemName: "magnifyingglass", help: "Search workspace (⌘⇧F)") {
+                    chat.openWorkspaceSearch(scope: .workspace)
+                }
             }
 
             if module == .chat, let tab = tabStore.selectedTab, tab.kind.isChatChannelOrDM {
@@ -210,21 +200,6 @@ struct LibraryShellHeaderView: View {
         )
     }
 
-    private func startCall(video: Bool, scope: CallScope) {
-        guard let ws = auth.selectedWorkspace?.id,
-              let channel = chat.selectedChannel else { return }
-        Task {
-            await calls.startChannelCall(
-                workspaceId: ws,
-                channelId: channel.id,
-                title: channel.displayTitle,
-                video: video,
-                scope: scope,
-                workspaceSettings: auth.selectedWorkspace?.settings,
-                userDisplayName: auth.profile?.displayName ?? auth.displayName
-            )
-        }
-    }
 }
 
 // MARK: - Tab kind helpers

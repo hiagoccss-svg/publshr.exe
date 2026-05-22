@@ -14,7 +14,6 @@ final class TitlebarChromeBridge: ObservableObject {
     var auth: AuthViewModel!
     var chat: ChatViewModel!
     var subscription: SubscriptionService!
-    var calls: CallSignalingService!
     var spaces: SpacesViewModel!
 
     @Published var module: AppModule = .chat
@@ -33,7 +32,6 @@ final class TitlebarChromeBridge: ObservableObject {
         chat: ChatViewModel,
         spaces: SpacesViewModel,
         subscription: SubscriptionService,
-        calls: CallSignalingService,
         module: AppModule
     ) {
         self.tabStore = tabStore
@@ -41,7 +39,6 @@ final class TitlebarChromeBridge: ObservableObject {
         self.chat = chat
         self.spaces = spaces
         self.subscription = subscription
-        self.calls = calls
         self.module = module
         isRegistered = true
         if let installedWindow {
@@ -82,7 +79,6 @@ final class TitlebarChromeBridge: ObservableObject {
             .environmentObject(auth)
             .environmentObject(chat)
             .environmentObject(subscription)
-            .environmentObject(calls)
 
         let hosting = NSHostingView(rootView: AnyView(root))
         hosting.translatesAutoresizingMaskIntoConstraints = false
