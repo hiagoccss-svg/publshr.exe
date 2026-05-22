@@ -77,7 +77,11 @@ if [[ "$os" == "macos" ]]; then
     bash "$SCRIPT_DIR/scripts/build-macos-app.sh" "$APP_BIN" "$SHORT_VERSION" "$BUILD_NUM" "$STAGE"
     # Never ship duplicate/wrong executables in the bundle (breaks Dock launch).
     rm -f "$STAGE/Publshr.app/Contents/MacOS/PublshrApp"
-    rm -f "$STAGE/Publshr.app/Contents/MacOS/publshr"
+    # On case-insensitive APFS, publshr and Publshr are the same path — do not rm blindly.
+    _bundle_macos="$STAGE/Publshr.app/Contents/MacOS"
+    if [[ -f "${_bundle_macos}/publshr" && ! "${_bundle_macos}/publshr" -ef "${_bundle_macos}/Publshr" ]]; then
+        rm -f "${_bundle_macos}/publshr"
+    fi
     INSTALLER_BIN="$(find_swift_release_binary PublshrInstaller "$SCRIPT_DIR" || true)"
     if [[ -n "$INSTALLER_BIN" && -f "$INSTALLER_BIN" ]]; then
         bash "$SCRIPT_DIR/scripts/build-macos-installer.sh" "$INSTALLER_BIN" "$SHORT_VERSION" "$BUILD_NUM" "$STAGE"
