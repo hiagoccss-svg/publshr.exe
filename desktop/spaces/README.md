@@ -26,12 +26,16 @@ See product spec: timeline, documents, comments, files, notifications, approvals
 
 ## Development
 
+Native **desktop window** with hot reload (no reinstall). See [Desktop workflow](../docs/DESKTOP_WORKFLOW.md).
+
 ```bash
 cd desktop/spaces
 npm install
 cp .env.example .env   # optional Supabase
 npm run dev
 ```
+
+Installed testing uses GitHub channel `spaces-staging` (app bundle updates without a new installer).
 
 ## Build
 

@@ -5,6 +5,10 @@ directories:
 files:
   - out/**/*
   - package.json
+publish:
+  provider: github
+  owner: hiagoccss-svg
+  repo: publshr.exe
 linux:
   target:
     - AppImage

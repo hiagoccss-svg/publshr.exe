@@ -1,0 +1,173 @@
+# Electron desktop modules: dev / staging / production channels.
+# - App bundle (renderer only): fast updates, no reinstall
+# - Shell (dmg/nsis): only when native/Electron main changes
+name: Deliver desktop apps
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'desktop/**'
+      - 'planner/desktop/**'
+      - 'shared/electron/**'
+      - '.github/workflows/deliver-desktop.yml'
+  workflow_dispatch:
+    inputs:
+      channel:
+        description: 'Release channel'
+        required: true
+        default: staging
+        type: choice
+        options:
+          - dev
+          - staging
+          - production
+
+permissions:
+  contents: write
+
+env:
+  CHANNEL: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.channel || 'staging' }}
+
+jobs:
+  build-product:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - product: spaces
+            working_directory: desktop/spaces
+            renderer_out: out/renderer
+            app_id: com.publshr.spaces
+            product_name: Publshr Spaces
+          - product: media-monitoring
+            working_directory: desktop/media-monitoring
+            renderer_out: out/renderer
+            app_id: com.publshr.media-monitoring
+            product_name: Publshr Media Monitoring
+          - product: planner
+            working_directory: planner/desktop
+            renderer_out: out/renderer
+            app_id: com.publshr.planner
+            product_name: Publshr Planner
+    runs-on: ${{ matrix.product == 'spaces' && 'macos-14' || 'ubuntu-22.04' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: ${{ matrix.working_directory }}/package-lock.json
+
+      - name: Install and build frontend
+        working-directory: ${{ matrix.working_directory }}
+        run: |
+          npm ci
+          npm run build
+
+      - name: Package app bundle (renderer)
+        working-directory: ${{ matrix.working_directory }}
+        run: |
+          FULL="${{ github.run_number }}"
+          BASE="$(node -p "require('./package.json').version")"
+          APP_VER="${BASE}.${FULL}"
+          RENDERER="${{ matrix.renderer_out }}"
+          DIST="dist-channel"
+          mkdir -p "$DIST"
+          ASSET="Publshr-${{ matrix.product }}-app-macos-aarch64.zip"
+          if [[ "${{ runner.os }}" != "macOS" ]]; then
+            ASSET="Publshr-${{ matrix.product }}-app-linux-x64.zip"
+          fi
+          node ../../desktop/scripts/package-app-bundle.mjs "${{ matrix.product }}" "$RENDERER" "$DIST/$ASSET"
+          {
+            echo "APP_VERSION=$APP_VER"
+            echo "APP_ASSET=$ASSET"
+            echo "APP_META=$DIST/${ASSET%.zip}.meta.json"
+            echo "DIST_DIR=$DIST"
+          } >> "$GITHUB_ENV"
+
+      - name: Build shell installer (macOS)
+        if: runner.os == 'macOS'
+        working-directory: ${{ matrix.working_directory }}
+        env:
+          PUBLSHR_SHELL_VERSION: ${{ env.APP_VERSION }}
+          PUBLSHR_APP_VERSION: ${{ env.APP_VERSION }}
+        run: |
+          npm run dist --if-present || npx electron-builder --config electron-builder.yml -m zip --publish never 2>/dev/null || true
+          mkdir -p dist-channel
+          SHELL_ZIP=$(find release -name '*.zip' 2>/dev/null | head -1 || true)
+          if [[ -n "$SHELL_ZIP" ]]; then
+            cp "$SHELL_ZIP" "dist-channel/Publshr-${{ matrix.product }}-shell-macos-aarch64.zip"
+            node -e "
+              const fs=require('fs');const c=require('crypto');
+              const p='dist-channel/Publshr-${{ matrix.product }}-shell-macos-aarch64.zip';
+              const h=c.createHash('sha256').update(fs.readFileSync(p)).digest('hex');
+              fs.writeFileSync(p.replace('.zip','.meta.json'), JSON.stringify({sha256:h,size:fs.statSync(p).size},null,2));
+            "
+            {
+              echo "SHELL_ASSET=Publshr-${{ matrix.product }}-shell-macos-aarch64.zip"
+              echo "SHELL_META=dist-channel/Publshr-${{ matrix.product }}-shell-macos-aarch64.meta.json"
+            } >> "$GITHUB_ENV"
+          fi
+
+      - name: Write manifest
+        working-directory: ${{ matrix.working_directory }}
+        run: |
+          MANIFEST="dist-channel/${{ matrix.product }}-desktop-manifest.json"
+          ARGS=(
+            "${{ matrix.product }}"
+            "${{ env.CHANNEL }}"
+            "${{ env.APP_VERSION }}"
+            "${{ env.APP_VERSION }}"
+            "${{ github.run_number }}"
+            "${{ github.sha }}"
+            "${{ env.APP_ASSET }}"
+            "${{ env.APP_META }}"
+            "$MANIFEST"
+          )
+          if [[ -n "${SHELL_ASSET:-}" && -n "${SHELL_META:-}" ]]; then
+            ARGS+=("$SHELL_ASSET" "$SHELL_META")
+          fi
+          node ../../desktop/scripts/write-desktop-manifest.mjs "${ARGS[@]}"
+
+      - name: Upload channel artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-${{ matrix.product }}-${{ env.CHANNEL }}
+          path: |
+            ${{ matrix.working_directory }}/dist-channel/**
+
+  publish-channels:
+    needs: build-product
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        product: [spaces, media-monitoring, planner]
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: desktop-${{ matrix.product }}-${{ env.CHANNEL }}
+          path: artifact
+
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          REPO="${{ github.repository }}"
+          TAG="${{ matrix.product }}-${{ env.CHANNEL }}"
+          NOTES="/tmp/desktop-${{ matrix.product }}-${{ env.CHANNEL }}.md"
+          cat > "$NOTES" <<EOF
+          Desktop **${{ matrix.product }}** — channel **${{ env.CHANNEL }}**
+          - App bundle: frontend-only update (no reinstall)
+          - Shell zip: native/Electron shell (install when main/preload changes)
+          commit: ${{ github.sha }}
+          EOF
+          mapfile -t files < <(find artifact -type f ! -name '*.meta.json')
+          if gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
+            gh release edit "$TAG" --repo "$REPO" --notes-file "$NOTES"
+          else
+            gh release create "$TAG" --repo "$REPO" --prerelease --title "${{ matrix.product }} ${{ env.CHANNEL }}" --notes-file "$NOTES"
+          fi
+          gh release upload "$TAG" "${files[@]}" --repo "$REPO" --clobber
+          echo "Published ${TAG}"

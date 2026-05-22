@@ -8,8 +8,10 @@ import {
   configureGlassWindow,
   glassWindowOptions
 } from '../../../../shared/electron/glass-window'
+import { loadRendererWindow } from '../../../../shared/electron/updater/window-loader'
+import { getDesktopUpdates, initDesktopUpdates } from './updates'
 
-const isDev = !app.isPackaged
+const bundledRendererIndex = join(__dirname, '../renderer/index.html')
 let mainWindow: BrowserWindow | null = null
 let engine: MonitoringEngine | null = null
 let syncService: SyncService | null = null
@@ -43,11 +45,7 @@ function createWindow(): void {
     return { action: 'deny' }
   })
 
-  if (isDev && process.env.ELECTRON_RENDERER_URL) {
-    mainWindow.loadURL(process.env.ELECTRON_RENDERER_URL)
-  } else {
-    mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
-  }
+  loadRendererWindow(mainWindow, bundledRendererIndex, getDesktopUpdates()?.appBundle ?? null)
 }
 
 app.whenReady().then(() => {
@@ -59,6 +57,7 @@ app.whenReady().then(() => {
   engine = new MonitoringEngine(db)
   syncService = new SyncService(db)
   registerIpcHandlers(engine, syncService)
+  initDesktopUpdates()
   void syncService.restoreSession().catch((err) => console.error('Session restore:', err))
   createWindow()
 
