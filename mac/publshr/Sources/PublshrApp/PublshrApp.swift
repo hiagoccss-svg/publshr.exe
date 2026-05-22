@@ -52,9 +52,14 @@ struct PublshrApp: App {
         .commands {
             CommandGroup(replacing: .newItem) {}
             CommandGroup(after: .appInfo) {
+                Button("Sync now") {
+                    NotificationCenter.default.post(name: .publshrPerformLiveSync, object: nil)
+                }
+                .keyboardShortcut("u", modifiers: [.command, .shift])
                 Button("Download and Install Latest") {
                     Task { await updates.installLiveUpdateNow() }
                 }
+                .keyboardShortcut("u", modifiers: [.command, .option])
             }
             CommandMenu("Spaces") {
                 Button("New Space…") {
