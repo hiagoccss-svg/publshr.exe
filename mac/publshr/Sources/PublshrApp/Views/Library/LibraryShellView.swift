@@ -80,11 +80,12 @@ struct LibraryShellView: View {
     private var mainStage: some View {
         moduleContent
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .libraryFloatingPanel()
-            .padding(.horizontal, LibraryGlassDesign.outerMargin)
-            .padding(.top, 8)
-            .padding(.bottom, LibraryGlassDesign.outerMargin)
-            .background(Color.clear)
+            .background(CursorMacShellDesign.editorSurface)
+            .overlay(alignment: .leading) {
+                Rectangle()
+                    .fill(CursorMacShellDesign.border)
+                    .frame(width: 1)
+            }
     }
 
     @ViewBuilder

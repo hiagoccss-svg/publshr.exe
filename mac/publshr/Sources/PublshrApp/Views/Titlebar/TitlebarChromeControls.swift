@@ -68,13 +68,13 @@ struct TitlebarChromeIconButton: View {
     }
 
     private var backgroundFill: Color {
-        if isActive { return LibraryGlassDesign.documentTabSelectedFill }
-        if isHovered && isEnabled { return Color.white.opacity(0.55) }
-        return Color.white.opacity(0.32)
+        if isActive { return CursorTheme.tabActiveBackground }
+        if isHovered && isEnabled { return CursorTheme.tabInactiveBackground.opacity(0.9) }
+        return Color.clear
     }
 
     private var strokeColor: Color {
-        isActive ? CursorTheme.accent.opacity(0.35) : Color.clear
+        isActive ? CursorMacShellDesign.border : Color.clear
     }
 }
 
@@ -120,7 +120,7 @@ struct TitlebarChromeMenuLabel: View {
         )
         .overlay(
             RoundedRectangle(cornerRadius: AppWindowChromeMetrics.controlCornerRadius, style: .continuous)
-                .strokeBorder(LibraryGlassDesign.hairline, lineWidth: 0.5)
+                .strokeBorder(CursorMacShellDesign.borderSubtle, lineWidth: 0.5)
         )
         .onHover { isHovered = $0 }
     }

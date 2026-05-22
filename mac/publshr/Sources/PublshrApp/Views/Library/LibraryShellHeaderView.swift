@@ -25,7 +25,7 @@ struct LibraryShellHeaderView: View {
             .background { AppWindowChromeBackground() }
             .overlay(alignment: .bottom) {
                 Rectangle()
-                    .fill(LibraryGlassDesign.hairline)
+                    .fill(CursorMacShellDesign.border)
                     .frame(height: 1)
             }
     }
@@ -51,15 +51,6 @@ struct LibraryShellHeaderView: View {
 
             Spacer(minLength: 8)
 
-            TitlebarChromeActionBar(
-                spaces: spaces,
-                module: $module,
-                showNewChannel: $showNewChannel,
-                showNewDM: $showNewDM,
-                showCommandPalette: $showCommandPalette,
-                showNotificationsPanel: $showNotificationsPanel,
-                placement: .trailing
-            )
         }
         .padding(.trailing, 12)
     }
@@ -68,7 +59,7 @@ struct LibraryShellHeaderView: View {
 
     private var tabStrip: some View {
         ScrollView(.horizontal, showsIndicators: false) {
-            HStack(alignment: .center, spacing: 6) {
+            HStack(alignment: .center, spacing: CursorMacShellDesign.tabSpacing) {
                 ForEach(tabStore.tabs) { tab in
                     ChromeDocumentTab(
                         title: tab.title,

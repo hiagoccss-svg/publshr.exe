@@ -10,7 +10,7 @@ struct SettingsUpdatesPane: View {
         Form {
             Section("Live channel") {
                 LabeledContent("Status", value: updates.statusLine)
-                LabeledContent("Sync", value: updates.lastSyncLine)
+                LabeledContent("Last sync", value: updates.lastSyncLine)
                 LabeledContent("Installed build", value: "\(AppReleaseConfig.buildNumber)")
                 LabeledContent("Shell", value: AppShellIdentity.distributionTag)
                 Toggle("Auto-check every minute", isOn: $updates.autoCheckEnabled)

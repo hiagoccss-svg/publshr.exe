@@ -25,7 +25,7 @@ struct TitlebarChromeActionBar: View {
         case .leading:
             leadingCluster
         case .trailing:
-            trailingCluster
+            EmptyView()
         }
     }
 
@@ -81,15 +81,15 @@ struct TitlebarChromeActionBar: View {
             .menuStyle(.borderlessButton)
             .help(TitlebarShortcutHint.tooltip("New chat", shortcut: TitlebarShortcutHint.newChat))
         } else {
-            TitlebarChromeIconButton(
-                systemName: "square.and.pencil",
-                help: TitlebarShortcutHint.tooltip("New chat", shortcut: TitlebarShortcutHint.newChat),
-                isEnabled: module != .settings
-            ) {
+            Button {
                 module = .chat
                 tabStore.openFromModule(.chat, activate: true)
                 chat.selectedChannel = nil
+            } label: {
+                TitlebarChromeMenuLabel(title: "New")
             }
+            .buttonStyle(.plain)
+            .disabled(module == .settings)
         }
     }
 
@@ -126,129 +126,6 @@ struct TitlebarChromeActionBar: View {
         }
         .menuStyle(.borderlessButton)
         .help("Switch workspace")
-    }
-
-    // MARK: - Trailing
-
-    private var trailingCluster: some View {
-        HStack(alignment: .center, spacing: AppWindowChromeMetrics.titlebarActionSpacing) {
-            contextModuleActions
-
-            TitlebarChromeDivider()
-
-            TitlebarChromeIconButton(
-                systemName: "command",
-                help: TitlebarShortcutHint.tooltip("Command palette", shortcut: TitlebarShortcutHint.commandPalette)
-            ) {
-                showCommandPalette = true
-            }
-
-            TitlebarChromeIconButton(
-                systemName: "magnifyingglass",
-                help: TitlebarShortcutHint.tooltip("Search", shortcut: TitlebarShortcutHint.search),
-                isEnabled: module == .chat
-            ) {
-                if module == .chat { chat.showSearchSheet = true }
-            }
-
-            TitlebarChromeIconButton(
-                systemName: "bell",
-                help: "Notifications",
-                badgeCount: totalUnreadBadge
-            ) {
-                showNotificationsPanel = true
-            }
-
-            profileMenu
-
-            TitlebarChromeIconButton(
-                systemName: "gearshape",
-                help: TitlebarShortcutHint.tooltip("Settings", shortcut: TitlebarShortcutHint.settings)
-            ) {
-                NotificationCenter.default.post(name: .publshrOpenSettings, object: nil)
-            }
-        }
-    }
-
-    @ViewBuilder
-    private var contextModuleActions: some View {
-        switch module {
-        case .chat:
-            HStack(spacing: 2) {
-                TitlebarChromeIconButton(systemName: "line.3.horizontal.decrease", help: "Filter channels") {
-                    chat.showSearchSheet = true
-                }
-                if chat.isLoading {
-                    TitlebarChromeIconButton(
-                        systemName: "arrow.clockwise",
-                        help: "Syncing chat",
-                        isLoading: true
-                    ) {}
-                }
-            }
-        case .spaces:
-            HStack(spacing: 2) {
-                TitlebarChromeIconButton(systemName: "square.grid.2x2", help: "Board", isActive: spaces.taskView == .board) {
-                    spaces.taskView = .board
-                }
-                TitlebarChromeIconButton(systemName: "list.bullet", help: "List", isActive: spaces.taskView == .list) {
-                    spaces.taskView = .list
-                }
-                if spaces.isLoading {
-                    TitlebarChromeIconButton(
-                        systemName: "arrow.clockwise",
-                        help: "Syncing spaces",
-                        isLoading: true
-                    ) {}
-                }
-            }
-        case .settings:
-            EmptyView()
-        }
-    }
-
-    private var profileMenu: some View {
-        Menu {
-            if let name = auth.profile?.displayName?.nonEmptyOrNil {
-                Text(name)
-                    .font(.headline)
-            }
-            if let email = auth.profile?.email {
-                Text(email)
-            }
-            Divider()
-            Button("Account & profile") {
-                NotificationCenter.default.post(name: .publshrOpenSettings, object: SettingsSection.account.rawValue)
-            }
-            Button("Workspace settings") {
-                NotificationCenter.default.post(name: .publshrOpenSettings, object: SettingsSection.workspace.rawValue)
-            }
-            Divider()
-            Button("Sign out", role: .destructive) {
-                Task { await auth.signOut() }
-            }
-        } label: {
-            TitlebarChromeMenuLabel(title: profileShortTitle)
-        }
-        .menuStyle(.borderlessButton)
-        .help("Account")
-    }
-
-    private var profileShortTitle: String {
-        if let name = auth.profile?.displayName?.trimmingCharacters(in: .whitespacesAndNewlines), !name.isEmpty {
-            let parts = name.split(separator: " ")
-            if let first = parts.first {
-                return String(first)
-            }
-        }
-        if let email = auth.profile?.email.split(separator: "@").first {
-            return String(email)
-        }
-        return "Account"
-    }
-
-    private var totalUnreadBadge: Int {
-        chat.totalUnread
     }
 
     private var canGoBack: Bool {
