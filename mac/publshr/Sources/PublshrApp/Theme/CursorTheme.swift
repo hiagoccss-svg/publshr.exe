@@ -54,8 +54,8 @@ enum CursorTheme {
     // MARK: - Light Modern (Cursor Mac default light — VS Code Light Modern)
 
     static let light = ThemePalette(
-        activityBar: Color(hex: 0x3B3B3B),
-        activityBarForeground: Color(hex: 0xE8E8E8),
+        activityBar: Color(hex: 0xFFFFFF),
+        activityBarForeground: Color(hex: 0x3B3B3B),
         activityBarForegroundDim: Color(hex: 0x9D9D9D),
         navSidebar: Color(hex: 0xFFFFFF),
         titleBar: Color(hex: 0xFFFFFF),
@@ -165,7 +165,10 @@ enum CursorTheme {
     static var success: Color { palette.success }
     static var biometricTint: Color { palette.biometricTint }
 
-    static let activityBarWidth: CGFloat = 52
+    static let activityBarWidth: CGFloat = 48
+    static let activityBarIconSize: CGFloat = 15
+    /// Settings / module nav column inside the main window.
+    static let settingsSidebarWidth: CGFloat = 212
     static let navSidebarWidth: CGFloat = 240
     /// Space for macOS traffic lights when using full-size content view.
     static let windowChromeTopInset: CGFloat = 28

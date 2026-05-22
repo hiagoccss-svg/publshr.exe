@@ -40,20 +40,20 @@ struct SpacesNavSidebar: View {
 
     private func sectionHeader(_ title: String) -> some View {
         Text(title.uppercased())
-            .font(.system(size: 10, weight: .semibold))
+            .font(.system(size: 9, weight: .semibold))
             .foregroundStyle(CursorTheme.foregroundDim)
             .tracking(0.5)
-            .padding(.horizontal, 16)
-            .padding(.top, 12)
-            .padding(.bottom, 6)
+            .padding(.horizontal, 12)
+            .padding(.top, 10)
+            .padding(.bottom, 5)
     }
 
     private func subsectionLabel(_ title: String) -> some View {
         Text(title.uppercased())
             .font(.system(size: 9, weight: .semibold))
             .foregroundStyle(CursorTheme.foregroundDim.opacity(0.85))
-            .padding(.horizontal, 16)
-            .padding(.top, 8)
+            .padding(.horizontal, 12)
+            .padding(.top, 6)
             .padding(.bottom, 2)
     }
 
@@ -62,12 +62,12 @@ struct SpacesNavSidebar: View {
         return Button {
             Task { await spaces.selectSpace(space.id) }
         } label: {
-            HStack(spacing: 10) {
+            HStack(spacing: 8) {
                 Circle()
                     .fill(SpaceColor.hex(space.color))
-                    .frame(width: 8, height: 8)
+                    .frame(width: 7, height: 7)
                 Text(space.name)
-                    .font(.system(size: 13, weight: selected ? .semibold : .regular))
+                    .font(.system(size: 12, weight: selected ? .semibold : .regular))
                     .foregroundStyle(selected ? CursorTheme.foreground : CursorTheme.foregroundMuted)
                     .lineLimit(1)
                 Spacer(minLength: 0)
@@ -77,15 +77,15 @@ struct SpacesNavSidebar: View {
                         .foregroundStyle(CursorTheme.foregroundDim)
                 }
             }
-            .frame(height: CursorTheme.chatSidebarRowHeight)
-            .padding(.horizontal, 12)
+            .frame(height: 28)
+            .padding(.horizontal, 10)
             .background(
-                RoundedRectangle(cornerRadius: 6)
+                RoundedRectangle(cornerRadius: 5, style: .continuous)
                     .fill(selected ? CursorTheme.accent.opacity(0.08) : Color.clear)
             )
         }
         .buttonStyle(.plain)
-        .padding(.horizontal, 8)
+        .padding(.horizontal, 6)
     }
 
     private var createSpaceField: some View {
