@@ -29,7 +29,10 @@ final class InstallerViewModel: ObservableObject {
 
     private let repo = ProcessInfo.processInfo.environment["PUBLSHR_REPO"] ?? "hiagoccss-svg/publshr.exe"
     private let liveURL: URL
-    private let appDest = URL(fileURLWithPath: "/Applications/Publshr.app")
+    private var appDest: URL {
+        FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent("Applications/Publshr.app", isDirectory: true)
+    }
     private let sourceMarker = FileManager.default.homeDirectoryForCurrentUser
         .appendingPathComponent("Library/Application Support/Publshr/install-source.tree")
 
@@ -84,9 +87,9 @@ final class InstallerViewModel: ObservableObject {
 
             phase = .installing
             progress = 0.7
-            statusLine = "Installing to Applications…"
+            statusLine = "Installing Publshr…"
 
-            try installWithAdminPrivileges(from: sourceApp, to: appDest)
+            try installApp(from: sourceApp, to: appDest)
             progress = 1
             phase = .done
             statusLine = "Publshr is installed."
@@ -145,6 +148,51 @@ final class InstallerViewModel: ObservableObject {
             if validateAppTree(item) { return item }
         }
         return nil
+    }
+
+    private func installApp(from source: URL, to dest: URL) throws {
+        let parent = dest.deletingLastPathComponent()
+        try FileManager.default.createDirectory(at: parent, withIntermediateDirectories: true)
+        if isUserWritableAppDestination(dest) {
+            if FileManager.default.fileExists(atPath: dest.path) {
+                try FileManager.default.removeItem(at: dest)
+            }
+            let process = Process()
+            process.executableURL = URL(fileURLWithPath: "/usr/bin/ditto")
+            process.arguments = [source.path, dest.path]
+            try process.run()
+            process.waitUntilExit()
+            guard process.terminationStatus == 0 else {
+                throw InstallerError.installFailed("Could not copy Publshr.app.")
+            }
+            try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: dest.path)
+            clearQuarantine(dest)
+            return
+        }
+        try installWithAdminPrivileges(from: source, to: dest)
+    }
+
+    private func isUserWritableAppDestination(_ dest: URL) -> Bool {
+        let parent = dest.deletingLastPathComponent()
+        if !FileManager.default.fileExists(atPath: parent.path) {
+            return FileManager.default.createFile(atPath: parent.appendingPathComponent(".write-test").path, contents: Data())
+                && (try? FileManager.default.removeItem(at: parent.appendingPathComponent(".write-test"))) != nil
+        }
+        if FileManager.default.isWritableFile(atPath: parent.path) {
+            return true
+        }
+        if FileManager.default.fileExists(atPath: dest.path) {
+            return FileManager.default.isWritableFile(atPath: dest.path)
+        }
+        return false
+    }
+
+    private func clearQuarantine(_ dest: URL) {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/xattr")
+        process.arguments = ["-cr", dest.path]
+        try? process.run()
+        process.waitUntilExit()
     }
 
     private func installWithAdminPrivileges(from source: URL, to dest: URL) throws {
@@ -231,7 +279,7 @@ struct InstallerRootView: View {
         VStack(alignment: .leading, spacing: 16) {
             switch model.phase {
             case .welcome:
-                Text("Publshr will be installed to your Applications folder. You can sign in, create a workspace, and use Touch ID on later launches.")
+                Text("Publshr installs to ~/Applications (no admin password for live updates). Sign in, create a workspace, and use Touch ID on later launches.")
                     .font(.system(size: 13))
                     .foregroundStyle(InstallerTheme.muted)
                     .fixedSize(horizontal: false, vertical: true)

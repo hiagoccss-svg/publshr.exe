@@ -13,7 +13,7 @@ PUBLSHR_REPO="${PUBLSHR_REPO:-hiagoccss-svg/publshr.exe}"
 PUBLSHR_BRANCH="${PUBLSHR_BRANCH:-main}"
 PUBLSHR_INSTALLER_URL="https://raw.githubusercontent.com/${PUBLSHR_REPO}/refs/heads/${PUBLSHR_BRANCH}/install-macos.sh"
 PUBLSHR_LIVE_TAG="${PUBLSHR_LIVE_TAG:-live}"
-PUBLSHR_MAC_APP="${PUBLSHR_MAC_APP:-/Applications/Publshr.app}"
+PUBLSHR_MAC_APP="${PUBLSHR_MAC_APP:-${HOME}/Applications/Publshr.app}"
 PUBLSHR_BIN_LINK="${PUBLSHR_BIN_LINK:-/usr/local/bin/publshr}"
 PUBLSHR_LIVE_ASSET_MACOS_ARM64="Publshr-macos-aarch64.tar.gz"
 PUBLSHR_MIN_APP_BYTES=4000000
@@ -242,11 +242,18 @@ _publshr_install_with_privileges() {
         return 0
     fi
 
+    mkdir -p "$(dirname "$PUBLSHR_MAC_APP")"
+    if [[ -w "$(dirname "$PUBLSHR_MAC_APP")" ]] || { [[ -d "$PUBLSHR_MAC_APP" ]] && [[ -w "$PUBLSHR_MAC_APP" ]]; }; then
+        log "Installing to ${PUBLSHR_MAC_APP} (no administrator password) …"
+        _publshr_install_app "$tree"
+        return 0
+    fi
+
     mkdir -p "$(dirname "$PUBLSHR_PREPARED_TREE_FILE")"
     printf '%s\n' "$tree" >"$PUBLSHR_PREPARED_TREE_FILE"
 
     log ""
-    log "Administrator password required (installing to /Applications)."
+    log "Administrator password required once (installing to ${PUBLSHR_MAC_APP})."
     if [[ ! -t 0 ]]; then
         log "Enter your Mac password when prompted."
     else

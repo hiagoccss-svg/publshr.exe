@@ -46,6 +46,7 @@ if [[ "$(uname -s)" == "Darwin" ]]; then
 fi
 
 cp "${SCRIPT_DIR}/apply-macos-update.sh" "${RES_DIR}/apply-macos-update.sh"
-chmod 755 "${RES_DIR}/apply-macos-update.sh"
+cp "${SCRIPT_DIR}/lib-install-path.sh" "${RES_DIR}/lib-install-path.sh"
+chmod 755 "${RES_DIR}/apply-macos-update.sh" "${RES_DIR}/lib-install-path.sh"
 
 echo "Built ${APP_ROOT} (${SHORT_VERSION} build ${BUILD})" >&2

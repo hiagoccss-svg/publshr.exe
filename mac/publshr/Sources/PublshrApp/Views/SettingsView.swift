@@ -80,7 +80,7 @@ struct SettingsView: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
 
-            Text("Installed: \(AppReleaseConfig.installedLabel) · Live checks every minute (icon, UI, features — any push to main).")
+            Text("Installed: \(AppReleaseConfig.installedLabel) at \(AppReleaseConfig.installedAppPath). Live updates install in place — no password when the app is in your Applications folder.")
                 .font(.system(size: 10))
                 .foregroundStyle(CursorTheme.foregroundDim)
                 .fixedSize(horizontal: false, vertical: true)

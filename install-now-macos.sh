@@ -4,7 +4,15 @@
 #   curl -fsSL "https://raw.githubusercontent.com/hiagoccss-svg/publshr.exe/refs/heads/main/install-now-macos.sh" | bash
 set -euo pipefail
 
-PUBLSHR_MAC_APP="${PUBLSHR_MAC_APP:-/Applications/Publshr.app}"
+PUBLSHR_MAC_APP="${PUBLSHR_MAC_APP:-${HOME}/Applications/Publshr.app}"
+
+_install_path_writable() {
+    local target="$1"
+    local parent
+    parent="$(dirname "$target")"
+    mkdir -p "$parent" 2>/dev/null || return 1
+    [[ -w "$parent" ]]
+}
 LIVE_URL="https://github.com/hiagoccss-svg/publshr.exe/releases/download/live/Publshr-macos-aarch64.tar.gz"
 REPO_ROOT="https://raw.githubusercontent.com/hiagoccss-svg/publshr.exe/refs/heads/main"
 
@@ -75,11 +83,17 @@ BUILD="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "${APP}/Contents/In
 SHELL_VER="$(/usr/libexec/PlistBuddy -c 'Print :PublshrShellVersion' "${APP}/Contents/Info.plist" 2>/dev/null || echo '?')"
 log "Verified enterprise build ${BUILD} (shell ${SHELL_VER})"
 
-if [[ "$(id -u)" -ne 0 ]]; then
-    log "Installing to /Applications (admin password) …"
-    sudo rm -rf "$PUBLSHR_MAC_APP"
-    sudo ditto "$APP" "$PUBLSHR_MAC_APP"
-    sudo xattr -cr "$PUBLSHR_MAC_APP" 2>/dev/null || true
+mkdir -p "$(dirname "$PUBLSHR_MAC_APP")"
+if _install_path_writable "$PUBLSHR_MAC_APP"; then
+    log "Installing to ${PUBLSHR_MAC_APP} (no administrator password) …"
+    rm -rf "$PUBLSHR_MAC_APP"
+    ditto "$APP" "$PUBLSHR_MAC_APP"
+    xattr -cr "$PUBLSHR_MAC_APP" 2>/dev/null || true
+elif [[ "$(id -u)" -ne 0 ]]; then
+    log "Installing to ${PUBLSHR_MAC_APP} (one administrator approval) …"
+    inner="set -e; rm -rf $(printf '%q' "$PUBLSHR_MAC_APP"); ditto $(printf '%q' "$APP") $(printf '%q' "$PUBLSHR_MAC_APP"); xattr -cr $(printf '%q' "$PUBLSHR_MAC_APP") 2>/dev/null || true"
+    esc="${inner//\\/\\\\}"; esc="${esc//\"/\\\"}"
+    osascript -e "do shell script \"${esc}\" with administrator privileges"
 else
     rm -rf "$PUBLSHR_MAC_APP"
     ditto "$APP" "$PUBLSHR_MAC_APP"
