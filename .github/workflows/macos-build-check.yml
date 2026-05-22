@@ -24,5 +24,6 @@ jobs:
           PUBLSHR_BUILD_NUMBER: ${{ github.run_number }}
           PUBLSHR_COMMIT_SHA: ${{ github.sha }}
         run: |
-          swift build -c release --product PublshrApp
-          swift build -c release --product PublshrInstaller
+          chmod +x scripts/*.sh
+          bash scripts/package-release.sh "0.0.0-ci"
+          bash scripts/verify-macos-app-bundle.sh dist/publshr-0.0.0-ci-macos-aarch64/Publshr.app

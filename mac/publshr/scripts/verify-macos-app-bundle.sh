@@ -89,4 +89,18 @@ if [[ ! -f "$UPDATE_SH" ]]; then
     exit 1
 fi
 
+if _binary_contains "LiveKitWebRTC.framework"; then
+    LK_FW="${APP}/Contents/Frameworks/LiveKitWebRTC.framework/LiveKitWebRTC"
+    if [[ ! -f "$LK_FW" ]]; then
+        echo "ERROR: Binary links LiveKitWebRTC but ${LK_FW} is missing (dyld crash at launch)" >&2
+        exit 1
+    fi
+    if [[ "$(uname -s)" == "Darwin" ]]; then
+        if ! otool -l "$EXEC" 2>/dev/null | awk '/cmd LC_RPATH/ {getline; print $2}' | grep -qxF '@executable_path/../Frameworks'; then
+            echo "ERROR: Missing @executable_path/../Frameworks LC_RPATH on Publshr binary" >&2
+            exit 1
+        fi
+    fi
+fi
+
 echo "OK: $APP — native GUI Publshr ($SIZE bytes)" >&2
