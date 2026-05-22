@@ -24,7 +24,7 @@ struct MainIDEView: View {
         .background(WindowChromeConfigurator())
         .onAppear(perform: onShellAppear)
         .onChange(of: module) { _, newModule in
-            onModuleChange(newModule)
+            onModuleChange(newModule: newModule)
         }
         .onChange(of: tabStore.selectedTabId) { _, _ in
             tabStore.applySelection(module: &module, chat: chat, spaces: spaces)
@@ -75,7 +75,7 @@ struct MainIDEView: View {
         spaces.attach(auth: auth)
     }
 
-    private func onModuleChange(_: AppModule, newModule: AppModule) {
+    private func onModuleChange(newModule: AppModule) {
         guard newModule != .settings else {
             module = .chat
             return
