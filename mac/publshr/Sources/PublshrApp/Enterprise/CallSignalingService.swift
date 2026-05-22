@@ -282,7 +282,7 @@ final class CallSignalingService: ObservableObject {
             kind: video ? "video" : "voice",
             status: "active",
             createdBy: userId,
-            livekitRoom: "publshr-\(String(channelId.uuidString.prefix(8)).lowercased()"
+            livekitRoom: "publshr-\(String(channelId.uuidString.prefix(8)).lowercased())"
         )
         signalingHub.browseAndJoin(channelId: channelId, roomId: roomId, displayName: displayName, userId: userId)
         mediaStatus = "Joining call on your network…"
