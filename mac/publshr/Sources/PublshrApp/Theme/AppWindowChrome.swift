@@ -1,13 +1,13 @@
 import SwiftUI
 
-/// Pinterest / notes-app reference — one titlebar band; controls bottom-align with traffic lights.
+/// Pinterest / notes-app reference — one titlebar band; controls vertically center on the traffic-light row.
 enum AppWindowChromeMetrics {
     /// Leading reserve for standard macOS close / minimize / zoom cluster.
     static let trafficLightLeadingInset: CGFloat = 72
     /// Fallback when SwiftUI reports zero safe-area (pre-layout).
     static let fallbackTitlebarHeight: CGFloat = 28
-    /// Optical inset so pill / icon baselines match the system close button.
-    static let trafficLightBaselineInset: CGFloat = 6
+    /// Height of the system titlebar row where traffic lights are drawn (do not bottom-pin below this).
+    static let trafficLightRowHeight: CGFloat = 28
     /// Square chrome control (edit, pop-out, close tab) — matches close-button visual size.
     static let controlSize: CGFloat = 24
     static let controlIconSize: CGFloat = 11
@@ -25,8 +25,14 @@ enum AppWindowChromeMetrics {
     static let rowSpacing: CGFloat = 8
     static let trailingClusterSpacing: CGFloat = 6
 
+    /// Full header band (may exceed the traffic-light row on some macOS safe-area reports).
     static func titlebarHeight(safeAreaTop: CGFloat) -> CGFloat {
-        max(safeAreaTop > 0 ? safeAreaTop : fallbackTitlebarHeight, askAIPillHeight + trafficLightBaselineInset)
+        safeAreaTop > 0 ? safeAreaTop : fallbackTitlebarHeight
+    }
+
+    /// Toolbar row sits in the top titlebar band — same vertical band as close / minimize / zoom.
+    static func titlebarRowHeight(safeAreaTop: CGFloat) -> CGFloat {
+        min(titlebarHeight(safeAreaTop: safeAreaTop), trafficLightRowHeight)
     }
 }
 
