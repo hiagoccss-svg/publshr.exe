@@ -58,11 +58,9 @@ struct TitlebarGlobalLeadingActions: View {
             } label: {
                 Image(systemName: "ellipsis")
                     .font(.system(size: AppWindowChromeMetrics.controlIconSize, weight: .regular))
+                    .symbolRenderingMode(.monochrome)
                     .foregroundStyle(LibraryGlassDesign.inkSecondary)
-                    .frame(
-                        width: AppWindowChromeMetrics.controlSize,
-                        height: AppWindowChromeMetrics.controlSize
-                    )
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .contentShape(Rectangle())
             }
             .menuStyle(.borderlessButton)

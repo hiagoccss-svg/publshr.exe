@@ -31,12 +31,12 @@ enum AppWindowChromeMetrics {
     /// Channel glyph inside the title slot.
     static let channelIconSize: CGFloat = 17
     static let toolbarTitleFontSize: CGFloat = 13
-    /// Gap between toolbar slots (sidebar toggle, icons, title cluster).
+    /// Gap between toolbar slots (icons, title cluster, spacers).
     static let toolbarItemSpacing: CGFloat = 8
-    /// Far-left global cluster (settings, command, bell, menu).
-    static let toolbarLeadingClusterSpacing: CGFloat = 10
+    /// Far-left global cluster (settings, command, bell, menu) — same rhythm as `toolbarItemSpacing`.
+    static let toolbarLeadingClusterSpacing: CGFloat = toolbarItemSpacing
     /// Editor column channel tools (pop-out, search, pin, …).
-    static let toolbarEditorActionSpacing: CGFloat = 12
+    static let toolbarEditorActionSpacing: CGFloat = 10
     /// Ask AI pill — same vertical footprint as chrome controls.
     static let askAIPillHeight: CGFloat = 24
     static let askAIPillHorizontalPadding: CGFloat = 10
@@ -65,15 +65,16 @@ struct TitlebarToolbarRow<Content: View>: View {
     @ObservedObject private var layout = TrafficLightLayoutStore.shared
     var leadingPadding: CGFloat = 0
     var trailingPadding: CGFloat = 0
+    var itemSpacing: CGFloat = AppWindowChromeMetrics.toolbarItemSpacing
     @ViewBuilder var content: () -> Content
 
     var body: some View {
-        HStack(alignment: .center, spacing: AppWindowChromeMetrics.toolbarItemSpacing) {
+        HStack(alignment: .center, spacing: itemSpacing) {
             content()
         }
         .padding(.leading, leadingPadding)
         .padding(.trailing, trailingPadding)
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
         .frame(height: layout.rowHeight, alignment: .center)
     }
 }

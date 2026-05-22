@@ -27,9 +27,13 @@ enum ShellColumnLayout {
         if expanded {
             return fittedBarExpanded(windowWidth: windowWidth, submenuVisible: submenuVisible)
         }
-        let trafficLed = trafficInset
-            + AppWindowChromeMetrics.afterTrafficLightGap
-            + AppWindowChromeMetrics.controlSize
+        let globalCluster =
+            AppWindowChromeMetrics.controlSize * 4
+            + AppWindowChromeMetrics.toolbarLeadingClusterSpacing * 3
+        let navCluster =
+            AppWindowChromeMetrics.controlSize * 2
+            + AppWindowChromeMetrics.toolbarItemSpacing
+        let trafficLed = trafficInset + globalCluster + navCluster + 12
         let iconLed = AppWindowChromeMetrics.controlSize + 12
         let compact = min(trafficLed, max(barCollapsedMin, iconLed))
         return min(barCollapsedMax, max(barCollapsedMin, compact))
