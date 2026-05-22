@@ -26,6 +26,22 @@ enum SpaceTaskStatus: String, Codable, CaseIterable, Identifiable {
     static let boardColumns: [SpaceTaskStatus] = [.todo, .in_progress, .review, .approved, .completed]
 }
 
+enum SpaceTypeOption: String, CaseIterable, Identifiable {
+    case general
+    case project
+    case campaign
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .general: return "General"
+        case .project: return "Project"
+        case .campaign: return "Campaign"
+        }
+    }
+}
+
 enum SpaceTaskPriority: String, Codable, CaseIterable, Identifiable {
     case none, low, normal, high, urgent
 

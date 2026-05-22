@@ -31,7 +31,12 @@ final class SubscriptionService: ObservableObject {
         }
 
         do {
-            struct MemberRow: Decodable { let userId: UUID; enum CodingKeys: String { case userId = "user_id" } }
+            struct MemberRow: Decodable {
+                let userId: UUID
+                enum CodingKeys: String, CodingKey {
+                    case userId = "user_id"
+                }
+            }
             let rows: [MemberRow] = try await client
                 .from("workspace_members")
                 .select("user_id")

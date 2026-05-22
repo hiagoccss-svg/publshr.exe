@@ -210,6 +210,22 @@ final class SpacesService {
             .value
     }
 
+    func updateDocument(id: UUID, title: String, content: String) async throws -> SpaceDocumentRecord {
+        struct Patch: Encodable {
+            let title: String
+            let content: String
+        }
+        let row: SpaceDocumentRecord = try await client
+            .from("documents")
+            .update(Patch(title: title, content: content))
+            .eq("id", value: id.uuidString)
+            .select()
+            .single()
+            .execute()
+            .value
+        return row
+    }
+
     func createDocument(spaceId: UUID, title: String, docType: String = "brief") async throws -> SpaceDocumentRecord {
         struct Insert: Encodable {
             let space_id: UUID
