@@ -22,11 +22,12 @@ struct MainIDEView: View {
 
     var body: some View {
         GeometryReader { geometry in
+            let topSafe = geometry.safeAreaInsets.top
             VStack(spacing: 0) {
                 WorkspaceHeaderView(
                     spaces: spaces,
                     module: $module,
-                    safeAreaTop: geometry.safeAreaInsets.top
+                    safeAreaTop: topSafe
                 )
 
                 HStack(alignment: .top, spacing: 0) {
@@ -41,6 +42,7 @@ struct MainIDEView: View {
             }
             .frame(width: geometry.size.width, height: geometry.size.height)
         }
+        .ignoresSafeArea(.container, edges: .top)
         .background(CursorTheme.editorBackground)
         .background(WindowChromeConfigurator())
         .onAppear {
