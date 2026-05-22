@@ -7,8 +7,15 @@ enum LibraryGlassDesign {
     /// Universal submenu (Areas, Recent Notes, Channels…) — single width everywhere.
     static let sidebarWidthWide: CGFloat = 272
     static let sidebarWidth: CGFloat = sidebarWidthWide
-    /// Collapsed primary column — matches macOS traffic-light inset.
+    /// Collapsed primary column — matches macOS traffic-light inset (green button row).
     static let barMenuCollapsedWidth: CGFloat = 72
+
+    /// Fixed shell column widths (prevents HStack from stretching sidebars to ⅓ window each).
+    static func barMenuColumnWidth(expanded: Bool) -> CGFloat {
+        expanded ? barMenuWidth : barMenuCollapsedWidth
+    }
+
+    static let submenuColumnWidth: CGFloat = sidebarWidthWide
 
     @available(*, deprecated, message: "Use barMenuWidth for the reference shell")
     static let activityBarWidth: CGFloat = 48
@@ -17,7 +24,7 @@ enum LibraryGlassDesign {
     static let sidebarSelection = Color(hex: 0xE8E4DC)
     static let sidebarGlassFill = Color(hex: 0xF7F6F3).opacity(0.88)
     /// Primary bar menu (~200px) — light tint so the desktop wallpaper tints through.
-    static let primaryBarGlassFill = Color(hex: 0xF7F6F3).opacity(0.30)
+    static let primaryBarGlassFill = Color(hex: 0xF7F6F3).opacity(0.18)
     static let primaryBarGlassStroke = Color.white.opacity(0.18)
     /// Universal submenu (chat channels, spaces tree) — softer than primary bar.
     static let submenuGlassFill = Color(hex: 0xF7F6F3).opacity(0.52)
