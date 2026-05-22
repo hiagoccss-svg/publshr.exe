@@ -16,8 +16,8 @@ export function TitleBar() {
     >
       <div className="w-[70px] shrink-0 app-no-drag" />
       <div
-        className="flex-1 flex items-center gap-2 max-w-2xl mx-auto rounded px-2.5 py-1 app-no-drag"
-        style={{ backgroundColor: `${shell.input}99` }}
+        className="flex-1 flex items-center gap-2 max-w-2xl mx-auto rounded-sm px-2.5 py-1 app-no-drag"
+        style={{ backgroundColor: `${shell.input}80` }}
       >
         <Search size={12} style={{ color: shell.foregroundMuted }} />
         <input

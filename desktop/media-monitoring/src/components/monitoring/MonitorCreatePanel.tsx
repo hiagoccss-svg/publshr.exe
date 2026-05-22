@@ -1,6 +1,7 @@
 import { X } from 'lucide-react'
 import { useState } from 'react'
 import { useMonitoringStore } from '@/store/monitoringStore'
+import { shell } from '@/theme/shellTheme'
 
 const REGIONS = ['Global', 'Europe', 'Americas', 'Middle East', 'Asia Pacific']
 const LANGUAGES = ['en', 'ar', 'fr', 'de', 'es']
@@ -54,15 +55,25 @@ export function MonitorCreatePanel({ onCreated }: Props) {
   }
 
   return (
-    <div className="absolute inset-y-0 right-0 w-[360px] bg-surface-sidebar border-l border-border z-20 flex flex-col shadow-xl animate-fade-in">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-        <h2 className="text-sm font-medium text-content">New monitoring profile</h2>
+    <div
+      className="absolute inset-y-0 right-0 z-20 flex flex-col border-l animate-fade-in"
+      style={{
+        width: 340,
+        backgroundColor: shell.sideBar,
+        borderColor: shell.border
+      }}
+    >
+      <div
+        className="flex items-center justify-between px-3 py-2 border-b"
+        style={{ borderColor: shell.border }}
+      >
+        <h2 className="text-[13px] font-medium text-content">New monitoring profile</h2>
         <button type="button" className="btn-ghost p-1" onClick={() => setShowCreatePanel(false)} aria-label="Close">
-          <X size={16} />
+          <X size={15} />
         </button>
       </div>
 
-      <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-4 py-4 space-y-4 text-sm">
+      <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-3 py-3 space-y-3 text-[12px]">
         <Field label="Monitor name" required>
           <input className="input-field" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Publshr brand tracking" />
         </Field>
@@ -81,7 +92,7 @@ export function MonitorCreatePanel({ onCreated }: Props) {
         </Field>
 
         <Field label="Regions">
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap gap-1">
             {REGIONS.map((r) => (
               <Chip key={r} active={regions.includes(r)} onClick={() => toggle(regions, r, setRegions)}>
                 {r}
@@ -91,7 +102,7 @@ export function MonitorCreatePanel({ onCreated }: Props) {
         </Field>
 
         <Field label="Languages">
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap gap-1">
             {LANGUAGES.map((l) => (
               <Chip key={l} active={languages.includes(l)} onClick={() => toggle(languages, l, setLanguages)}>
                 {l.toUpperCase()}
@@ -108,12 +119,12 @@ export function MonitorCreatePanel({ onCreated }: Props) {
           <input className="input-field" value={campaign} onChange={(e) => setCampaign(e.target.value)} />
         </Field>
 
-        <p className="text-2xs text-content-dim leading-relaxed">
+        <p className="text-[10px] text-content-dim leading-relaxed">
           Monitoring searches approved publications only — wire services, trade press, and verified media from your publication database.
         </p>
       </form>
 
-      <div className="p-4 border-t border-border flex gap-2">
+      <div className="px-3 py-2 border-t flex gap-2" style={{ borderColor: shell.border }}>
         <button type="button" className="btn-ghost flex-1" onClick={() => setShowCreatePanel(false)}>
           Cancel
         </button>
@@ -138,11 +149,11 @@ function Field({
 }) {
   return (
     <label className="block">
-      <span className="text-xs text-content-muted">
+      <span className="text-[11px] text-content-muted">
         {label}
         {required && <span className="text-sentiment-negative ml-0.5">*</span>}
       </span>
-      {hint && <p className="text-2xs text-content-dim mt-0.5 mb-1">{hint}</p>}
+      {hint && <p className="text-[10px] text-content-dim mt-0.5 mb-1">{hint}</p>}
       <div className="mt-1">{children}</div>
     </label>
   )
@@ -161,11 +172,7 @@ function Chip({
     <button
       type="button"
       onClick={onClick}
-      className={
-        active
-          ? 'text-2xs px-2 py-0.5 rounded bg-accent/25 text-accent border border-accent/40'
-          : 'text-2xs px-2 py-0.5 rounded bg-surface-input text-content-muted border border-border hover:border-border-subtle'
-      }
+      className={active ? 'shell-chip-active' : 'shell-chip-inactive'}
     >
       {children}
     </button>

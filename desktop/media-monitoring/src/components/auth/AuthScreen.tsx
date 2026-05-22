@@ -101,13 +101,13 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: () => void })
         </header>
 
         <div
-          className="rounded-lg p-5 space-y-4 border"
+          className="rounded-sm p-5 space-y-4 border"
           style={{ backgroundColor: shell.authCard, borderColor: shell.border }}
         >
           {screen !== 'confirmEmail' && (
             <div
-              className="flex rounded-md overflow-hidden border"
-              style={{ backgroundColor: shell.workspace, borderColor: shell.border }}
+              className="flex rounded-sm overflow-hidden"
+              style={{ backgroundColor: shell.workspace }}
             >
               <Tab active={screen === 'signIn'} onClick={() => { setScreen('signIn'); clearMessages() }}>
                 Sign in
@@ -223,7 +223,7 @@ function Field({
         type={type}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="mt-1.5 w-full text-[13px] text-content px-2.5 py-2 rounded border outline-none focus:border-accent/60"
+        className="mt-1.5 w-full text-[13px] text-content px-2.5 py-2 rounded-sm border outline-none focus:border-accent/60"
         style={{ backgroundColor: shell.input, borderColor: shell.borderSubtle }}
       />
     </label>
@@ -241,7 +241,7 @@ function PrimaryButton({
     <button
       type="submit"
       disabled={loading}
-      className="w-full flex items-center justify-center gap-2 py-2 rounded text-[13px] font-medium text-white disabled:opacity-70"
+      className="w-full flex items-center justify-center gap-2 py-2 rounded-sm text-[13px] font-medium text-white disabled:opacity-70"
       style={{ backgroundColor: shell.button }}
     >
       {loading && <Loader2 size={14} className="animate-spin" />}

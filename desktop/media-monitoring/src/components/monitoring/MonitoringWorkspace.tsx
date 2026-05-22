@@ -1,18 +1,15 @@
 import { ArticleFeed } from './ArticleFeed'
-import { MonitorCreatePanel } from './MonitorCreatePanel'
 import { PublicationsView } from './PublicationsView'
 import { DashboardView } from './DashboardView'
 import { CoverageView } from './CoverageView'
 import { SettingsPanel } from '@/components/settings/SettingsPanel'
 import { useMonitoringStore } from '@/store/monitoringStore'
-import { useMonitoringBootstrap } from '@/hooks/useMonitoring'
 
 export function MonitoringWorkspace() {
-  const { section, showCreatePanel } = useMonitoringStore()
-  const { loadMonitors } = useMonitoringBootstrap()
+  const { section } = useMonitoringStore()
 
   return (
-    <main className="flex-1 flex flex-col min-w-0 relative bg-surface-workspace">
+    <div className="flex-1 flex flex-col min-h-0 min-w-0 bg-surface-workspace">
       {section === 'dashboard' && <DashboardView />}
       {section === 'monitoring' && <ArticleFeed />}
       {section === 'coverage' && <CoverageView />}
@@ -22,18 +19,18 @@ export function MonitoringWorkspace() {
         'dashboard',
         'monitoring',
         'coverage',
-        'publications'
+        'publications',
+        'settings'
       ].includes(section) && <ComingSoon name={section} />}
-      {showCreatePanel && <MonitorCreatePanel onCreated={() => void loadMonitors()} />}
-    </main>
+    </div>
   )
 }
 
 function ComingSoon({ name }: { name: string }) {
   return (
-    <div className="flex flex-col items-center justify-center h-full text-content-dim text-sm px-8 text-center">
+    <div className="flex flex-col items-center justify-center h-full text-content-dim text-[12px] px-8 text-center">
       <p className="text-content capitalize">{name.replace(/-/g, ' ')}</p>
-      <p className="text-xs mt-2 max-w-sm">Coming in Phase 2 — reports, alerts, and competitor charts.</p>
+      <p className="text-[11px] mt-2 max-w-sm">Coming in Phase 2 — reports, alerts, and competitor charts.</p>
     </div>
   )
 }

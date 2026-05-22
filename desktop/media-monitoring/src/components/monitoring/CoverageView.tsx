@@ -19,8 +19,8 @@ export function CoverageView() {
   if (items.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-full text-center px-8">
-        <p className="text-content text-sm font-medium">No saved coverage yet</p>
-        <p className="text-content-dim text-xs mt-2 max-w-sm">
+        <p className="text-content text-[13px] font-medium">No saved coverage yet</p>
+        <p className="text-content-dim text-[11px] mt-2 max-w-sm">
           Save articles from the monitoring feed to build reports and client exports.
         </p>
       </div>
@@ -28,13 +28,17 @@ export function CoverageView() {
   }
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 space-y-2">
-      <p className="text-xs text-content-muted mb-2">{items.length} saved articles</p>
-      {items.map((article, i) => (
-        <div key={article.id} onClick={() => handleSelect(article.id)}>
-          <ArticleCard article={article} index={i} />
-        </div>
-      ))}
+    <div className="flex-1 overflow-hidden flex flex-col">
+      <div className="px-4 py-2 border-b border-border shrink-0">
+        <p className="text-[11px] text-content-muted">{items.length} saved articles</p>
+      </div>
+      <div className="shell-list flex-1 overflow-y-auto">
+        {items.map((article, i) => (
+          <div key={article.id} onClick={() => handleSelect(article.id)}>
+            <ArticleCard article={article} index={i} />
+          </div>
+        ))}
+      </div>
     </div>
   )
 }

@@ -41,8 +41,7 @@ export function BiometricUnlock({ onUnlocked, onUsePassword }: Props) {
           type="button"
           onClick={() => void unlock()}
           disabled={loading}
-          className="mx-auto flex flex-col items-center gap-3 p-6 rounded-full border transition-colors hover:bg-surface-highlight/40"
-          style={{ borderColor: shell.border }}
+          className="mx-auto flex flex-col items-center gap-3 p-5 rounded-sm transition-colors hover:bg-surface-highlight/50"
         >
           {loading ? (
             <Loader2 size={48} className="animate-spin text-accent" />
