@@ -142,6 +142,9 @@ struct PublshrApp: App {
             updates.recordCloudSync(summary: "Not signed in")
             return
         }
+        if !auth.isCloudValidated {
+            await auth.reconcileCloudSession(unlockMethod: nil)
+        }
         await auth.refreshSupabaseConnection()
         await chat.refreshAfterReconnect()
         await spaces.reload()

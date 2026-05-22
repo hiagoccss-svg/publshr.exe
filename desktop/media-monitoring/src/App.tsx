@@ -51,10 +51,14 @@ export default function App() {
           session?: unknown
         }
       }
+      const prev = useMonitoringStore.getState().syncStatus
       if (p.status) setSyncStatus(p.status as 'synced' | 'syncing' | 'offline' | 'error')
       if (p.auth?.session) {
         setAuthInfo(p.auth.email ?? null, p.auth.workspaceName ?? null)
         setDisplayName(p.auth.displayName ?? null)
+      }
+      if (prev === 'offline' && p.status === 'synced' && p.auth?.session) {
+        void window.publshr.reconcileCloud()
       }
     })
   }, [setAuthInfo, setSyncStatus, setDisplayName])
