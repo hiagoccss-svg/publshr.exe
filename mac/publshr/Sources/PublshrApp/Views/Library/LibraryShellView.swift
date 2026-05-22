@@ -53,11 +53,7 @@ struct LibraryShellView: View {
                 headerKind: .primaryLeading,
                 appliesSidebarChrome: true
             ) {
-                LibraryBarMenuColumn(
-                    module: $module,
-                    showNewChannel: $showNewChannel,
-                    showNewDM: $showNewDM
-                )
+                LibraryBarMenuColumn(module: $module)
             }
             .fixedSize(horizontal: true, vertical: false)
             .layoutPriority(2)
