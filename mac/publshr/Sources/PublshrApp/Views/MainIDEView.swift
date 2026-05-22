@@ -25,6 +25,7 @@ struct MainIDEView: View {
             showCommandPalette: $showCommandPalette,
             showNotificationsPanel: $showNotificationsPanel
         )
+        .environmentObject(TrafficLightLayoutStore.shared)
         .background(WindowChromeConfigurator())
         .background { TitlebarChromeShortcutBridge() }
         .onAppear(perform: onShellAppear)

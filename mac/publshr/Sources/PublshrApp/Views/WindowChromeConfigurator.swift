@@ -60,51 +60,17 @@ enum MainWindowChrome {
         if window.responds(to: #selector(setter: NSWindow.titlebarSeparatorStyle)) {
             window.titlebarSeparatorStyle = .none
         }
-        tightenTopSafeArea(for: window)
-        alignTrafficLights(in: window)
-    }
 
-    /// Align system traffic lights with the SwiftUI toolbar row (measured from content view).
-    @MainActor
-    private static func alignTrafficLights(in window: NSWindow) {
-        let buttons = [
-            window.standardWindowButton(.closeButton),
-            window.standardWindowButton(.miniaturizeButton),
-            window.standardWindowButton(.zoomButton),
-        ].compactMap { $0 }
-        guard !buttons.isEmpty else { return }
-
-        let rowHeight = AppWindowChromeMetrics.trafficLightRowHeight
-        let metrics = TrafficLightLayoutMetrics.measure(in: window)
-        let targetMidY = rowHeight * 0.5 + metrics.iconOffsetY
-        for button in buttons {
-            var frame = button.frame
-            frame.origin.y = targetMidY - frame.height * 0.5
-            button.setFrameOrigin(frame.origin)
-        }
-    }
-
-    /// Pull SwiftUI content up into the real titlebar band (same row as traffic lights).
-    @MainActor
-    private static func tightenTopSafeArea(for window: NSWindow) {
-        guard let contentView = window.contentView else { return }
-        let reportedTop = contentView.safeAreaInsets.top
-        let target = AppWindowChromeMetrics.trafficLightRowHeight
-        var extra = contentView.additionalSafeAreaInsets
-        let desiredTop = reportedTop > target + 0.5 ? target - reportedTop : 0
-        guard abs(extra.top - desiredTop) > 0.5 else { return }
-        extra.top = desiredTop
-        contentView.additionalSafeAreaInsets = extra
+        TrafficLightLayoutStore.shared.apply(to: window)
     }
 
     @MainActor
     static func applyWithRetries(to window: NSWindow?) {
         apply(to: window)
         guard let window else { return }
-        for delay in [0.05, 0.15, 0.35, 0.75, 1.5] {
+        for delay in [0.05, 0.15, 0.35, 0.75, 1.5, 2.5] {
             DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
                 apply(to: window)
-                alignTrafficLights(in: window)
             }
         }
     }

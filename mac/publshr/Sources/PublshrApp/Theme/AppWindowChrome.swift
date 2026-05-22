@@ -14,8 +14,8 @@ enum AppWindowChromeMetrics {
     static let fallbackTitlebarHeight: CGFloat = 28
     /// Height of the unified titlebar row (aligned with system traffic-light band).
     static let trafficLightRowHeight: CGFloat = 38
-    /// Optical nudge so custom controls share the traffic-light vertical center.
-    static let trafficLightVerticalAlignPadding: CGFloat = 2
+    /// Fallback top inset when traffic lights are not measurable yet (pre-layout).
+    static let trafficLightVerticalAlignPadding: CGFloat = 6
     /// Square chrome control — Cursor Mac titlebar hit target.
     static let controlSize: CGFloat = 28
     static let controlIconSize: CGFloat = 12
@@ -50,6 +50,7 @@ enum AppWindowChromeMetrics {
 
 /// Fixed-height titlebar band; children must use `TitlebarToolbarSlot` for controls.
 struct TitlebarToolbarRow<Content: View>: View {
+    @ObservedObject private var layout = TrafficLightLayoutStore.shared
     var leadingPadding: CGFloat = 0
     var trailingPadding: CGFloat = 0
     @ViewBuilder var content: () -> Content
@@ -61,7 +62,7 @@ struct TitlebarToolbarRow<Content: View>: View {
         .padding(.leading, leadingPadding)
         .padding(.trailing, trailingPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .frame(height: AppWindowChromeMetrics.unifiedTitlebarRowHeight, alignment: .center)
+        .frame(height: layout.rowHeight, alignment: .center)
     }
 }
 

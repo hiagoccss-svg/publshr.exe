@@ -8,17 +8,11 @@ enum TrafficLightLayoutMetrics {
 
     @MainActor
     static func measure(in window: NSWindow?) -> (leadingInset: CGFloat, iconOffsetY: CGFloat) {
-        guard let window,
-              let close = window.standardWindowButton(.closeButton) else {
-            return (fallbackLeadingInset, fallbackIconOffsetY)
+        let store = TrafficLightLayoutStore.shared
+        if let window {
+            store.apply(to: window)
         }
-        let zoom = window.standardWindowButton(.zoomButton)
-        let trailing = (zoom?.frame.maxX ?? close.frame.maxX) + 8
-        let rowHeight = AppWindowChromeMetrics.trafficLightRowHeight
-        let contentHeight = window.contentView?.bounds.height ?? rowHeight
-        let trafficCenterFromTop = contentHeight - close.frame.midY
-        let iconOffsetY = trafficCenterFromTop - rowHeight * 0.5
-        return (max(trailing, 68), iconOffsetY)
+        return (store.leadingInset, store.titlebarTopPadding)
     }
 }
 

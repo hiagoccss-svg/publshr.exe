@@ -1,14 +1,10 @@
 import SwiftUI
 
-/// Per-column titlebar band — background matches the column below; no full-width separator.
+/// Per-column titlebar band — used only when `ShellColumnChromeStack(showsTitlebar: true)`.
 enum ShellColumnHeaderKind {
-    /// Left column: traffic-light inset + sidebar / back / forward.
     case trafficLeading(module: Binding<AppModule>)
-    /// Middle submenu column: empty band matching sidebar chrome.
     case secondaryChrome
-    /// Chat submenu: search in the titlebar row (ClickUp).
     case chatSubmenu
-    /// Right column: channel title + actions (chat) or profile cluster (spaces).
     case editorTrailing(
         module: Binding<AppModule>,
         showCommandPalette: Binding<Bool>,
@@ -42,51 +38,42 @@ struct LibraryShellHeaderView: View {
     private var rowContent: some View {
         switch kind {
         case .trafficLeading:
-            PrimaryBarTrafficHeader()
-
-        case .secondaryChrome:
-            TitlebarToolbarRow {
-                Color.clear
-                    .frame(maxWidth: .infinity)
-            }
-
-        case .chatSubmenu:
-            TitlebarToolbarRow(leadingPadding: 12, trailingPadding: 6) {
-                ChatSidebarTitlebarChrome(chat: chat)
-                Spacer(minLength: 0)
-            }
-
-        case .editorTrailing(let module, let showCommandPalette, let showNotificationsPanel):
-            Group {
-                if module.wrappedValue == .chat {
-                    ChatEditorHeaderBar(module: module, showCommandPalette: showCommandPalette)
-                } else {
-                    TitlebarToolbarRow(leadingPadding: 14, trailingPadding: 14) {
-                        ShellTrafficLeadingActions(module: module)
-                        Spacer(minLength: 0)
-                        TitlebarChromeActionBar(
-                            module: module,
-                            showCommandPalette: showCommandPalette,
-                            showNotificationsPanel: showNotificationsPanel,
-                            placement: .trailing
-                        )
-                    }
-                }
-            }
+            Color.clear.frame(height: TrafficLightLayoutStore.shared.rowHeight)
+        case .secondaryChrome, .chatSubmenu:
+            Color.clear.frame(height: TrafficLightLayoutStore.shared.rowHeight)
+        case .editorTrailing:
+            Color.clear.frame(height: TrafficLightLayoutStore.shared.rowHeight)
         }
     }
 }
 
-/// Stacks a column header band above content with matching chrome background.
+/// Stacks optional titlebar band above column content.
 struct ShellColumnChromeStack<Content: View>: View {
-    let headerKind: ShellColumnHeaderKind
+    var showsTitlebar: Bool = true
+    var headerKind: ShellColumnHeaderKind?
     var appliesSidebarChrome: Bool = false
     var appliesPrimaryBarGlass: Bool = false
     @ViewBuilder var content: () -> Content
 
+    init(
+        showsTitlebar: Bool = true,
+        headerKind: ShellColumnHeaderKind? = nil,
+        appliesSidebarChrome: Bool = false,
+        appliesPrimaryBarGlass: Bool = false,
+        @ViewBuilder content: @escaping () -> Content
+    ) {
+        self.showsTitlebar = showsTitlebar
+        self.headerKind = headerKind
+        self.appliesSidebarChrome = appliesSidebarChrome
+        self.appliesPrimaryBarGlass = appliesPrimaryBarGlass
+        self.content = content
+    }
+
     var body: some View {
         VStack(spacing: 0) {
-            LibraryShellHeaderView(kind: headerKind)
+            if showsTitlebar, let headerKind {
+                LibraryShellHeaderView(kind: headerKind)
+            }
             content()
         }
         .frame(minHeight: 0, maxHeight: .infinity)

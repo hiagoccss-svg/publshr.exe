@@ -1,22 +1,17 @@
 import SwiftUI
 import UniformTypeIdentifiers
 
-/// Editor-column header for chat: channel title, search, command, settings, profile (photo last).
-struct ChatEditorHeaderBar: View {
+/// Editor-column toolbar content (embedded in `ShellUnifiedTitlebar`).
+struct ChatEditorToolbarContent: View {
     @EnvironmentObject private var auth: AuthViewModel
     @EnvironmentObject private var chat: ChatViewModel
-    @Binding var module: AppModule
     @Binding var showCommandPalette: Bool
 
     @State private var showAvatarPicker = false
     @State private var isUploadingAvatar = false
 
     var body: some View {
-        TitlebarToolbarRow(
-            leadingPadding: CursorMacShellDesign.editorHorizontalPadding,
-            trailingPadding: 14
-        ) {
-            ShellTrafficLeadingActions(module: $module)
+        HStack(alignment: .center, spacing: AppWindowChromeMetrics.toolbarItemSpacing) {
             channelTitle
             Spacer(minLength: 8)
             TitlebarChromeIconButton(systemName: "magnifyingglass", help: "Search in channel") {
@@ -35,6 +30,7 @@ struct ChatEditorHeaderBar: View {
             .disabled(chat.selectedChannel == nil)
             profileAvatarMenu
         }
+        .frame(maxWidth: .infinity)
         .fileImporter(
             isPresented: $showAvatarPicker,
             allowedContentTypes: [.jpeg, .png],
