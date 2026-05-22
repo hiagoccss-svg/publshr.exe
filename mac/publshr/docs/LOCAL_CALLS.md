@@ -63,6 +63,7 @@ Voice notes are saved under **Application Support** immediately. Upload to Supab
 
 | Symptom | Fix |
 |---------|-----|
+| Crash at launch: `Library not loaded: … LiveKitWebRTC.framework` | Reinstall from latest `live` build (CI embeds the framework under `Contents/Frameworks/`). Local rebuild: `swift build -c release --product PublshrApp` then `bash scripts/package-release.sh` |
 | “Install livekit-server…” | Run `scripts/fetch-livekit-server-macos.sh` and rebuild the `.app` |
 | Others can’t join | Same Wi‑Fi, macOS firewall allows Publshr incoming, check room code in call UI |
 | No video | Grant camera in System Settings → Privacy |

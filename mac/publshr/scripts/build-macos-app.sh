@@ -24,6 +24,12 @@ mkdir -p "$MACOS_DIR" "$RES_DIR"
 cp "$BINARY" "${MACOS_DIR}/Publshr"
 chmod 755 "${MACOS_DIR}/Publshr"
 
+PKG_ROOT="${SCRIPT_DIR}/.."
+if [[ "$(uname -s)" == "Darwin" ]]; then
+    chmod +x "${SCRIPT_DIR}/embed-macos-livekit-frameworks.sh"
+    bash "${SCRIPT_DIR}/embed-macos-livekit-frameworks.sh" "$APP_ROOT" "$PKG_ROOT"
+fi
+
 sed -e "s#@@SHORT_VERSION@@#${SHORT_VERSION}#g" \
     -e "s#@@BUILD@@#${BUILD}#g" \
     -e "s#@@GITHUB_REPO@@#${GITHUB_REPO}#g" \
