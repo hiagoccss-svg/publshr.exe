@@ -20,13 +20,13 @@ struct EnterpriseSidebarRow: View {
                     .foregroundStyle(selected ? Color.white : CursorTheme.foreground)
                 Spacer(minLength: 0)
             }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 5)
+            .padding(.horizontal, LibraryGlassDesign.sidebarRowHorizontal)
+            .padding(.vertical, LibraryGlassDesign.sidebarRowVertical)
             .background(
-                RoundedRectangle(cornerRadius: 6, style: .continuous)
-                    .fill(selected ? CursorTheme.accent : Color.clear)
+                RoundedRectangle(cornerRadius: LibraryGlassDesign.sidebarRowRadius, style: .continuous)
+                    .fill(selected ? LibraryGlassDesign.primaryCTA : Color.clear)
             )
-            .contentShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+            .contentShape(RoundedRectangle(cornerRadius: LibraryGlassDesign.sidebarRowRadius, style: .continuous))
         }
         .buttonStyle(.plain)
     }

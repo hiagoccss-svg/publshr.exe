@@ -11,6 +11,16 @@ struct ChatSidebarView: View {
 
     var body: some View {
         VStack(spacing: 0) {
+            Button {
+                showNewChannel = true
+            } label: {
+                Label("New message", systemImage: "plus")
+            }
+            .buttonStyle(LibraryPrimaryPillButtonStyle())
+            .padding(.horizontal, LibraryGlassDesign.sidebarRowHorizontal)
+            .padding(.top, 12)
+            .padding(.bottom, 8)
+
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
                     sidebarSection("Favorites", items: chat.favoriteChannels, onAdd: nil)
@@ -137,7 +147,7 @@ struct ChatSidebarView: View {
                             .foregroundStyle(.white)
                             .padding(.horizontal, 6)
                             .padding(.vertical, 2)
-                            .background(CursorTheme.accent)
+                            .background(LibraryGlassDesign.primaryCTA)
                             .clipShape(Capsule())
                     }
                 }
@@ -145,7 +155,7 @@ struct ChatSidebarView: View {
                 .padding(.horizontal, 10)
                 .background(
                     RoundedRectangle(cornerRadius: SpacesClickUpDesign.sidebarRowRadius, style: .continuous)
-                        .fill(selected ? CursorTheme.accent.opacity(0.08) : Color.clear)
+                        .fill(selected ? LibraryGlassDesign.primaryCTA.opacity(0.08) : Color.clear)
                 )
             }
             .buttonStyle(.plain)

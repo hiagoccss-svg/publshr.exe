@@ -57,7 +57,7 @@ export default function TopBar() {
     syncStatus === 'syncing' ? Loader2 : syncStatus === 'offline' ? CloudOff : Cloud
 
   return (
-    <header className="drag-region flex h-12 shrink-0 items-center gap-3 border-b border-surface-border bg-surface-raised/80 px-4 backdrop-blur-sm">
+    <header className="glass-toolbar drag-region flex h-12 shrink-0 items-center gap-3 px-4">
       {window.planner?.platform === 'darwin' && <div className="w-14 shrink-0" />}
 
       <div className="no-drag flex min-w-0 items-center gap-2">
@@ -90,7 +90,7 @@ export default function TopBar() {
         <button
           type="button"
           onClick={() => setCreatePanelOpen(true)}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-ink px-3 py-1.5 text-xs font-medium text-white transition hover:bg-ink/90"
+          className="library-cta-pill text-xs"
         >
           <Plus className="h-3.5 w-3.5" />
           New

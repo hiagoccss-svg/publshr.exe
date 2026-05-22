@@ -122,13 +122,9 @@ struct SpacesNavSidebar: View {
             Button {
                 spaces.showNewSpaceSheet = true
             } label: {
-                Image(systemName: "plus")
-                    .font(.system(size: 12, weight: .semibold))
-                    .frame(width: 28, height: 28)
-                    .background(CursorTheme.panelBackground)
-                    .clipShape(RoundedRectangle(cornerRadius: 6))
+                Label("New", systemImage: "plus")
             }
-            .buttonStyle(.plain)
+            .buttonStyle(LibraryPrimaryPillButtonStyle())
         }
         .padding(12)
     }

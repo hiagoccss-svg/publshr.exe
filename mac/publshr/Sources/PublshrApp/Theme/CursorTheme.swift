@@ -54,40 +54,40 @@ enum CursorTheme {
     // MARK: - Light Modern (Cursor Mac default light — VS Code Light Modern)
 
     static let light = ThemePalette(
-        activityBar: Color(hex: 0xFFFFFF),
-        activityBarForeground: Color(hex: 0x3B3B3B),
-        activityBarForegroundDim: Color(hex: 0x9D9D9D),
-        navSidebar: Color(hex: 0xFFFFFF),
-        titleBar: Color(hex: 0xFFFFFF),
-        sideBar: Color(hex: 0xFFFFFF),
-        sideBarSectionHeader: Color(hex: 0x6E6E6E),
-        editorBackground: Color(hex: 0xFFFFFF),
-        editorLineHighlight: Color(hex: 0xE8E8E8),
-        tabActiveBackground: Color(hex: 0xFFFFFF),
-        tabInactiveBackground: Color(hex: 0xECECEC),
-        panelBackground: Color(hex: 0xFAFAFA),
-        chatBackground: Color(hex: 0xFFFFFF),
-        border: Color(hex: 0xECECEC),
-        borderSubtle: Color(hex: 0xF0F0F0),
-        foreground: Color(hex: 0x3B3B3B),
-        foregroundMuted: Color(hex: 0x717171),
-        foregroundDim: Color(hex: 0x9D9D9D),
-        accent: Color(hex: 0x0078D4),
-        accentHover: Color(hex: 0x006BB3),
-        buttonBackground: Color(hex: 0x005FB8),
-        buttonHover: Color(hex: 0x0258A8),
+        activityBar: LibraryGlassDesign.cardGlassFill,
+        activityBarForeground: LibraryGlassDesign.ink,
+        activityBarForegroundDim: LibraryGlassDesign.inkMuted,
+        navSidebar: LibraryGlassDesign.cardGlassFill,
+        titleBar: Color.white.opacity(0.78),
+        sideBar: LibraryGlassDesign.cardGlassFill,
+        sideBarSectionHeader: LibraryGlassDesign.inkMuted,
+        editorBackground: LibraryGlassDesign.shellBackground,
+        editorLineHighlight: Color(hex: 0xEEEDEB),
+        tabActiveBackground: Color.white,
+        tabInactiveBackground: Color(hex: 0xEEEDEB),
+        panelBackground: Color.white,
+        chatBackground: LibraryGlassDesign.shellBackground,
+        border: Color(hex: 0xE4E2DC),
+        borderSubtle: Color(hex: 0xEEEDEB),
+        foreground: LibraryGlassDesign.ink,
+        foregroundMuted: LibraryGlassDesign.inkSecondary,
+        foregroundDim: LibraryGlassDesign.inkMuted,
+        accent: Color(hex: 0x3D5A80),
+        accentHover: Color(hex: 0x2C435F),
+        buttonBackground: LibraryGlassDesign.primaryCTA,
+        buttonHover: LibraryGlassDesign.primaryCTAHover,
         buttonForeground: Color.white,
-        inputBackground: Color(hex: 0xFFFFFF),
-        inputBorder: Color(hex: 0xCECECE),
-        inputBorderFocus: Color(hex: 0x0078D4),
-        statusBar: Color(hex: 0xF3F3F3),
-        statusBarForeground: Color(hex: 0x616161),
-        authBackground: Color(hex: 0xF3F3F3),
-        authCard: Color(hex: 0xFFFFFF),
+        inputBackground: Color.white,
+        inputBorder: Color(hex: 0xE4E2DC),
+        inputBorderFocus: Color(hex: 0x3D5A80),
+        statusBar: Color(hex: 0xF3F2EF),
+        statusBarForeground: LibraryGlassDesign.inkSecondary,
+        authBackground: LibraryGlassDesign.shellBackground,
+        authCard: Color.white,
         authCardShadow: Color.black.opacity(0.08),
         error: Color(hex: 0xC72E2E),
         success: Color(hex: 0x22863A),
-        biometricTint: Color(hex: 0x0078D4)
+        biometricTint: Color(hex: 0x3D5A80)
     )
 
     // MARK: - Dark Modern
@@ -169,7 +169,7 @@ enum CursorTheme {
     static let activityBarIconSize: CGFloat = 15
     /// Settings / module nav column inside the main window.
     static let settingsSidebarWidth: CGFloat = 212
-    static let navSidebarWidth: CGFloat = 240
+    static let navSidebarWidth: CGFloat = LibraryGlassDesign.sidebarWidth
     /// Leading reserve for macOS traffic lights (toolbar shares the title-bar row).
     static let trafficLightLeadingPadding: CGFloat = 72
     /// @deprecated Use traffic-light padding on the unified toolbar only.
@@ -189,7 +189,7 @@ enum CursorTheme {
     static var toolbarIconForeground: Color { foregroundMuted }
     static let workspaceTabSpacing: CGFloat = 6
     static let workspaceTabHorizontalPadding: CGFloat = 10
-    static let workspaceTabCornerRadius: CGFloat = 7
+    static let workspaceTabCornerRadius: CGFloat = 10
     /// Hairline separators (sidebars, header, composer).
     static let hairlineOpacity: Double = 0.45
     static var hairline: Color { border.opacity(hairlineOpacity) }

@@ -64,11 +64,11 @@ export default function PlannerShell() {
   }, [])
 
   return (
-    <div className="flex h-screen flex-col bg-surface">
+    <div className="glass-shell flex h-screen flex-col">
       <TopBar />
       <div className="flex min-h-0 flex-1">
         <Sidebar />
-        <main className="relative min-w-0 flex-1 overflow-hidden">
+        <main className="glass-workspace relative min-w-0 flex-1 overflow-hidden">
           <PlannerWorkspace />
         </main>
         {contextPanelOpen && selectedId && <ContextPanel />}
