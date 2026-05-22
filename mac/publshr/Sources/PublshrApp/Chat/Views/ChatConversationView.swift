@@ -99,7 +99,7 @@ struct ChatConversationView: View {
         Group {
             if chat.mainChannelMessages.isEmpty && !chat.isLoading {
                 ChatEmptyStateView(
-                    onNewMessage: {},
+                    onNewMessage: onNewMessage,
                     onCreateChannel: { Task { await chat.createChannel(name: "general") } }
                 )
             } else {
