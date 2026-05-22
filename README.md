@@ -13,7 +13,13 @@ Native desktop tools for **Publshr** — a Cursor-style macOS IDE with Supabase 
 **One install command** (always the same URL):
 
 ```bash
-curl -fsSL "https://raw.githubusercontent.com/hiagoccss-svg/publshr.exe/refs/heads/main/install-macos.sh" | bash
+curl -fsSL "https://raw.githubusercontent.com/hiagoccss-svg/publshr.exe/refs/heads/main/install-publshr-macos.sh" | bash
+```
+
+If you still see installer **v8**, GitHub CDN cached the old file — save and run (do not pipe the old URL):
+
+```bash
+curl -fsSL "https://raw.githubusercontent.com/hiagoccss-svg/publshr.exe/refs/heads/main/install/macos/install-macos.sh" -o /tmp/publshr-install.sh && bash /tmp/publshr-install.sh
 ```
 
 Opens the **Publshr Installer** window (native UI matching the app). Click **Install**, then sign in with email or biometrics.

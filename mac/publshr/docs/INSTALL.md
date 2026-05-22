@@ -15,13 +15,13 @@ If the app opens like a broken web/CLI bundle, the `live` release may be outdate
 Until the `live` release is published, use the **main** branch script:
 
 ```bash
-curl -fsSL "https://raw.githubusercontent.com/hiagoccss-svg/publshr.exe/refs/heads/main/install-macos.sh" | bash
+curl -fsSL "https://raw.githubusercontent.com/hiagoccss-svg/publshr.exe/refs/heads/main/install-publshr-macos.sh" | bash
 ```
 
 Or download and run:
 
 ```bash
-curl -fsSL "https://raw.githubusercontent.com/hiagoccss-svg/publshr.exe/refs/heads/main/install-macos.sh" -o ~/Downloads/Publshr-install-macos.sh
+curl -fsSL "https://raw.githubusercontent.com/hiagoccss-svg/publshr.exe/refs/heads/main/install-publshr-macos.sh" -o ~/Downloads/Publshr-install-macos.sh
 chmod +x ~/Downloads/Publshr-install-macos.sh
 bash ~/Downloads/Publshr-install-macos.sh
 ```
@@ -31,7 +31,7 @@ bash ~/Downloads/Publshr-install-macos.sh
 ### One-line install
 
 ```bash
-curl -fsSL "https://raw.githubusercontent.com/hiagoccss-svg/publshr.exe/refs/heads/main/install-macos.sh" | bash
+curl -fsSL "https://raw.githubusercontent.com/hiagoccss-svg/publshr.exe/refs/heads/main/install-publshr-macos.sh" | bash
 ```
 
 1. Downloads the current **live** build from GitHub Releases  
