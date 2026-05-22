@@ -11,7 +11,10 @@ struct ChatEditorHeaderBar: View {
     @State private var isUploadingAvatar = false
 
     var body: some View {
-        HStack(alignment: .center, spacing: CursorMacShellDesign.titlebarActionSpacing) {
+        TitlebarToolbarRow(
+            leadingPadding: CursorMacShellDesign.editorHorizontalPadding,
+            trailingPadding: 14
+        ) {
             channelTitle
             Spacer(minLength: 8)
             TitlebarChromeIconButton(systemName: "magnifyingglass", help: "Search in channel") {
@@ -30,8 +33,6 @@ struct ChatEditorHeaderBar: View {
             .disabled(chat.selectedChannel == nil)
             profileAvatarMenu
         }
-        .padding(.leading, CursorMacShellDesign.editorHorizontalPadding)
-        .padding(.trailing, 14)
         .fileImporter(
             isPresented: $showAvatarPicker,
             allowedContentTypes: [.jpeg, .png],
@@ -45,104 +46,22 @@ struct ChatEditorHeaderBar: View {
     @ViewBuilder
     private var channelTitle: some View {
         if let channel = chat.selectedChannel {
-            HStack(spacing: 8) {
-                ChatChannelIconView(channel: channel, size: 18)
-                Text(channel.displayTitle)
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(LibraryGlassDesign.ink)
-                    .lineLimit(1)
-            }
-            .help(channel.displayTitle)
+            TitlebarToolbarChannelTitle(channel: channel)
+                .help(channel.displayTitle)
         } else {
             Text("Chat")
-                .font(.system(size: 14, weight: .semibold))
+                .font(.system(size: AppWindowChromeMetrics.toolbarTitleFontSize, weight: .semibold))
                 .foregroundStyle(LibraryGlassDesign.inkSecondary)
+                .frame(height: AppWindowChromeMetrics.controlSize, alignment: .leading)
         }
     }
 
     private var profileAvatarMenu: some View {
-        Menu {
-            if let profile = auth.profile {
-                HStack(spacing: 10) {
-                    ChatProfileAvatar(
-                        profile: profile,
-                        displayName: profile.displayName ?? profile.email,
-                        size: 36,
-                        presence: chat.myStatus
-                    )
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(profile.displayName ?? profile.email)
-                            .font(.headline)
-                        HStack(spacing: 4) {
-                            ChatPresenceDot(status: chat.myStatus, size: 8)
-                            Text(chat.myStatus.label)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-                }
-                .padding(.vertical, 4)
-            }
-            Divider()
-            Button {
-                showAvatarPicker = true
-            } label: {
-                Label(isUploadingAvatar ? "Uploading…" : "Upload photo", systemImage: "photo")
-            }
-            .disabled(isUploadingAvatar)
-            Divider()
-            Text("Set status")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            ForEach(ChatPresenceStatus.allCases.filter { $0 != .invisible }, id: \.self) { status in
-                Button {
-                    Task { await chat.setStatus(status) }
-                } label: {
-                    Label(
-                        status.label,
-                        systemImage: status == chat.myStatus ? "checkmark.circle.fill" : "circle.fill"
-                    )
-                }
-            }
-            Divider()
-            Button("Account & profile") {
-                NotificationCenter.default.post(name: .publshrOpenSettings, object: SettingsSection.account.rawValue)
-            }
-            Button("Workspace settings") {
-                NotificationCenter.default.post(name: .publshrOpenSettings, object: SettingsSection.workspace.rawValue)
-            }
-            Button("Chat permissions") {
-                chat.showPermissionsSheet = true
-            }
-            Divider()
-            Button("Sign out", role: .destructive) {
-                Task { await auth.signOut() }
-            }
-        } label: {
-            profileAvatarLabel
-        }
-        .menuStyle(.borderlessButton)
-        .help("Profile & photo")
-    }
-
-    @ViewBuilder
-    private var profileAvatarLabel: some View {
-        if let profile = auth.profile {
-            ChatProfileAvatar(
-                profile: profile,
-                displayName: profile.displayName ?? profile.email,
-                size: AppWindowChromeMetrics.controlSize,
-                presence: chat.myStatus
-            )
-        } else {
-            Image(systemName: "person.circle.fill")
-                .font(.system(size: AppWindowChromeMetrics.controlIconSize))
-                .foregroundStyle(LibraryGlassDesign.inkSecondary)
-                .frame(
-                    width: AppWindowChromeMetrics.controlSize,
-                    height: AppWindowChromeMetrics.controlSize
-                )
-        }
+        TitlebarToolbarProfileMenu(
+            isUploadingAvatar: isUploadingAvatar,
+            onUploadPhoto: { showAvatarPicker = true },
+            onChatPermissions: { chat.showPermissionsSheet = true }
+        )
     }
 
     private func uploadAvatar(from url: URL) async {
@@ -157,5 +76,23 @@ struct ChatEditorHeaderBar: View {
         } catch {
             // Settings account pane shows errors; header stays minimal.
         }
+    }
+}
+
+/// Channel title cluster aligned to the same row as icon buttons.
+struct TitlebarToolbarChannelTitle: View {
+    let channel: ChatChannel
+
+    var body: some View {
+        HStack(spacing: 6) {
+            TitlebarToolbarSlot {
+                ChatChannelIconView(channel: channel, size: AppWindowChromeMetrics.channelIconSize)
+            }
+            Text(channel.displayTitle)
+                .font(.system(size: AppWindowChromeMetrics.toolbarTitleFontSize, weight: .semibold))
+                .foregroundStyle(LibraryGlassDesign.ink)
+                .lineLimit(1)
+        }
+        .frame(height: AppWindowChromeMetrics.controlSize, alignment: .leading)
     }
 }

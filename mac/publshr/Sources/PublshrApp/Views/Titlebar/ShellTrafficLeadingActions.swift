@@ -8,7 +8,7 @@ struct ShellTrafficLeadingActions: View {
     @Binding var module: AppModule
 
     var body: some View {
-        HStack(alignment: .center, spacing: CursorMacShellDesign.titlebarActionSpacing) {
+        HStack(alignment: .center, spacing: AppWindowChromeMetrics.toolbarItemSpacing) {
             TitlebarChromeIconButton(
                 systemName: tabStore.barMenuExpanded ? "sidebar.left" : "sidebar.right",
                 help: tabStore.barMenuExpanded

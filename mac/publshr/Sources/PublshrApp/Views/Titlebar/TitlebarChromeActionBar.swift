@@ -25,9 +25,7 @@ struct TitlebarChromeActionBar: View {
     }
 
     private var trailingCluster: some View {
-        HStack(alignment: .center, spacing: CursorMacShellDesign.titlebarActionSpacing) {
-            profileMenu
-
+        HStack(alignment: .center, spacing: AppWindowChromeMetrics.toolbarItemSpacing) {
             TitlebarChromeIconButton(
                 systemName: "bell",
                 help: "Notifications",
@@ -42,81 +40,11 @@ struct TitlebarChromeActionBar: View {
             ) {
                 showCommandPalette = true
             }
-        }
-    }
 
-    private var profileMenu: some View {
-        Menu {
-            if let profile = auth.profile {
-                HStack(spacing: 10) {
-                    ChatProfileAvatar(
-                        profile: profile,
-                        displayName: profile.displayName ?? profile.email,
-                        size: 36,
-                        presence: chat.myStatus
-                    )
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(profile.displayName ?? profile.email)
-                            .font(.headline)
-                        HStack(spacing: 4) {
-                            ChatPresenceDot(status: chat.myStatus, size: 8)
-                            Text(chat.myStatus.label)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-                }
-                .padding(.vertical, 4)
-            }
-            Divider()
-            Text("Set status")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            ForEach(ChatPresenceStatus.allCases.filter { $0 != .invisible }, id: \.self) { status in
-                Button {
-                    Task { await chat.setStatus(status) }
-                } label: {
-                    Label(
-                        status.label,
-                        systemImage: status == chat.myStatus ? "checkmark.circle.fill" : "circle.fill"
-                    )
-                }
-            }
-            Divider()
-            Button("Account & profile") {
-                NotificationCenter.default.post(name: .publshrOpenSettings, object: SettingsSection.account.rawValue)
-            }
-            Button("Workspace settings") {
-                NotificationCenter.default.post(name: .publshrOpenSettings, object: SettingsSection.workspace.rawValue)
-            }
-            if module == .chat {
-                Button("Chat permissions") {
-                    chat.showPermissionsSheet = true
-                }
-            }
-            Divider()
-            Button("Sign out", role: .destructive) {
-                Task { await auth.signOut() }
-            }
-        } label: {
-            if let profile = auth.profile {
-                ChatProfileAvatar(
-                    profile: profile,
-                    displayName: profile.displayName ?? profile.email,
-                    size: AppWindowChromeMetrics.controlSize,
-                    presence: chat.myStatus
-                )
-            } else {
-                Image(systemName: "person.circle.fill")
-                    .font(.system(size: AppWindowChromeMetrics.controlIconSize))
-                    .foregroundStyle(LibraryGlassDesign.inkSecondary)
-                    .frame(
-                        width: AppWindowChromeMetrics.controlSize,
-                        height: AppWindowChromeMetrics.controlSize
-                    )
-            }
+            TitlebarToolbarProfileMenu(
+                showChatPermissions: module == .chat,
+                onChatPermissions: { chat.showPermissionsSheet = true }
+            )
         }
-        .menuStyle(.borderlessButton)
-        .help("Profile & presence")
     }
 }

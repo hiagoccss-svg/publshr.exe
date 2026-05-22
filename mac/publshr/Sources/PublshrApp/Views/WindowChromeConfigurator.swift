@@ -61,6 +61,27 @@ enum MainWindowChrome {
             window.titlebarSeparatorStyle = .none
         }
         tightenTopSafeArea(for: window)
+        alignTrafficLights(in: window)
+    }
+
+    /// Vertically center system traffic lights on the unified toolbar row (Cursor Mac parity).
+    @MainActor
+    private static func alignTrafficLights(in window: NSWindow) {
+        guard let close = window.standardWindowButton(.closeButton) else { return }
+        let buttons = [
+            window.standardWindowButton(.closeButton),
+            window.standardWindowButton(.miniaturizeButton),
+            window.standardWindowButton(.zoomButton),
+        ].compactMap { $0 }
+
+        let rowHeight = AppWindowChromeMetrics.trafficLightRowHeight
+        let targetMidY = rowHeight * 0.5 + AppWindowChromeMetrics.trafficLightVerticalAlignPadding
+        for button in buttons {
+            var frame = button.frame
+            frame.origin.y = targetMidY - frame.height * 0.5
+            button.setFrameOrigin(frame.origin)
+        }
+        _ = close // anchor availability check
     }
 
     /// Pull SwiftUI content up into the real titlebar band (same row as traffic lights).
@@ -83,6 +104,7 @@ enum MainWindowChrome {
         for delay in [0.05, 0.15, 0.35, 0.75, 1.5] {
             DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
                 apply(to: window)
+                alignTrafficLights(in: window)
             }
         }
     }

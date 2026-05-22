@@ -14,46 +14,53 @@ struct TitlebarChromeIconButton: View {
     @State private var isHovered = false
 
     var body: some View {
-        Button(action: action) {
-            ZStack(alignment: .topTrailing) {
-                Group {
-                    if isLoading {
-                        ProgressView()
-                            .controlSize(.small)
-                            .scaleEffect(0.55)
-                    } else {
-                        Image(systemName: systemName)
-                            .font(.system(size: AppWindowChromeMetrics.controlIconSize, weight: .regular))
-                            .symbolRenderingMode(.monochrome)
+        TitlebarToolbarSlot {
+            Button(action: action) {
+                ZStack {
+                    Group {
+                        if isLoading {
+                            ProgressView()
+                                .controlSize(.small)
+                                .scaleEffect(0.55)
+                        } else {
+                            Image(systemName: systemName)
+                                .font(.system(size: AppWindowChromeMetrics.controlIconSize, weight: .regular))
+                                .symbolRenderingMode(.monochrome)
+                        }
+                    }
+                    .foregroundStyle(foregroundColor)
+                    .frame(
+                        width: AppWindowChromeMetrics.controlSize,
+                        height: AppWindowChromeMetrics.controlSize
+                    )
+                    .background(backgroundShape)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: AppWindowChromeMetrics.controlCornerRadius, style: .continuous)
+                            .strokeBorder(strokeColor, lineWidth: isActive ? 1 : 0)
+                    )
+
+                    if badgeCount > 0 {
+                        Text(badgeCount > 99 ? "99+" : "\(badgeCount)")
+                            .font(.system(size: 8, weight: .bold))
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 4)
+                            .padding(.vertical, 1)
+                            .background(Capsule().fill(CursorTheme.accent))
+                            .offset(x: 8, y: -6)
                     }
                 }
-                .foregroundStyle(foregroundColor)
                 .frame(
                     width: AppWindowChromeMetrics.controlSize,
                     height: AppWindowChromeMetrics.controlSize
                 )
-                .background(backgroundShape)
-                .overlay(
-                    RoundedRectangle(cornerRadius: AppWindowChromeMetrics.controlCornerRadius, style: .continuous)
-                        .strokeBorder(strokeColor, lineWidth: isActive ? 1 : 0)
-                )
-
-                if badgeCount > 0 {
-                    Text(badgeCount > 99 ? "99+" : "\(badgeCount)")
-                        .font(.system(size: 8, weight: .bold))
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, 4)
-                        .padding(.vertical, 1)
-                        .background(Capsule().fill(CursorTheme.accent))
-                        .offset(x: 6, y: -5)
-                }
+                .clipped()
+                .contentShape(Rectangle())
             }
-            .contentShape(Rectangle())
+            .buttonStyle(.plain)
+            .disabled(!isEnabled || isLoading)
+            .help(help)
+            .onHover { isHovered = $0 }
         }
-        .buttonStyle(.plain)
-        .disabled(!isEnabled || isLoading)
-        .help(help)
-        .onHover { isHovered = $0 }
     }
 
     private var foregroundColor: Color {
@@ -75,6 +82,105 @@ struct TitlebarChromeIconButton: View {
 
     private var strokeColor: Color {
         isActive ? CursorMacShellDesign.border : Color.clear
+    }
+}
+
+/// Profile avatar menu locked to the shared toolbar slot (no chevron, no extra menu padding).
+struct TitlebarToolbarProfileMenu: View {
+    @EnvironmentObject private var auth: AuthViewModel
+    @EnvironmentObject private var chat: ChatViewModel
+
+    var isUploadingAvatar: Bool = false
+    var showChatPermissions: Bool = true
+    var onUploadPhoto: (() -> Void)?
+    var onChatPermissions: (() -> Void)?
+
+    var body: some View {
+        TitlebarToolbarSlot {
+            Menu {
+                if let profile = auth.profile {
+                    HStack(spacing: 10) {
+                        ChatProfileAvatar(
+                            profile: profile,
+                            displayName: profile.displayName ?? profile.email,
+                            size: 36,
+                            presence: chat.myStatus
+                        )
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(profile.displayName ?? profile.email)
+                                .font(.headline)
+                            HStack(spacing: 4) {
+                                ChatPresenceDot(status: chat.myStatus, size: 8)
+                                Text(chat.myStatus.label)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                    }
+                    .padding(.vertical, 4)
+                }
+                Divider()
+                if let onUploadPhoto {
+                    Button {
+                        onUploadPhoto()
+                    } label: {
+                        Label(isUploadingAvatar ? "Uploading…" : "Upload photo", systemImage: "photo")
+                    }
+                    .disabled(isUploadingAvatar)
+                    Divider()
+                }
+                Text("Set status")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                ForEach(ChatPresenceStatus.allCases.filter { $0 != .invisible }, id: \.self) { status in
+                    Button {
+                        Task { await chat.setStatus(status) }
+                    } label: {
+                        Label(
+                            status.label,
+                            systemImage: status == chat.myStatus ? "checkmark.circle.fill" : "circle.fill"
+                        )
+                    }
+                }
+                Divider()
+                Button("Account & profile") {
+                    NotificationCenter.default.post(name: .publshrOpenSettings, object: SettingsSection.account.rawValue)
+                }
+                Button("Workspace settings") {
+                    NotificationCenter.default.post(name: .publshrOpenSettings, object: SettingsSection.workspace.rawValue)
+                }
+                if showChatPermissions, let onChatPermissions {
+                    Button("Chat permissions") {
+                        onChatPermissions()
+                    }
+                }
+                Divider()
+                Button("Sign out", role: .destructive) {
+                    Task { await auth.signOut() }
+                }
+            } label: {
+                profileLabel
+            }
+            .menuStyle(.borderlessButton)
+            .menuIndicator(.hidden)
+            .help("Profile & photo")
+        }
+    }
+
+    @ViewBuilder
+    private var profileLabel: some View {
+        if let profile = auth.profile {
+            ChatProfileAvatar(
+                profile: profile,
+                displayName: profile.displayName ?? profile.email,
+                size: AppWindowChromeMetrics.controlSize - 4,
+                presence: nil
+            )
+        } else {
+            Image(systemName: "person.circle.fill")
+                .font(.system(size: AppWindowChromeMetrics.controlIconSize))
+                .foregroundStyle(LibraryGlassDesign.inkSecondary)
+        }
     }
 }
 

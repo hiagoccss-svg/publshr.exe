@@ -17,13 +17,8 @@ enum ShellColumnHeaderKind {
 struct LibraryShellHeaderView: View {
     let kind: ShellColumnHeaderKind
 
-    private var rowHeight: CGFloat {
-        AppWindowChromeMetrics.unifiedTitlebarRowHeight
-    }
-
     var body: some View {
         rowContent
-            .frame(height: rowHeight, alignment: .center)
             .frame(maxWidth: .infinity)
             .background { headerBackground }
     }
@@ -44,24 +39,25 @@ struct LibraryShellHeaderView: View {
     private var rowContent: some View {
         switch kind {
         case .trafficLeading(let module):
-            HStack(alignment: .center, spacing: 10) {
+            TitlebarToolbarRow(trailingPadding: 8) {
                 Color.clear
                     .frame(width: AppWindowChromeMetrics.trafficLightLeadingInset)
                 ShellTrafficLeadingActions(module: module)
                 Spacer(minLength: 0)
             }
-            .padding(.trailing, 8)
 
         case .secondaryChrome:
-            Color.clear
-                .frame(maxWidth: .infinity)
+            TitlebarToolbarRow {
+                Color.clear
+                    .frame(maxWidth: .infinity)
+            }
 
         case .editorTrailing(let module, let showCommandPalette, let showNotificationsPanel):
             Group {
                 if module.wrappedValue == .chat {
                     ChatEditorHeaderBar(showCommandPalette: showCommandPalette)
                 } else {
-                    HStack(alignment: .center, spacing: 0) {
+                    TitlebarToolbarRow(trailingPadding: 14) {
                         Spacer(minLength: 0)
                         TitlebarChromeActionBar(
                             module: module,
@@ -70,7 +66,6 @@ struct LibraryShellHeaderView: View {
                             placement: .trailing
                         )
                     }
-                    .padding(.trailing, 14)
                 }
             }
         }
