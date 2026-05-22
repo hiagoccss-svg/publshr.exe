@@ -28,7 +28,7 @@ final class AppUpdateViewModel: ObservableObject {
     private var syncInFlight = false
 
     /// Poll interval for GitHub `live` channel (every push to main publishes there).
-    private static let livePollSeconds: UInt64 = 60
+    private static let livePollSeconds: UInt64 = AppReleaseConfig.livePollIntervalSeconds
 
     var hasPendingUpdate: Bool {
         switch phase {

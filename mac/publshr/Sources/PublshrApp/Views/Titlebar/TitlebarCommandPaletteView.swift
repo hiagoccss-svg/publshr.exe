@@ -43,9 +43,10 @@ struct TitlebarCommandPaletteView: View {
                 }
                 .buttonStyle(.plain)
             }
-            .padding(14)
+            .macInlineTextField(background: MacSystemChrome.submenuFieldBackground())
+            .padding(MacSystemChrome.sheetPadding)
 
-            Divider()
+            Divider().opacity(0.35)
 
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 2) {
@@ -79,7 +80,7 @@ struct TitlebarCommandPaletteView: View {
                             .padding(.vertical, 8)
                             .background(
                                 RoundedRectangle(cornerRadius: 6, style: .continuous)
-                                    .fill(Color.primary.opacity(0.04))
+                                    .fill(MacSystemChrome.fieldHoverFill)
                             )
                         }
                         .buttonStyle(.plain)
@@ -91,7 +92,7 @@ struct TitlebarCommandPaletteView: View {
             .frame(maxHeight: 320)
         }
         .frame(width: 480)
-        .background(.regularMaterial)
+        .macNativeSheetPresentation()
         .onAppear {
             query = ""
             focused = true

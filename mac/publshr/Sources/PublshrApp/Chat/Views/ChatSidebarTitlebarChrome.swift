@@ -5,26 +5,31 @@ struct ChatSidebarTitlebarChrome: View {
     @ObservedObject var chat: ChatViewModel
 
     var body: some View {
-        HStack(spacing: 8) {
-            Image(systemName: "magnifyingglass")
-                .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(LibraryGlassDesign.inkMuted)
+        HStack(alignment: .center, spacing: 8) {
+            TitlebarToolbarSlot {
+                Image(systemName: "magnifyingglass")
+                    .font(.system(size: AppWindowChromeMetrics.controlIconSize, weight: .medium))
+                    .foregroundStyle(LibraryGlassDesign.inkMuted)
+            }
             TextField("Search channels and people", text: $chat.sidebarSearchQuery)
                 .textFieldStyle(.plain)
-                .font(ChatClickUpDesign.searchFont)
+                .font(.system(size: MacSystemChrome.fieldFontSize))
                 .foregroundStyle(LibraryGlassDesign.ink)
+                .frame(maxWidth: .infinity, alignment: .leading)
             if !chat.sidebarSearchQuery.isEmpty {
-                Button {
-                    chat.sidebarSearchQuery = ""
-                } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 12))
-                        .foregroundStyle(LibraryGlassDesign.inkMuted)
+                TitlebarToolbarSlot {
+                    Button {
+                        chat.sidebarSearchQuery = ""
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: AppWindowChromeMetrics.controlIconSize))
+                            .foregroundStyle(LibraryGlassDesign.inkMuted)
+                    }
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
             }
         }
-        .padding(.horizontal, 12)
-        .frame(height: AppWindowChromeMetrics.unifiedTitlebarRowHeight)
+        .frame(height: AppWindowChromeMetrics.controlSize)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
     }
 }

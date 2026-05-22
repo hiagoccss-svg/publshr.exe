@@ -48,7 +48,7 @@ Produces `dist/publshr-<version>-<os>-<arch>.tar.gz`.
 
 ### macOS install and live updates
 
-Every push to **`main`** publishes a new **`live`** build (icons, UI, shell, features, colors — full `Publshr.app` tarball). Installed apps check `VERSION.txt` via fixed download URLs every **60s** (build + version + commit + package digest + shell tag), auto-install **in place**, and refresh Chat/Spaces from Supabase on the same schedule. Settings → **Sync now** runs GitHub live + Supabase together.
+Every push to **`main`** publishes a new **`live`** build (icons, UI, shell, features, colors — full `Publshr.app` tarball). Installed apps check `VERSION.txt` via fixed download URLs every **30s** (build + version + commit + package digest + shell tag), auto-install **in place**, and refresh Chat/Spaces from Supabase on the same schedule. Settings → **Sync now** runs GitHub live + Supabase together. See `mac/publshr/docs/ENTERPRISE_INSTALL_AND_LIVE.md`.
 
 Stable installer (single file, fixed URL):
 

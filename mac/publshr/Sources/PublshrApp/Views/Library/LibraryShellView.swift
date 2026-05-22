@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Cursor Mac 3-column shell — glass bar, traffic controls, borderless chat column.
+/// Cursor Mac 3-column shell — single unified titlebar row, then icon rail + submenu + editor.
 struct LibraryShellView: View {
     @EnvironmentObject private var auth: AuthViewModel
     @EnvironmentObject private var chat: ChatViewModel
@@ -53,45 +53,52 @@ struct LibraryShellView: View {
     }
 
     private var shellBody: some View {
-        HStack(alignment: .top, spacing: 0) {
-            ShellColumnChromeStack(
-                headerKind: .trafficLeading(module: $module, compact: !tabStore.barMenuExpanded),
-                appliesPrimaryBarGlass: true
-            ) {
-                Group {
-                    if tabStore.barMenuExpanded {
-                        LibraryBarMenuColumn(
-                            module: $module,
-                            profilePresentation: $profilePresentation
-                        )
-                    } else {
-                        LibraryBarMenuIconRail(
-                            module: $module,
-                            profilePresentation: $profilePresentation
-                        )
+        VStack(spacing: 0) {
+            ShellUnifiedTitlebar(
+                module: $module,
+                showCommandPalette: $showCommandPalette,
+                showNotificationsPanel: $showNotificationsPanel,
+                submenuHidden: submenuHidden
+            )
+
+            HStack(alignment: .top, spacing: 0) {
+                ShellColumnChromeStack(showsTitlebar: false, appliesPrimaryBarGlass: true) {
+                    Group {
+                        if tabStore.barMenuExpanded {
+                            LibraryBarMenuColumn(
+                                module: $module,
+                                profilePresentation: $profilePresentation
+                            )
+                        } else {
+                            LibraryBarMenuIconRail(
+                                module: $module,
+                                profilePresentation: $profilePresentation
+                            )
+                        }
                     }
                 }
-            }
-
-            if !submenuHidden {
-                ShellColumnChromeStack(
-                    headerKind: module == .chat ? .chatSubmenu : .secondaryChrome,
-                    appliesSidebarChrome: true
-                ) {
-                    AppSecondarySidebar(
-                        module: module,
-                        chat: chat,
-                        spaces: spaces,
-                        showNewChannel: $showNewChannel,
-                        showNewDM: $showNewDM
-                    )
-                }
                 .transition(.move(edge: .leading).combined(with: .opacity))
-            }
 
-            editorColumn
-                .frame(minWidth: 420, maxWidth: .infinity, maxHeight: .infinity)
-                .layoutPriority(0)
+                if !submenuHidden {
+                    ShellColumnChromeStack(showsTitlebar: false, appliesSidebarChrome: true) {
+                        AppSecondarySidebar(
+                            module: module,
+                            chat: chat,
+                            spaces: spaces,
+                            showNewChannel: $showNewChannel,
+                            showNewDM: $showNewDM
+                        )
+                    }
+                    .fixedSize(horizontal: true, vertical: false)
+                    .layoutPriority(2)
+                    .transition(.move(edge: .leading).combined(with: .opacity))
+                }
+
+                editorColumn
+                    .frame(minWidth: 420, maxWidth: .infinity, maxHeight: .infinity)
+                    .layoutPriority(0)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .animation(.easeInOut(duration: 0.15), value: submenuHidden)
@@ -99,13 +106,7 @@ struct LibraryShellView: View {
     }
 
     private var editorColumn: some View {
-        ShellColumnChromeStack(
-            headerKind: .editorTrailing(
-                module: $module,
-                showCommandPalette: $showCommandPalette,
-                showNotificationsPanel: $showNotificationsPanel
-            )
-        ) {
+        ShellColumnChromeStack(showsTitlebar: false) {
             Group {
                 if module == .chat {
                     moduleContent

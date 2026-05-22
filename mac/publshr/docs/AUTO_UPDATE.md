@@ -16,18 +16,20 @@ curl -fsSL "https://raw.githubusercontent.com/hiagoccss-svg/publshr.exe/refs/hea
 flowchart LR
   A[git push main] --> B[GitHub Actions]
   B --> C[live release asset]
-  C --> D[Publshr.app checks every 10 min]
-  D --> E[Download + optional auto-install every 60s]
+  C --> D[Publshr.app checks every 30s]
+  D --> E[Download + optional auto-install]
 ```
 
 1. Every push to **`main`** runs `.github/workflows/deliver-macos.yml`.
 2. CI builds `Publshr.app` and uploads to the **`live`** release (same filenames every time).
-3. Your installed app checks the `live` channel every **60 seconds** via `VERSION.txt` (and when the app becomes active or wakes from sleep). It compares **build number**, **full version**, **git commit**, **enterprise shell tag** (`PublshrEnterpriseShell-N`, line 5), and **package digest**, verifies the tarball **SHA-256** against `VERSION.txt` line 4, then downloads the complete app bundle (icons, colors, Swift UI, shell, features). **Settings → Updates** shows installed vs remote detail and toggles check/auto-install; when auto-install is off, the build is downloaded but you choose when to install. Installs to `~/Applications/Publshr.app` are **passwordless**; system `/Applications` uses **one** administrator prompt per update (not three).
+3. Your installed app checks the `live` channel every **30 seconds** via `VERSION.txt` (and when the app becomes active or wakes from sleep). It compares **build number**, **full version**, **git commit**, **enterprise shell tag** (`PublshrEnterpriseShell-N`, line 5), and **package digest**, verifies the tarball **SHA-256** against `VERSION.txt` line 4, then downloads the complete app bundle (icons, colors, Swift UI, shell, features). **Settings → Updates** shows installed vs remote detail and toggles check/auto-install; when auto-install is off, the build is downloaded but you choose when to install. Installs to `~/Applications/Publshr.app` are **passwordless**; system `/Applications` uses **one** administrator prompt per update (not three).
 4. **Settings** (bottom panel): **Download and install latest** runs the same full check → download → install → restart flow manually.
 5. Every push to **`main`** publishes a new `live` build (monotonic CI build number). Icon changes at repo root are synced before packaging.
 6. CI runs **macOS compile check** on every PR and `main` push so broken builds do not block the `live` channel.
 
-Chat and Spaces data load from Supabase on sign-in and refresh every **60 seconds** with the live channel poll (plus on wake/network restore and **Sync now**).
+Chat and Spaces data load from Supabase on sign-in and refresh every **30 seconds** with the live channel poll (plus on wake/network restore and **Sync now**).
+
+See [ENTERPRISE_INSTALL_AND_LIVE.md](./ENTERPRISE_INSTALL_AND_LIVE.md) for installer contents, per-user data, and enterprise checklist.
 
 ## `VERSION.txt` (live release asset)
 

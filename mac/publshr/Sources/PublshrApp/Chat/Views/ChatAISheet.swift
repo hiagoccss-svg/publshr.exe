@@ -21,6 +21,7 @@ struct ChatAISheet: View {
             footer
         }
         .frame(width: 520, height: 560)
+        .macNativeSheetPresentation()
     }
 
     private var header: some View {
