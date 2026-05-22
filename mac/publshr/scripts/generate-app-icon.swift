@@ -49,15 +49,8 @@ func loadSourceImage() -> NSImage {
         let canvas = NSImage(size: NSSize(width: side, height: side))
         canvas.lockFocus()
         let full = NSRect(x: 0, y: 0, width: side, height: side)
-        if sourceHasTransparentPixels(loaded) {
-            drawWhiteIconBackground(in: full)
-        } else {
-            NSColor.clear.setFill()
-            NSBezierPath(rect: full).fill()
-        }
-        let inset = side * 0.04
-        let draw = NSRect(x: inset, y: inset, width: side - inset * 2, height: side - inset * 2)
-        loaded.draw(in: draw, from: .zero, operation: .sourceOver, fraction: 1)
+        drawWhiteIconBackground(in: full)
+        loaded.draw(in: full, from: .zero, operation: .sourceOver, fraction: 1)
         canvas.unlockFocus()
         return canvas
     }

@@ -2,7 +2,7 @@
 
 Upload **`icon.png`** at the **repository root** (GitHub web UI) or place it here as **`mac/publshr/app/icon.png`**.
 
-Mark-only PNGs (transparent background) get a **white** background automatically: run `python3 scripts/apply-premium-icon-background.py` from `mac/publshr/`, or rely on `generate-app-icon.swift` during macOS `icon-build.sh`.
+Mark-only PNGs (transparent background) get a **pure white (#FFFFFF)** background and the logo is scaled to **fill the full icon square** (no grey fringe or inset). Run `python3 scripts/apply-premium-icon-background.py` from `mac/publshr/` before upload, or rely on `icon-build.sh` (runs the script when Pillow is available, then `generate-app-icon.swift` on macOS).
 
 Before every macOS build, `scripts/sync-app-icon.sh` copies root **`icon.png`** into this folder when the files differ (checksum), so CI always picks up a new root upload even if this copy is older or smaller.
 
