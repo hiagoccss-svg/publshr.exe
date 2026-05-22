@@ -8,6 +8,10 @@ struct ChatComposerView: View {
 
     private static let quickEmojis = ["👍", "❤️", "😂", "🎉", "👀", "✅"]
 
+    private var activeMentionQuery: String? {
+        ChatMentionParser.activeMentionQuery(in: chat.composerText)
+    }
+
     var body: some View {
         VStack(spacing: 4) {
             if !chat.canPostInSelectedChannel {
@@ -25,6 +29,14 @@ struct ChatComposerView: View {
             composerToolbar
                 .padding(.horizontal, 16)
                 .padding(.top, 4)
+
+            if activeMentionQuery != nil, chat.canPostInSelectedChannel {
+                ChatMentionPickerView(chat: chat, query: activeMentionQuery ?? "") { handle in
+                    chat.insertMention(handle: handle)
+                }
+                .padding(.horizontal, 16)
+                .frame(maxHeight: 180)
+            }
 
             HStack(alignment: .bottom, spacing: 10) {
                 TextField(composerPlaceholder, text: $chat.composerText, axis: .vertical)

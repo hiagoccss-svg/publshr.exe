@@ -100,7 +100,7 @@ struct MainIDEView: View {
             showCommandPalette = true
         }
         .onReceive(NotificationCenter.default.publisher(for: .publshrTitlebarSearch)) { _ in
-            if module == .chat { chat.showSearchSheet = true }
+            if module == .chat { chat.openWorkspaceSearch() }
         }
         .onReceive(NotificationCenter.default.publisher(for: .publshrTitlebarNotifications)) { _ in
             showNotificationsPanel = true
@@ -123,6 +123,7 @@ struct MainIDEView: View {
                 enterprise: enterprise
             )
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     private func onShellAppear() {
@@ -235,36 +236,94 @@ private struct NewChannelSheet: View {
 private struct NewDMSheet: View {
     @ObservedObject var chat: ChatViewModel
     @Binding var isPresented: Bool
+    @State private var groupMode = false
+    @State private var selectedIds: Set<UUID> = []
+
+    private var sortedProfiles: [Profile] {
+        Array(chat.profiles.values)
+            .filter { $0.id != chat.currentUserId }
+            .sorted { ($0.displayName ?? $0.email) < ($1.displayName ?? $1.email) }
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("New Message").font(.headline)
-            List(Array(chat.profiles.values).sorted { ($0.displayName ?? $0.email) < ($1.displayName ?? $1.email) }) { profile in
-                if profile.id != chat.currentUserId {
+            HStack {
+                Text(groupMode ? "New group message" : "New message").font(.headline)
+                Spacer()
+                if chat.permissions.canCreateGroupChats {
+                    Picker("", selection: $groupMode) {
+                        Text("Direct").tag(false)
+                        Text("Group").tag(true)
+                    }
+                    .pickerStyle(.segmented)
+                    .frame(width: 140)
+                }
+            }
+
+            if groupMode {
+                Text("Select two or more people, then start the group.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            List(sortedProfiles) { profile in
+                if groupMode {
+                    Toggle(isOn: binding(for: profile.id)) {
+                        profileRow(profile)
+                    }
+                } else {
                     Button {
                         Task {
                             await chat.openDM(with: profile)
                             isPresented = false
                         }
                     } label: {
-                        HStack {
-                            ChatProfileAvatar(
-                                profile: profile,
-                                displayName: profile.displayName ?? profile.email,
-                                size: 28,
-                                presence: chat.presence(for: profile.id)
-                            )
-                            Text(profile.displayName ?? profile.email)
-                        }
+                        profileRow(profile)
                     }
                     .buttonStyle(.plain)
                 }
             }
             .frame(minHeight: 200)
-            Button("Close") { isPresented = false }
+
+            HStack {
+                Button("Close") { isPresented = false }
+                Spacer()
+                if groupMode {
+                    Button("Start group") {
+                        let picks = sortedProfiles.filter { selectedIds.contains($0.id) }
+                        Task {
+                            await chat.openGroupDM(with: picks)
+                            isPresented = false
+                        }
+                    }
+                    .keyboardShortcut(.defaultAction)
+                    .disabled(selectedIds.count < 2)
+                }
+            }
         }
         .padding(MacSystemChrome.sheetPadding)
-        .frame(width: 320, height: 360)
+        .frame(width: 360, height: 400)
         .macNativeSheetPresentation()
+    }
+
+    private func profileRow(_ profile: Profile) -> some View {
+        HStack {
+            ChatProfileAvatar(
+                profile: profile,
+                displayName: profile.displayName ?? profile.email,
+                size: 28,
+                presence: chat.presence(for: profile.id)
+            )
+            Text(profile.displayName ?? profile.email)
+        }
+    }
+
+    private func binding(for id: UUID) -> Binding<Bool> {
+        Binding(
+            get: { selectedIds.contains(id) },
+            set: { on in
+                if on { selectedIds.insert(id) } else { selectedIds.remove(id) }
+            }
+        )
     }
 }

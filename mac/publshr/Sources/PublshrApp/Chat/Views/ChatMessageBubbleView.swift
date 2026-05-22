@@ -13,6 +13,7 @@ struct ChatMessageBubbleView: View {
     var threadReplyCount: Int = 0
     var voiceTranscript: String?
     var showReadReceipts: Bool = false
+    var seenByLabel: String?
     var onRetry: (() -> Void)?
     var onReply: (() -> Void)?
     var onReaction: ((String) -> Void)?
@@ -74,6 +75,12 @@ struct ChatMessageBubbleView: View {
                     }
                     .buttonStyle(.plain)
                     .padding(.top, 2)
+                }
+                if let seen = seenByLabel, isOwn, showReadReceipts {
+                    Text(seen)
+                        .font(.system(size: 10))
+                        .foregroundStyle(CursorTheme.foregroundDim)
+                        .padding(.top, 2)
                 }
             }
         }

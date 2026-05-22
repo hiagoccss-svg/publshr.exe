@@ -262,7 +262,7 @@ struct ChatSidebarView: View {
                 Label("Mark all as read", systemImage: "checkmark.circle")
             }
             Button {
-                chat.showSearchSheet = true
+                chat.openWorkspaceSearch()
             } label: {
                 Label("Search workspace", systemImage: "magnifyingglass")
             }

@@ -154,9 +154,17 @@ struct ChatAISheet: View {
                         .foregroundStyle(CursorTheme.foregroundMuted)
                         .padding(.top, 4)
                     ForEach(result.actionItems, id: \.self) { item in
-                        Text("• \(item)")
-                            .font(.system(size: 11))
-                            .foregroundStyle(CursorTheme.foregroundMuted)
+                        HStack(alignment: .top, spacing: 8) {
+                            Text("• \(item)")
+                                .font(.system(size: 11))
+                                .foregroundStyle(CursorTheme.foregroundMuted)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                            Button("Add to Planner") {
+                                Task { await chat.createPlannerTaskFromFollowUp(item) }
+                            }
+                            .buttonStyle(.borderless)
+                            .font(.system(size: 10, weight: .medium))
+                        }
                     }
                 }
             }

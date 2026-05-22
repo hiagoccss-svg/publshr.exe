@@ -26,8 +26,22 @@ final class ChatNotificationService: NSObject, UNUserNotificationCenterDelegate 
         UNUserNotificationCenter.current().setNotificationCategories(categories)
     }
 
+    private static let quickReplyActionId = "CHAT_QUICK_REPLY"
+
     private func makeCategory(_ kind: ChatNotificationCategory) -> UNNotificationCategory {
-        UNNotificationCategory(identifier: kind.rawValue, actions: [], intentIdentifiers: [], options: [])
+        let reply = UNTextInputNotificationAction(
+            identifier: Self.quickReplyActionId,
+            title: "Reply",
+            options: [],
+            textInputButtonTitle: "Send",
+            textInputPlaceholder: "Message"
+        )
+        return UNNotificationCategory(
+            identifier: kind.rawValue,
+            actions: [reply],
+            intentIdentifiers: [],
+            options: [.customDismissAction]
+        )
     }
 
     /// Requests macOS notification permission when still undetermined; refreshes `isAuthorized`.
@@ -99,6 +113,17 @@ final class ChatNotificationService: NSObject, UNUserNotificationCenterDelegate 
     ) async {
         let info = response.notification.request.content.userInfo
         guard let raw = info["channelId"] as? String, let channelId = UUID(uuidString: raw) else { return }
+
+        if response.actionIdentifier == Self.quickReplyActionId,
+           let textResponse = response as? UNTextInputNotificationResponse {
+            let body = textResponse.userText.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !body.isEmpty else { return }
+            await MainActor.run {
+                onNotificationQuickReply?(channelId, body)
+            }
+            return
+        }
+
         await MainActor.run {
             onNotificationTap?(channelId)
         }
@@ -106,6 +131,8 @@ final class ChatNotificationService: NSObject, UNUserNotificationCenterDelegate 
 
     /// Set from app bootstrap to route notification clicks to chat.
     var onNotificationTap: ((UUID) -> Void)?
+    /// Quick reply from Notification Center (macOS text input action).
+    var onNotificationQuickReply: ((UUID, String) -> Void)?
 
     private func shouldSuppressBanner(for channelId: UUID?) -> Bool {
         guard NSApp.isActive, let channelId else { return false }

@@ -58,6 +58,11 @@ extension ChatChannel {
                 return String(name.dropFirst(3))
             }
         }
+        if kind == .group {
+            if let desc = description, desc.hasPrefix("Group: ") {
+                return String(desc.dropFirst(7))
+            }
+        }
         if kind == .channel {
             var n = name
             if n.hasPrefix("#") { n.removeFirst() }
