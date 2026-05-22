@@ -14,8 +14,12 @@ struct ShellUnifiedTitlebar: View {
     var submenuColumnWidth: CGFloat
     var submenuHidden: Bool
 
+    private var titlebarTopPadding: CGFloat {
+        min(layout.titlebarTopPadding, AppWindowChromeMetrics.maxTitlebarTopPadding)
+    }
+
     private var titlebarBandHeight: CGFloat {
-        layout.titlebarTopPadding + layout.rowHeight
+        titlebarTopPadding + layout.rowHeight
     }
 
     private var barColumnCompact: Bool {
@@ -39,7 +43,7 @@ struct ShellUnifiedTitlebar: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
         .frame(height: layout.rowHeight, alignment: .center)
-        .padding(.top, layout.titlebarTopPadding)
+        .padding(.top, titlebarTopPadding)
         .frame(height: titlebarBandHeight, alignment: .top)
         .frame(maxWidth: .infinity)
         .background(TrafficLightLayoutRefreshView().frame(width: 0, height: 0))
