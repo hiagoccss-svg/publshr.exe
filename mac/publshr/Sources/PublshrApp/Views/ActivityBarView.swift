@@ -29,7 +29,8 @@ struct ActivityBarView: View {
                     .frame(width: 1)
             }
         }
-        .frame(width: CursorTheme.activityBarWidth, maxHeight: .infinity)
+        .frame(maxHeight: .infinity)
+        .frame(width: CursorTheme.activityBarWidth)
     }
 
     private func moduleButton(_ item: AppModule) -> some View {
