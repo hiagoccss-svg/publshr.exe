@@ -26,14 +26,10 @@ struct LibraryShellView: View {
                 WorkspaceDesktopBackdrop()
 
                 VStack(spacing: 0) {
-                    LibraryShellHeaderView(
-                        spaces: spaces,
-                        module: $module,
-                        showNewChannel: $showNewChannel,
-                        showNewDM: $showNewDM,
-                        showCommandPalette: $showCommandPalette,
-                        showNotificationsPanel: $showNotificationsPanel
-                    )
+                    // Titlebar chrome is drawn by NSTitlebarAccessoryViewController (same row as traffic lights).
+                    Color.clear
+                        .frame(height: AppWindowChromeMetrics.unifiedTitlebarRowHeight)
+                        .accessibilityHidden(true)
 
                     HStack(alignment: .top, spacing: 0) {
                         LibraryBarMenuColumn(
@@ -65,8 +61,6 @@ struct LibraryShellView: View {
             }
             .frame(width: geometry.size.width, height: geometry.size.height)
         }
-        // Draw the unified toolbar in the titlebar band under the traffic lights — not one row below.
-        .ignoresSafeArea(.container, edges: .top)
         .background(Color.clear)
         .onAppear {
             tabStore.sidebarExpanded = true

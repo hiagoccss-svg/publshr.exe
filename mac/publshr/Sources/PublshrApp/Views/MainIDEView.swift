@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 /// Signed-in root — delegates to `LibraryShellView` (Pinterest / library glass reference).
@@ -12,23 +13,27 @@ struct MainIDEView: View {
     @EnvironmentObject private var tabStore: WorkspaceTabStore
     @AppStorage("publshr.selectedModule") private var storedModule = AppModule.chat.rawValue
     @State private var module: AppModule = .chat
-    @State private var showNewChannel = false
-    @State private var showNewDM = false
-    @State private var showCommandPalette = false
-    @State private var showNotificationsPanel = false
+
+    @ObservedObject private var titlebar = TitlebarChromeBridge.shared
 
     var body: some View {
         LibraryShellView(
             module: $module,
-            showNewChannel: $showNewChannel,
-            showNewDM: $showNewDM,
-            showCommandPalette: $showCommandPalette,
-            showNotificationsPanel: $showNotificationsPanel
+            showNewChannel: $titlebar.showNewChannel,
+            showNewDM: $titlebar.showNewDM,
+            showCommandPalette: $titlebar.showCommandPalette,
+            showNotificationsPanel: $titlebar.showNotificationsPanel
         )
         .background(WindowChromeConfigurator())
         .background { TitlebarChromeShortcutBridge() }
         .onAppear(perform: onShellAppear)
         .onChange(of: module) { _, newModule in
+            titlebar.syncModule(newModule)
+            onModuleChange(newModule)
+        }
+        .onChange(of: titlebar.module) { _, newModule in
+            guard module != newModule else { return }
+            module = newModule
             onModuleChange(newModule)
         }
         .onChange(of: tabStore.selectedTabId) { _, _ in
@@ -49,9 +54,9 @@ struct MainIDEView: View {
             if module == .spaces { spaces.attach(auth: auth) }
             if module == .chat { chat.attach(auth: auth) }
         }
-        .sheet(isPresented: $showNewChannel) { newChannelSheet }
-        .sheet(isPresented: $showNewDM) { newDMSheet }
-        .sheet(isPresented: $showCommandPalette) {
+        .sheet(isPresented: $titlebar.showNewChannel) { newChannelSheet }
+        .sheet(isPresented: $titlebar.showNewDM) { newDMSheet }
+        .sheet(isPresented: $titlebar.showCommandPalette) {
             TitlebarCommandPaletteView(
                 items: TitlebarChromeCommands.paletteItems(
                     tabStore: tabStore,
@@ -59,16 +64,16 @@ struct MainIDEView: View {
                     chat: chat,
                     spaces: spaces,
                     module: $module,
-                    showNewChannel: $showNewChannel,
-                    showNewDM: $showNewDM,
-                    showCommandPalette: $showCommandPalette,
-                    showNotificationsPanel: $showNotificationsPanel
+                    showNewChannel: $titlebar.showNewChannel,
+                    showNewDM: $titlebar.showNewDM,
+                    showCommandPalette: $titlebar.showCommandPalette,
+                    showNotificationsPanel: $titlebar.showNotificationsPanel
                 ),
-                isPresented: $showCommandPalette
+                isPresented: $titlebar.showCommandPalette
             )
         }
-        .sheet(isPresented: $showNotificationsPanel) {
-            TitlebarNotificationsPanelView(chat: chat, isPresented: $showNotificationsPanel)
+        .sheet(isPresented: $titlebar.showNotificationsPanel) {
+            TitlebarNotificationsPanelView(chat: chat, isPresented: $titlebar.showNotificationsPanel)
         }
         .onReceive(NotificationCenter.default.publisher(for: .publshrTitlebarToggleSidebar)) { _ in
             withAnimation(.easeInOut(duration: 0.15)) { tabStore.sidebarExpanded.toggle() }
@@ -77,19 +82,19 @@ struct MainIDEView: View {
             module = .chat
             tabStore.openFromModule(.chat, activate: true)
             if chat.selectedChannel != nil {
-                showNewChannel = true
+                titlebar.showNewChannel = true
             } else {
                 chat.selectedChannel = nil
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: .publshrTitlebarCommandPalette)) { _ in
-            showCommandPalette = true
+            titlebar.showCommandPalette = true
         }
         .onReceive(NotificationCenter.default.publisher(for: .publshrTitlebarSearch)) { _ in
             if module == .chat { chat.showSearchSheet = true }
         }
         .onReceive(NotificationCenter.default.publisher(for: .publshrTitlebarNotifications)) { _ in
-            showNotificationsPanel = true
+            titlebar.showNotificationsPanel = true
         }
         .onReceive(NotificationCenter.default.publisher(for: .publshrTitlebarNavigateBack)) { _ in
             if module == .chat { chat.navigateBack() }
@@ -131,6 +136,18 @@ struct MainIDEView: View {
             auth: auth
         )
         spaces.attach(auth: auth)
+        titlebar.register(
+            tabStore: tabStore,
+            auth: auth,
+            chat: chat,
+            spaces: spaces,
+            subscription: subscription,
+            calls: calls,
+            module: module
+        )
+        if let window = NSApp.keyWindow ?? NSApp.windows.first(where: { $0.isVisible }) {
+            MainWindowChrome.applyWithRetries(to: window)
+        }
         Task {
             await subscription.refresh(client: auth.client, workspace: auth.selectedWorkspace)
             if chat.channels.isEmpty, chat.directMessages.isEmpty {
@@ -158,11 +175,11 @@ struct MainIDEView: View {
     }
 
     private var newChannelSheet: some View {
-        NewChannelSheet(chat: chat, isPresented: $showNewChannel)
+        NewChannelSheet(chat: chat, isPresented: $titlebar.showNewChannel)
     }
 
     private var newDMSheet: some View {
-        NewDMSheet(chat: chat, isPresented: $showNewDM)
+        NewDMSheet(chat: chat, isPresented: $titlebar.showNewDM)
     }
 }
 
