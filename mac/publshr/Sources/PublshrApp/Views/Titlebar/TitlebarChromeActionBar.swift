@@ -138,8 +138,10 @@ struct TitlebarChromeActionBar: View {
                 chat.upsertProfile(profile)
             }
             avatarUploadError = nil
+            auth.infoMessage = "Profile photo updated."
         } catch {
             avatarUploadError = error.localizedDescription
+            auth.errorMessage = error.localizedDescription
         }
     }
 }

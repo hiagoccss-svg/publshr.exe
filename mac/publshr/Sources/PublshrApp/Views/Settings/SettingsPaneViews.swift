@@ -70,6 +70,7 @@ struct SettingsUpdatesPane: View {
 
 struct SettingsAccountPane: View {
     @EnvironmentObject private var auth: AuthViewModel
+    @EnvironmentObject private var chat: ChatViewModel
     @State private var isUploadingAvatar = false
     @State private var avatarError: String?
 
