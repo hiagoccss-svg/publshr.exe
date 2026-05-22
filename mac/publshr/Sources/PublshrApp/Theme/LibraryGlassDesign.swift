@@ -4,8 +4,8 @@ import SwiftUI
 enum LibraryGlassDesign {
     /// Primary bar menu — ~20% of a 1280px window (Cursor Mac agent column).
     static let barMenuWidth: CGFloat = 248
-    /// Universal submenu — ~30% of a 1280px window (Cursor Mac chat/context column).
-    static let sidebarWidthWide: CGFloat = 360
+    /// Universal submenu — fixed width (ClickUp / Spaces sidebar ~272pt; same in every module).
+    static let sidebarWidthWide: CGFloat = 272
     static let sidebarWidth: CGFloat = sidebarWidthWide
     /// Minimum collapsed primary column when the bar menu is icon-only.
     static let barMenuCollapsedWidth: CGFloat = 80
@@ -19,9 +19,12 @@ enum LibraryGlassDesign {
         return max(barMenuCollapsedWidth, compact)
     }
 
-    /// Column 2 width — ~30% of window (min 360px for universal chat menu).
+    /// Column 2 width — fixed universal submenu (not a % of window).
     static func submenuColumnWidth(for windowWidth: CGFloat) -> CGFloat {
-        max(sidebarWidthWide, floor(windowWidth * 0.30))
+        let editorMinimum: CGFloat = 420
+        let barExpanded = max(barMenuWidth, floor(windowWidth * 0.195))
+        let available = windowWidth - barExpanded - editorMinimum - 2
+        return min(sidebarWidthWide, max(240, available))
     }
     /// Column 2 + editor — pure white (Cursor Mac content columns).
     static let submenuColumnBackground = Color.white

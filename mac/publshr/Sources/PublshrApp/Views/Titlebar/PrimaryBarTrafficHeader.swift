@@ -9,8 +9,8 @@ struct PrimaryBarTrafficHeader: View {
             TitlebarChromeIconButton(
                 systemName: tabStore.sidebarExpanded ? "sidebar.left" : "sidebar.right",
                 help: tabStore.sidebarExpanded
-                    ? "Hide chat/spaces submenu"
-                    : "Show chat/spaces submenu",
+                    ? "Hide submenu"
+                    : "Show submenu",
                 isActive: !tabStore.sidebarExpanded
             ) {
                 withAnimation(.easeInOut(duration: 0.15)) {

@@ -6,9 +6,10 @@ struct ChatSidebarView: View {
     @ObservedObject var chat: ChatViewModel
     @Binding var showNewChannel: Bool
     @Binding var showNewDM: Bool
+    var submenuWidth: CGFloat = LibraryUniversalSubmenu.width
 
     var body: some View {
-        LibraryUniversalSubmenuContainer(width: LibraryUniversalSubmenu.width) {
+        LibraryUniversalSubmenuContainer(width: submenuWidth) {
             VStack(spacing: 0) {
                 if chat.sidebarHub == .channels {
                     filterBar

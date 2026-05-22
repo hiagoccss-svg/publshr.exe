@@ -4,6 +4,7 @@ import SwiftUI
 struct ShellUnifiedTitlebar: View {
     @EnvironmentObject private var tabStore: WorkspaceTabStore
     @EnvironmentObject private var chat: ChatViewModel
+    @EnvironmentObject private var spaces: SpacesViewModel
     @ObservedObject private var layout = TrafficLightLayoutStore.shared
 
     @Binding var module: AppModule
@@ -59,8 +60,8 @@ struct ShellUnifiedTitlebar: View {
             TitlebarChromeIconButton(
                 systemName: tabStore.sidebarExpanded ? "sidebar.left" : "sidebar.right",
                 help: tabStore.sidebarExpanded
-                    ? "Hide chat/spaces submenu"
-                    : "Show chat/spaces submenu",
+                    ? "Hide submenu"
+                    : "Show submenu",
                 isActive: !tabStore.sidebarExpanded
             ) {
                 withAnimation(.easeInOut(duration: 0.15)) {
@@ -80,17 +81,10 @@ struct ShellUnifiedTitlebar: View {
 
     @ViewBuilder
     private var submenuBand: some View {
-        Group {
-            if module == .chat {
-                ChatSidebarTitlebarChrome(chat: chat)
-                    .padding(.horizontal, 10)
-            } else {
-                Color.clear
-            }
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-        .frame(height: layout.rowHeight)
-        .background(LibraryGlassDesign.submenuColumnBackground)
+        UniversalSubmenuTitlebarChrome(module: module, chat: chat, spaces: spaces)
+            .padding(.horizontal, 10)
+            .frame(height: layout.rowHeight)
+            .background(LibraryGlassDesign.submenuColumnBackground)
     }
 
     // MARK: - Column 3 (channel / actions)

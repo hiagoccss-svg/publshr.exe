@@ -4,13 +4,14 @@ import SwiftUI
 struct SpacesNavSidebar: View {
     @EnvironmentObject private var tabStore: WorkspaceTabStore
     @ObservedObject var spaces: SpacesViewModel
+    var submenuWidth: CGFloat = LibraryUniversalSubmenu.width
 
     var body: some View {
-        LibraryUniversalSubmenuContainer(width: LibraryUniversalSubmenu.width) {
+        LibraryUniversalSubmenuContainer(width: submenuWidth) {
             VStack(alignment: .leading, spacing: 0) {
                 spacesListSection
                     .frame(
-                        minHeight: spaces.selectedSpaceId == nil ? 120 : 0,
+                        minHeight: 0,
                         maxHeight: spaces.selectedSpaceId == nil ? .infinity : 200
                     )
 
