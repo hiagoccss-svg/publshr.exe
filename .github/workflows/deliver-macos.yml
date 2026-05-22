@@ -111,10 +111,10 @@ jobs:
           # Live channel (fixed URL — installer + auto-updater)
           if gh release view "live" --repo "$REPO" >/dev/null 2>&1; then
             gh release edit "live" --repo "$REPO" --title "Publshr live (${FULL})" --notes "$NOTES"
-            gh release upload "live" "$LIVE" "$INSTALL_ZIP" "$INSTALL_SH" --repo "$REPO" --clobber
+            gh release upload "live" "$LIVE" "$INSTALL_ZIP" "$INSTALL_SH" "mac/publshr/dist/VERSION.txt" --repo "$REPO" --clobber
           else
             gh release create "live" --repo "$REPO" --title "Publshr live (${FULL})" --notes "$NOTES" \
-              "$LIVE" "$INSTALL_ZIP" "$INSTALL_SH"
+              "$LIVE" "$INSTALL_ZIP" "$INSTALL_SH" "mac/publshr/dist/VERSION.txt"
           fi
 
           echo "Published ${TAG} and live → Publshr-macos-aarch64.tar.gz, Publshr-Install-macos.zip"

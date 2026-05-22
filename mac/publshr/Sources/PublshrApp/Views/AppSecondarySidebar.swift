@@ -7,21 +7,27 @@ struct AppSecondarySidebar: View {
     @ObservedObject var spaces: SpacesViewModel
     @Binding var showNewChannel: Bool
     @Binding var showNewDM: Bool
+    var topInset: CGFloat
 
     var body: some View {
-        Group {
-            switch module {
-            case .chat:
-                ChatSidebarView(
-                    chat: chat,
-                    showNewChannel: $showNewChannel,
-                    showNewDM: $showNewDM
-                )
-            case .spaces:
-                SpacesNavSidebar(spaces: spaces)
-            case .settings:
-                SettingsNavSidebar()
+        VStack(spacing: 0) {
+            Color.clear.frame(height: topInset)
+
+            Group {
+                switch module {
+                case .chat:
+                    ChatSidebarView(
+                        chat: chat,
+                        showNewChannel: $showNewChannel,
+                        showNewDM: $showNewDM
+                    )
+                case .spaces:
+                    SpacesNavSidebar(spaces: spaces)
+                case .settings:
+                    SettingsNavSidebar()
+                }
             }
+            .frame(maxHeight: .infinity)
         }
         .frame(width: CursorTheme.navSidebarWidth)
         .frame(maxHeight: .infinity)

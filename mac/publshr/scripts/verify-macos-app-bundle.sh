@@ -56,4 +56,23 @@ if [[ "$SIZE" -lt "$MIN_BYTES" ]]; then
     exit 1
 fi
 
+if command -v strings >/dev/null 2>&1; then
+    if strings "$EXEC" | grep -q "Welcome to Publshr"; then
+        echo "ERROR: Binary still contains fake IDE Welcome screen — wrong build" >&2
+        exit 1
+    fi
+    if strings "$EXEC" | grep -q "Search files, commands"; then
+        echo "ERROR: Binary still contains fake IDE file search bar — wrong build" >&2
+        exit 1
+    fi
+    if strings "$EXEC" | grep -q "EXPLORER"; then
+        echo "ERROR: Binary still contains fake Explorer sidebar — wrong build" >&2
+        exit 1
+    fi
+    if ! strings "$EXEC" | grep -q "Favorites"; then
+        echo "ERROR: Binary missing enterprise Chat nav (Favorites) — wrong build" >&2
+        exit 1
+    fi
+fi
+
 echo "OK: $APP — native GUI Publshr ($SIZE bytes)" >&2

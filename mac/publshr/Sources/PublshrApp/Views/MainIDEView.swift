@@ -11,37 +11,44 @@ struct MainIDEView: View {
     @State private var showNewDM = false
 
     var body: some View {
-        VStack(spacing: 0) {
-            AppUpdateBannerView(updates: updates)
+        GeometryReader { geometry in
+            let topInset = max(geometry.safeAreaInsets.top, CursorTheme.windowChromeTopInset)
 
-            HStack(alignment: .top, spacing: 0) {
-                ActivityBarView(module: $module)
-                    .frame(width: CursorTheme.activityBarWidth)
-                    .frame(maxHeight: .infinity)
+            VStack(spacing: 0) {
+                AppUpdateBannerView(updates: updates)
 
-                AppSecondarySidebar(
-                    module: module,
-                    chat: chat,
-                    spaces: spaces,
-                    showNewChannel: $showNewChannel,
-                    showNewDM: $showNewDM
-                )
+                HStack(alignment: .top, spacing: 0) {
+                    ActivityBarView(module: $module, topInset: topInset)
+                        .frame(width: CursorTheme.activityBarWidth)
 
-                VStack(spacing: 0) {
-                    TitleBarView(module: module)
-                        .frame(height: CursorTheme.titleBarHeight)
+                    AppSecondarySidebar(
+                        module: module,
+                        chat: chat,
+                        spaces: spaces,
+                        showNewChannel: $showNewChannel,
+                        showNewDM: $showNewDM,
+                        topInset: topInset
+                    )
 
-                    moduleMainContent
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    VStack(spacing: 0) {
+                        ContentToolbarView(spaces: spaces, module: module)
+                            .frame(height: CursorTheme.titleBarHeight)
 
-                    StatusBarView(module: module)
-                        .frame(height: CursorTheme.statusBarHeight)
+                        moduleMainContent
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+                        StatusBarView(module: module)
+                            .frame(height: CursorTheme.statusBarHeight)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(CursorTheme.editorBackground)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .frame(width: geometry.size.width, height: geometry.size.height)
         }
         .background(CursorTheme.editorBackground)
+        .background(WindowChromeConfigurator())
         .onAppear {
             if let restored = AppModule(rawValue: storedModule) {
                 module = restored

@@ -76,8 +76,8 @@ enum CursorTheme {
         inputBackground: Color(hex: 0xFFFFFF),
         inputBorder: Color(hex: 0xCECECE),
         inputBorderFocus: Color(hex: 0x0078D4),
-        statusBar: Color(hex: 0x007ACC),
-        statusBarForeground: Color.white,
+        statusBar: Color(hex: 0xF3F3F3),
+        statusBarForeground: Color(hex: 0x616161),
         authBackground: Color(hex: 0xF3F3F3),
         authCard: Color(hex: 0xFFFFFF),
         authCardShadow: Color.black.opacity(0.08),
@@ -113,8 +113,8 @@ enum CursorTheme {
         inputBackground: Color(hex: 0x3C3C3C),
         inputBorder: Color(hex: 0x3C3C3C),
         inputBorderFocus: Color(hex: 0x007FD4),
-        statusBar: Color(hex: 0x007ACC),
-        statusBarForeground: Color.white,
+        statusBar: Color(hex: 0xF3F3F3),
+        statusBarForeground: Color(hex: 0x616161),
         authBackground: Color(hex: 0x181818),
         authCard: Color(hex: 0x252526),
         authCardShadow: Color.black.opacity(0.35),
@@ -159,6 +159,8 @@ enum CursorTheme {
 
     static let activityBarWidth: CGFloat = 52
     static let navSidebarWidth: CGFloat = 240
+    /// Space for macOS traffic lights when using full-size content view.
+    static let windowChromeTopInset: CGFloat = 28
     static let sideBarWidth: CGFloat = 260
     static let chatPanelWidth: CGFloat = 520
     static let titleBarHeight: CGFloat = 38

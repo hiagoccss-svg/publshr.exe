@@ -2,11 +2,11 @@ import SwiftUI
 
 struct ActivityBarView: View {
     @Binding var module: AppModule
+    var topInset: CGFloat
 
     var body: some View {
         VStack(spacing: 2) {
-            Color.clear
-                .frame(height: CursorTheme.titleBarHeight)
+            Color.clear.frame(height: topInset)
 
             ForEach(AppModule.mainStrip) { item in
                 moduleButton(item)
@@ -35,7 +35,7 @@ struct ActivityBarView: View {
                 .foregroundStyle(selected ? CursorTheme.foreground : CursorTheme.foregroundDim)
                 .background(
                     selected
-                        ? CursorTheme.navSidebar.opacity(CursorTheme.appearance == .light ? 0.85 : 0.35)
+                        ? CursorTheme.navSidebar.opacity(CursorTheme.appearance == .light ? 0.9 : 0.35)
                         : Color.clear
                 )
                 .overlay(alignment: .leading) {

@@ -200,7 +200,9 @@ final class AppUpdateService: @unchecked Sendable {
               let pageURL = URL(string: live.htmlURL) else {
             return nil
         }
-        let build = parseBuildNumber(from: live) ?? 0
+        let build = parseBuildNumber(from: live)
+            ?? parseBuildNumberFromVersionAsset(in: live.assets)
+            ?? 0
         guard build > localBuild else { return nil }
         let version = parseVersionLabel(from: live) ?? "live.\(build)"
         return AvailableUpdate(
@@ -223,6 +225,21 @@ final class AppUpdateService: @unchecked Sendable {
             if let n = Int(value) { return n }
         }
         return nil
+    }
+
+    /// Reads `VERSION.txt` from the live release (line 2 = CI build number).
+    private func parseBuildNumberFromVersionAsset(in assets: [GitHubAsset]) -> Int? {
+        guard let asset = assets.first(where: { $0.name == "VERSION.txt" }),
+              let url = URL(string: asset.browserDownloadURL) else {
+            return nil
+        }
+        guard let data = try? Data(contentsOf: url),
+              let text = String(data: data, encoding: .utf8) else {
+            return nil
+        }
+        let lines = text.split(separator: "\n", omittingEmptySubsequences: false)
+        guard lines.count >= 2 else { return nil }
+        return Int(lines[1].trimmingCharacters(in: .whitespacesAndNewlines))
     }
 
     private func parseVersionLabel(from release: GitHubRelease) -> String? {

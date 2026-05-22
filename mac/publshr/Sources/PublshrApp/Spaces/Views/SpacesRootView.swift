@@ -31,11 +31,6 @@ struct SpacesRootView: View {
 
     private var spacesToolbar: some View {
         HStack(spacing: 12) {
-            Text(spaces.selectedSpace?.name ?? "Spaces")
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(CursorTheme.foreground)
-                .lineLimit(1)
-
             Picker("View", selection: $spaces.taskView) {
                 ForEach(SpacesViewModel.TaskViewMode.allCases, id: \.self) { mode in
                     Text(mode.label).tag(mode)

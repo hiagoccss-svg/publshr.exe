@@ -81,6 +81,13 @@ struct SettingsView: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
 
+            if Bundle.main.object(forInfoDictionaryKey: "PublshrShellVersion") as? String != "enterprise-3" {
+                Text("Your app is an older build (fake Explorer UI). Use Download and install to get Chat and Spaces.")
+                    .font(.system(size: 11))
+                    .foregroundStyle(CursorTheme.foregroundMuted)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
             HStack(spacing: 8) {
                 Button("Check for updates") {
                     Task { await updates.checkForUpdates(silent: false) }
