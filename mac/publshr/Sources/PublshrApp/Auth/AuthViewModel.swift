@@ -201,19 +201,25 @@ final class AuthViewModel: ObservableObject {
         defer { isLoading = false }
         do {
             let service = ChatService(client: client)
-            let members: [WorkspaceMember] = try await client
-                .from("workspace_members")
-                .select()
-                .eq("user_id", value: userId.uuidString)
-                .execute()
-                .value
 
             var workspaces = try await service.fetchMemberWorkspaces(userId: userId)
             if workspaces.isEmpty {
                 workspaces = try await service.fetchWorkspaces()
             }
+            if workspaces.isEmpty {
+                let label = profile?.displayName?.trimmingCharacters(in: .whitespacesAndNewlines)
+                let fallback = (label?.isEmpty == false) ? label! : "My"
+                let created = try await service.createWorkspace(name: "\(fallback) Workspace")
+                workspaces = [created]
+            }
 
-            let roleByWorkspace = Dictionary(uniqueKeysWithValues: members.map { ($0.workspaceId, $0.role) })
+            let memberRows: [WorkspaceMember] = try await client
+                .from("workspace_members")
+                .select()
+                .eq("user_id", value: userId.uuidString)
+                .execute()
+                .value
+            let roleByWorkspace = Dictionary(uniqueKeysWithValues: memberRows.map { ($0.workspaceId, $0.role) })
             workspaceMemberships = workspaces.map { ws in
                 let roleRaw = roleByWorkspace[ws.id] ?? (ws.ownerId == userId ? WorkspaceRole.owner.rawValue : WorkspaceRole.member.rawValue)
                 let role = WorkspaceRole(rawValue: roleRaw) ?? .member

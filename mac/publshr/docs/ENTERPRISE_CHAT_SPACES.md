@@ -11,6 +11,8 @@ Apply migrations in order from `supabase/migrations/`:
 3. `20260521180000_chat_presence_and_members.sql`
 4. `20260521200000_chat_phases_2_4.sql`
 5. `20260522010000_spaces_clickup_enterprise.sql` — Spaces, folders, lists, tasks, comments
+6. `20260522130000_spaces_documents_and_realtime.sql` — `documents`, `space_activity`, realtime for Chat/Spaces
+7. `seed_workspace_default_channels` (remote) — `#general` channel per new workspace
 
 Create Storage bucket **`workspace-files`** with RLS for authenticated workspace members (chat uploads).
 
