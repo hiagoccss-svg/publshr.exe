@@ -47,9 +47,11 @@ final class AppLifecycleService: ObservableObject {
 
     private func pollReachabilityLoop() async {
         while !Task.isCancelled {
-            async let github = checkHEADReachable("https://github.com")
-            async let supabase = checkHEADReachable(SupabaseConfig.url.absoluteString)
-            let reachable = await github || await supabase
+            async let githubReachable = checkHEADReachable("https://github.com")
+            async let supabaseReachable = checkHEADReachable(SupabaseConfig.url.absoluteString)
+            let githubUp = await githubReachable
+            let supabaseUp = await supabaseReachable
+            let reachable = githubUp || supabaseUp
             let wasOffline = !isNetworkReachable
             isNetworkReachable = reachable
             if reachable && wasOffline {
