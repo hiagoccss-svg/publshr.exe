@@ -57,8 +57,8 @@ final class AuthViewModel: ObservableObject {
             options: SupabaseClientOptions(
                 auth: .init(
                     redirectToURL: SupabaseConfig.authRedirect,
-                    emitLocalSessionAsInitialSession: true,
-                    autoRefreshToken: true
+                    autoRefreshToken: true,
+                    emitLocalSessionAsInitialSession: true
                 )
             )
         )
