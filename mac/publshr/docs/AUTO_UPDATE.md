@@ -22,7 +22,7 @@ flowchart LR
 
 1. Every push to **`main`** runs `.github/workflows/deliver-macos.yml`.
 2. CI builds `Publshr.app` and uploads to the **`live`** release (same filenames every time).
-3. Your installed app checks the `live` release every **minute** (and when the app becomes active or wakes from sleep). It compares **build number**, **full version**, and **git commit** from `VERSION.txt`, then downloads the complete app bundle (icons, colors, Swift UI, features), replaces **the running app in place**, and **restarts automatically**. Installs to `~/Applications/Publshr.app` are **passwordless**; system `/Applications` uses **one** administrator prompt per update (not three).
+3. Your installed app checks the `live` channel every **minute** via fixed `releases/download/live/...` URLs (no GitHub REST API). It compares **build number**, **full version**, **git commit**, and **package digest** from `VERSION.txt`, then downloads the complete app bundle (icons, colors, Swift UI, features), replaces **the running app in place**, and **restarts automatically**. Chat and Spaces refresh from Supabase on the same schedule. Installs to `~/Applications/Publshr.app` are **passwordless**; system `/Applications` uses **one** administrator prompt per update (not three).
 4. **Settings** (bottom panel): **Download and install latest** runs the same full check → download → install → restart flow manually.
 5. Every push to **`main`** publishes a new `live` build (monotonic CI build number). Icon changes at repo root are synced before packaging.
 6. CI runs **macOS compile check** on every PR and `main` push so broken builds do not block the `live` channel.

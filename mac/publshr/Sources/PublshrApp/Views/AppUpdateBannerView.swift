@@ -1,13 +1,13 @@
 import SwiftUI
 
-/// Only surfaces update failures — successful live installs happen silently.
+/// Only surfaces rare install failures — successful live installs happen silently.
 struct AppUpdateBannerView: View {
     @ObservedObject var updates: AppUpdateViewModel
 
     var body: some View {
         Group {
-            if let error = updates.errorMessage {
-                errorBanner(error)
+            if case .failed(let message) = updates.phase {
+                errorBanner(message)
             } else if updates.isActivelyUpdating {
                 progressBanner
             }

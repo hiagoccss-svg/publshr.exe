@@ -19,15 +19,20 @@ struct LiveChannelManifest: Sendable, Equatable {
         return LiveChannelManifest(fullVersion: full, build: build, commit: commit, packageDigest: digest)
     }
 
-    /// Any change on `main` (icon, UI, features) produces a new build/commit/digest.
+    /// Any change on `main` (icon, UI, features, tarball bytes) produces a new build/commit/digest.
     func isNewerThanInstalled() -> Bool {
         let localBuild = AppReleaseConfig.buildNumber
         let localVersion = AppReleaseConfig.liveFullVersion
         let localCommit = AppReleaseConfig.liveCommit
+        let localDigest = AppReleaseConfig.livePackageDigest
 
         if build > localBuild { return true }
         if fullVersion != localVersion { return true }
         if !commit.isEmpty, !localCommit.isEmpty, commit != localCommit { return true }
+        if let remoteDigest = packageDigest, !remoteDigest.isEmpty,
+           !localDigest.isEmpty, remoteDigest != localDigest {
+            return true
+        }
         return false
     }
 }
