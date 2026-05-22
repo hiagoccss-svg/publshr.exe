@@ -3,24 +3,15 @@ import SwiftUI
 struct ActivityBarView: View {
     @EnvironmentObject private var tabStore: WorkspaceTabStore
     @Binding var module: AppModule
-    var topInset: CGFloat
-
-    private var iconBandTopPadding: CGFloat {
-        max(topInset - 4, 8)
-    }
 
     var body: some View {
         VStack(spacing: 0) {
-            Color.clear
-                .frame(height: iconBandTopPadding)
-
             VStack(spacing: 2) {
                 ForEach(AppModule.mainStrip) { item in
                     moduleButton(item)
                 }
             }
-            .frame(height: CursorTheme.activityBarIconBandHeight, alignment: .top)
-            .padding(.top, 4)
+            .padding(.top, 8)
 
             Spacer(minLength: 0)
 
@@ -44,16 +35,16 @@ struct ActivityBarView: View {
             tabStore.openFromModule(item, activate: true)
         } label: {
             Image(systemName: item.systemImage)
-                .font(.system(size: CursorTheme.activityBarIconSize, weight: .medium))
+                .font(.system(size: CursorTheme.activityBarIconSize, weight: .regular))
                 .symbolRenderingMode(.monochrome)
-                .frame(width: CursorTheme.activityBarWidth, height: 32)
+                .frame(width: CursorTheme.activityBarWidth, height: 28)
                 .foregroundStyle(
                     selected ? CursorTheme.accent : CursorTheme.activityBarForegroundDim
                 )
                 .background(
-                    RoundedRectangle(cornerRadius: 6, style: .continuous)
-                        .fill(selected ? CursorTheme.accent.opacity(0.12) : Color.clear)
-                        .padding(.horizontal, 7)
+                    RoundedRectangle(cornerRadius: 5, style: .continuous)
+                        .fill(selected ? CursorTheme.accent.opacity(0.1) : Color.clear)
+                        .padding(.horizontal, 8)
                 )
         }
         .buttonStyle(.plain)

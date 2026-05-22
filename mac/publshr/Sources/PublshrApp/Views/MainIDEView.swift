@@ -20,15 +20,19 @@ struct MainIDEView: View {
 
     var body: some View {
         GeometryReader { geometry in
-            let topInset = max(geometry.safeAreaInsets.top, CursorTheme.windowChromeTopInset)
-
             VStack(spacing: 0) {
+                WorkspaceHeaderView(
+                    spaces: spaces,
+                    module: $module,
+                    safeAreaTop: geometry.safeAreaInsets.top
+                )
+
                 HStack(alignment: .top, spacing: 0) {
                     if !sidebarHidden {
-                        leftRail(topInset: topInset)
+                        leftRail
                     }
 
-                    contentColumn(topInset: topInset)
+                    mainColumn
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -85,10 +89,9 @@ struct MainIDEView: View {
         }
     }
 
-    /// Activity + nav columns span full window height (status lives under content only).
-    private func leftRail(topInset: CGFloat) -> some View {
+    private var leftRail: some View {
         HStack(spacing: 0) {
-            ActivityBarView(module: $module, topInset: topInset)
+            ActivityBarView(module: $module)
 
             if module != .settings {
                 AppSecondarySidebar(
@@ -96,22 +99,15 @@ struct MainIDEView: View {
                     chat: chat,
                     spaces: spaces,
                     showNewChannel: $showNewChannel,
-                    showNewDM: $showNewDM,
-                    topInset: topInset
+                    showNewDM: $showNewDM
                 )
             }
         }
         .frame(maxHeight: .infinity)
     }
 
-    private func contentColumn(topInset: CGFloat) -> some View {
+    private var mainColumn: some View {
         VStack(spacing: 0) {
-            WorkspaceHeaderView(
-                spaces: spaces,
-                module: $module,
-                topInset: topInset
-            )
-
             moduleMainContent
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
 
