@@ -11,7 +11,7 @@
 printf '%s\n' '[Publshr] Loading installer...' >&2
 set -euo pipefail
 
-INSTALLER_VERSION="5"
+INSTALLER_VERSION="6"
 PUBLSHR_REPO="${PUBLSHR_REPO:-hiagoccss-svg/publshr.exe}"
 PUBLSHR_BRANCH="${PUBLSHR_BRANCH:-main}"
 PUBLSHR_INSTALLER_URL="https://raw.githubusercontent.com/${PUBLSHR_REPO}/refs/heads/${PUBLSHR_BRANCH}/install-publshr.sh"
@@ -59,7 +59,18 @@ _publshr_live_exists() {
 
 _publshr_tree_has_app() {
     local tree="$1"
-    [[ -d "${tree}/Publshr.app/Contents/MacOS/PublshrApp" ]]
+    # PublshrApp is the Mach-O binary (a file), not a directory.
+    [[ -n "$tree" && -f "${tree}/Publshr.app/Contents/MacOS/PublshrApp" ]]
+}
+
+_publshr_find_extract_tree() {
+    local tmp="$1"
+    local app_bundle
+    app_bundle="$(find "$tmp" -type d -name 'Publshr.app' 2>/dev/null | head -1)"
+    if [[ -z "$app_bundle" ]]; then
+        return 1
+    fi
+    dirname "$app_bundle"
 }
 
 _publshr_download_live() {
@@ -71,9 +82,11 @@ _publshr_download_live() {
     log "  $url"
     curl -fSL --progress-bar "$url" -o "$tmp/$asset"
     tar -xzf "$tmp/$asset" -C "$tmp"
-    tree="$(find "$tmp" -mindepth 1 -maxdepth 1 -type d | head -1)"
+    tree="$(_publshr_find_extract_tree "$tmp")" || tree=""
     if ! _publshr_tree_has_app "$tree"; then
         log "ERROR: Downloaded package does not contain Publshr.app"
+        log "  Extracted layout in ${tmp}:"
+        find "$tmp" -maxdepth 4 -type f -o -type d 2>/dev/null | head -20 | while read -r p; do log "    $p"; done
         rm -rf "$tmp"
         return 1
     fi
@@ -174,10 +187,19 @@ publshr_install_main() {
 
     local tree="" cleanup=""
     if _publshr_live_exists; then
-        tree="$(_publshr_download_live)" && log "Using pre-built live release."
+        tree="$(_publshr_download_live)" || tree=""
+        if ! _publshr_tree_has_app "$tree"; then
+            log "ERROR: Could not download a valid live Publshr.app package."
+            exit 1
+        fi
+        log "Using pre-built live release."
     else
         log "Live release not published yet — compiling on your Mac ..."
-        tree="$(_publshr_build_from_github)"
+        tree="$(_publshr_build_from_github)" || tree=""
+        if ! _publshr_tree_has_app "$tree"; then
+            log "ERROR: Source build did not produce Publshr.app."
+            exit 1
+        fi
     fi
 
     cleanup="$(dirname "$tree")"
