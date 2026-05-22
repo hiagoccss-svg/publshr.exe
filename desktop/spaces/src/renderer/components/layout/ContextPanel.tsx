@@ -13,7 +13,7 @@ export function ContextPanel(): React.ReactElement {
   const task = tasks.find((t) => t.id === selectedTaskId)
 
   return (
-    <aside className="dt-glass-panel flex w-[340px] shrink-0 flex-col">
+    <aside className="dt-glass-panel flex min-h-0 w-[340px] shrink-0 flex-col overflow-hidden">
       <div className="dt-divider-h flex items-center justify-between px-3 py-2">
         <span className="text-xs font-semibold uppercase tracking-wide text-ink-muted">Context</span>
         <button

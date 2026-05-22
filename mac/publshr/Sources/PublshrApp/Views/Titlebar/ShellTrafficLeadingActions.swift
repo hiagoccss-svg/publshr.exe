@@ -6,6 +6,7 @@ struct ShellTrafficLeadingActions: View {
     @EnvironmentObject private var chat: ChatViewModel
     @EnvironmentObject private var spaces: SpacesViewModel
     @Binding var module: AppModule
+    var compact: Bool = false
 
     var body: some View {
         HStack(alignment: .center, spacing: CursorMacShellDesign.titlebarActionSpacing) {
@@ -21,20 +22,22 @@ struct ShellTrafficLeadingActions: View {
                 }
             }
 
-            TitlebarChromeIconButton(
-                systemName: "chevron.left",
-                help: TitlebarShortcutHint.tooltip("Back", shortcut: TitlebarShortcutHint.navigateBack),
-                isEnabled: canNavigateBack
-            ) {
-                navigateBack()
-            }
+            if !compact {
+                TitlebarChromeIconButton(
+                    systemName: "chevron.left",
+                    help: TitlebarShortcutHint.tooltip("Back", shortcut: TitlebarShortcutHint.navigateBack),
+                    isEnabled: canNavigateBack
+                ) {
+                    navigateBack()
+                }
 
-            TitlebarChromeIconButton(
-                systemName: "chevron.right",
-                help: TitlebarShortcutHint.tooltip("Forward", shortcut: TitlebarShortcutHint.navigateForward),
-                isEnabled: canNavigateForward
-            ) {
-                navigateForward()
+                TitlebarChromeIconButton(
+                    systemName: "chevron.right",
+                    help: TitlebarShortcutHint.tooltip("Forward", shortcut: TitlebarShortcutHint.navigateForward),
+                    isEnabled: canNavigateForward
+                ) {
+                    navigateForward()
+                }
             }
         }
     }

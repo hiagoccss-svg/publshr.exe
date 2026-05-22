@@ -45,7 +45,7 @@ export default function Sidebar() {
   return (
     <aside
       className={cn(
-        'glass-sidebar flex shrink-0 flex-col transition-all duration-200',
+        'glass-sidebar flex min-h-0 shrink-0 flex-col overflow-hidden transition-all duration-200',
         collapsed ? 'w-[52px] !bg-surface-raised/90' : ''
       )}
     >

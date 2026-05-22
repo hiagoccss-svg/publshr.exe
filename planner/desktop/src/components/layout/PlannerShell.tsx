@@ -64,7 +64,7 @@ export default function PlannerShell() {
   }, [])
 
   return (
-    <div className="glass-shell flex h-screen flex-col">
+    <div className="glass-shell flex h-full flex-col">
       <TopBar />
       <div className="flex min-h-0 flex-1">
         <Sidebar />

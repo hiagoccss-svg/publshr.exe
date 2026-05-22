@@ -25,6 +25,6 @@ struct ChatSidebarTitlebarChrome: View {
             }
         }
         .padding(.horizontal, 12)
-        .padding(.trailing, 6)
+        .frame(height: AppWindowChromeMetrics.unifiedTitlebarRowHeight)
     }
 }
