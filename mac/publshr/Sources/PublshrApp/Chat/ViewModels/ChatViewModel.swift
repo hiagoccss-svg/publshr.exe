@@ -83,7 +83,7 @@ final class ChatViewModel: ObservableObject {
     private var notificationLevelByChannel: [UUID: String] = [:]
     private var deliveredMacNotificationMessageIds = Set<UUID>()
     private let maxInAppNotifications = 80
-    private var scheduledDispatchTask: Task<Void, Never>?
+    var scheduledDispatchTask: Task<Void, Never>?
 
     var currentUserId: UUID? { auth?.profile?.id ?? auth?.session?.user.id }
     var attachedClient: SupabaseClient? { auth?.client }

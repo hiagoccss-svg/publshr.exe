@@ -23,7 +23,7 @@ extension ChatService {
         workspaceId: UUID,
         messageId: UUID,
         assignedTo: UUID?
-    ) async throws {
+    ) async throws -> ChatMessage {
         struct Patch: Encodable {
             let assigned_to: UUID?
         }
@@ -37,6 +37,7 @@ extension ChatService {
             .execute()
             .value
         store.upsertMessage(row)
+        return row
     }
 
     func createScheduledMessage(
