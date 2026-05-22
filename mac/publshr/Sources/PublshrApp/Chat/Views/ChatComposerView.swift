@@ -32,11 +32,16 @@ struct ChatComposerView: View {
                     .font(.system(size: 13))
                     .foregroundStyle(CursorTheme.foreground)
                     .lineLimit(1...6)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 8)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 10)
+                    .background(
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .fill(Color.white.opacity(0.55))
+                            .background(.ultraThinMaterial)
+                    )
                     .overlay(
-                        RoundedRectangle(cornerRadius: 8)
-                            .strokeBorder(CursorTheme.hairline, lineWidth: 1)
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .strokeBorder(LibraryGlassDesign.hairline, lineWidth: 1)
                     )
                     .onChange(of: chat.composerText) { _, _ in
                         chat.composerActivityChanged()
@@ -61,12 +66,16 @@ struct ChatComposerView: View {
             .padding(.bottom, 10)
             .padding(.top, 6)
         }
-        .background(CursorTheme.chatBackground)
-        .overlay(alignment: .top) {
-            Rectangle()
-                .fill(CursorTheme.hairline)
-                .frame(height: 1)
+        .padding(.horizontal, 12)
+        .padding(.bottom, 12)
+        .background(Color.clear)
+    }
+
+    private var composerPlaceholder: String {
+        if let channel = chat.selectedChannel {
+            return "Message \(channel.sidebarTitle)…"
         }
+        return "Message…"
     }
 
     private var composerPlaceholder: String {

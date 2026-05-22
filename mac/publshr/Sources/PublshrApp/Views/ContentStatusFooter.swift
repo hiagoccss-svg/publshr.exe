@@ -59,6 +59,6 @@ struct ContentStatusFooter: View {
     }
 
     private var footerBackground: Color {
-        module == .chat ? CursorTheme.chatBackground : CursorTheme.statusBar
+        Color.clear
     }
 }

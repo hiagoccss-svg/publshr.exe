@@ -717,11 +717,11 @@ final class ChatViewModel: ObservableObject {
     }
 
     var filteredChannels: [ChatChannel] {
-        filter(channels)
+        sidebarChannelsList(channels)
     }
 
     var filteredDMs: [ChatChannel] {
-        filter(directMessages)
+        sidebarChannelsList(directMessages)
     }
 
     var sidebarRecentsList: [ChatChannel] {
@@ -732,7 +732,7 @@ final class ChatViewModel: ObservableObject {
         return sidebarChannelsList(sorted)
     }
 
-    /// Recently active — stable order for Favorites section (name, not live reorder).
+    /// Favorites: recent activity picks, stable name order (rows do not jump).
     var favoriteChannels: [ChatChannel] {
         let combined = channels + directMessages
         let byActivity = combined.sorted {
@@ -785,6 +785,15 @@ final class ChatViewModel: ObservableObject {
             result = result.filter { $0.kind == .dm || $0.kind == .group }
         case .channels:
             result = result.filter { $0.kind == .channel }
+        }
+        if sidebarLayout == .recents {
+            result.sort {
+                ($0.lastMessageAt ?? .distantPast) > ($1.lastMessageAt ?? .distantPast)
+            }
+        } else {
+            result.sort {
+                $0.sidebarTitle.localizedCaseInsensitiveCompare($1.sidebarTitle) == .orderedAscending
+            }
         }
         return result
     }

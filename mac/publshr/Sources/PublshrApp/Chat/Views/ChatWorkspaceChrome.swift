@@ -13,6 +13,6 @@ struct ChatWorkspaceChrome<Content: View>: View {
             }
             content()
         }
-        .background(CursorTheme.chatBackground)
+        .background(Color.clear)
     }
 }

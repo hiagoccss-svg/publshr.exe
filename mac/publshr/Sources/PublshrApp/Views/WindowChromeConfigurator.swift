@@ -37,7 +37,8 @@ enum MainWindowChrome {
             || className.contains("Hosting")
             || className.contains("SwiftUI")
 
-        window.backgroundColor = NSColor(CursorTheme.titleBar)
+        window.backgroundColor = .clear
+        window.isOpaque = false
 
         if window.responds(to: #selector(setter: NSWindow.titlebarAppearsTransparent)) {
             window.titlebarAppearsTransparent = true
@@ -52,6 +53,10 @@ enum MainWindowChrome {
         }
         if window.responds(to: #selector(setter: NSWindow.isMovableByWindowBackground)) {
             window.isMovableByWindowBackground = true
+        }
+        if let content = window.contentView {
+            content.wantsLayer = true
+            content.layer?.backgroundColor = NSColor.clear.cgColor
         }
         if !isSwiftUIHosting,
            window.responds(to: #selector(setter: NSWindow.toolbarStyle)) {
