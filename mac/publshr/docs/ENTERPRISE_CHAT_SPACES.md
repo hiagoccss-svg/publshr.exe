@@ -41,7 +41,8 @@ ClickUp-style hierarchy: **Space → Folder → List → Task**
 |---------|--------|
 | Spaces CRUD, pin | ✅ |
 | Folders & lists | ✅ |
-| Board / list / overview / **calendar** | ✅ |
+| Board / list / overview / **calendar** | ✅ mac IDE |
+| Spaces Home, timeline, workload, priority matrix | ✅ `desktop/spaces` |
 | Task detail (assignee, priority, due, tags, checklist, comments) | ✅ |
 | Documents, activity | ✅ |
 | Supabase realtime | ✅ |

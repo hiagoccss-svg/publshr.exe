@@ -1,9 +1,13 @@
 import { Plus } from 'lucide-react'
 import { useSpacesStore } from '../../stores/spaces-store'
 import { SpaceOverview } from '../spaces/SpaceOverview'
+import { SpacesHomeView } from '../spaces/SpacesHomeView'
 import { TaskListView } from '../tasks/TaskListView'
 import { TaskBoardView } from '../tasks/TaskBoardView'
 import { CalendarView } from '../tasks/CalendarView'
+import { TimelineView } from '../tasks/TimelineView'
+import { WorkloadView } from '../tasks/WorkloadView'
+import { PriorityMatrixView } from '../tasks/PriorityMatrixView'
 import { EmptySpaceState } from '../spaces/EmptySpaceState'
 import { PlaceholderSection } from '../spaces/PlaceholderSection'
 import { SpacesBreadcrumb } from '../spaces/SpacesBreadcrumb'
@@ -20,7 +24,9 @@ const VIEW_TABS: { id: 'overview' | 'list' | 'board' | 'calendar' | 'timeline' |
 
 export function WorkspaceArea(): React.ReactElement {
   const activeSection = useSpacesStore((s) => s.activeSection)
+  const spaces = useSpacesStore((s) => s.spaces)
   const activeSpaceId = useSpacesStore((s) => s.activeSpaceId)
+  const spacesHomeOpen = useSpacesStore((s) => s.spacesHomeOpen)
   const taskView = useSpacesStore((s) => s.taskView)
   const setTaskView = useSpacesStore((s) => s.setTaskView)
   const createTask = useSpacesStore((s) => s.createTask)
@@ -30,6 +36,16 @@ export function WorkspaceArea(): React.ReactElement {
   }
 
   if (!activeSpaceId) {
+    if (spaces.length === 0) return <EmptySpaceState />
+    if (spacesHomeOpen || !activeSpaceId) {
+      return (
+        <main className="glass-workspace flex min-w-0 flex-1 flex-col overflow-hidden">
+          <div className="library-workspace-pad min-h-0 flex-1 overflow-auto">
+            <SpacesHomeView />
+          </div>
+        </main>
+      )
+    }
     return <EmptySpaceState />
   }
 
@@ -64,9 +80,9 @@ export function WorkspaceArea(): React.ReactElement {
         {taskView === 'list' && <TaskListView />}
         {taskView === 'board' && <TaskBoardView />}
         {taskView === 'calendar' && <CalendarView />}
-        {(taskView === 'timeline' || taskView === 'workload' || taskView === 'priority') && (
-          <PhasePlaceholder view={taskView} />
-        )}
+        {taskView === 'timeline' && <TimelineView />}
+        {taskView === 'workload' && <WorkloadView />}
+        {taskView === 'priority' && <PriorityMatrixView />}
       </div>
     </main>
   )
@@ -102,18 +118,3 @@ function TaskQuickAdd({ onCreate }: { onCreate: (title: string) => void }): Reac
   )
 }
 
-function PhasePlaceholder({ view }: { view: string }): React.ReactElement {
-  const labels: Record<string, string> = {
-    timeline: 'Timeline / Gantt',
-    workload: 'Workload',
-    priority: 'Priority matrix'
-  }
-  return (
-    <div className="dt-content-surface-muted flex h-full min-h-[320px] flex-col items-center justify-center rounded-xl border border-dashed border-surface-border">
-      <p className="text-sm font-medium text-ink">{labels[view] ?? view}</p>
-      <p className="mt-1 max-w-sm text-center text-xs text-ink-muted">
-        Coming soon. Overview, List, Board, and Calendar are fully available.
-      </p>
-    </div>
-  )
-}

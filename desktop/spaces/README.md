@@ -16,7 +16,8 @@ Enterprise operations and project management module for Publshr — a desktop-na
 - **ClickUp hierarchy**: Space → Folder → List → Tasks (`space_folders`, `space_lists`, `list_id`)
 - Spaces create modal; folder/list tree; breadcrumbs; quick-add task
 - Task inspector: status, priority, assignee, due date, tags, checklist, comments
-- **Overview**, **List**, **Board**, **Calendar** views; board drag-and-drop status
+- **Spaces Home** (browse all spaces), **Overview**, **List**, **Board**, **Calendar**, **Timeline**, **Workload**, **Priority** views; board drag-and-drop status
+- **Space settings** (pin, favorite, default view, archive)
 - Command palette (`⌘K` / `Ctrl+K`); global search via SQLite index
 - Multi-window scaffold; offline `sync_queue`; optional Supabase sync
 
