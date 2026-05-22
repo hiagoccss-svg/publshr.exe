@@ -34,7 +34,7 @@ final class CallWindowManager: ObservableObject {
             object: window,
             queue: .main
         ) { [weak self] _ in
-            Task { @MainActor in
+            DispatchQueue.main.async { [weak self] in
                 if self?.window === window {
                     self?.window = nil
                 }

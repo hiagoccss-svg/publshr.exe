@@ -10,7 +10,8 @@ struct LiveKitVideoTrackView: NSViewRepresentable {
     func makeNSView(context: Context) -> VideoView {
         let view = VideoView()
         view.layoutMode = layoutMode
-        view.backgroundColor = NSColor.black.withAlphaComponent(0.85)
+        view.wantsLayer = true
+        view.layer?.backgroundColor = NSColor.black.withAlphaComponent(0.85).cgColor
         return view
     }
 

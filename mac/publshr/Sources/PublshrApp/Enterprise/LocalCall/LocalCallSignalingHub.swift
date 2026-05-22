@@ -24,6 +24,8 @@ final class LocalCallSignalingHub: ObservableObject {
     private var connections: [UUID: NWConnection] = [:]
     private var netService: NetService?
     private var browser: NetServiceBrowser?
+    private var bonjourBrowserDelegate: BonjourBrowserDelegate?
+    private var bonjourPublishDelegate: BonjourPublishDelegate?
     private var discoveredService: NetService?
     private var roomId: UUID?
     private var channelId: UUID?
@@ -41,7 +43,7 @@ final class LocalCallSignalingHub: ObservableObject {
 
         let listener = try NWListener(using: .tcp, on: NWEndpoint.Port(rawValue: LocalCallConfiguration.signalingPort)!)
         listener.newConnectionHandler = { [weak self] connection in
-            Task { @MainActor in
+            DispatchQueue.main.async { [weak self] in
                 self?.accept(connection: connection)
             }
         }
@@ -78,7 +80,7 @@ final class LocalCallSignalingHub: ObservableObject {
         connections[connId] = connection
         connection.stateUpdateHandler = { [weak self] state in
             if case .ready = state {
-                Task { @MainActor in
+                DispatchQueue.main.async { [weak self] in
                     self?.sendJoin(on: connection)
                 }
             }
@@ -94,11 +96,13 @@ final class LocalCallSignalingHub: ObservableObject {
         self.localUserId = userId
         self.localDisplayName = displayName
         let browser = NetServiceBrowser()
-        browser.delegate = BonjourBrowserDelegate { [weak self] service in
-            Task { @MainActor in
+        let delegate = BonjourBrowserDelegate { [weak self] service in
+            Task { @MainActor [weak self] in
                 await self?.resolveAndJoin(service: service, channelId: channelId, roomId: roomId)
             }
         }
+        browser.delegate = delegate
+        bonjourBrowserDelegate = delegate
         browser.searchForServices(ofType: LocalCallConfiguration.bonjourType, inDomain: LocalCallConfiguration.bonjourDomain)
         self.browser = browser
     }
@@ -118,11 +122,13 @@ final class LocalCallSignalingHub: ObservableObject {
         for (_, connection) in connections {
             connection.cancel()
         }
-        connections = []
+        connections = [:]
         netService?.stop()
         netService = nil
+        bonjourPublishDelegate = nil
         browser?.stop()
         browser = nil
+        bonjourBrowserDelegate = nil
         discoveredService?.stop()
         discoveredService = nil
         participants = []
@@ -142,10 +148,10 @@ final class LocalCallSignalingHub: ObservableObject {
 
     private func receive(on connection: NWConnection) {
         connection.receive(minimumIncompleteLength: 1, maximumLength: 65_536) { [weak self] data, _, _, _ in
-            guard let self, let data, !data.isEmpty else { return }
-            Task { @MainActor in
-                self.handleIncoming(data: data)
-                self.receive(on: connection)
+            guard let data, !data.isEmpty else { return }
+            DispatchQueue.main.async { [weak self] in
+                self?.handleIncoming(data: data)
+                self?.receive(on: connection)
             }
         }
     }
@@ -235,7 +241,9 @@ final class LocalCallSignalingHub: ObservableObject {
             name: "call-\(roomCode)",
             port: Int32(port)
         )
-        service.delegate = BonjourPublishDelegate()
+        let publishDelegate = BonjourPublishDelegate()
+        service.delegate = publishDelegate
+        bonjourPublishDelegate = publishDelegate
         var txt: [String: Data] = [
             "room": roomCode.data(using: .utf8) ?? Data(),
             "channel": channelId.uuidString.data(using: .utf8) ?? Data(),

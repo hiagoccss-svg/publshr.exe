@@ -25,7 +25,7 @@ final class LocalCallMediaSession: ObservableObject {
         self.localDisplayName = localDisplayName
 
         let bridge = MediaRoomDelegate { [weak self] in
-            Task { @MainActor in
+            DispatchQueue.main.async { [weak self] in
                 self?.rebuildVideoTiles()
             }
         }
@@ -135,11 +135,7 @@ private final class MediaRoomDelegate: RoomDelegate, @unchecked Sendable {
         onChange()
     }
 
-    func room(_ room: Room, participant: RemoteParticipant?, didJoin identity: Participant.Identity) {
-        onChange()
-    }
-
-    func room(_ room: Room, participant: RemoteParticipant?, didLeave identity: Participant.Identity) {
+    func room(_ room: Room, participant: Participant, didUpdateState state: ParticipantState) {
         onChange()
     }
 
