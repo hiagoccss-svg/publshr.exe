@@ -23,7 +23,7 @@ final class AppUpdateViewModel: ObservableObject {
     private var checkTask: Task<Void, Never>?
 
     /// Poll interval for GitHub `live` channel (every push to main publishes there).
-    private static let livePollSeconds: UInt64 = 120
+    private static let livePollSeconds: UInt64 = 60
 
     /// Live updates are always on — storage keys kept for migration only.
     var autoCheckEnabled: Bool {
@@ -126,6 +126,10 @@ final class AppUpdateViewModel: ObservableObject {
         if case .installing = phase { return }
         if case .downloading = phase { return }
 
+        if case .failed = phase {
+            phase = .idle
+        }
+
         await checkForUpdates(silent: true)
 
         if case .available = phase {
@@ -139,6 +143,7 @@ final class AppUpdateViewModel: ObservableObject {
     /// Settings / menu: always check, download, and install (even if background sync is mid-flight).
     func installLiveUpdateNow() async {
         if case .installing = phase { return }
+        if case .failed = phase { phase = .idle }
         await updateNow()
     }
 

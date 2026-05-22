@@ -75,12 +75,11 @@ final class AppUpdateService: @unchecked Sendable {
     }
 
     func checkForUpdate() async throws -> AvailableUpdate? {
-        let localBuild = AppReleaseConfig.buildNumber
         guard let live = try await fetchLiveRelease() else {
             throw AppUpdateError.noReleases
         }
 
-        if let update = try await parseLiveRelease(live, localBuild: localBuild) {
+        if let update = try await parseLiveRelease(live) {
             return update
         }
 
@@ -106,7 +105,8 @@ final class AppUpdateService: @unchecked Sendable {
         let updatesRoot = supportUpdatesDirectory()
         try fileManager.createDirectory(at: updatesRoot, withIntermediateDirectories: true)
 
-        let archiveURL = updatesRoot.appendingPathComponent(update.assetName)
+        try? fileManager.removeItem(at: updatesRoot.appendingPathComponent("staging-\(update.version)", isDirectory: true))
+        let archiveURL = updatesRoot.appendingPathComponent("\(update.build)-\(update.assetName)")
         try? fileManager.removeItem(at: archiveURL)
 
         var request = URLRequest(url: update.downloadURL)
@@ -243,7 +243,7 @@ final class AppUpdateService: @unchecked Sendable {
         return try decoder.decode([GitHubRelease].self, from: data)
     }
 
-    private func parseLiveRelease(_ live: GitHubRelease, localBuild: Int) async throws -> AvailableUpdate? {
+    private func parseLiveRelease(_ live: GitHubRelease) async throws -> AvailableUpdate? {
         let assetName = AppReleaseConfig.liveAssetName()
         guard let asset = live.assets.first(where: { $0.name == assetName }),
               asset.size >= AppReleaseConfig.minAppAssetBytes,
@@ -252,28 +252,49 @@ final class AppUpdateService: @unchecked Sendable {
             throw AppUpdateError.noCompatibleAsset
         }
 
-        let build: Int
-        if let fromRelease = parseBuildNumber(from: live) {
-            build = fromRelease
-        } else if let fromAsset = await fetchBuildFromVersionAsset(in: live.assets) {
-            build = fromAsset
-        } else {
-            build = 0
+        let manifest = await fetchLiveManifest(in: live.assets)
+            ?? manifestFromReleaseNotes(live)
+
+        guard let manifest else {
+            appendSyncLog("live check: could not parse VERSION.txt or release notes")
+            return nil
         }
 
-        appendSyncLog("live check: local=\(localBuild) remote=\(build) asset=\(assetName) size=\(asset.size)")
+        appendSyncLog(
+            "live check: local=\(AppReleaseConfig.installedLabel) "
+                + "remote=\(manifest.fullVersion) build=\(manifest.build) "
+                + "commit=\(manifest.commit.prefix(7)) asset=\(asset.size)"
+        )
 
-        guard build > localBuild else { return nil }
+        guard manifest.isNewerThanInstalled() else { return nil }
 
-        let version = parseVersionLabel(from: live) ?? "live.\(build)"
         return AvailableUpdate(
-            version: version,
-            build: build,
+            version: manifest.fullVersion,
+            build: manifest.build,
             tag: AppReleaseConfig.liveTag,
             downloadURL: downloadURL,
             releasePage: pageURL,
             assetName: assetName
         )
+    }
+
+    private func manifestFromReleaseNotes(_ live: GitHubRelease) -> LiveChannelManifest? {
+        guard let build = parseBuildNumber(from: live) else { return nil }
+        let version = parseVersionLabel(from: live) ?? "\(AppReleaseConfig.shortVersion).\(build)"
+        let commit = parseCommitSha(from: live) ?? ""
+        return LiveChannelManifest(fullVersion: version, build: build, commit: commit, packageDigest: nil)
+    }
+
+    private func parseCommitSha(from release: GitHubRelease) -> String? {
+        let text = release.body ?? ""
+        for line in text.split(separator: "\n") {
+            let s = String(line)
+            guard s.contains("commit:") else { continue }
+            let value = s.split(separator: ":", maxSplits: 1).last?
+                .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            if !value.isEmpty { return value }
+        }
+        return nil
     }
 
     private func parseBuildNumber(from release: GitHubRelease) -> Int? {
@@ -288,8 +309,8 @@ final class AppUpdateService: @unchecked Sendable {
         return nil
     }
 
-    /// Reads `VERSION.txt` from the live release (line 2 = CI build number).
-    private func fetchBuildFromVersionAsset(in assets: [GitHubAsset]) async -> Int? {
+    /// Reads `VERSION.txt` from the live release (version, build, commit, package digest).
+    private func fetchLiveManifest(in assets: [GitHubAsset]) async -> LiveChannelManifest? {
         guard let asset = assets.first(where: { $0.name == "VERSION.txt" }),
               let url = URL(string: asset.browserDownloadUrl) else {
             return nil
@@ -299,10 +320,11 @@ final class AppUpdateService: @unchecked Sendable {
             guard let http = response as? HTTPURLResponse, (200 ... 299).contains(http.statusCode) else {
                 return nil
             }
-            guard let text = String(data: data, encoding: .utf8) else { return nil }
-            let lines = text.split(separator: "\n", omittingEmptySubsequences: false)
-            guard lines.count >= 2 else { return nil }
-            return Int(lines[1].trimmingCharacters(in: .whitespacesAndNewlines))
+            guard let text = String(data: data, encoding: .utf8),
+                  let manifest = LiveChannelManifest.parse(text) else {
+                return nil
+            }
+            return manifest
         } catch {
             appendSyncLog("VERSION.txt fetch failed: \(error.localizedDescription)")
             return nil

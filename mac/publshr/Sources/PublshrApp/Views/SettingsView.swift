@@ -80,7 +80,7 @@ struct SettingsView: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
 
-            Text("Installed: v\(AppReleaseConfig.installedLabel) · Live channel checks every 2 minutes and installs automatically.")
+            Text("Installed: \(AppReleaseConfig.installedLabel) · Live checks every minute (icon, UI, features — any push to main).")
                 .font(.system(size: 10))
                 .foregroundStyle(CursorTheme.foregroundDim)
                 .fixedSize(horizontal: false, vertical: true)

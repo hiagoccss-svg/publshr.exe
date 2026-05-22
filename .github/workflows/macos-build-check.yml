@@ -1,16 +1,10 @@
-# Compile-check mac/publshr on every PR and push to main — catches failures before live publish breaks.
+# Compile-check mac/publshr before live publish — any repo change can affect the shipped app.
 name: macOS compile check
 
 on:
   pull_request:
-    paths:
-      - "mac/publshr/**"
-      - ".github/workflows/macos-build-check.yml"
   push:
     branches: [main]
-    paths:
-      - "mac/publshr/**"
-      - ".github/workflows/macos-build-check.yml"
 
 jobs:
   compile-publshr-app:
@@ -18,7 +12,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Sync app icon
+      - name: Sync app icon from repo root
         run: bash mac/publshr/scripts/sync-app-icon.sh
 
       - name: Select Xcode
@@ -26,4 +20,7 @@ jobs:
 
       - name: Build PublshrApp (release)
         working-directory: mac/publshr
+        env:
+          PUBLSHR_BUILD_NUMBER: "0"
+          PUBLSHR_COMMIT_SHA: ${{ github.sha }}
         run: swift build -c release --product PublshrApp
