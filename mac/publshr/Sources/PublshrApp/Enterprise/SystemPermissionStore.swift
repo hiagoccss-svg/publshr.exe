@@ -90,7 +90,7 @@ enum SystemPermissionStore {
         let center = UNUserNotificationCenter.current()
         let settings = await center.notificationSettings()
         switch settings.authorizationStatus {
-        case .authorized, .provisional, .ephemeral:
+        case .authorized, .provisional:
             UserDefaults.standard.set(true, forKey: notificationsPromptedKey)
             UserDefaults.standard.set(true, forKey: legacyNotificationsKey)
             return true

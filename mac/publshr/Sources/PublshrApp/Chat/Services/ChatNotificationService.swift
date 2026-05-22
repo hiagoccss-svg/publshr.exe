@@ -42,7 +42,6 @@ final class ChatNotificationService: NSObject, UNUserNotificationCenterDelegate 
         let settings = await UNUserNotificationCenter.current().notificationSettings()
         isAuthorized = settings.authorizationStatus == .authorized
             || settings.authorizationStatus == .provisional
-            || settings.authorizationStatus == .ephemeral
     }
 
     /// Posts to Notification Center when authorized. `deliverBanner` controls in-app banner/sound while focused.
