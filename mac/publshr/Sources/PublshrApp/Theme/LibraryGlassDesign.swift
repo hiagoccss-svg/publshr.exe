@@ -13,7 +13,7 @@ enum LibraryGlassDesign {
 
     static let sidebarSelection = Color(hex: 0xE8E6E1).opacity(0.95)
     static let sidebarGlassFill = Color.white.opacity(0.52)
-    static let panelGlassFill = Color.white.opacity(0.68)
+    static let panelGlassFill = Color.white.opacity(0.78)
 
     // Spacing (reference image)
     static let outerMargin: CGFloat = 20
