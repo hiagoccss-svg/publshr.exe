@@ -54,6 +54,8 @@ Shortcuts: **⌘⇧O** or Chat menu → “Pop Out Channel”
 
 ### Recently shipped (mac IDE)
 
+- **ClickUp parity** — Activity/Drafts/Sent hubs, schedule send, mentions filter, DM inspector (`#82`).
+- **Period script recap** — date-range channel recap in AI sheet (`#84` / `#90`).
 - **@mention autocomplete** — inline composer picker + sheet (`openMentionPicker`).
 - **Channel-scoped search** — `openChannelSearch()` vs workspace search; in-memory channel filter.
 - **Pinned panel** — preview + jump to message.
