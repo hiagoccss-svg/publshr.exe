@@ -6,8 +6,8 @@ struct AppUpdateBannerView: View {
 
     var body: some View {
         Group {
-            if let error = updates.errorMessage {
-                errorBanner(error)
+            if case .failed(let message) = updates.phase {
+                errorBanner(message)
             } else if updates.isActivelyUpdating {
                 progressBanner
             }
