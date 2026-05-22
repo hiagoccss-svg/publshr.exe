@@ -269,7 +269,7 @@ _publshr_install_with_privileges() {
     fi
 
     exec sudo -E env "${sudo_env[@]}" bash -c \
-        'curl -fsSL "$1" | bash -s -- --install-only"' _ "${PUBLSHR_INSTALLER_URL}"
+        'curl -fsSL "$1" | bash -s -- --install-only' _ "${PUBLSHR_INSTALLER_URL}"
 }
 
 _publshr_try_gui_installer() {
