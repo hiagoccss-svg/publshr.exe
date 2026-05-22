@@ -11,6 +11,8 @@ struct LibraryShellView: View {
     @Binding var module: AppModule
     @Binding var showNewChannel: Bool
     @Binding var showNewDM: Bool
+    @Binding var showCommandPalette: Bool
+    @Binding var showNotificationsPanel: Bool
 
     /// Avoid header/submenu jumping when safe-area insets settle after window chrome applies.
     @State private var stableTopInset: CGFloat = CursorTheme.windowChromeTopInset
@@ -31,6 +33,10 @@ struct LibraryShellView: View {
                     LibraryShellHeaderView(
                         spaces: spaces,
                         module: $module,
+                        showNewChannel: $showNewChannel,
+                        showNewDM: $showNewDM,
+                        showCommandPalette: $showCommandPalette,
+                        showNotificationsPanel: $showNotificationsPanel,
                         safeAreaTop: stableTopInset
                     )
 

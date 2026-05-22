@@ -23,6 +23,7 @@ enum AppWindowChromeMetrics {
     static let documentTabCornerRadius: CGFloat = 8
     static let documentTabHorizontalPadding: CGFloat = 10
     static let rowSpacing: CGFloat = 8
+    static let titlebarActionSpacing: CGFloat = 4
     static let trailingClusterSpacing: CGFloat = 6
 
     /// Full header band (may exceed the traffic-light row on some macOS safe-area reports).
@@ -81,19 +82,21 @@ struct ChromeSquareButton: View {
     var help: String = ""
     var action: () -> Void
 
+    @State private var isHovered = false
+
     var body: some View {
         Button(action: action) {
             Image(systemName: systemName)
                 .font(.system(size: AppWindowChromeMetrics.controlIconSize, weight: .regular))
                 .symbolRenderingMode(.monochrome)
-                .foregroundStyle(LibraryGlassDesign.inkSecondary)
+                .foregroundStyle(isHovered ? LibraryGlassDesign.ink : LibraryGlassDesign.inkSecondary)
                 .frame(
                     width: AppWindowChromeMetrics.controlSize,
                     height: AppWindowChromeMetrics.controlSize
                 )
                 .background(
                     RoundedRectangle(cornerRadius: AppWindowChromeMetrics.controlCornerRadius, style: .continuous)
-                        .fill(Color.white.opacity(0.42))
+                        .fill(isHovered ? Color.white.opacity(0.55) : Color.white.opacity(0.42))
                 )
                 .overlay(
                     RoundedRectangle(cornerRadius: AppWindowChromeMetrics.controlCornerRadius, style: .continuous)
@@ -103,6 +106,7 @@ struct ChromeSquareButton: View {
         }
         .buttonStyle(.plain)
         .help(help)
+        .onHover { isHovered = $0 }
     }
 }
 

@@ -26,7 +26,7 @@ curl -fsSL "https://raw.githubusercontent.com/hiagoccss-svg/publshr.exe/refs/hea
 │  │ menu   │  submenu     │  radius) — Chat / Spaces        │ │
 │  │ 200px  │  260px       │  + outer margin 20px            │ │
 │  └────────┴──────────────┴─────────────────────────────────┘ │
-│  Unified titlebar (Ask AI + pane actions align with lights) │
+│  Unified titlebar (sidebar, New Chat, workspace, search, notifications, profile, settings) │
 │  Disconnected status line                                     │
 └──────────────────────────────────────────────────────────────┘
 ```
@@ -37,8 +37,8 @@ curl -fsSL "https://raw.githubusercontent.com/hiagoccss-svg/publshr.exe/refs/hea
 | Shell | `MainIDEView.swift`, `LibraryBarMenuColumn` (200px bar menu), `AppSecondarySidebar` |
 | Glass | `WorkspaceDesktopBackdrop`, `LibraryFloatingPanel`, `LibraryGlassDesign` |
 | Submenu | `LibraryUniversalSubmenu`, `ChatSidebarView`, `SpacesNavSidebar` |
-| Chrome | `AppWindowChrome.swift`, `LibraryShellHeaderView` — single titlebar row |
-| Marker | `AppShellIdentity.distributionTag` = `PublshrEnterpriseShell-8` |
+| Chrome | `AppWindowChrome.swift`, `LibraryShellHeaderView`, `TitlebarChromeActionBar` — unified titlebar actions |
+| Marker | `AppShellIdentity.distributionTag` = `PublshrEnterpriseShell-9` |
 
 ## Adding a new module (same pattern as Chat)
 
@@ -53,7 +53,7 @@ curl -fsSL "https://raw.githubusercontent.com/hiagoccss-svg/publshr.exe/refs/hea
 
 - App checks GitHub tag **`live`** using `releases/download/...` URLs (avoids API 403).
 - Downloads install in place to `~/Applications/Publshr.app` when possible.
-- Shell marker **`PublshrEnterpriseShell-8`** must be present in the binary for CI verification.
+- Shell marker **`PublshrEnterpriseShell-9`** must be present in the binary for CI verification.
 
 ## CI
 
