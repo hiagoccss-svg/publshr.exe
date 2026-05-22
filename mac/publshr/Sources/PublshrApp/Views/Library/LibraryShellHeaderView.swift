@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Reference top chrome: traffic lights band, back/forward/home, library tab, utility icons.
+/// Reference top chrome: traffic lights band, back/forward/home, utility icons.
 struct LibraryShellHeaderView: View {
     @EnvironmentObject private var tabStore: WorkspaceTabStore
     @EnvironmentObject private var chat: ChatViewModel
@@ -34,8 +34,7 @@ struct LibraryShellHeaderView: View {
                     tabStore.openFromModule(module, activate: true)
                 }
 
-                libraryTab
-                    .frame(maxWidth: .infinity)
+                Spacer(minLength: 0)
 
                 HStack(spacing: 2) {
                     ToolbarIconButton(systemName: "square.grid.2x2", help: "Spaces") {
@@ -50,9 +49,6 @@ struct LibraryShellHeaderView: View {
                     }
                     ToolbarIconButton(systemName: "magnifyingglass", help: "Search") {
                         if module == .chat { chat.showSearchSheet = true }
-                    }
-                    ToolbarIconButton(systemName: "plus", help: "New tab") {
-                        tabStore.openFromModule(module, activate: true)
                     }
                 }
 
@@ -72,27 +68,6 @@ struct LibraryShellHeaderView: View {
         .overlay(alignment: .bottom) {
             Rectangle().fill(LibraryGlassDesign.hairline).frame(height: 1)
         }
-    }
-
-    private var libraryTab: some View {
-        HStack(spacing: 6) {
-            Image(systemName: module == .chat ? "books.vertical" : "square.grid.2x2")
-                .font(.system(size: 11, weight: .medium))
-            Text(module == .chat ? "Library" : "Spaces")
-                .font(.system(size: 12, weight: .semibold))
-            Button {} label: {
-                Image(systemName: "xmark")
-                    .font(.system(size: 9, weight: .bold))
-            }
-            .buttonStyle(.plain)
-            .opacity(0.35)
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 6)
-        .background(
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(Color.white.opacity(0.55))
-        )
     }
 
     private var canGoBack: Bool {
