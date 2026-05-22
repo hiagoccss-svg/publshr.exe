@@ -65,10 +65,11 @@ func loadSourceImage() -> NSImage {
         let canvas = NSImage(size: NSSize(width: side, height: side))
         canvas.lockFocus()
         let full = NSRect(x: 0, y: 0, width: side, height: side)
-        if sourceHasTransparentPixels(loaded) {
+        // Preserve mark colors: optional flat holder only (set PUBLSHR_ICON_HOLDER_BG=1). Default: white canvas.
+        if ProcessInfo.processInfo.environment["PUBLSHR_ICON_PREMIUM_BG"] == "1", sourceHasTransparentPixels(loaded) {
             drawPremiumIconBackground(in: full)
         } else {
-            NSColor.clear.setFill()
+            NSColor.white.setFill()
             NSBezierPath(rect: full).fill()
         }
         let inset = side * 0.04
