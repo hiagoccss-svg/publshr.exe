@@ -45,8 +45,8 @@ esac
 echo "Building publshr $VERSION ($os-$arch) ..." >&2
 
 if [[ "$os" == "macos" ]]; then
-    # Desktop delivery: PublshrApp is required; CLI is optional.
-    swift build -c release --product PublshrApp
+    # Desktop delivery: PublshrApp + branded installer; CLI optional.
+    swift build -c release --product PublshrApp --product PublshrInstaller
     swift build -c release --product publshr 2>/dev/null || true
 else
     swift build -c release --product publshr
@@ -66,10 +66,14 @@ if [[ "$os" == "macos" ]]; then
     cp "$APP_BIN" "$STAGE/bin/PublshrApp"
     chmod 755 "$STAGE/bin/PublshrApp"
     bash "$SCRIPT_DIR/scripts/build-macos-app.sh" "$APP_BIN" "$SHORT_VERSION" "$BUILD_NUM" "$STAGE"
+    INSTALLER_BIN="$SCRIPT_DIR/.build/release/PublshrInstaller"
+    if [[ -f "$INSTALLER_BIN" ]]; then
+        bash "$SCRIPT_DIR/scripts/build-macos-installer.sh" "$INSTALLER_BIN" "$SHORT_VERSION" "$BUILD_NUM" "$STAGE"
+    fi
     if [[ -f "$SCRIPT_DIR/.build/release/publshr" ]]; then
-        rm -f "$STAGE/Publshr.app/Contents/MacOS/publshr"
-        cp "$SCRIPT_DIR/.build/release/publshr" "$STAGE/Publshr.app/Contents/MacOS/publshr"
-        chmod 755 "$STAGE/Publshr.app/Contents/MacOS/publshr"
+        cp "$SCRIPT_DIR/.build/release/publshr" "$STAGE/Publshr.app/Contents/MacOS/publshr-cli"
+        chmod 755 "$STAGE/Publshr.app/Contents/MacOS/publshr-cli"
+        ln -sf publshr-cli "$STAGE/bin/publshr"
     fi
 fi
 

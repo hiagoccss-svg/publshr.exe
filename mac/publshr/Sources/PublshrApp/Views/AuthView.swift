@@ -107,10 +107,37 @@ struct AuthView: View {
 
     private var signInForm: some View {
         VStack(alignment: .leading, spacing: 12) {
+            if BiometricAuthService.isAvailable {
+                biometricUnlockButton
+            }
             authField("Email", text: $auth.email, contentType: authEmailContentType)
             authSecureField("Password", text: $auth.password)
             primaryButton("Sign in", action: { Task { await auth.signIn() } })
         }
+    }
+
+    private var biometricUnlockButton: some View {
+        Button {
+            Task { await auth.unlockWithBiometrics() }
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: "touchid")
+                    .font(.system(size: 16))
+                Text("Unlock with \(BiometricAuthService.biometricLabel)")
+                    .font(.system(size: 13, weight: .medium))
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 9)
+            .foregroundStyle(CursorTheme.accent)
+            .background(CursorTheme.accent.opacity(0.08))
+            .clipShape(RoundedRectangle(cornerRadius: 4))
+            .overlay(
+                RoundedRectangle(cornerRadius: 4)
+                    .stroke(CursorTheme.accent.opacity(0.35), lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
+        .disabled(auth.isLoading)
     }
 
     private var signUpForm: some View {

@@ -35,7 +35,7 @@ jobs:
         env:
           PUBLSHR_BUILD_NUMBER: ${{ steps.ver.outputs.build }}
         run: |
-          chmod +x scripts/package-release.sh scripts/build-macos-app.sh scripts/apply-macos-update.sh
+          chmod +x scripts/package-release.sh scripts/build-macos-app.sh scripts/build-macos-installer.sh scripts/apply-macos-update.sh scripts/generate-app-icon.swift
           bash scripts/package-release.sh "${{ steps.ver.outputs.full }}"
 
       - name: Verify Publshr.app in tarball
@@ -43,7 +43,7 @@ jobs:
           FULL="${{ steps.ver.outputs.full }}"
           ASSET="mac/publshr/dist/publshr-${FULL}-macos-aarch64.tar.gz"
           test -f "$ASSET"
-          tar -tzf "$ASSET" | grep -q 'Publshr.app/Contents/MacOS/PublshrApp'
+          tar -tzf "$ASSET" | grep -q 'Publshr.app/Contents/MacOS/Publshr'
           SIZE="$(wc -c < "$ASSET" | tr -d ' ')"
           echo "Asset size: $SIZE bytes"
           if [[ "$SIZE" -lt 4000000 ]]; then

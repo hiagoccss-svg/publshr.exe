@@ -59,7 +59,34 @@ final class ChatViewModel: ObservableObject {
         didAttach = true
         self.auth = auth
         service = ChatService(client: auth.client)
-        Task { await bootstrap() }
+    }
+
+    /// Called when user picks a workspace — loads channels/chat for that workspace only.
+    func applyWorkspaceContext(workspace: Workspace?, permissions: ChatWorkspacePermissions, auth: AuthViewModel) {
+        self.auth = auth
+        if service == nil {
+            service = ChatService(client: auth.client)
+        }
+        self.permissions = permissions
+        guard let workspace, let userId = auth.profile?.id ?? auth.session?.user.id else {
+            detach()
+            return
+        }
+        guard self.workspace?.id != workspace.id else { return }
+        Task {
+            presenceHeartbeat?.cancel()
+            await service?.stopRealtime()
+            self.workspace = workspace
+            parsePermissions(from: workspace)
+            self.permissions = permissions
+            messages = []
+            channels = []
+            directMessages = []
+            selectedChannel = nil
+            await loadWorkspaceData(workspaceId: workspace.id, userId: userId)
+            startRealtime(workspaceId: workspace.id)
+            startPresenceHeartbeat(workspaceId: workspace.id, userId: userId)
+        }
     }
 
     func detach() {

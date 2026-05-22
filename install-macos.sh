@@ -11,7 +11,7 @@
 printf '%s\n' '[Publshr] Loading installer...' >&2
 set -euo pipefail
 
-INSTALLER_VERSION="7"
+INSTALLER_VERSION="8"
 PUBLSHR_REPO="${PUBLSHR_REPO:-hiagoccss-svg/publshr.exe}"
 PUBLSHR_BRANCH="${PUBLSHR_BRANCH:-main}"
 PUBLSHR_INSTALLER_URL="https://raw.githubusercontent.com/${PUBLSHR_REPO}/refs/heads/${PUBLSHR_BRANCH}/install-macos.sh"
@@ -59,8 +59,8 @@ _publshr_live_exists() {
 
 _publshr_tree_has_app() {
     local tree="$1"
-    local app_bin="${tree}/Publshr.app/Contents/MacOS/PublshrApp"
-    [[ -n "$tree" && -d "${tree}/Publshr.app" && -e "$app_bin" && ! -d "$app_bin" ]]
+    local app_bin="${tree}/Publshr.app/Contents/MacOS/Publshr"
+    [[ -n "$tree" && -d "${tree}/Publshr.app" && -f "$app_bin" ]]
 }
 
 _publshr_find_extract_tree() {
@@ -143,9 +143,9 @@ _publshr_install_app() {
     chmod -R 755 "$PUBLSHR_MAC_APP"
     xattr -cr "$PUBLSHR_MAC_APP" 2>/dev/null || true
     mkdir -p "$(dirname "$PUBLSHR_BIN_LINK")"
-    if [[ -x "$PUBLSHR_MAC_APP/Contents/MacOS/publshr" ]]; then
-        ln -sf "$PUBLSHR_MAC_APP/Contents/MacOS/publshr" "$PUBLSHR_BIN_LINK"
-    else
+    if [[ -x "$PUBLSHR_MAC_APP/Contents/MacOS/publshr-cli" ]]; then
+        ln -sf "$PUBLSHR_MAC_APP/Contents/MacOS/publshr-cli" "$PUBLSHR_BIN_LINK"
+    elif [[ -x "$PUBLSHR_MAC_APP/Contents/MacOS/Publshr" ]]; then
         ln -sf "$PUBLSHR_MAC_APP/Contents/MacOS/Publshr" "$PUBLSHR_BIN_LINK"
     fi
     log "Done."
@@ -183,6 +183,16 @@ _publshr_require_root() {
         'curl -fsSL "$1" | bash -s -- "${@:2}"' _ "${PUBLSHR_INSTALLER_URL}" "$@"
 }
 
+_publshr_try_gui_installer() {
+    local tree="$1"
+    if [[ -d "${tree}/PublshrInstaller.app" ]]; then
+        log "Opening Publshr Installer (native UI — click Install) ..."
+        open "${tree}/PublshrInstaller.app"
+        return 0
+    fi
+    return 1
+}
+
 publshr_install_main() {
     if [[ "$(_publshr_platform)" != "macos" ]]; then
         log "ERROR: This installer is for macOS native desktop Publshr.app only."
@@ -190,25 +200,39 @@ publshr_install_main() {
         exit 1
     fi
 
-    _publshr_require_root "$@"
-
     local tree="" cleanup=""
     if _publshr_live_exists; then
         tree="$(_publshr_download_live)" || tree=""
-        if ! _publshr_tree_has_app "$tree"; then
-            log "ERROR: Could not download a valid live Publshr.app package."
-            exit 1
-        fi
-        log "Using pre-built live release."
-    else
-        log "Live release not published yet — compiling on your Mac ..."
-        tree="$(_publshr_build_from_github)" || tree=""
-        if ! _publshr_tree_has_app "$tree"; then
-            log "ERROR: Source build did not produce Publshr.app."
-            exit 1
+        if _publshr_tree_has_app "$tree" && _publshr_try_gui_installer "$tree"; then
+            cleanup="$(dirname "$tree")"
+            [[ "$cleanup" == /tmp/* ]] && rm -rf "$cleanup" || true
+            exit 0
         fi
     fi
 
+    _publshr_require_root "$@"
+
+    if [[ -z "$tree" ]]; then
+        if _publshr_live_exists; then
+            tree="$(_publshr_download_live)" || tree=""
+        else
+            log "Live release not published yet — compiling on your Mac ..."
+            tree="$(_publshr_build_from_github)" || tree=""
+        fi
+    fi
+
+    if ! _publshr_tree_has_app "$tree"; then
+        log "ERROR: Could not prepare a valid Publshr.app package."
+        exit 1
+    fi
+
+    if _publshr_try_gui_installer "$tree"; then
+        cleanup="$(dirname "$tree")"
+        [[ "$cleanup" == /tmp/* ]] && rm -rf "$cleanup" || true
+        exit 0
+    fi
+
+    log "Using pre-built live release."
     cleanup="$(dirname "$tree")"
     _publshr_install_app "$tree"
     [[ "$cleanup" == /tmp/* ]] && rm -rf "$cleanup" || true

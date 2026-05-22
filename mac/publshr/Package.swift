@@ -7,6 +7,7 @@ let package = Package(
     products: [
         .executable(name: "publshr", targets: ["publshrCLI"]),
         .executable(name: "PublshrApp", targets: ["PublshrApp"]),
+        .executable(name: "PublshrInstaller", targets: ["PublshrInstaller"]),
     ],
     dependencies: [
         .package(url: "https://github.com/supabase/supabase-swift.git", from: "2.0.0"),
@@ -28,6 +29,10 @@ let package = Package(
             linkerSettings: [
                 .linkedLibrary("sqlite3"),
             ]
+        ),
+        .executableTarget(
+            name: "PublshrInstaller",
+            path: "Sources/PublshrInstaller"
         ),
     ]
 )
