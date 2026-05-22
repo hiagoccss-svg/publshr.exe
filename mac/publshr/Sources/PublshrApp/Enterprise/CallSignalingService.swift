@@ -138,7 +138,12 @@ final class CallSignalingService: ObservableObject {
         isMuted = false
         mediaStatus = "Starting local media server (no cloud APIs)…"
         errorMessage = nil
-        await requestMediaPermissions(video: video)
+        guard await SystemPermissionStore.ensureMediaAccessForCall(video: video) else {
+            errorMessage = video
+                ? "Camera and microphone access are required for video calls."
+                : "Microphone access is required for calls."
+            return
+        }
 
         let roomId = UUID()
         let roomCode = String(channelId.uuidString.prefix(8)).lowercased()
@@ -204,6 +209,12 @@ final class CallSignalingService: ObservableObject {
     /// Join an active meeting already running on this channel.
     func joinActiveCall(for channelId: UUID) async {
         guard let summary = liveCallsByChannelId[channelId], let client else { return }
+        guard await SystemPermissionStore.ensureMediaAccessForCall(video: summary.isVideo) else {
+            errorMessage = summary.isVideo
+                ? "Camera and microphone access are required for video calls."
+                : "Microphone access is required for calls."
+            return
+        }
         isVideoEnabled = summary.isVideo
         isMuted = false
         callScope = summary.scope
@@ -238,6 +249,12 @@ final class CallSignalingService: ObservableObject {
 
     func acceptIncomingCall(chat: ChatViewModel, auth: AuthViewModel) async {
         guard let invite = incomingInvite else { return }
+        guard await SystemPermissionStore.ensureMediaAccessForCall(video: invite.isVideo) else {
+            errorMessage = invite.isVideo
+                ? "Camera and microphone access are required for video calls."
+                : "Microphone access is required for calls."
+            return
+        }
         incomingInvite = nil
         IncomingCallWindowManager.shared.close()
         callScope = invite.scope
@@ -272,6 +289,12 @@ final class CallSignalingService: ObservableObject {
 
     func joinDiscoveredLocalCall(channelId: UUID, roomId: UUID, title: String, video: Bool) async {
         guard let userId else { return }
+        guard await SystemPermissionStore.ensureMediaAccessForCall(video: video) else {
+            errorMessage = video
+                ? "Camera and microphone access are required for video calls."
+                : "Microphone access is required for calls."
+            return
+        }
         isVideoEnabled = video
         activeRoom = CallRoomRecord(
             id: roomId,
@@ -460,14 +483,20 @@ final class CallSignalingService: ObservableObject {
                       record.status == "active",
                       record.createdBy != userId,
                       activeRoom == nil else { continue }
+                if let channelId = record.channelId,
+                   let chat = self.chatPresenter,
+                   !chat.hasChannel(channelId) {
+                    continue
+                }
                 let scope: CallScope = record.title.localizedCaseInsensitiveContains("private") ? .private : .meeting
+                let callerName = await self.resolveCallerDisplayName(userId: record.createdBy) ?? "Team member"
                 await MainActor.run {
                     guard self.incomingInvite == nil else { return }
                     self.incomingInvite = IncomingCallInvite(
                         id: record.id,
                         room: record,
                         callerId: record.createdBy,
-                        callerName: "Team member",
+                        callerName: callerName,
                         scope: scope,
                         startedAt: Date()
                     )
@@ -673,10 +702,21 @@ final class CallSignalingService: ObservableObject {
         }
     }
 
-    private func requestMediaPermissions(video: Bool) async {
-        _ = await AVCaptureDevice.requestAccess(for: .audio)
-        if video {
-            _ = await AVCaptureDevice.requestAccess(for: .video)
+    private func resolveCallerDisplayName(userId: UUID) async -> String? {
+        guard let client else { return nil }
+        do {
+            let rows: [Profile] = try await client
+                .from("profiles")
+                .select()
+                .eq("id", value: userId.uuidString)
+                .limit(1)
+                .execute()
+                .value
+            guard let profile = rows.first else { return nil }
+            if let name = profile.displayName, !name.isEmpty { return name }
+            return profile.email.isEmpty ? nil : profile.email
+        } catch {
+            return nil
         }
     }
 }

@@ -102,8 +102,6 @@ final class AppUpdateViewModel: ObservableObject {
     }
 
     func startAutomaticChecks() {
-        autoCheckEnabled = true
-        autoInstallEnabled = true
         checkTask?.cancel()
         checkTask = Task {
             await performLiveSync()
@@ -121,6 +119,7 @@ final class AppUpdateViewModel: ObservableObject {
 
     /// Background path: check, download, install in place (enterprise default).
     func performLiveSync() async {
+        guard autoCheckEnabled else { return }
         guard !syncInFlight else { return }
         if case .installing = phase { return }
         if case .downloading = phase { return }
@@ -143,7 +142,7 @@ final class AppUpdateViewModel: ObservableObject {
             return
         }
 
-        if case .readyToInstall = phase {
+        if case .readyToInstall = phase, autoInstallEnabled {
             await installAndRestart()
             return
         }

@@ -39,6 +39,11 @@ struct ContentView: View {
         .onChange(of: auth.selectedMembership?.id) { _, _ in
             syncEnterpriseData()
         }
+        .onChange(of: auth.profile?.avatarUrl) { _, _ in
+            if let profile = auth.profile {
+                chat.upsertProfile(profile)
+            }
+        }
         .task(id: auth.flowState) {
             guard auth.flowState == .signedIn else { return }
             await runPeriodicSupabaseSync()

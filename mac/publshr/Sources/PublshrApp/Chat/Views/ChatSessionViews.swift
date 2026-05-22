@@ -227,6 +227,12 @@ struct ChatVoiceRecorderSheetContent: View {
     var body: some View {
         VStack(spacing: 16) {
             Text("Voice note").font(.headline)
+            if recorder.permissionDenied {
+                Text("Microphone access is required. Open System Settings → Privacy & Security → Microphone and enable Publshr.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+            }
             Text(formatDuration(recorder.elapsedMs))
                 .font(.system(size: 28, weight: .light, design: .monospaced))
             WaveformPreview(samples: recorder.waveformSamples).frame(height: 48)

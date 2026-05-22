@@ -1,11 +1,16 @@
+import Supabase
 import SwiftUI
 
-/// Workspace member avatar — Supabase `avatar_url` when set, otherwise initials + presence ring.
+/// Workspace member avatar — Supabase storage path or legacy URL, with signed URL loading.
 struct ChatProfileAvatar: View {
+    @EnvironmentObject private var auth: AuthViewModel
+
     let profile: Profile?
     let displayName: String
     var size: CGFloat = 32
     var presence: ChatPresenceStatus?
+
+    @State private var resolvedImageURL: URL?
 
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
@@ -15,13 +20,18 @@ struct ChatProfileAvatar: View {
                     .offset(x: 1, y: 1)
             }
         }
+        .task(id: profile?.avatarUrl) {
+            let supabase = auth.session != nil ? auth.client : nil
+            resolvedImageURL = await ProfileService.resolveAvatarURL(
+                client: supabase,
+                avatarUrl: profile?.avatarUrl
+            )
+        }
     }
 
     @ViewBuilder
     private var avatarContent: some View {
-        if let urlString = profile?.avatarUrl,
-           let url = URL(string: urlString),
-           !urlString.isEmpty {
+        if let url = resolvedImageURL {
             AsyncImage(url: url) { phase in
                 switch phase {
                 case .success(let image):

@@ -1,3 +1,4 @@
+import CryptoKit
 import Foundation
 
 struct GitHubRelease: Decodable, Sendable {
@@ -162,10 +163,30 @@ final class AppUpdateService: @unchecked Sendable {
             throw AppUpdateError.downloadFailed
         }
 
+        if let expected = update.packageDigest?.lowercased(),
+           !expected.isEmpty,
+           let actual = sha256Hex(of: tempURL)?.lowercased(),
+           actual != expected {
+            appendSyncLog("download digest mismatch expected=\(expected.prefix(12)) actual=\(actual.prefix(12))")
+            throw AppUpdateError.downloadFailed
+        }
+
         progress(1.0)
         try fileManager.moveItem(at: tempURL, to: archiveURL)
         appendSyncLog("download ok bytes=\(bytes) build=\(update.build)")
         return archiveURL
+    }
+
+    private func sha256Hex(of fileURL: URL) -> String? {
+        guard let handle = try? FileHandle(forReadingFrom: fileURL) else { return nil }
+        defer { try? handle.close() }
+        var hasher = SHA256()
+        while true {
+            let chunk = (try? handle.read(upToCount: 1_048_576)) ?? Data()
+            if chunk.isEmpty { break }
+            hasher.update(data: chunk)
+        }
+        return hasher.finalize().map { String(format: "%02x", $0) }.joined()
     }
 
     func extract(archiveURL: URL, version: String) throws -> URL {
