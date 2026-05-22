@@ -36,7 +36,6 @@ jobs:
           PUBLSHR_BUILD_NUMBER: ${{ steps.ver.outputs.build }}
         run: |
           chmod +x scripts/package-release.sh scripts/build-macos-app.sh scripts/apply-macos-update.sh
-          swift build -c release --product PublshrApp 2>&1 | tee build.log
           bash scripts/package-release.sh "${{ steps.ver.outputs.full }}"
 
       - name: Verify Publshr.app in tarball
