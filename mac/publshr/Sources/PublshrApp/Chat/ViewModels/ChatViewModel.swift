@@ -18,6 +18,10 @@ final class ChatViewModel: ObservableObject {
     @Published var replyingTo: ChatMessage?
     @Published var typingUsers: [ChatTypingState] = []
     @Published var unreadByChannel: [UUID: Int] = [:]
+    @Published var unreadThreadsByChannel: [UUID: Int] = [:]
+    @Published var sidebarFilter: ChatSidebarFilter = ChatUserPreferences.loadSidebarFilter()
+    @Published var sidebarLayout: ChatSidebarLayout = ChatUserPreferences.loadSidebarLayout()
+    @Published var sidebarSearchQuery = ""
     @Published var permissions = ChatWorkspacePermissions.default
     @Published var isOffline = false
 
@@ -212,6 +216,12 @@ final class ChatViewModel: ObservableObject {
             try await service.seedDefaultChannels(workspaceId: workspaceId, userId: userId)
             let all = try await remoteChannels
             partitionChannels(all)
+            var unreadMap: [UUID: Int] = [:]
+            for ch in all {
+                let c = service.localStore().unreadCount(channelId: ch.id)
+                if c > 0 { unreadMap[ch.id] = c }
+            }
+            unreadByChannel = unreadMap
             let profs = try await remoteProfiles
             profiles = Dictionary(uniqueKeysWithValues: profs.map { ($0.id, $0) })
             let pres = try await remotePresence
@@ -259,6 +269,7 @@ final class ChatViewModel: ObservableObject {
         selectedChannel = channel
         replyingTo = nil
         unreadByChannel[channel.id] = 0
+        unreadThreadsByChannel[channel.id] = 0
         service?.localStore().setUnreadCount(channelId: channel.id, count: 0)
         refreshDockBadge()
         Task { await subscribeTyping(for: channel.id) }
@@ -620,9 +631,14 @@ final class ChatViewModel: ObservableObject {
             }
             Task { await loadChannelExtras() }
         } else {
-            let count = (unreadByChannel[message.channelId] ?? 0) + 1
-            unreadByChannel[message.channelId] = count
-            service?.localStore().setUnreadCount(channelId: message.channelId, count: count)
+            if message.threadParentId != nil {
+                let t = (unreadThreadsByChannel[message.channelId] ?? 0) + 1
+                unreadThreadsByChannel[message.channelId] = t
+            } else {
+                let count = (unreadByChannel[message.channelId] ?? 0) + 1
+                unreadByChannel[message.channelId] = count
+                service?.localStore().setUnreadCount(channelId: message.channelId, count: count)
+            }
             if message.userId != currentUserId {
                 notifyForIncomingMessage(message)
             }
@@ -684,32 +700,87 @@ final class ChatViewModel: ObservableObject {
         if let i = directMessages.firstIndex(where: { $0.id == message.channelId }) { bump(&directMessages, index: i) }
     }
 
-    // MARK: - Search filter
+    // MARK: - Sidebar (ClickUp-style filters + layout)
+
+    func setSidebarFilter(_ filter: ChatSidebarFilter) {
+        sidebarFilter = filter
+        ChatUserPreferences.saveSidebarFilter(filter)
+    }
+
+    func setSidebarLayout(_ layout: ChatSidebarLayout) {
+        sidebarLayout = layout
+        ChatUserPreferences.saveSidebarLayout(layout)
+    }
 
     var filteredChannels: [ChatChannel] {
-        filter(channels)
+        sidebarChannelsList(channels)
     }
 
     var filteredDMs: [ChatChannel] {
-        filter(directMessages)
+        sidebarChannelsList(directMessages)
     }
 
-    /// Recently active chats — shown under Favorites in the nav sidebar.
-    var favoriteChannels: [ChatChannel] {
+    var sidebarRecentsList: [ChatChannel] {
         let combined = channels + directMessages
         let sorted = combined.sorted {
             ($0.lastMessageAt ?? .distantPast) > ($1.lastMessageAt ?? .distantPast)
         }
-        let recent = Array(sorted.prefix(8))
-        return filter(recent)
+        return sidebarChannelsList(sorted)
+    }
+
+    /// Legacy alias — header search still uses `searchQuery`; sidebar uses `sidebarSearchQuery`.
+    var favoriteChannels: [ChatChannel] {
+        Array(sidebarRecentsList.prefix(8))
     }
 
     var filteredProjects: [PlannerTask] {
-        let q = searchQuery.trimmingCharacters(in: .whitespaces).lowercased()
+        let q = sidebarSearchQuery.trimmingCharacters(in: .whitespaces).lowercased()
         guard !q.isEmpty else { return plannerTasks }
         return plannerTasks.filter {
             $0.title.lowercased().contains(q) || $0.status.lowercased().contains(q)
         }
+    }
+
+    func unreadCount(for channelId: UUID) -> Int {
+        unreadByChannel[channelId] ?? 0
+    }
+
+    func hasUnreadThreadReplies(for channelId: UUID) -> Bool {
+        (unreadThreadsByChannel[channelId] ?? 0) > 0
+    }
+
+    func isSidebarRowBold(_ channel: ChatChannel) -> Bool {
+        unreadCount(for: channel.id) > 0 || hasUnreadThreadReplies(for: channel.id)
+    }
+
+    private func sidebarChannelsList(_ list: [ChatChannel]) -> [ChatChannel] {
+        var result = list
+        let q = sidebarSearchQuery.trimmingCharacters(in: .whitespaces).lowercased()
+        if !q.isEmpty {
+            result = result.filter {
+                $0.name.lowercased().contains(q)
+                    || ($0.description?.lowercased().contains(q) ?? false)
+                    || $0.sidebarTitle.lowercased().contains(q)
+            }
+        }
+        switch sidebarFilter {
+        case .all:
+            break
+        case .unread:
+            result = result.filter {
+                unreadCount(for: $0.id) > 0 || hasUnreadThreadReplies(for: $0.id)
+            }
+        case .dms:
+            result = result.filter { $0.kind == .dm || $0.kind == .group }
+        case .channels:
+            result = result.filter { $0.kind == .channel }
+        }
+        if sidebarLayout == .recents {
+            result.sort {
+                ($0.lastMessageAt ?? .distantPast) > ($1.lastMessageAt ?? .distantPast)
+            }
+        }
+        return result
     }
 
     private func filter(_ list: [ChatChannel]) -> [ChatChannel] {
@@ -719,7 +790,7 @@ final class ChatViewModel: ObservableObject {
     }
 
     var totalUnread: Int {
-        unreadByChannel.values.reduce(0, +)
+        unreadByChannel.values.reduce(0, +) + unreadThreadsByChannel.values.reduce(0, +)
     }
 }
 

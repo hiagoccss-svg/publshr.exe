@@ -27,7 +27,7 @@ struct ChatComposerView: View {
                     }
                 }
 
-                TextField("Message…", text: $chat.composerText, axis: .vertical)
+                TextField(composerPlaceholder, text: $chat.composerText, axis: .vertical)
                     .textFieldStyle(.plain)
                     .font(.system(size: 13))
                     .foregroundStyle(CursorTheme.foreground)
@@ -67,6 +67,13 @@ struct ChatComposerView: View {
                 .fill(CursorTheme.hairline)
                 .frame(height: 1)
         }
+    }
+
+    private var composerPlaceholder: String {
+        if let channel = chat.selectedChannel {
+            return "Message \(channel.sidebarTitle)…"
+        }
+        return "Message…"
     }
 
     private func replyBanner(_ message: ChatMessage) -> some View {
