@@ -258,7 +258,7 @@ final class ChatViewModel: ObservableObject {
         switch channel.kind {
         case .dm:
             return 2
-        case .group, .channel:
+        case .group, .channel, .thread:
             return max(profiles.count, 1)
         }
     }
