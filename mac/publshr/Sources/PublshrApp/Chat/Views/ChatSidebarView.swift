@@ -48,10 +48,10 @@ struct ChatSidebarView: View {
                             Image(systemName: "folder")
                                 .font(.system(size: 11, weight: .medium))
                                 .foregroundStyle(CursorTheme.foregroundMuted)
-                                .frame(width: 14)
+                                .frame(width: SpacesClickUpDesign.sidebarIconWidth)
                             VStack(alignment: .leading, spacing: 1) {
                                 Text(task.title)
-                                    .font(.system(size: 12))
+                                    .font(SpacesClickUpDesign.treeRowFont)
                                     .foregroundStyle(CursorTheme.foregroundMuted)
                                     .lineLimit(1)
                                 Text(task.status)
@@ -60,7 +60,7 @@ struct ChatSidebarView: View {
                             }
                             Spacer(minLength: 0)
                         }
-                        .frame(height: 28)
+                        .frame(height: SpacesClickUpDesign.sidebarRowHeight)
                         .padding(.horizontal, 10)
                     }
                     .buttonStyle(.plain)
@@ -95,9 +95,9 @@ struct ChatSidebarView: View {
     private func sectionHeader(_ title: String, onAdd: (() -> Void)?) -> some View {
         HStack {
             Text(title.uppercased())
-                .font(.system(size: 9, weight: .semibold))
+                .font(SpacesClickUpDesign.sectionLabelFont)
                 .foregroundStyle(CursorTheme.foregroundDim)
-                .tracking(0.45)
+                .tracking(0.5)
             Spacer()
             if let onAdd {
                 Button(action: onAdd) {
@@ -109,9 +109,9 @@ struct ChatSidebarView: View {
                 .buttonStyle(.plain)
             }
         }
-        .padding(.horizontal, 12)
-        .padding(.top, 10)
-        .padding(.bottom, 3)
+        .padding(.horizontal, SpacesClickUpDesign.sidebarHorizontalPadding + 2)
+        .padding(.top, SpacesClickUpDesign.sidebarSectionTop)
+        .padding(.bottom, SpacesClickUpDesign.sidebarSectionBottom)
     }
 
     private func channelRow(_ channel: ChatChannel) -> some View {
@@ -123,122 +123,55 @@ struct ChatSidebarView: View {
                 chat.selectChannel(channel)
             } label: {
                 HStack(spacing: 8) {
-                    Image(systemName: channel.sidebarIcon)
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundStyle(selected ? CursorTheme.accent : CursorTheme.foregroundMuted)
-                        .frame(width: 14)
-                    Text(dmTitle(channel))
-                        .font(.system(size: 12, weight: unread > 0 ? .semibold : .regular))
+                    ChatChannelIconView(channel: channel, size: SpacesClickUpDesign.sidebarIconWidth)
+                    Text(channel.sidebarTitle)
+                        .font(selected ? SpacesClickUpDesign.treeRowSelectedFont : SpacesClickUpDesign.treeRowFont)
                         .foregroundStyle(selected ? CursorTheme.foreground : CursorTheme.foregroundMuted)
                         .lineLimit(1)
                     Spacer(minLength: 0)
-                if let live = calls.liveCall(for: channel.id), !calls.isInCall(on: channel.id) {
-                    LiveCallChannelBadge(summary: live)
-                } else if unread > 0 {
-                    Text("\(unread)")
-                        .font(.system(size: 10, weight: .bold))
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(CursorTheme.accent)
-                        .clipShape(Capsule())
-                }
-                }
-                .frame(height: 28)
-                .padding(.horizontal, 10)
-                .background(
-                    selected ? CursorTheme.accent.opacity(0.08) : Color.clear
-                )
-                .overlay(alignment: .leading) {
-                    if selected {
-                        Rectangle()
-                            .fill(CursorTheme.accent)
-                            .frame(width: 2)
+                    if let live = calls.liveCall(for: channel.id), !calls.isInCall(on: channel.id) {
+                        LiveCallChannelBadge(summary: live)
+                    } else if unread > 0 {
+                        Text("\(unread)")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(CursorTheme.accent)
+                            .clipShape(Capsule())
                     }
                 }
+                .frame(height: SpacesClickUpDesign.sidebarRowHeight)
+                .padding(.horizontal, 10)
+                .background(
+                    RoundedRectangle(cornerRadius: SpacesClickUpDesign.sidebarRowRadius, style: .continuous)
+                        .fill(selected ? CursorTheme.accent.opacity(0.08) : Color.clear)
+                )
             }
             .buttonStyle(.plain)
 
             channelRowMenu(channel)
         }
         .padding(.horizontal, 6)
-        .contextMenu { channelContextMenu(channel) }
+        .contextMenu {
+            ChatChannelActionsMenu(chat: chat, channel: channel) {
+                tabStore.openFromChannel(channel)
+            }
+        }
     }
 
     private func channelRowMenu(_ channel: ChatChannel) -> some View {
         Menu {
-            channelContextMenu(channel)
+            ChatChannelActionsMenu(chat: chat, channel: channel) {
+                tabStore.openFromChannel(channel)
+            }
         } label: {
             Image(systemName: "ellipsis")
                 .font(.system(size: 11))
                 .foregroundStyle(CursorTheme.foregroundDim)
-                .frame(width: 24, height: 28)
+                .frame(width: 24, height: SpacesClickUpDesign.sidebarRowHeight)
         }
         .menuStyle(.borderlessButton)
         .menuIndicator(.hidden)
-    }
-
-    @ViewBuilder
-    private func channelContextMenu(_ channel: ChatChannel) -> some View {
-        Button {
-            tabStore.openFromChannel(channel)
-            chat.selectChannel(channel)
-        } label: {
-            Label("Open", systemImage: "bubble.left.and.bubble.right")
-        }
-        Button {
-            ChatWindowManager.shared.openChannel(channel, chat: chat, auth: auth)
-        } label: {
-            Label("Open in new window", systemImage: "arrow.up.forward.square")
-        }
-        if let live = calls.liveCall(for: channel.id), !calls.isInCall(on: channel.id) {
-            Button {
-                Task { await calls.joinActiveCall(for: channel.id) }
-            } label: {
-                Label("Join live call (\(live.participantCount))", systemImage: "phone.badge.plus")
-            }
-            Divider()
-        }
-        if subscription.canUseCalls(workspace: auth.selectedWorkspace) {
-            Divider()
-            Menu("Voice call") {
-                Button("Private") { startCall(channel: channel, video: false, scope: .private) }
-                Button("Meeting") { startCall(channel: channel, video: false, scope: .meeting) }
-            }
-            Menu("Video call") {
-                Button("Private") { startCall(channel: channel, video: true, scope: .private) }
-                Button("Meeting") { startCall(channel: channel, video: true, scope: .meeting) }
-            }
-        }
-        Divider()
-        Button { chat.showPermissionsSheet = true } label: {
-            Label("Channel settings", systemImage: "gearshape")
-        }
-        Button { chat.showSearchSheet = true } label: {
-            Label("Search", systemImage: "magnifyingglass")
-        }
-    }
-
-    private func startCall(channel: ChatChannel, video: Bool, scope: CallScope) {
-        guard let ws = auth.selectedWorkspace?.id else { return }
-        chat.selectChannel(channel)
-        Task {
-            await calls.startChannelCall(
-                workspaceId: ws,
-                channelId: channel.id,
-                title: channel.displayTitle,
-                video: video,
-                scope: scope,
-                workspaceSettings: auth.selectedWorkspace?.settings,
-                userDisplayName: auth.profile?.displayName ?? auth.displayName
-            )
-        }
-    }
-
-    private func dmTitle(_ channel: ChatChannel) -> String {
-        if channel.kind == .dm {
-            return channel.description?.replacingOccurrences(of: "Direct message with ", with: "") ?? "Direct Message"
-        }
-        return channel.displayTitle
     }
 }

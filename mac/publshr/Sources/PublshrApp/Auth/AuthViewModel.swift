@@ -527,6 +527,19 @@ final class AuthViewModel: ObservableObject {
         }
     }
 
+    func uploadAvatar(data: Data, mimeType: String) async throws {
+        guard let userId = session?.user.id else {
+            throw ChatServiceError.notAuthenticated
+        }
+        let updated = try await ProfileService.uploadAvatar(
+            client: client,
+            userId: userId,
+            data: data,
+            mimeType: mimeType
+        )
+        profile = updated
+    }
+
     private var emailPrefix: String {
         email.split(separator: "@").first.map(String.init) ?? "User"
     }

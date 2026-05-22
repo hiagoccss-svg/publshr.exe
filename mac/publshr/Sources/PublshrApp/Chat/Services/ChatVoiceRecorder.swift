@@ -18,9 +18,19 @@ final class ChatVoiceRecorder: NSObject, ObservableObject {
         switch AVCaptureDevice.authorizationStatus(for: .audio) {
         case .authorized:
             return true
+        case .denied, .restricted:
+            permissionDenied = true
+            return false
         case .notDetermined:
-            return await AVCaptureDevice.requestAccess(for: .audio)
-        default:
+            if ChatUserPreferences.didPromptForMicrophone {
+                permissionDenied = true
+                return false
+            }
+            ChatUserPreferences.didPromptForMicrophone = true
+            let granted = await AVCaptureDevice.requestAccess(for: .audio)
+            if !granted { permissionDenied = true }
+            return granted
+        @unknown default:
             permissionDenied = true
             return false
         }
