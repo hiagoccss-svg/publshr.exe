@@ -56,7 +56,7 @@ struct LibraryShellView: View {
                             .frame(minWidth: 420, maxWidth: .infinity, maxHeight: .infinity)
                             .layoutPriority(0)
                     }
-                    .frame(minHeight: 0, maxWidth: .infinity, maxHeight: .infinity)
+                    .frame(maxWidth: .infinity, minHeight: 0, maxHeight: .infinity)
                     .animation(.easeInOut(duration: 0.15), value: submenuHidden)
 
                     shellStatusLine

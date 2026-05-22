@@ -23,8 +23,8 @@ struct MainIDEView: View {
         )
         .background(WindowChromeConfigurator())
         .onAppear(perform: onShellAppear)
-        .onChange(of: module) { oldModule, newModule in
-            onModuleChange(oldModule, newModule: newModule)
+        .onChange(of: module) { _, newModule in
+            onModuleChange(newModule)
         }
         .onChange(of: tabStore.selectedTabId) { _, _ in
             tabStore.applySelection(module: &module, chat: chat, spaces: spaces)
