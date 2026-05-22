@@ -61,12 +61,13 @@ struct ChatSidebarView: View {
 
     private var filterBar: some View {
         ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 14) {
+            HStack(spacing: 6) {
                 ForEach(ChatSidebarFilter.allCases) { filter in
                     filterPill(filter)
                 }
             }
             .padding(.horizontal, 12)
+            .padding(.vertical, 4)
         }
         .frame(height: ChatClickUpDesign.filterBarHeight)
         .clipped()
@@ -84,14 +85,19 @@ struct ChatSidebarView: View {
             Text(filter.label)
                 .font(.system(size: 11, weight: selected ? .semibold : .medium))
                 .foregroundStyle(selected ? LibraryGlassDesign.ink : LibraryGlassDesign.inkMuted)
-                .overlay(alignment: .bottom) {
-                    if selected {
-                        Rectangle()
-                            .fill(LibraryGlassDesign.ink.opacity(0.35))
-                            .frame(height: 1)
-                            .offset(y: 5)
-                    }
-                }
+                .padding(.horizontal, ChatClickUpDesign.filterPillHPadding)
+                .padding(.vertical, 5)
+                .background(
+                    Capsule(style: .continuous)
+                        .fill(selected ? LibraryGlassDesign.sidebarSelection : LibraryGlassDesign.filterPillInactiveFill)
+                )
+                .overlay(
+                    Capsule(style: .continuous)
+                        .strokeBorder(
+                            selected ? LibraryGlassDesign.sidebarSelectionStroke : LibraryGlassDesign.filterPillInactiveStroke,
+                            lineWidth: 1
+                        )
+                )
         }
         .buttonStyle(.plain)
     }
@@ -204,49 +210,77 @@ struct ChatSidebarView: View {
             .padding(.vertical, 8)
     }
 
-    /// ClickUp: Organized / Recents lower-left; plus + settings gear; flat compose rows.
+    /// Enterprise footer — layout mode + compose + settings (no stacked duplicate rows).
     private var layoutFooter: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack(spacing: 10) {
-                layoutToggle(.organized, icon: "list.bullet.rectangle", label: "Organized")
-                layoutToggle(.recents, icon: "clock", label: "Recents")
-                Spacer(minLength: 0)
-                Menu {
-                    if chat.permissions.canCreateChannels {
-                        Button { showNewChannel = true } label: {
-                            Label("New channel", systemImage: "number")
-                        }
-                    }
-                    if chat.permissions.canDM {
-                        Button { showNewDM = true } label: {
-                            Label("New message", systemImage: "person.badge.plus")
-                        }
-                    }
-                } label: {
-                    Image(systemName: "plus")
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(LibraryGlassDesign.inkSecondary)
-                }
-                .menuStyle(.borderlessButton)
-                .menuIndicator(.hidden)
-                .help("New channel or message")
+        HStack(spacing: 8) {
+            layoutSegment(.organized, icon: "list.bullet.rectangle", label: "Organized")
+            layoutSegment(.recents, icon: "clock", label: "Recents")
+            Spacer(minLength: 0)
+            composeMenu
+            sidebarSettingsMenu
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+    }
 
-                sidebarSettingsMenu
-            }
-
+    private var composeMenu: some View {
+        Menu {
             if chat.permissions.canCreateChannels {
                 Button { showNewChannel = true } label: {
-                    Label("Create channel", systemImage: "number")
+                    Label("New channel", systemImage: "number")
                 }
-                .buttonStyle(LibrarySubmenuTextButtonStyle())
             }
             if chat.permissions.canDM {
                 Button { showNewDM = true } label: {
                     Label("New message", systemImage: "person.badge.plus")
                 }
-                .buttonStyle(LibrarySubmenuTextButtonStyle())
             }
+        } label: {
+            Image(systemName: "plus")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(LibraryGlassDesign.ink)
+                .frame(width: 30, height: 30)
+                .background(
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .fill(LibraryGlassDesign.filterPillInactiveFill)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .strokeBorder(LibraryGlassDesign.filterPillInactiveStroke, lineWidth: 1)
+                )
         }
+        .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
+        .help("New channel or message")
+    }
+
+    private func layoutSegment(_ layout: ChatSidebarLayout, icon: String, label: String) -> some View {
+        let selected = chat.sidebarLayout == layout
+        return Button {
+            chat.setSidebarLayout(layout)
+        } label: {
+            HStack(spacing: 5) {
+                Image(systemName: icon)
+                    .font(.system(size: 11, weight: .medium))
+                Text(label)
+                    .font(.system(size: 11, weight: selected ? .semibold : .medium))
+            }
+            .foregroundStyle(selected ? LibraryGlassDesign.ink : LibraryGlassDesign.inkMuted)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 7)
+            .background(
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(selected ? LibraryGlassDesign.sidebarSelection : LibraryGlassDesign.filterPillInactiveFill)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .strokeBorder(
+                        selected ? LibraryGlassDesign.sidebarSelectionStroke : LibraryGlassDesign.filterPillInactiveStroke,
+                        lineWidth: 1
+                    )
+            )
+        }
+        .buttonStyle(.plain)
     }
 
     private var sidebarSettingsMenu: some View {
@@ -292,24 +326,6 @@ struct ChatSidebarView: View {
         .menuStyle(.borderlessButton)
         .menuIndicator(.hidden)
         .help("Chat settings")
-    }
-
-    private func layoutToggle(_ layout: ChatSidebarLayout, icon: String, label: String) -> some View {
-        let selected = chat.sidebarLayout == layout
-        return Button {
-            chat.setSidebarLayout(layout)
-        } label: {
-            HStack(spacing: 5) {
-                Image(systemName: icon)
-                    .font(.system(size: 12, weight: .medium))
-                Text(label)
-                    .font(.system(size: 11, weight: selected ? .semibold : .regular))
-                    .lineLimit(1)
-            }
-            .foregroundStyle(selected ? LibraryGlassDesign.ink : LibraryGlassDesign.inkMuted)
-        }
-        .buttonStyle(.plain)
-        .help(layout == .organized ? "Group channels and DMs" : "Sort by recent activity")
     }
 
     // MARK: - Sections & rows
@@ -385,15 +401,19 @@ struct ChatSidebarView: View {
                 .frame(height: ChatClickUpDesign.rowHeight)
                 .padding(.horizontal, 10)
                 .background(
-                    selected
-                        ? LibraryGlassDesign.sidebarSelection.opacity(0.55)
-                        : Color.clear
+                    RoundedRectangle(cornerRadius: LibraryGlassDesign.sidebarRowRadius, style: .continuous)
+                        .fill(selected ? LibraryGlassDesign.sidebarSelection : Color.clear)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: LibraryGlassDesign.sidebarRowRadius, style: .continuous)
+                        .strokeBorder(selected ? LibraryGlassDesign.sidebarSelectionStroke : Color.clear, lineWidth: 1)
                 )
                 .overlay(alignment: .leading) {
                     if selected {
-                        Rectangle()
-                            .fill(LibraryGlassDesign.ink.opacity(0.22))
-                            .frame(width: 2)
+                        RoundedRectangle(cornerRadius: 2, style: .continuous)
+                            .fill(LibraryGlassDesign.ink.opacity(0.35))
+                            .frame(width: 3)
+                            .padding(.leading, 4)
                     }
                 }
             }

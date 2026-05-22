@@ -20,7 +20,8 @@ struct ChatProfileAvatar: View {
                     .offset(x: 1, y: 1)
             }
         }
-        .task(id: profile?.avatarUrl) {
+        .task(id: avatarTaskKey) {
+            resolvedImageURL = nil
             let supabase = auth.session != nil ? auth.client : nil
             resolvedImageURL = await ProfileService.resolveAvatarURL(
                 client: supabase,
@@ -29,10 +30,14 @@ struct ChatProfileAvatar: View {
         }
     }
 
+    private var avatarTaskKey: String {
+        "\(profile?.id.uuidString ?? "none")|\(profile?.avatarUrl ?? "")|\(auth.avatarDisplayToken.uuidString)"
+    }
+
     @ViewBuilder
     private var avatarContent: some View {
         if let url = resolvedImageURL {
-            AsyncImage(url: url) { phase in
+            AsyncImage(url: url, transaction: Transaction(animation: .easeInOut(duration: 0.2))) { phase in
                 switch phase {
                 case .success(let image):
                     image
@@ -46,6 +51,7 @@ struct ChatProfileAvatar: View {
             }
             .frame(width: size, height: size)
             .clipShape(Circle())
+            .id(avatarTaskKey)
         } else {
             initialsView
         }

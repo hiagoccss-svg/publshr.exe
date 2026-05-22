@@ -29,8 +29,8 @@ struct GlassPrimaryBarChrome: View {
                 material: .sidebar,
                 blendingMode: .behindWindow
             )
+            LibraryGlassDesign.primaryBarColumnBackground.opacity(0.97)
             LibraryGlassDesign.primaryBarGlassFill
-            CursorMacShellDesign.columnChromeBackground.opacity(0.02)
         }
     }
 }

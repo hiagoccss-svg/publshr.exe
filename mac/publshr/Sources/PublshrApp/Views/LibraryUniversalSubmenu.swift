@@ -57,12 +57,11 @@ struct LibraryUniversalSubmenuContainer<Content: View, Footer: View>: View {
                 .frame(minHeight: 0, maxHeight: .infinity)
 
             footer()
-                .padding(.horizontal, 10)
-                .padding(.top, 6)
-                .padding(.bottom, 8)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(LibraryGlassDesign.submenuFooterBackground)
                 .overlay(alignment: .top) {
                     Rectangle()
-                        .fill(LibraryGlassDesign.contentDivider.opacity(0.65))
+                        .fill(LibraryGlassDesign.contentDivider.opacity(0.75))
                         .frame(height: 1)
                 }
         }
