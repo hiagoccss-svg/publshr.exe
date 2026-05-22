@@ -8,7 +8,7 @@
 printf '%s\n' '[Publshr] Loading installer...' >&2
 set -euo pipefail
 
-INSTALLER_VERSION="9"
+INSTALLER_VERSION="10"
 PUBLSHR_REPO="${PUBLSHR_REPO:-hiagoccss-svg/publshr.exe}"
 PUBLSHR_BRANCH="${PUBLSHR_BRANCH:-main}"
 PUBLSHR_INSTALLER_URL="https://raw.githubusercontent.com/${PUBLSHR_REPO}/refs/heads/${PUBLSHR_BRANCH}/install-macos.sh"
@@ -61,6 +61,17 @@ _publshr_tree_has_app() {
     [[ -n "$tree" && -d "${tree}/Publshr.app" && -f "$app_bin" ]]
 }
 
+_publshr_is_mach_o_gui() {
+    local path="$1"
+    [[ -f "$path" ]] || return 1
+    if [[ "$(uname -s)" == "Darwin" ]] && command -v file >/dev/null 2>&1; then
+        file "$path" | grep -q 'Mach-O' && return 0
+    fi
+    local size
+    size="$(wc -c < "$path" | tr -d ' ')"
+    [[ "$size" -ge 500000 ]]
+}
+
 _publshr_validate_native_app() {
     local tree="$1"
     local exec="${tree}/Publshr.app/Contents/MacOS/Publshr"
@@ -71,12 +82,7 @@ _publshr_validate_native_app() {
     if [[ -f "${tree}/Publshr.app/Contents/MacOS/publshr" && ! -L "${tree}/Publshr.app/Contents/MacOS/publshr" ]]; then
         return 1
     fi
-    if head -1 "$exec" 2>/dev/null | grep -q '^#!'; then
-        return 1
-    fi
-    local size
-    size="$(wc -c < "$exec" | tr -d ' ')"
-    [[ "$size" -ge 500000 ]]
+    _publshr_is_mach_o_gui "$exec"
 }
 
 # Fix outdated live releases that shipped PublshrApp instead of Publshr.
@@ -86,30 +92,35 @@ _publshr_repair_bundle() {
     local macos="${app}/Contents/MacOS"
     local gui="${macos}/Publshr"
     local legacy="${macos}/PublshrApp"
+    local bin_gui="${tree}/bin/PublshrApp"
+    local src=""
 
     if _publshr_validate_native_app "$tree"; then
         return 0
     fi
 
-    if [[ ! -f "$legacy" ]]; then
+    if [[ -f "$legacy" ]] && _publshr_is_mach_o_gui "$legacy"; then
+        src="$legacy"
+    elif [[ -f "$bin_gui" ]] && _publshr_is_mach_o_gui "$bin_gui"; then
+        src="$bin_gui"
+    else
         return 1
     fi
 
-    local size
-    size="$(wc -c < "$legacy" | tr -d ' ')"
-    if [[ "$size" -lt 500000 ]]; then
-        return 1
-    fi
-
-    log "Repairing downloaded bundle (PublshrApp → Publshr) …"
-    cp "$legacy" "$gui"
+    log "Repairing downloaded bundle (installing native GUI as Contents/MacOS/Publshr) …"
+    rm -f "$gui"
+    ditto "$src" "$gui" 2>/dev/null || cp "$src" "$gui"
     chmod 755 "$gui"
     rm -f "$legacy" "${macos}/publshr"
     xattr -cr "$app" 2>/dev/null || true
     if [[ "$(uname -s)" == "Darwin" ]]; then
         codesign --force --deep --sign - "$app" 2>/dev/null || true
     fi
-    _publshr_validate_native_app "$tree"
+    if _publshr_validate_native_app "$tree"; then
+        log "Bundle repaired successfully."
+        return 0
+    fi
+    return 1
 }
 
 _publshr_find_extract_tree() {
@@ -175,9 +186,16 @@ _publshr_build_from_github() {
 
 _publshr_acquire_valid_tree() {
     local tree=""
+    local tmp_tree=""
 
     if _publshr_live_exists; then
-        tree="$(_publshr_download_live)" || tree=""
+        tmp_tree="$(_publshr_download_live)" || tmp_tree=""
+        if [[ -n "$tmp_tree" ]]; then
+            _publshr_repair_bundle "$tmp_tree" || true
+            if _publshr_validate_native_app "$tmp_tree"; then
+                tree="$tmp_tree"
+            fi
+        fi
     fi
 
     if ! _publshr_validate_native_app "${tree:-}"; then

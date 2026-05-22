@@ -3,6 +3,8 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# shellcheck source=lib-swift-build-paths.sh
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib-swift-build-paths.sh"
 cd "$SCRIPT_DIR"
 
 resolve_version() {
@@ -56,25 +58,31 @@ STAGE="$SCRIPT_DIR/dist/publshr-${VERSION}-${os}-${arch}"
 rm -rf "$STAGE"
 mkdir -p "$STAGE/bin" "$STAGE/lib"
 
-if [[ -f "$SCRIPT_DIR/.build/release/publshr" ]]; then
-    cp "$SCRIPT_DIR/.build/release/publshr" "$STAGE/bin/publshr"
+CLI_BIN="$(find_swift_release_binary publshr "$SCRIPT_DIR" 2>/dev/null || true)"
+if [[ -n "$CLI_BIN" && -f "$CLI_BIN" ]]; then
+    cp "$CLI_BIN" "$STAGE/bin/publshr"
     chmod 755 "$STAGE/bin/publshr"
 fi
 
 if [[ "$os" == "macos" ]]; then
-    APP_BIN="$SCRIPT_DIR/.build/release/PublshrApp"
+    APP_BIN="$(find_swift_release_binary PublshrApp "$SCRIPT_DIR")"
+    if [[ ! -f "$APP_BIN" ]]; then
+        echo "ERROR: PublshrApp release binary not found under ${SCRIPT_DIR}/.build" >&2
+        find "$SCRIPT_DIR/.build" -type f -path '*/release/*' 2>/dev/null | head -20 >&2 || true
+        exit 1
+    fi
     cp "$APP_BIN" "$STAGE/bin/PublshrApp"
     chmod 755 "$STAGE/bin/PublshrApp"
     bash "$SCRIPT_DIR/scripts/build-macos-app.sh" "$APP_BIN" "$SHORT_VERSION" "$BUILD_NUM" "$STAGE"
     # Never ship duplicate/wrong executables in the bundle (breaks Dock launch).
     rm -f "$STAGE/Publshr.app/Contents/MacOS/PublshrApp"
     rm -f "$STAGE/Publshr.app/Contents/MacOS/publshr"
-    INSTALLER_BIN="$SCRIPT_DIR/.build/release/PublshrInstaller"
-    if [[ -f "$INSTALLER_BIN" ]]; then
+    INSTALLER_BIN="$(find_swift_release_binary PublshrInstaller "$SCRIPT_DIR" 2>/dev/null || true)"
+    if [[ -n "$INSTALLER_BIN" && -f "$INSTALLER_BIN" ]]; then
         bash "$SCRIPT_DIR/scripts/build-macos-installer.sh" "$INSTALLER_BIN" "$SHORT_VERSION" "$BUILD_NUM" "$STAGE"
     fi
-    if [[ -f "$SCRIPT_DIR/.build/release/publshr" ]]; then
-        cp "$SCRIPT_DIR/.build/release/publshr" "$STAGE/Publshr.app/Contents/MacOS/publshr-cli"
+    if [[ -n "$CLI_BIN" && -f "$CLI_BIN" ]]; then
+        cp "$CLI_BIN" "$STAGE/Publshr.app/Contents/MacOS/publshr-cli"
         chmod 755 "$STAGE/Publshr.app/Contents/MacOS/publshr-cli"
         ln -sf publshr-cli "$STAGE/bin/publshr"
     fi
@@ -83,8 +91,8 @@ if [[ "$os" == "macos" ]]; then
     fi
 fi
 
-if [[ "$os" == "linux" && -f "$SCRIPT_DIR/.build/release/publshr" ]]; then
-    mapfile -t swift_libs < <(ldd "$SCRIPT_DIR/.build/release/publshr" | awk '/libswift|libdispatch|libBlocksRuntime/ {print $3}' | sort -u)
+if [[ "$os" == "linux" && -n "$CLI_BIN" && -f "$CLI_BIN" ]]; then
+    mapfile -t swift_libs < <(ldd "$CLI_BIN" | awk '/libswift|libdispatch|libBlocksRuntime/ {print $3}' | sort -u)
     for lib in "${swift_libs[@]}"; do
         [[ -n "$lib" && -f "$lib" ]] && cp -L "$lib" "$STAGE/lib/"
     done
