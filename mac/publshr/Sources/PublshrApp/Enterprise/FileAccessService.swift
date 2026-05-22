@@ -5,6 +5,10 @@ import UniformTypeIdentifiers
 /// Native file access with security-scoped bookmarks for uploads (Chat + Spaces).
 @MainActor
 enum FileAccessService {
+    static func pickImage() -> URL? {
+        pickFiles(allowedTypes: [.jpeg, .png, .heic, .image], allowsMultiple: false).first
+    }
+
     static func pickFiles(allowedTypes: [UTType] = [.item], allowsMultiple: Bool = false) -> [URL] {
         let panel = NSOpenPanel()
         panel.canChooseFiles = true

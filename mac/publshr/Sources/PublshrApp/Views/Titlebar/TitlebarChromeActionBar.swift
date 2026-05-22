@@ -8,6 +8,9 @@ struct TitlebarChromeActionBar: View {
     @Binding var showCommandPalette: Bool
     @Binding var showNotificationsPanel: Bool
 
+    @State private var isUploadingAvatar = false
+    @State private var avatarUploadError: String?
+
     let placement: Placement
 
     enum Placement {
@@ -85,6 +88,10 @@ struct TitlebarChromeActionBar: View {
                 }
             }
             Divider()
+            Button(isUploadingAvatar ? "Uploading photo…" : "Upload profile photo") {
+                Task { await uploadProfilePhoto() }
+            }
+            .disabled(isUploadingAvatar)
             Button("Account & profile") {
                 NotificationCenter.default.post(name: .publshrOpenSettings, object: SettingsSection.account.rawValue)
             }
@@ -101,33 +108,43 @@ struct TitlebarChromeActionBar: View {
                 Task { await auth.signOut() }
             }
         } label: {
-            HStack(spacing: 6) {
-                if let profile = auth.profile {
-                    ChatProfileAvatar(
-                        profile: profile,
-                        displayName: profile.displayName ?? profile.email,
-                        size: 22,
-                        presence: chat.myStatus
-                    )
-                }
-                TitlebarChromeMenuLabel(title: profileShortTitle)
+            if let profile = auth.profile {
+                ChatProfileAvatar(
+                    profile: profile,
+                    displayName: profile.displayName ?? profile.email,
+                    size: AppWindowChromeMetrics.controlSize,
+                    presence: chat.myStatus
+                )
+            } else {
+                TitlebarChromeMenuLabel(title: "Account", systemImage: "person.crop.circle")
             }
         }
         .menuStyle(.borderlessButton)
-        .help("Profile & presence")
+        .help("Profile, photo upload & presence")
     }
 
-    private var profileShortTitle: String {
-        if let name = auth.profile?.displayName?.trimmingCharacters(in: .whitespacesAndNewlines), !name.isEmpty {
-            let parts = name.split(separator: " ")
-            if let first = parts.first {
-                return String(first)
+    private func uploadProfilePhoto() async {
+        guard auth.session != nil else {
+            avatarUploadError = "Sign in to upload a photo."
+            return
+        }
+        guard let url = FileAccessService.pickImage() else { return }
+        isUploadingAvatar = true
+        avatarUploadError = nil
+        defer { isUploadingAvatar = false }
+        do {
+            let data = try FileAccessService.readData(from: url)
+            let mime = url.pathExtension.lowercased() == "png" ? "image/png" : "image/jpeg"
+            try await auth.uploadAvatar(data: data, mimeType: mime)
+            if let profile = auth.profile {
+                chat.upsertProfile(profile)
             }
+            avatarUploadError = nil
+            auth.infoMessage = "Profile photo updated."
+        } catch {
+            avatarUploadError = error.localizedDescription
+            auth.errorMessage = error.localizedDescription
         }
-        if let email = auth.profile?.email.split(separator: "@").first {
-            return String(email)
-        }
-        return "Account"
     }
 }
 
