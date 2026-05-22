@@ -30,12 +30,17 @@ enum MainWindowChrome {
         guard let window, window.isKind(of: NSWindow.self) else { return }
 
         let className = NSStringFromClass(type(of: window))
-        let isSwiftUIHosting = className.contains("Hosting") || className.contains("SwiftUI")
+        // SwiftUI uses private hosting window subclasses on macOS 26+; only plain AppKit windows
+        // reliably support titlebar KVC (build 83 crashed on titlebarAccessoryViewControllers).
+        let isPlainAppKitWindow = className == "NSWindow" || className == "NSPanel"
+        let isSwiftUIHosting =
+            !isPlainAppKitWindow
+            || className.contains("Hosting")
+            || className.contains("SwiftUI")
 
         window.backgroundColor = NSColor(CursorTheme.editorBackground)
 
         if isSwiftUIHosting {
-            // hiddenTitleBar already owns chrome; only set properties that are safe on hosting windows.
             if window.responds(to: #selector(setter: NSWindow.isMovableByWindowBackground)) {
                 window.isMovableByWindowBackground = true
             }
