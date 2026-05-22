@@ -65,11 +65,12 @@ struct WorkspaceTab: Identifiable, Equatable, Hashable {
         )
     }
 
-    static func space(_ space: SpaceRecord) -> WorkspaceTab {
-        WorkspaceTab(
+    static func space(_ space: SpaceRecord, listName: String? = nil) -> WorkspaceTab {
+        let subtitle = listName.map { "\($0) · \(space.workspaceTabTypeLabel)" } ?? space.workspaceTabTypeLabel
+        return WorkspaceTab(
             kind: .space(space.id),
             title: space.name,
-            subtitle: space.workspaceTabTypeLabel,
+            subtitle: subtitle,
             iconSystemName: space.workspaceTabIcon,
             isPinned: space.isPinned
         )
