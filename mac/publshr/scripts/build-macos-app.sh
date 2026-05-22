@@ -2,9 +2,11 @@
 # Wrap the PublshrApp binary in Publshr.app for /Applications and Launchpad.
 set -euo pipefail
 
-BINARY="${1:?Usage: build-macos-app.sh <path-to-PublshrApp-binary> <version>}"
-VERSION="${2:?version required}"
-OUT_DIR="${3:-.}"
+BINARY="${1:?Usage: build-macos-app.sh <path-to-PublshrApp-binary> <short-version> <build> [out-dir]}"
+SHORT_VERSION="${2:?short version required}"
+BUILD="${3:?build number required}"
+OUT_DIR="${4:-.}"
+GITHUB_REPO="${PUBLSHR_GITHUB_REPO:-hiagoccss-svg/publshr.exe}"
 
 APP_NAME="Publshr.app"
 APP_ROOT="${OUT_DIR}/${APP_NAME}"
@@ -24,6 +26,13 @@ exec "${DIR}/PublshrApp" "$@"
 LAUNCHER
 chmod 755 "${MACOS_DIR}/Publshr"
 
-sed "s/@@VERSION@@/${VERSION}/g" "${SCRIPT_DIR}/../app/Info.plist.template" >"${APP_ROOT}/Contents/Info.plist"
+sed -e "s/@@SHORT_VERSION@@/${SHORT_VERSION}/g" \
+    -e "s/@@BUILD@@/${BUILD}/g" \
+    -e "s/@@GITHUB_REPO@@/${GITHUB_REPO}/g" \
+    "${SCRIPT_DIR}/../app/Info.plist.template" >"${APP_ROOT}/Contents/Info.plist"
 
-echo "Built ${APP_ROOT}" >&2
+mkdir -p "${APP_ROOT}/Contents/Resources"
+cp "${SCRIPT_DIR}/apply-macos-update.sh" "${APP_ROOT}/Contents/Resources/apply-macos-update.sh"
+chmod 755 "${APP_ROOT}/Contents/Resources/apply-macos-update.sh"
+
+echo "Built ${APP_ROOT} (${SHORT_VERSION} build ${BUILD})" >&2

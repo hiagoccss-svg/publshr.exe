@@ -3,10 +3,12 @@ import SwiftUI
 struct MainIDEView: View {
     @EnvironmentObject private var auth: AuthViewModel
     @EnvironmentObject private var chat: ChatViewModel
+    @EnvironmentObject private var updates: AppUpdateViewModel
     @State private var selectedActivity = 0
 
     var body: some View {
         VStack(spacing: 0) {
+            AppUpdateBannerView(updates: updates)
             TitleBarView()
                 .frame(height: CursorTheme.titleBarHeight)
 

@@ -21,6 +21,10 @@ Or from a clone:
 open /Applications/Publshr.app
 ```
 
+### Auto-update from GitHub
+
+Install once, then **push to `main`** — GitHub Actions builds a new release and the open app downloads and installs it (no Terminal reinstall). Details: [`mac/publshr/docs/AUTO_UPDATE.md`](mac/publshr/docs/AUTO_UPDATE.md).
+
 ### Features (mac/publshr)
 
 - **Cursor-matched UI** — activity bar, sidebar, editor tabs, enterprise chat panel, status bar

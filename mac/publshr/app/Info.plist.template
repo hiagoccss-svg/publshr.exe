@@ -17,9 +17,11 @@
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>@@VERSION@@</string>
+	<string>@@SHORT_VERSION@@</string>
 	<key>CFBundleVersion</key>
-	<string>@@VERSION@@</string>
+	<string>@@BUILD@@</string>
+	<key>PublshrGitHubRepo</key>
+	<string>@@GITHUB_REPO@@</string>
 	<key>LSMinimumSystemVersion</key>
 	<string>13.0</string>
 	<key>LSApplicationCategoryType</key>

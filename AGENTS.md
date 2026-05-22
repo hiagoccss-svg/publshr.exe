@@ -50,6 +50,10 @@ bash scripts/package-release.sh <version>
 
 Produces `dist/publshr-<version>-<os>-<arch>.tar.gz`.
 
+### Auto-update (macOS)
+
+Pushes to `main` under `mac/publshr/` trigger `.github/workflows/deliver-macos.yml`, which publishes a GitHub Release. The installed app checks releases and replaces `/Applications/Publshr.app` without a manual reinstall. See `mac/publshr/docs/AUTO_UPDATE.md`.
+
 ### Gotchas
 
 - On Ubuntu, Swift requires `libncurses6`, `libcurl4`, and `libxml2` runtime libraries. The update script installs these automatically.

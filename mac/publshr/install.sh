@@ -92,7 +92,9 @@ install_macos_app() {
             echo "PublshrApp binary missing in release. Rebuild with scripts/package-release.sh on macOS." >&2
             exit 1
         fi
-        bash "$SCRIPT_DIR/scripts/build-macos-app.sh" "$app_bin" "$VERSION" "$tree"
+        BUILD="${VERSION##*.}"
+        SHORT="${VERSION%.*}"
+        bash "$SCRIPT_DIR/scripts/build-macos-app.sh" "$app_bin" "$SHORT" "$BUILD" "$tree"
         app_src="${tree}/Publshr.app"
     fi
 
