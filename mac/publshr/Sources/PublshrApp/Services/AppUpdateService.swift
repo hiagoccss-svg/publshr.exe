@@ -84,6 +84,7 @@ final class AppUpdateService: @unchecked Sendable {
         }
 
         // Fallback: newest versioned tag (e.g. v0.2.0.51) when live metadata is stale.
+        let localBuild = AppReleaseConfig.buildNumber
         let releases = try await fetchRecentReleases()
         var best: AvailableUpdate?
         for release in releases where release.tagName != AppReleaseConfig.liveTag {
