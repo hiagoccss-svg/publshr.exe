@@ -27,7 +27,8 @@ struct LiveChannelManifest: Sendable, Equatable {
 
         if build > localBuild { return true }
         if fullVersion != localVersion { return true }
-        if !commit.isEmpty, !localCommit.isEmpty, commit != localCommit { return true }
+        if !commit.isEmpty, commit != localCommit { return true }
+        if let digest, !digest.isEmpty, digest != AppReleaseConfig.livePackageDigest { return true }
         return false
     }
 }

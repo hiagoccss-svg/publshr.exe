@@ -96,6 +96,11 @@ final class AppUpdateService: @unchecked Sendable {
     }
 
     func checkForUpdate() async throws -> AvailableUpdate? {
+        // Primary: VERSION.txt on the live channel (no GitHub API — avoids silent failures from API errors).
+        if let update = try await checkForUpdateViaLiveManifest() {
+            return update
+        }
+
         guard let live = try await fetchLiveRelease() else {
             throw AppUpdateError.noReleases
         }
@@ -118,6 +123,40 @@ final class AppUpdateService: @unchecked Sendable {
             }
         }
         return best
+    }
+
+    /// Compares installed build/version/commit against `live/VERSION.txt` (published on every push to main).
+    private func checkForUpdateViaLiveManifest() async throws -> AvailableUpdate? {
+        guard let manifest = await fetchLiveManifestFromURL() else {
+            appendSyncLog("VERSION.txt check: unavailable")
+            return nil
+        }
+
+        appendSyncLog(
+            "VERSION.txt check: local=\(AppReleaseConfig.installedLabel) "
+                + "remote=\(manifest.fullVersion) build=\(manifest.build) "
+                + "commit=\(manifest.commit.prefix(7))"
+        )
+
+        guard manifest.isNewerThanInstalled() else { return nil }
+
+        let assetName = AppReleaseConfig.liveAssetName()
+        guard let downloadURL = AppReleaseConfig.releaseDownloadURL(
+            tag: AppReleaseConfig.liveTag,
+            assetName: assetName
+        ),
+        let pageURL = URL(string: "https://github.com/\(AppReleaseConfig.githubRepo)/releases/tag/live") else {
+            throw AppUpdateError.noCompatibleAsset
+        }
+
+        return AvailableUpdate(
+            version: manifest.fullVersion,
+            build: manifest.build,
+            tag: AppReleaseConfig.liveTag,
+            downloadURL: downloadURL,
+            releasePage: pageURL,
+            assetName: assetName
+        )
     }
 
     func download(
@@ -280,7 +319,7 @@ final class AppUpdateService: @unchecked Sendable {
             throw AppUpdateError.noCompatibleAsset
         }
 
-        let manifest = await fetchLiveManifest(in: live.assets)
+        let manifest = await fetchLiveManifestFromURL()
             ?? manifestFromReleaseNotes(live)
 
         guard let manifest else {
@@ -338,17 +377,19 @@ final class AppUpdateService: @unchecked Sendable {
     }
 
     /// Reads `VERSION.txt` from the live release (version, build, commit, package digest).
-    private func fetchLiveManifest(in assets: [GitHubAsset]) async -> LiveChannelManifest? {
+    private func fetchLiveManifestFromURL() async -> LiveChannelManifest? {
         guard let url = AppReleaseConfig.releaseDownloadURL(tag: AppReleaseConfig.liveTag, assetName: "VERSION.txt") else {
             return nil
         }
         do {
             let (data, response) = try await session.data(for: assetDownloadRequest(url: url))
             guard let http = response as? HTTPURLResponse, (200 ... 299).contains(http.statusCode) else {
+                appendSyncLog("VERSION.txt HTTP \((response as? HTTPURLResponse)?.statusCode ?? -1)")
                 return nil
             }
             guard let text = String(data: data, encoding: .utf8),
                   let manifest = LiveChannelManifest.parse(text) else {
+                appendSyncLog("VERSION.txt parse failed")
                 return nil
             }
             return manifest
