@@ -58,57 +58,56 @@
     @apply bg-accent/20 text-content rounded-sm px-0.5;
   }
 
-  /* Cursor Mac — flat IDE surfaces (no card chrome) */
-  .cursor-section-header {
+  /* Flat desktop shell — list rows and dividers, no card chrome */
+  .shell-section-header {
     @apply text-[10px] font-semibold uppercase tracking-[0.06em] text-content-dim;
   }
 
-  .cursor-list {
+  .shell-list {
     @apply flex flex-col divide-y divide-border;
   }
 
-  .cursor-list-row {
+  .shell-list-row {
     @apply flex gap-3 px-3 py-2.5 cursor-pointer transition-colors;
   }
 
-  .cursor-list-row:hover {
+  .shell-list-row:hover {
     @apply bg-surface-highlight/50;
   }
 
-  .cursor-list-row-selected {
+  .shell-list-row-selected {
     @apply bg-surface-highlight;
   }
 
-  .cursor-list-row-selected:hover {
+  .shell-list-row-selected:hover {
     @apply bg-surface-highlight;
   }
 
-  .cursor-toolbar {
-    @apply flex flex-wrap items-center gap-1 px-2 py-1 border-b border-border shrink-0;
-    background-color: #1e1e1e;
+  .shell-toolbar {
+    @apply flex flex-wrap items-center gap-1 px-2 py-1 border-b border-border shrink-0 bg-surface-workspace;
   }
 
-  .cursor-toolbar-btn {
+  .shell-toolbar-btn {
     @apply flex items-center gap-1 text-[11px] px-2 py-1 rounded-sm text-content-muted transition-colors app-no-drag;
   }
 
-  .cursor-toolbar-btn:hover {
+  .shell-toolbar-btn:hover {
     @apply bg-surface-highlight text-content;
   }
 
-  .cursor-toolbar-btn-active {
+  .shell-toolbar-btn-active {
     @apply bg-surface-highlight text-accent;
   }
 
-  .cursor-panel-header {
+  .shell-panel-header {
     @apply px-3 py-2 text-[11px] font-semibold uppercase tracking-wide border-b border-border text-content-header;
   }
 
-  .cursor-metric-row {
+  .shell-metric-row {
     @apply flex divide-x divide-border border-b border-border;
   }
 
-  .cursor-metric-cell {
+  .shell-metric-cell {
     @apply flex-1 px-4 py-3 min-w-0;
   }
 
@@ -128,15 +127,15 @@
     @apply input-field w-auto py-0.5;
   }
 
-  .cursor-chip {
+  .shell-chip {
     @apply text-2xs px-2 py-0.5 rounded-sm transition-colors;
   }
 
-  .cursor-chip-active {
-    @apply cursor-chip bg-accent/20 text-accent;
+  .shell-chip-active {
+    @apply shell-chip bg-accent/20 text-accent;
   }
 
-  .cursor-chip-inactive {
-    @apply cursor-chip bg-surface-input text-content-muted hover:text-content;
+  .shell-chip-inactive {
+    @apply shell-chip bg-surface-input text-content-muted hover:text-content;
   }
 }

@@ -32,7 +32,7 @@ export function CoverageView() {
       <div className="px-4 py-2 border-b border-border shrink-0">
         <p className="text-[11px] text-content-muted">{items.length} saved articles</p>
       </div>
-      <div className="cursor-list flex-1 overflow-y-auto">
+      <div className="shell-list flex-1 overflow-y-auto">
         {items.map((article, i) => (
           <div key={article.id} onClick={() => handleSelect(article.id)}>
             <ArticleCard article={article} index={i} />

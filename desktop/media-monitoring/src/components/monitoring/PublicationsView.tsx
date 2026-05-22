@@ -25,10 +25,10 @@ export function PublicationsView() {
           {publications.length} verified sources — monitoring searches only these outlets.
         </p>
       </header>
-      <div className="cursor-list flex-1 overflow-y-auto">
+      <div className="shell-list flex-1 overflow-y-auto">
         {publications.map((pub) => (
-          <div key={pub.id} className="cursor-list-row hover:bg-surface-highlight/40">
-            <div className="w-8 h-8 rounded-sm bg-surface-tabInactive flex items-center justify-center text-[10px] font-semibold text-content-muted shrink-0">
+          <div key={pub.id} className="shell-list-row hover:bg-surface-highlight/40">
+            <div className="w-8 h-8 rounded-sm bg-surface-tile flex items-center justify-center text-[10px] font-semibold text-content-muted shrink-0">
               {publicationInitials(pub.name)}
             </div>
             <div className="flex-1 min-w-0">

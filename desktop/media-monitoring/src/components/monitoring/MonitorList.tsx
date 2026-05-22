@@ -2,7 +2,7 @@ import clsx from 'clsx'
 import { Play, Square, Trash2 } from 'lucide-react'
 import { useMonitoringStore } from '@/store/monitoringStore'
 import { useActiveMonitor } from '@/hooks/useMonitoring'
-import { cursor } from '@/theme/cursor'
+import { shell } from '@/theme/shellTheme'
 
 export function MonitorList() {
   const { monitors, activeMonitorId, isMonitoring } = useMonitoringStore()
@@ -12,7 +12,7 @@ export function MonitorList() {
 
   return (
     <div className="flex-1 overflow-y-auto min-h-0">
-      <p className="cursor-section-header px-3 pt-2 pb-1">Monitors</p>
+      <p className="shell-section-header px-3 pt-2 pb-1">Monitors</p>
       {monitors.map((m) => {
         const selected = activeMonitorId === m.id
         return (
@@ -20,9 +20,9 @@ export function MonitorList() {
             key={m.id}
             className={clsx(
               'flex items-center gap-0.5 px-2 py-1 text-[12px] group mx-1 rounded-sm',
-              selected ? 'cursor-list-row-selected' : 'text-content-muted hover:bg-surface-highlight/50'
+              selected ? 'shell-list-row-selected' : 'text-content-muted hover:bg-surface-highlight/50'
             )}
-            style={selected ? { backgroundColor: cursor.highlight } : undefined}
+            style={selected ? { backgroundColor: shell.highlight } : undefined}
           >
             <button type="button" className="flex-1 text-left truncate min-w-0" onClick={() => void selectMonitor(m.id)}>
               <span className="flex items-center gap-1.5 text-content">

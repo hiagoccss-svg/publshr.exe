@@ -43,7 +43,7 @@ export function ArticleFeed() {
           Discovering coverage from approved sources…
         </div>
       )}
-      <div className="cursor-list flex-1 overflow-y-auto">
+      <div className="shell-list flex-1 overflow-y-auto">
         {results.map((article, i) => (
           <ArticleCard key={article.id} article={article} index={i} />
         ))}

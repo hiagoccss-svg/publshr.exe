@@ -25,12 +25,12 @@ export function FilterBar() {
   const { startLive, stopLive } = useActiveMonitor()
 
   return (
-    <div className="cursor-toolbar">
+    <div className="shell-toolbar">
       <button
         type="button"
         className={clsx(
-          'cursor-toolbar-btn',
-          isMonitoring && 'cursor-toolbar-btn-active'
+          'shell-toolbar-btn',
+          isMonitoring && 'shell-toolbar-btn-active'
         )}
         disabled={!activeMonitorId}
         onClick={() => (isMonitoring ? stopLive() : startLive())}

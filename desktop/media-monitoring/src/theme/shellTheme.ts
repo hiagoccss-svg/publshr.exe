@@ -1,11 +1,11 @@
-/** Matches mac/publshr CursorTheme.swift */
-export const cursor = {
+/** Dark desktop shell palette — layout inspired by modern dev tools, tuned for media intelligence. */
+export const shell = {
   activityBar: '#181818',
   titleBar: '#181818',
   sideBar: '#252526',
-  editor: '#1E1E1E',
+  workspace: '#1E1E1E',
   panel: '#181818',
-  tabInactive: '#2D2D2D',
+  tile: '#2D2D2D',
   highlight: '#2A2D2E',
   input: '#3C3C3C',
   border: '#2B2B2B',

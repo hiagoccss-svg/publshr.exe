@@ -1,7 +1,7 @@
 import { X } from 'lucide-react'
 import { useState } from 'react'
 import { useMonitoringStore } from '@/store/monitoringStore'
-import { cursor } from '@/theme/cursor'
+import { shell } from '@/theme/shellTheme'
 
 const REGIONS = ['Global', 'Europe', 'Americas', 'Middle East', 'Asia Pacific']
 const LANGUAGES = ['en', 'ar', 'fr', 'de', 'es']
@@ -59,13 +59,13 @@ export function MonitorCreatePanel({ onCreated }: Props) {
       className="absolute inset-y-0 right-0 z-20 flex flex-col border-l animate-fade-in"
       style={{
         width: 340,
-        backgroundColor: cursor.sideBar,
-        borderColor: cursor.border
+        backgroundColor: shell.sideBar,
+        borderColor: shell.border
       }}
     >
       <div
         className="flex items-center justify-between px-3 py-2 border-b"
-        style={{ borderColor: cursor.border }}
+        style={{ borderColor: shell.border }}
       >
         <h2 className="text-[13px] font-medium text-content">New monitoring profile</h2>
         <button type="button" className="btn-ghost p-1" onClick={() => setShowCreatePanel(false)} aria-label="Close">
@@ -124,7 +124,7 @@ export function MonitorCreatePanel({ onCreated }: Props) {
         </p>
       </form>
 
-      <div className="px-3 py-2 border-t flex gap-2" style={{ borderColor: cursor.border }}>
+      <div className="px-3 py-2 border-t flex gap-2" style={{ borderColor: shell.border }}>
         <button type="button" className="btn-ghost flex-1" onClick={() => setShowCreatePanel(false)}>
           Cancel
         </button>
@@ -172,7 +172,7 @@ function Chip({
     <button
       type="button"
       onClick={onClick}
-      className={active ? 'cursor-chip-active' : 'cursor-chip-inactive'}
+      className={active ? 'shell-chip-active' : 'shell-chip-inactive'}
     >
       {children}
     </button>

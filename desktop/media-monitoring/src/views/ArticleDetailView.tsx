@@ -4,7 +4,7 @@ import { ArrowLeft, ExternalLink } from 'lucide-react'
 import type { MonitorResult, Sentiment } from '@/types'
 import { formatShortDate, formatCurrency, formatCompactNumber } from '@/lib/format'
 import { highlightKeywords, parseKeywordMatches } from '@/lib/keywordHighlight'
-import { cursor } from '@/theme/cursor'
+import { shell } from '@/theme/shellTheme'
 
 const SENTIMENTS: Sentiment[] = ['positive', 'neutral', 'negative', 'mixed']
 
@@ -39,7 +39,7 @@ export function ArticleDetailView() {
   const keywords = parseKeywordMatches(article.keyword_matches)
 
   return (
-    <div className="h-full flex flex-col overflow-hidden" style={{ backgroundColor: cursor.editor }}>
+    <div className="h-full flex flex-col overflow-hidden bg-surface-workspace">
       <header className="flex items-center gap-3 px-3 py-2 border-b border-border shrink-0">
         <button type="button" className="btn-ghost p-1" onClick={() => navigate(-1)}>
           <ArrowLeft size={15} />
@@ -77,10 +77,10 @@ export function ArticleDetailView() {
 
         <aside
           className="w-72 border-l border-border px-3 py-3 space-y-4 shrink-0 overflow-y-auto"
-          style={{ backgroundColor: cursor.panel }}
+          style={{ backgroundColor: shell.panel }}
         >
           <label className="block text-[11px]">
-            <span className="cursor-section-header">Sentiment</span>
+            <span className="shell-section-header">Sentiment</span>
             <select
               className="input-field mt-1.5 w-full"
               value={article.sentiment}
@@ -98,7 +98,7 @@ export function ArticleDetailView() {
             </select>
           </label>
           <label className="block text-[11px]">
-            <span className="cursor-section-header">Notes</span>
+            <span className="shell-section-header">Notes</span>
             <textarea
               className="input-field mt-1.5 w-full min-h-[72px]"
               value={notes}
@@ -106,7 +106,7 @@ export function ArticleDetailView() {
             />
           </label>
           <label className="block text-[11px]">
-            <span className="cursor-section-header">Tags</span>
+            <span className="shell-section-header">Tags</span>
             <input
               className="input-field mt-1.5 w-full"
               value={tags}

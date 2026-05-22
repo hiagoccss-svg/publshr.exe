@@ -29,12 +29,12 @@ export function ArticleCard({ article, index }: Props) {
       onClick={() => setSelectedArticle(article.id)}
       onKeyDown={(e) => e.key === 'Enter' && setSelectedArticle(article.id)}
       className={clsx(
-        'group cursor-list-row animate-fade-in',
-        selected && 'cursor-list-row-selected'
+        'group shell-list-row animate-fade-in',
+        selected && 'shell-list-row-selected'
       )}
       style={{ animationDelay: `${Math.min(index, 8) * 30}ms` }}
     >
-      <div className="w-8 h-8 rounded-sm bg-surface-tabInactive flex items-center justify-center text-[10px] font-semibold text-content-muted shrink-0">
+      <div className="w-8 h-8 rounded-sm bg-surface-tile flex items-center justify-center text-[10px] font-semibold text-content-muted shrink-0">
         {publicationInitials(article.publication_name ?? '?')}
       </div>
 

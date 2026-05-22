@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { useMonitoringStore } from '@/store/monitoringStore'
 import { formatCurrency, formatCompactNumber } from '@/lib/format'
 import { parseKeywordMatches, highlightKeywords } from '@/lib/keywordHighlight'
-import { cursor } from '@/theme/cursor'
+import { shell } from '@/theme/shellTheme'
 import type { MonitorResult, Sentiment } from '@/types'
 
 const SENTIMENTS: Sentiment[] = ['positive', 'neutral', 'negative', 'mixed']
@@ -33,15 +33,15 @@ export function ContextPanel() {
   }, [article?.id])
 
   const panelStyle = {
-    width: cursor.contextPanelWidth,
-    backgroundColor: cursor.panel,
-    borderColor: cursor.border
+    width: shell.contextPanelWidth,
+    backgroundColor: shell.panel,
+    borderColor: shell.border
   }
 
   if (!article) {
     return (
       <aside className="flex flex-col shrink-0 border-l" style={panelStyle}>
-        <div className="cursor-panel-header">Details</div>
+        <div className="shell-panel-header">Details</div>
         <div className="p-4 text-center text-content-dim text-[12px] mt-8">
           <p>Select coverage to view metadata, tags, and actions.</p>
         </div>
@@ -67,7 +67,7 @@ export function ContextPanel() {
 
       <div className="flex-1 overflow-y-auto px-3 py-3 space-y-4 text-[12px]">
         <section>
-          <h3 className="cursor-section-header mb-2">Metrics</h3>
+          <h3 className="shell-section-header mb-2">Metrics</h3>
           <dl className="grid grid-cols-2 gap-x-3 gap-y-2 text-[11px]">
             <div>
               <dt className="text-content-dim">Reach</dt>
@@ -89,7 +89,7 @@ export function ContextPanel() {
         </section>
 
         <section className="pt-3 border-t border-border">
-          <label className="cursor-section-header block mb-1.5">Sentiment</label>
+          <label className="shell-section-header block mb-1.5">Sentiment</label>
           <select
             className="input-field w-full text-[11px]"
             value={article.sentiment}
@@ -111,7 +111,7 @@ export function ContextPanel() {
         </section>
 
         <section className="pt-3 border-t border-border">
-          <label className="cursor-section-header block mb-1.5">Notes</label>
+          <label className="shell-section-header block mb-1.5">Notes</label>
           <textarea
             className="input-field w-full text-[11px] min-h-[56px]"
             value={notes}
@@ -120,7 +120,7 @@ export function ContextPanel() {
         </section>
 
         <section className="pt-3 border-t border-border">
-          <label className="cursor-section-header block mb-1.5">Tags</label>
+          <label className="shell-section-header block mb-1.5">Tags</label>
           <input
             className="input-field w-full text-[11px]"
             value={tags}
@@ -131,7 +131,7 @@ export function ContextPanel() {
 
         {article.article_text && (
           <section className="pt-3 border-t border-border">
-            <h3 className="cursor-section-header mb-2">Preview</h3>
+            <h3 className="shell-section-header mb-2">Preview</h3>
             <p className="text-[11px] text-content-muted leading-relaxed line-clamp-8">
               {highlightKeywords(article.article_text, keywords)}
             </p>

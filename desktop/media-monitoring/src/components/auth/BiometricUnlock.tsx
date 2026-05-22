@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { Fingerprint, Loader2, Code2 } from 'lucide-react'
-import { cursor } from '@/theme/cursor'
+import { Fingerprint, Loader2, Radar } from 'lucide-react'
+import { shell } from '@/theme/shellTheme'
 
 interface Props {
   onUnlocked: () => void
@@ -27,10 +27,10 @@ export function BiometricUnlock({ onUnlocked, onUsePassword }: Props) {
   return (
     <div
       className="h-full flex flex-col items-center justify-center px-8"
-      style={{ backgroundColor: cursor.activityBar }}
+      style={{ backgroundColor: shell.activityBar }}
     >
       <div className="w-full max-w-[380px] text-center space-y-6">
-        <Code2 size={32} className="mx-auto text-content-muted" />
+        <Radar size={32} className="mx-auto text-content-muted" />
         <div>
           <h1 className="text-lg font-medium text-content">Unlock with Touch ID</h1>
           <p className="text-xs text-content-muted mt-2">

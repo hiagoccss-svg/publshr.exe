@@ -24,7 +24,7 @@ export function DashboardView() {
         <p className="text-[11px] text-content-dim mt-0.5">Media intelligence overview for your workspace.</p>
       </div>
 
-      <div className="cursor-metric-row">
+      <div className="shell-metric-row">
         <MetricCell label="Active monitors" value={String(stats?.monitors ?? 0)} />
         <MetricCell label="Coverage found" value={String(stats?.articles ?? 0)} />
         <MetricCell label="Saved articles" value={String(stats?.saved ?? 0)} />
@@ -33,7 +33,7 @@ export function DashboardView() {
 
       {activeMonitor && (
         <section className="px-4 py-4 border-b border-border">
-          <p className="cursor-section-header mb-2">Active monitor</p>
+          <p className="shell-section-header mb-2">Active monitor</p>
           <p className="text-[13px] text-content">{activeMonitor.name}</p>
           <p className="text-[11px] text-content-dim mt-1 font-mono">{activeMonitor.keywords}</p>
           <button type="button" className="btn-primary mt-3 text-[11px]" onClick={() => startLive()}>
@@ -47,8 +47,8 @@ export function DashboardView() {
 
 function MetricCell({ label, value }: { label: string; value: string }) {
   return (
-    <div className="cursor-metric-cell">
-      <p className="cursor-section-header">{label}</p>
+    <div className="shell-metric-cell">
+      <p className="shell-section-header">{label}</p>
       <p className="text-lg font-medium text-content mt-1 tabular-nums">{value}</p>
     </div>
   )
