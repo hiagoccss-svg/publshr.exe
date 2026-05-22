@@ -17,12 +17,8 @@ export function WorkspaceSidebar() {
 
   return (
     <aside
-      className="flex flex-col shrink-0 border-r overflow-hidden min-h-0"
-      style={{
-        width: shell.sideBarWidth,
-        backgroundColor: shell.sideBar,
-        borderColor: shell.border
-      }}
+      className="glass-sidebar-dark flex min-h-0 shrink-0 flex-col overflow-hidden border-r"
+      style={{ width: shell.sideBarWidth }}
     >
       <div
         className="shell-panel-header"

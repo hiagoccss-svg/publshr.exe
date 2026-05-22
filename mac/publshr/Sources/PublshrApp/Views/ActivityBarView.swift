@@ -19,12 +19,7 @@ struct ActivityBarView: View {
         }
         .frame(maxHeight: .infinity)
         .frame(width: CursorTheme.activityBarWidth)
-        .background(CursorTheme.activityBar)
-        .overlay(alignment: .trailing) {
-            Rectangle()
-                .fill(CursorTheme.hairline)
-                .frame(width: 1)
-        }
+        .glassSidebar()
     }
 
     private func moduleButton(_ item: AppModule) -> some View {

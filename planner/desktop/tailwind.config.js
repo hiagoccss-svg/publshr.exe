@@ -5,10 +5,10 @@ export default {
     extend: {
       colors: {
         surface: {
-          DEFAULT: '#f7f6f4',
+          DEFAULT: '#f3f2ef',
           raised: '#ffffff',
           muted: '#eeedeb',
-          border: '#e4e2de'
+          border: '#e4e2dc'
         },
         ink: {
           DEFAULT: '#1a1a18',
@@ -45,8 +45,14 @@ export default {
         panel: '0 0 0 1px rgba(26, 26, 24, 0.06)'
       },
       borderRadius: {
-        xl: '10px',
-        '2xl': '12px'
+        card: '18px',
+        pill: '9999px',
+        xl: '18px',
+        '2xl': '18px'
+      },
+      spacing: {
+        'lib-gutter': '18px',
+        'lib-margin': '24px'
       }
     }
   },

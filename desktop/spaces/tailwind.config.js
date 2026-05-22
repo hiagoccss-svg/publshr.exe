@@ -5,9 +5,9 @@ export default {
     extend: {
       colors: {
         surface: {
-          DEFAULT: '#f6f5f3',
+          DEFAULT: '#f3f2ef',
           raised: '#ffffff',
-          muted: '#eeede9',
+          muted: '#eeedeb',
           border: '#e4e2dc'
         },
         ink: {
@@ -39,9 +39,18 @@ export default {
           'sans-serif'
         ]
       },
+      borderRadius: {
+        card: '18px',
+        pill: '9999px'
+      },
+      spacing: {
+        'lib-gutter': '18px',
+        'lib-margin': '24px',
+        'lib-card': '16px'
+      },
       boxShadow: {
         panel: '0 1px 2px rgba(26, 25, 23, 0.04), 0 4px 16px rgba(26, 25, 23, 0.06)',
-        card: '0 1px 2px rgba(26, 25, 23, 0.05)'
+        card: '0 1px 2px rgba(26, 25, 23, 0.05), 0 8px 24px rgba(26, 25, 23, 0.06)'
       },
       animation: {
         'fade-in': 'fadeIn 0.15s ease-out'

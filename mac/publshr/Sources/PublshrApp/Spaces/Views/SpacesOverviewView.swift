@@ -10,15 +10,38 @@ struct SpacesOverviewView: View {
                     header(space)
                 }
 
-                metricsGrid
+                LibraryMasonryGrid(columns: 4, spacing: LibraryGlassDesign.gridGutter) {
+                    metricCard("Open", value: openCount)
+                    metricCard("Completed", value: completedCount)
+                    metricCard("In review", value: reviewCount)
+                    metricCard("High priority", value: urgentCount)
+                }
 
-                documentsSection
-
-                activitySection
+                LibraryMasonryGrid(columns: 2, spacing: LibraryGlassDesign.gridGutter) {
+                    documentsCard
+                    activityCard
+                }
             }
             .padding(SpacesClickUpDesign.overviewPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
+        .glassWorkspace()
+    }
+
+    private var openCount: Int {
+        spaces.tasks.filter { $0.status != .completed && $0.status != .archived }.count
+    }
+
+    private var completedCount: Int {
+        spaces.tasks.filter { $0.status == .completed }.count
+    }
+
+    private var reviewCount: Int {
+        spaces.tasks.filter { $0.status == .review }.count
+    }
+
+    private var urgentCount: Int {
+        spaces.tasks.filter { $0.priority == .urgent || $0.priority == .high }.count
     }
 
     @ViewBuilder
@@ -37,26 +60,12 @@ struct SpacesOverviewView: View {
                 .foregroundStyle(CursorTheme.foregroundDim)
                 .padding(.horizontal, 8)
                 .padding(.vertical, 4)
-                .background(CursorTheme.panelBackground)
+                .background(Color.white.opacity(0.8))
                 .clipShape(Capsule())
         }
     }
 
-    private var metricsGrid: some View {
-        let open = spaces.tasks.filter { $0.status != .completed && $0.status != .archived }.count
-        let done = spaces.tasks.filter { $0.status == .completed }.count
-        let review = spaces.tasks.filter { $0.status == .review }.count
-        let urgent = spaces.tasks.filter { $0.priority == .urgent || $0.priority == .high }.count
-
-        return LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-            metricCard("Open", value: open)
-            metricCard("Completed", value: done)
-            metricCard("In review", value: review)
-            metricCard("High priority", value: urgent)
-        }
-    }
-
-    private var documentsSection: some View {
+    private var documentsCard: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
                 Text("Documents")
@@ -71,6 +80,7 @@ struct SpacesOverviewView: View {
                     Button("Add") {
                         Task { await spaces.createDocument(openEditor: true) }
                     }
+                    .buttonStyle(LibraryPrimaryPillButtonStyle())
                     .controlSize(.small)
                     .disabled(spaces.newDocumentTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 }
@@ -102,17 +112,15 @@ struct SpacesOverviewView: View {
                                 .font(.system(size: 10))
                                 .foregroundStyle(CursorTheme.foregroundDim)
                         }
-                        .padding(SpacesClickUpDesign.docRowPadding)
-                        .background(CursorTheme.panelBackground)
-                        .clipShape(RoundedRectangle(cornerRadius: SpacesClickUpDesign.docRowRadius))
                     }
                     .buttonStyle(.plain)
                 }
             }
         }
+        .libraryCard()
     }
 
-    private var activitySection: some View {
+    private var activityCard: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("Recent activity")
                 .font(.system(size: 12, weight: .semibold))
@@ -144,6 +152,7 @@ struct SpacesOverviewView: View {
                 }
             }
         }
+        .libraryCard()
     }
 
     private func metricCard(_ label: String, value: Int) -> some View {
@@ -155,9 +164,7 @@ struct SpacesOverviewView: View {
                 .font(.system(size: 22, weight: .medium))
                 .foregroundStyle(CursorTheme.foreground)
         }
-        .padding(SpacesClickUpDesign.metricCardPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(CursorTheme.panelBackground)
-        .clipShape(RoundedRectangle(cornerRadius: SpacesClickUpDesign.metricCardRadius))
+        .libraryCard()
     }
 }

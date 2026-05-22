@@ -43,7 +43,7 @@ struct MainIDEView: View {
             .frame(width: geometry.size.width, height: geometry.size.height)
         }
         .ignoresSafeArea(.container, edges: .top)
-        .background(CursorTheme.editorBackground)
+        .glassWorkspace()
         .background(WindowChromeConfigurator())
         .onAppear {
             _ = AppShellIdentity.distributionTag

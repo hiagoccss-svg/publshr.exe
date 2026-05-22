@@ -1,0 +1,181 @@
+/**
+ * Library glass design — spacing, cards, sidebar, masonry (reference UI).
+ * Import paths (from each app's index.css):
+ *   desktop/spaces/src/renderer → ../../../../shared/design/library-glass.css
+ *   desktop/media-monitoring/src, planner/desktop/src → ../../../shared/design/library-glass.css
+ */
+
+:root {
+  --lib-outer-margin: 24px;
+  --lib-grid-gutter: 18px;
+  --lib-card-radius: 18px;
+  --lib-card-padding: 16px;
+  --lib-sidebar-width: 260px;
+  --lib-sidebar-width-wide: 272px;
+  --lib-shell-bg: #f3f2ef;
+  --lib-glass-bg: rgba(255, 255, 255, 0.72);
+  --lib-glass-border: rgba(255, 255, 255, 0.85);
+  --lib-card-shadow: 0 1px 2px rgba(26, 25, 23, 0.05), 0 8px 24px rgba(26, 25, 23, 0.06);
+  --lib-ink: #1a1917;
+  --lib-ink-muted: #8a877f;
+  --lib-cta: #1a1917;
+}
+
+@layer components {
+  .glass-shell {
+    background: var(--lib-shell-bg);
+  }
+
+  .glass-sidebar {
+    width: var(--lib-sidebar-width);
+    background: var(--lib-glass-bg);
+    backdrop-filter: blur(20px) saturate(1.2);
+    -webkit-backdrop-filter: blur(20px) saturate(1.2);
+    border-right: 1px solid rgba(228, 226, 220, 0.6);
+  }
+
+  .glass-sidebar-wide {
+    width: var(--lib-sidebar-width-wide);
+  }
+
+  .glass-toolbar {
+    background: rgba(255, 255, 255, 0.78);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-bottom: 1px solid rgba(228, 226, 220, 0.65);
+  }
+
+  .glass-workspace {
+    background: rgba(255, 255, 255, 0.42);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  .library-workspace-pad {
+    padding: var(--lib-outer-margin);
+  }
+
+  .library-card {
+    border-radius: var(--lib-card-radius);
+    padding: var(--lib-card-padding);
+    background: #ffffff;
+    box-shadow: var(--lib-card-shadow);
+    border: 1px solid rgba(228, 226, 220, 0.5);
+  }
+
+  .library-card-glass {
+    border-radius: var(--lib-card-radius);
+    padding: var(--lib-card-padding);
+    background: var(--lib-glass-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    box-shadow: var(--lib-card-shadow);
+    border: 1px solid var(--lib-glass-border);
+  }
+
+  .library-masonry {
+    column-gap: var(--lib-grid-gutter);
+    column-fill: balance;
+  }
+
+  .library-masonry-2 {
+    column-count: 2;
+  }
+
+  .library-masonry-3 {
+    column-count: 3;
+  }
+
+  .library-masonry-4 {
+    column-count: 4;
+  }
+
+  @media (min-width: 1024px) {
+    .library-masonry-responsive {
+      column-count: 3;
+    }
+  }
+
+  @media (min-width: 1280px) {
+    .library-masonry-responsive {
+      column-count: 4;
+    }
+  }
+
+  .library-masonry-item {
+    break-inside: avoid;
+    margin-bottom: var(--lib-grid-gutter);
+  }
+
+  .library-cta-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 36px;
+    padding: 0 16px;
+    border-radius: 9999px;
+    background: var(--lib-cta);
+    color: #ffffff;
+    font-size: 13px;
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(26, 25, 23, 0.12);
+  }
+
+  .library-cta-pill:hover {
+    background: #2d2c28;
+  }
+
+  .library-nav-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 6px 10px;
+    border-radius: 10px;
+    font-size: 13px;
+    color: var(--lib-ink);
+    text-align: left;
+    transition: background 0.15s ease;
+  }
+
+  .library-nav-row:hover {
+    background: rgba(26, 25, 23, 0.05);
+  }
+
+  .library-nav-row-active {
+    background: rgba(26, 25, 23, 0.08);
+    font-weight: 600;
+  }
+
+  .library-section-label {
+    padding: 8px 10px 4px;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--lib-ink-muted);
+  }
+
+  /* Dark IDE shells (media monitoring) — same spacing, frosted chrome */
+  .glass-toolbar-dark {
+    background: rgba(37, 37, 38, 0.82);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .glass-sidebar-dark {
+    background: rgba(37, 37, 38, 0.72);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .library-card-dark {
+    border-radius: var(--lib-card-radius);
+    padding: var(--lib-card-padding);
+    background: rgba(45, 45, 46, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  }
+}

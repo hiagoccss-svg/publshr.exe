@@ -11,7 +11,7 @@ export function MainShell(): React.ReactElement {
   const contextOpen = useSpacesStore((s) => s.contextPanelOpen)
 
   return (
-    <div className="flex h-full flex-col bg-surface">
+    <div className="glass-shell flex h-full flex-col">
       <TopBar />
       <div className="flex min-h-0 flex-1">
         <Sidebar collapsed={collapsed} />

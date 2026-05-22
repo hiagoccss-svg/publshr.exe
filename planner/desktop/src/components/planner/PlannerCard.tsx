@@ -34,8 +34,8 @@ export default function PlannerCard({
       }}
       onKeyDown={(e) => e.key === 'Enter' && onSelect()}
       className={cn(
-        'group cursor-pointer rounded-xl border bg-surface-raised p-3 transition shadow-panel hover:shadow-soft',
-        selected ? 'border-accent/40 ring-1 ring-accent/20' : 'border-surface-border/80',
+        'library-card group cursor-pointer transition hover:shadow-card',
+        selected && 'ring-1 ring-accent/25',
         overdue && 'border-status-overdue/30'
       )}
       style={{ borderLeftWidth: 3, borderLeftColor: typeColor }}

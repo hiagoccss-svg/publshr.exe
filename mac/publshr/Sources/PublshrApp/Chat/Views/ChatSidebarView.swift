@@ -13,7 +13,7 @@ struct ChatSidebarView: View {
             sidebarHeader
             sidebarSearch
             filterBar
-            Divider().overlay(CursorTheme.hairline)
+            Divider().overlay(LibraryGlassDesign.hairline)
 
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 0) {
@@ -30,7 +30,7 @@ struct ChatSidebarView: View {
                 .padding(.horizontal, 4)
             }
 
-            Divider().overlay(CursorTheme.hairline)
+            Divider().overlay(LibraryGlassDesign.hairline)
             layoutFooter
         }
         .frame(maxHeight: .infinity)
@@ -43,7 +43,7 @@ struct ChatSidebarView: View {
         HStack(spacing: 8) {
             Image(systemName: "bubble.left.and.bubble.right.fill")
                 .font(.system(size: 14, weight: .medium))
-                .foregroundStyle(CursorTheme.accent)
+                .foregroundStyle(LibraryGlassDesign.primaryCTA)
             Text("Chat")
                 .font(ChatClickUpDesign.sidebarTitleFont)
                 .foregroundStyle(CursorTheme.foreground)
@@ -62,7 +62,7 @@ struct ChatSidebarView: View {
             } label: {
                 Image(systemName: "plus.circle.fill")
                     .font(.system(size: 18))
-                    .foregroundStyle(CursorTheme.accent)
+                    .foregroundStyle(LibraryGlassDesign.primaryCTA)
             }
             .menuStyle(.borderlessButton)
             .menuIndicator(.hidden)
@@ -97,11 +97,11 @@ struct ChatSidebarView: View {
         .frame(height: ChatClickUpDesign.searchHeight)
         .background(
             RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .fill(CursorTheme.panelBackground)
+                .fill(LibraryGlassDesign.cardGlassFill)
         )
         .overlay(
             RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .strokeBorder(CursorTheme.borderSubtle, lineWidth: 1)
+                .strokeBorder(LibraryGlassDesign.hairline, lineWidth: 1)
         )
         .padding(.horizontal, ChatClickUpDesign.horizontalPadding)
         .padding(.bottom, 8)
@@ -138,11 +138,11 @@ struct ChatSidebarView: View {
                 .frame(height: ChatClickUpDesign.filterPillHeight)
                 .background(
                     Capsule(style: .continuous)
-                        .fill(selected ? CursorTheme.accent : CursorTheme.panelBackground)
+                        .fill(selected ? LibraryGlassDesign.primaryCTA : LibraryGlassDesign.cardGlassFill)
                 )
                 .overlay(
                     Capsule(style: .continuous)
-                        .strokeBorder(selected ? Color.clear : CursorTheme.borderSubtle, lineWidth: 1)
+                        .strokeBorder(selected ? Color.clear : LibraryGlassDesign.hairline, lineWidth: 1)
                 )
         }
         .buttonStyle(.plain)
@@ -239,7 +239,7 @@ struct ChatSidebarView: View {
         }
         .padding(.horizontal, ChatClickUpDesign.horizontalPadding)
         .frame(height: ChatClickUpDesign.footerHeight)
-        .background(CursorTheme.panelBackground.opacity(0.5))
+        .background(LibraryGlassDesign.cardGlassFill.opacity(0.5))
     }
 
     private func layoutToggle(_ layout: ChatSidebarLayout, icon: String) -> some View {
@@ -249,11 +249,11 @@ struct ChatSidebarView: View {
         } label: {
             Image(systemName: icon)
                 .font(.system(size: 13, weight: .medium))
-                .foregroundStyle(selected ? CursorTheme.accent : CursorTheme.foregroundDim)
+                .foregroundStyle(selected ? LibraryGlassDesign.primaryCTA : CursorTheme.foregroundDim)
                 .frame(width: 36, height: 28)
                 .background(
                     RoundedRectangle(cornerRadius: 6, style: .continuous)
-                        .fill(selected ? CursorTheme.accent.opacity(0.1) : Color.clear)
+                        .fill(selected ? LibraryGlassDesign.primaryCTA.opacity(0.1) : Color.clear)
                 )
         }
         .buttonStyle(.plain)
@@ -327,7 +327,7 @@ struct ChatSidebarView: View {
                         if threadUnread {
                             Image(systemName: "bubble.left.and.bubble.right.fill")
                                 .font(.system(size: 10))
-                                .foregroundStyle(CursorTheme.accent)
+                                .foregroundStyle(LibraryGlassDesign.primaryCTA)
                                 .help("Unread thread replies")
                         }
                         if let live = calls.liveCall(for: channel.id), !calls.isInCall(on: channel.id) {
@@ -338,7 +338,7 @@ struct ChatSidebarView: View {
                                 .foregroundStyle(.white)
                                 .padding(.horizontal, 6)
                                 .padding(.vertical, 2)
-                                .background(CursorTheme.accent)
+                                .background(LibraryGlassDesign.primaryCTA)
                                 .clipShape(Capsule())
                         }
                     }
@@ -347,7 +347,7 @@ struct ChatSidebarView: View {
                 .padding(.horizontal, 10)
                 .background(
                     RoundedRectangle(cornerRadius: ChatClickUpDesign.rowRadius, style: .continuous)
-                        .fill(selected ? CursorTheme.accent.opacity(0.08) : Color.clear)
+                        .fill(selected ? LibraryGlassDesign.primaryCTA.opacity(0.08) : Color.clear)
                 )
             }
             .buttonStyle(.plain)

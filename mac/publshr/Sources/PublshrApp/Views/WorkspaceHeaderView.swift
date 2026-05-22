@@ -51,7 +51,16 @@ struct WorkspaceHeaderView: View {
         }
         .frame(height: totalHeaderHeight)
         .frame(maxWidth: .infinity)
-        .background(CursorTheme.titleBar)
+        .background {
+            Rectangle()
+                .fill(.ultraThinMaterial)
+                .background(Color.white.opacity(0.78))
+        }
+        .overlay(alignment: .bottom) {
+            Rectangle()
+                .fill(LibraryGlassDesign.hairline)
+                .frame(height: 1)
+        }
     }
 
     // MARK: - Leading

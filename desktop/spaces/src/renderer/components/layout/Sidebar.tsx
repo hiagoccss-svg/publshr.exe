@@ -9,6 +9,7 @@ import {
   LayoutDashboard,
   MessageSquare,
   Pin,
+  Plus,
   Radio,
   Settings,
   Star,
@@ -55,12 +56,21 @@ export function Sidebar({ collapsed }: SidebarProps): React.ReactElement {
   return (
     <aside
       className={clsx(
-        'flex shrink-0 flex-col border-r border-surface-border bg-surface-raised transition-[width] duration-200',
-        collapsed ? 'w-14' : activeSection === 'spaces' && activeSpaceId ? 'w-[272px]' : 'w-56'
+        'glass-sidebar flex shrink-0 flex-col transition-[width] duration-200',
+        collapsed ? 'w-14 !bg-surface-raised/90' : activeSection === 'spaces' && activeSpaceId ? 'glass-sidebar-wide' : ''
       )}
     >
+      {!collapsed && (
+        <div className="px-3 pt-3 pb-2">
+          <button type="button" onClick={() => setNewSpaceModalOpen(true)} className="library-cta-pill w-full justify-center">
+            <Plus className="h-4 w-4" />
+            New Space
+          </button>
+        </div>
+      )}
+
       <div className="flex items-center justify-between px-3 py-2">
-        {!collapsed && <span className="text-[11px] font-semibold uppercase tracking-wide text-ink-muted">Operations</span>}
+        {!collapsed && <span className="library-section-label !px-0">Operations</span>}
         <button
           type="button"
           onClick={() => setSidebarCollapsed(!collapsed)}
@@ -81,8 +91,8 @@ export function Sidebar({ collapsed }: SidebarProps): React.ReactElement {
               title={item.label}
               onClick={() => setActiveSection(item.id)}
               className={clsx(
-                'flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-left text-sm transition',
-                active ? 'bg-accent-soft text-accent font-medium' : 'text-ink-secondary hover:bg-surface-muted'
+                'library-nav-row text-sm',
+                active && 'library-nav-row-active'
               )}
             >
               <Icon className="h-4 w-4 shrink-0" />

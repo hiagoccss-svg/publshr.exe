@@ -3,11 +3,11 @@ import SwiftUI
 /// ClickUp-inspired layout tokens for Spaces (sidebar tree, breadcrumbs, views, board).
 enum SpacesClickUpDesign {
     // Sidebar
-    static let sidebarWidth: CGFloat = 272
+    static let sidebarWidth: CGFloat = LibraryGlassDesign.sidebarWidthWide
     static let sidebarSectionTop: CGFloat = 12
     static let sidebarSectionBottom: CGFloat = 6
     static let sidebarRowHeight: CGFloat = 30
-    static let sidebarRowRadius: CGFloat = 6
+    static let sidebarRowRadius: CGFloat = LibraryGlassDesign.sidebarRowRadius
     static let sidebarIndentStep: CGFloat = 18
     static let sidebarIconWidth: CGFloat = 16
     static let sidebarHorizontalPadding: CGFloat = 10
@@ -24,16 +24,16 @@ enum SpacesClickUpDesign {
     static let boardColumnSpacing: CGFloat = 12
     static let boardColumnPadding: CGFloat = 12
     static let boardCardSpacing: CGFloat = 8
-    static let boardCardPadding: CGFloat = 10
-    static let boardCardRadius: CGFloat = 8
+    static let boardCardPadding: CGFloat = LibraryGlassDesign.cardPadding
 
     // Overview & docs
-    static let overviewPadding: CGFloat = 20
-    static let overviewSectionSpacing: CGFloat = 20
-    static let metricCardPadding: CGFloat = 14
-    static let metricCardRadius: CGFloat = 10
-    static let docRowPadding: CGFloat = 12
-    static let docRowRadius: CGFloat = 8
+    static let overviewPadding: CGFloat = LibraryGlassDesign.outerMargin
+    static let overviewSectionSpacing: CGFloat = LibraryGlassDesign.gridGutter
+    static let metricCardPadding: CGFloat = LibraryGlassDesign.cardPadding
+    static let metricCardRadius: CGFloat = LibraryGlassDesign.cardRadius
+    static let docRowPadding: CGFloat = LibraryGlassDesign.cardPadding
+    static let docRowRadius: CGFloat = LibraryGlassDesign.cardRadius
+    static let boardCardRadius: CGFloat = LibraryGlassDesign.cardRadius
 
     // Inspector
     static let inspectorWidth: CGFloat = 340
