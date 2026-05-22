@@ -70,7 +70,7 @@ struct ChatConversationView: View {
             ChatComposerView(
                 chat: chat,
                 canSendVoiceNotes: chat.permissions.canUseVoiceNotes,
-                onAttachFile: { showFileImporter = true },
+                onAttachFile: { attachFiles() },
                 onVoiceNote: { showVoiceSheet = true }
             )
         }
@@ -164,6 +164,13 @@ struct ChatConversationView: View {
         guard let idx = list.firstIndex(where: { $0.id == message.id }) else { return true }
         if idx == 0 { return true }
         return list[idx - 1].userId != message.userId
+    }
+
+    private func attachFiles() {
+        guard chat.permissions.canUploadFiles else { return }
+        let urls = FileAccessService.pickFiles(allowedTypes: [.image, .pdf, .data])
+        guard let url = urls.first else { return }
+        Task { await chat.uploadFile(from: url) }
     }
 
     private func handleDrop(_ providers: [NSItemProvider]) -> Bool {

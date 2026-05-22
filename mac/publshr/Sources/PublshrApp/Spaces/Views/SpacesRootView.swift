@@ -32,6 +32,12 @@ struct SpacesRootView: View {
         .onChange(of: auth.selectedMembership?.workspace.id) { _, _ in
             spaces.attach(auth: auth)
         }
+        .sheet(isPresented: $spaces.showNewSpaceSheet) {
+            SpacesNewSpaceSheet(spaces: spaces)
+        }
+        .sheet(item: $spaces.editingDocument) { doc in
+            SpacesDocumentEditorSheet(spaces: spaces, document: doc)
+        }
     }
 
     @ViewBuilder

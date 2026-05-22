@@ -168,7 +168,7 @@ extension ChatViewModel {
               let userId = currentUserId else { return }
         uploadProgress = 0.1
         do {
-            let data = try Data(contentsOf: url)
+            let data = try FileAccessService.readData(from: url)
             let name = url.lastPathComponent
             let mime = UTType(filenameExtension: url.pathExtension)?.preferredMIMEType ?? "application/octet-stream"
             let result = try await service.uploadChatFile(
@@ -246,7 +246,7 @@ extension ChatViewModel {
               let service, let workspace, let channel = selectedChannel,
               let userId = currentUserId else { return }
         do {
-            let data = try Data(contentsOf: url)
+            let data = try FileAccessService.readData(from: url)
             let fileName = "voice-\(UUID().uuidString).m4a"
             let uploaded = try await service.uploadChatFile(
                 workspaceId: workspace.id,
@@ -374,21 +374,15 @@ extension ChatViewModel {
     // MARK: - Permissions persistence
 
     func savePermissionsToWorkspace() async {
-        guard var ws = workspace, let service else { return }
-        var chatSettings: [String: JSONValue] = [:]
-        chatSettings["can_create_channels"] = .bool(permissions.canCreateChannels)
-        chatSettings["can_dm"] = .bool(permissions.canDM)
-        chatSettings["can_use_voice_notes"] = .bool(permissions.canUseVoiceNotes)
-        chatSettings["read_receipts_enabled"] = .bool(permissions.readReceiptsEnabled)
-        chatSettings["can_upload_files"] = .bool(permissions.canUploadFiles)
-        chatSettings["can_pin_messages"] = .bool(permissions.canPinMessages)
-        chatSettings["can_export_chats"] = .bool(permissions.canExportChats)
-        var settings = ws.settings ?? [:]
-        settings["chat"] = .object(chatSettings)
-        ws.settings = settings
-        workspace = ws
+        guard var ws = workspace, let client = attachedClient else { return }
+        let enterprise = EnterpriseWorkspaceService()
         do {
-            try await service.updateWorkspaceSettings(workspaceId: ws.id, settings: settings)
+            try await enterprise.persistChatPermissions(
+                client: client,
+                workspace: &ws,
+                permissions: permissions
+            )
+            workspace = ws
         } catch {
             errorMessage = error.localizedDescription
         }

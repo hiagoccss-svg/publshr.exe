@@ -23,8 +23,13 @@ final class SpacesViewModel: ObservableObject {
     @Published var newCommentText = ""
 
     @Published private(set) var isLoading = false
+    @Published var isOffline = false
     @Published var errorMessage: String?
+    @Published var showNewSpaceSheet = false
+    @Published var editingDocument: SpaceDocumentRecord?
     @Published var newSpaceName = ""
+    @Published var newSpaceType: SpaceTypeOption = .general
+    @Published var newSpaceDescription = ""
     @Published var newFolderName = ""
     @Published var newListName = ""
     @Published var newTaskTitle = ""
@@ -97,6 +102,7 @@ final class SpacesViewModel: ObservableObject {
         }
         isLoading = true
         errorMessage = nil
+        isOffline = false
         defer { isLoading = false }
 
         do {
@@ -131,6 +137,7 @@ final class SpacesViewModel: ObservableObject {
                 documents = []
             }
         } catch {
+            isOffline = isNetworkError(error)
             errorMessage = friendlySpacesError(error)
         }
     }
@@ -281,10 +288,35 @@ final class SpacesViewModel: ObservableObject {
         isLoading = true
         defer { isLoading = false }
         do {
-            let space = try await service.createSpace(workspaceId: workspaceId, ownerId: userId, name: name)
+            let space = try await service.createSpace(
+                workspaceId: workspaceId,
+                ownerId: userId,
+                name: name,
+                type: newSpaceType.rawValue
+            )
+            let description = newSpaceDescription.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !description.isEmpty {
+                try await service.updateSpace(id: space.id, description: description)
+            }
             newSpaceName = ""
-            spaces.append(space)
+            newSpaceDescription = ""
+            newSpaceType = .general
+            showNewSpaceSheet = false
+            await reload()
             await selectSpace(space.id)
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func saveDocument(_ document: SpaceDocumentRecord, title: String, content: String) async {
+        guard let service else { return }
+        do {
+            let updated = try await service.updateDocument(id: document.id, title: title, content: content)
+            if let idx = documents.firstIndex(where: { $0.id == document.id }) {
+                documents[idx] = updated
+            }
+            editingDocument = nil
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -466,6 +498,12 @@ final class SpacesViewModel: ObservableObject {
             entityType: "task",
             entityId: taskId
         )
+    }
+
+    private func isNetworkError(_ error: Error) -> Bool {
+        if error is URLError { return true }
+        let ns = error as NSError
+        return ns.domain == NSURLErrorDomain
     }
 
     // MARK: - Display helpers
