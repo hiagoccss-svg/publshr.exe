@@ -3,7 +3,7 @@ BUILD_DIR   := $(PROJECT_DIR)/.build
 VERSION     ?= 0.1.0
 LOCAL_BIN   := $(CURDIR)/.local/bin
 
-.PHONY: all build release test clean install install-local install-mac-app uninstall package check-folder help media-monitoring-dev media-monitoring-build media-monitoring-smoke
+.PHONY: all build release test clean install install-local install-mac-app uninstall package check-folder help media-monitoring-dev media-monitoring-build media-monitoring-smoke spaces-dev planner-dev
 
 help: ## Show available targets
 	@grep -E '^[a-zA-Z_-]+:.*##' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*##"}; {printf "  %-15s %s\n", $$1, $$2}'
@@ -70,6 +70,12 @@ version: build ## Print version from built binary
 
 run-local: install-local ## Install locally and run help
 	$(LOCAL_BIN)/publshr
+
+spaces-dev: ## Run Spaces desktop app (native window + hot reload)
+	cd desktop/spaces && npm install && npm run dev
+
+planner-dev: ## Run Planner desktop app (native window + hot reload)
+	cd planner/desktop && npm install && npm run dev
 
 media-monitoring-dev: ## Run Media Monitoring desktop app (dev)
 	cd desktop/media-monitoring && npm install && npm run dev

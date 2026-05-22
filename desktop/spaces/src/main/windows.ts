@@ -1,19 +1,19 @@
 import { BrowserWindow, shell } from 'electron'
 import { join } from 'path'
-import { is } from '@electron-toolkit/utils'
 import {
   configureGlassWindow,
   glassWindowOptions
 } from '../../../../shared/electron/glass-window'
+import { loadRendererWindow } from '../../../../shared/electron/updater/window-loader'
+import { getDesktopUpdates } from './updates'
 
 const openWindows = new Map<string, BrowserWindow>()
+const bundledRendererIndex = join(__dirname, '../renderer/index.html')
 
 function loadUrl(win: BrowserWindow, hash: string): void {
-  if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
-    win.loadURL(`${process.env['ELECTRON_RENDERER_URL']}#${hash}`)
-  } else {
-    win.loadFile(join(__dirname, '../renderer/index.html'), { hash })
-  }
+  loadRendererWindow(win, bundledRendererIndex, getDesktopUpdates()?.appBundle ?? null, {
+    hash
+  })
 }
 
 export function createMainWindow(): BrowserWindow {

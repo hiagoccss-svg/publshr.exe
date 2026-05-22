@@ -62,6 +62,14 @@ Every push to `main` runs `.github/workflows/deliver-macos.yml`, publishing the 
 
 Translucent **shell** (wallpaper bleeds through) vs solid **content** (cards, editors, tables). Shared CSS: `shared/design/desktop-transparency.css` (via `library-glass.css`). Electron windows: `shared/electron/glass-window.ts`. Docs: `shared/design/DESKTOP_TRANSPARENCY.md`. macOS IDE: `WorkspaceDesktopBackdrop`, `MainWindowChrome`.
 
+### Desktop workflow (dev + installed auto-update)
+
+See **`desktop/docs/DESKTOP_WORKFLOW.md`**. Summary:
+
+- **Dev:** `npm run dev` (or `make spaces-dev` / `planner-dev` / `media-monitoring-dev`) — native Electron window + Vite HMR; no reinstall.
+- **Installed:** Install shell once; **app bundle** updates from GitHub (`dev` / `staging` / `production`); **shell** installer only when main/preload changes.
+- Shared updater: `shared/electron/updater/`; CI: `.github/workflows/deliver-desktop.yml`.
+
 ### Spaces (macOS IDE + Electron)
 
 The **native Spaces** module lives in `mac/publshr/Sources/PublshrApp/Spaces/` (SwiftUI + Supabase + SQLite cache). See `mac/publshr/docs/SPACES_SYSTEM.md`. Schema: `mac/publshr/supabase/migrations/001_spaces_schema.sql`.
@@ -71,8 +79,9 @@ The standalone **Spaces** Electron app lives in `desktop/spaces/` (React + TypeS
 ```bash
 cd desktop/spaces
 npm install
-npm run dev      # development
-npm run build    # production bundle
+npm run dev         # native window + hot reload
+npm run build       # production bundle
+npm run dist:shell  # installer when Electron shell changed
 npm run typecheck
 ```
 

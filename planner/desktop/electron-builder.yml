@@ -1,14 +1,10 @@
-appId: com.publshr.spaces
-productName: Publshr Spaces
+appId: com.publshr.planner
+productName: Publshr Planner
 directories:
   output: release
 files:
   - out/**/*
   - package.json
-publish:
-  provider: github
-  owner: hiagoccss-svg
-  repo: publshr.exe
 mac:
   category: public.app-category.productivity
   target:
@@ -20,3 +16,7 @@ linux:
 win:
   target:
     - nsis
+publish:
+  provider: github
+  owner: hiagoccss-svg
+  repo: publshr.exe

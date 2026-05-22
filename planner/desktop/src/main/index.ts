@@ -1,12 +1,16 @@
 import { app, BrowserWindow, ipcMain, shell, nativeTheme, Notification } from 'electron'
 import { join } from 'path'
-import { electronApp, optimizer, is } from '@electron-toolkit/utils'
+import { electronApp, optimizer } from '@electron-toolkit/utils'
 import { initDatabase, closeDatabase } from './database'
 import { registerIpcHandlers } from './ipc'
 import {
   configureGlassWindow,
   glassWindowOptions
 } from '../../../../shared/electron/glass-window'
+import { loadRendererWindow } from '../../../../shared/electron/updater/window-loader'
+import { getDesktopUpdates, initDesktopUpdates } from './updates'
+
+const bundledRendererIndex = join(__dirname, '../renderer/index.html')
 
 let mainWindow: BrowserWindow | null = null
 const editorWindows = new Map<string, BrowserWindow>()
@@ -31,11 +35,7 @@ function createMainWindow(): BrowserWindow {
   configureGlassWindow(win, 'light')
   win.on('ready-to-show', () => win.show())
 
-  if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
-    win.loadURL(process.env['ELECTRON_RENDERER_URL'])
-  } else {
-    win.loadFile(join(__dirname, '../renderer/index.html'))
-  }
+  loadRendererWindow(win, bundledRendererIndex, getDesktopUpdates()?.appBundle ?? null)
 
   return win
 }
@@ -69,12 +69,9 @@ function createEditorWindow(documentId: string, plannerItemId: string): BrowserW
 
   configureGlassWindow(win, 'light')
 
-  const hash = `#/editor/${documentId}?plannerItem=${plannerItemId}`
-  if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
-    win.loadURL(`${process.env['ELECTRON_RENDERER_URL']}${hash}`)
-  } else {
-    win.loadFile(join(__dirname, '../renderer/index.html'), { hash: `/editor/${documentId}?plannerItem=${plannerItemId}` })
-  }
+  loadRendererWindow(win, bundledRendererIndex, getDesktopUpdates()?.appBundle ?? null, {
+    hash: `/editor/${documentId}?plannerItem=${plannerItemId}`
+  })
 
   win.on('ready-to-show', () => win.show())
   win.on('closed', () => editorWindows.delete(documentId))
@@ -90,6 +87,7 @@ app.whenReady().then(() => {
     getMainWindow: () => mainWindow,
     openEditorWindow: createEditorWindow
   })
+  initDesktopUpdates()
 
   app.on('browser-window-created', (_, window) => {
     optimizer.watchWindowShortcuts(window)

@@ -15,7 +15,8 @@
     "noUnusedParameters": true,
     "baseUrl": ".",
     "paths": {
-      "@shared/*": ["src/shared/*"]
+      "@shared/*": ["src/shared/*"],
+      "electron-updater": ["node_modules/electron-updater"]
     }
   },
   "include": [
