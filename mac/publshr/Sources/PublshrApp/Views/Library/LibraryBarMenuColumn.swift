@@ -37,21 +37,27 @@ struct LibraryBarMenuColumn: View {
                         badge: min(chat.totalUnread, 99),
                         selected: false
                     ) {
-                        openFirstUnread()
+                        chat.openFirstUnreadChannel()
+                        tabStore.sidebarExpanded = true
                     }
                     navRow(
-                        "Saved",
-                        icon: "bookmark",
-                        badge: chat.favoriteChannels.count,
+                        "Pinned",
+                        icon: "pin.fill",
+                        badge: chat.pinnedSidebarChannels.count,
                         selected: false
                     ) {
-                        if let fav = chat.favoriteChannels.first {
-                            tabStore.openFromChannel(fav)
-                            chat.selectChannel(fav)
-                        }
+                        chat.openPinnedSidebarFocus()
+                        tabStore.sidebarExpanded = true
                     }
-                    navRow("Notes", icon: "note.text", selected: false) {
-                        chat.setSidebarLayout(.organized)
+                    navRow(
+                        "Recents",
+                        icon: "clock",
+                        selected: chat.sidebarLayout == .recents
+                    ) {
+                        module = .chat
+                        tabStore.openFromModule(.chat, activate: true)
+                        chat.setSidebarLayout(.recents)
+                        tabStore.sidebarExpanded = true
                     }
                     navRow("Tasks", icon: "checklist", selected: false) {
                         module = .spaces
@@ -183,22 +189,4 @@ struct LibraryBarMenuColumn: View {
         tabStore.openFromModule(item, activate: true)
     }
 
-    private func openFirstUnread() {
-        tabStore.sidebarExpanded = true
-        chat.setSidebarFilter(.unread)
-        let all = chat.channels + chat.directMessages
-        if let ch = all.first(where: {
-            chat.unreadCount(for: $0.id) > 0 || chat.hasUnreadThreadReplies(for: $0.id)
-        }) {
-            tabStore.openFromChannel(ch)
-            chat.selectChannel(ch)
-        } else if let first = all.first {
-            chat.setSidebarFilter(.all)
-            tabStore.openFromChannel(first)
-            chat.selectChannel(first)
-        } else {
-            chat.setSidebarFilter(.all)
-            showNewDM = true
-        }
-    }
 }

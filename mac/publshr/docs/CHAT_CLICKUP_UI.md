@@ -18,7 +18,7 @@ Settings opens in a **separate window** (not in the activity strip), matching a 
 
 ```
 ┌─────────────────────────────┐
-│ 💬 Chat              [+]    │  ← New channel / New message menu
+│ 💬 Chat              [+]    │  ← Implemented in `ChatSidebarView` header
 ├─────────────────────────────┤
 │ 🔍 Search channels…         │
 ├─────────────────────────────┤
@@ -42,6 +42,7 @@ Settings opens in a **separate window** (not in the activity strip), matching a 
 |--------|----------|
 | **All** | Channels + DMs (organized) or full recents list |
 | **Unread** | Rows with message unread count or thread unread |
+| **Pinned** | User-pinned channels/DMs (sidebar menu → Pin to sidebar) |
 | **DMs** | Direct + group messages only |
 | **Channels** | Workspace channels only |
 
@@ -80,7 +81,8 @@ Preference keys: `publshr.chat.sidebarFilter`, `publshr.chat.sidebarLayout` (Use
 | File | Role |
 |------|------|
 | `Chat/Utilities/ChatClickUpDesign.swift` | Layout tokens |
-| `Chat/Views/ChatSidebarView.swift` | ClickUp sidebar |
+| `Chat/Views/ChatSidebarView.swift` | ClickUp sidebar (header, filters, sections) |
+| `Chat/Views/ChatWorkspaceChannelTabs.swift` | Open channel tab strip |
 | `Chat/ViewModels/ChatViewModel.swift` | Filters, layout, unread threads |
 | `Views/ActivityBarView.swift` | Module icons + chat badge |
 

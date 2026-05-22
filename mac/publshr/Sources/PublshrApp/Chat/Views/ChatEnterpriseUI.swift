@@ -86,7 +86,17 @@ struct ChatChannelStatusBar: View {
                 }
             }
             HStack(spacing: 10) {
+                HStack(spacing: 2) {
+                    channelNavButton("chevron.left", enabled: chat.canNavigateBack) {
+                        chat.navigateBack()
+                    }
+                    channelNavButton("chevron.right", enabled: chat.canNavigateForward) {
+                        chat.navigateForward()
+                    }
+                }
+
                 if let channel = chat.selectedChannel {
+                    ChatChannelIconView(channel: channel, size: 18)
                     VStack(alignment: .leading, spacing: 1) {
                         Text(channel.displayTitle)
                             .font(.system(size: 13, weight: .semibold))
@@ -97,11 +107,11 @@ struct ChatChannelStatusBar: View {
                     }
                 }
                 Spacer(minLength: 8)
-                if let channel = chat.selectedChannel {
-                    channelQuickActions(channel)
-                }
                 if !chat.typingUsers.isEmpty {
                     ChatTypingIndicatorView(label: chat.typingSummary)
+                }
+                if let channel = chat.selectedChannel {
+                    channelQuickActions(channel)
                 }
             }
             .padding(.horizontal, CursorMacShellDesign.editorHorizontalPadding)
@@ -118,9 +128,57 @@ struct ChatChannelStatusBar: View {
         return n == 1 ? "1 member" : "\(n) members"
     }
 
+    private func channelNavButton(
+        _ systemName: String,
+        enabled: Bool,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            Image(systemName: systemName)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(enabled ? CursorTheme.foregroundMuted : CursorTheme.foregroundDim.opacity(0.35))
+                .frame(width: 28, height: 28)
+        }
+        .buttonStyle(.plain)
+        .disabled(!enabled)
+    }
+
     @ViewBuilder
     private func channelQuickActions(_ channel: ChatChannel) -> some View {
         HStack(spacing: 4) {
+            Button {
+                ChatWindowManager.shared.openChannel(channel, chat: chat, auth: auth)
+            } label: {
+                Image(systemName: "arrow.up.forward.square")
+                    .font(.system(size: 12))
+                    .foregroundStyle(CursorTheme.foregroundMuted)
+                    .frame(width: 28, height: 28)
+            }
+            .buttonStyle(.plain)
+            .help("Open in new window")
+
+            Button {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    chat.chatFocusMode.toggle()
+                }
+            } label: {
+                Image(systemName: chat.chatFocusMode ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right")
+                    .font(.system(size: 12))
+                    .foregroundStyle(chat.chatFocusMode ? CursorTheme.accent : CursorTheme.foregroundMuted)
+                    .frame(width: 28, height: 28)
+            }
+            .buttonStyle(.plain)
+            .help(chat.chatFocusMode ? "Show sidebars" : "Focus on chat")
+
+            Button { chat.showAISheet = true } label: {
+                Image(systemName: "sparkles")
+                    .font(.system(size: 12))
+                    .foregroundStyle(CursorTheme.foregroundMuted)
+                    .frame(width: 28, height: 28)
+            }
+            .buttonStyle(.plain)
+            .help("Ask AI")
+
             if subscription.canUseCalls(workspace: auth.selectedWorkspace) {
                 Button {
                     Task { await startCall(channel: channel, video: false) }

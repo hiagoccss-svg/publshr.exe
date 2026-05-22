@@ -53,6 +53,14 @@ struct ChatChannelActionsMenu: View {
                 }
                 Divider()
             }
+            Button {
+                chat.toggleSidebarPin(for: channel)
+            } label: {
+                Label(
+                    chat.isSidebarPinned(channel) ? "Unpin from sidebar" : "Pin to sidebar",
+                    systemImage: chat.isSidebarPinned(channel) ? "pin.slash" : "pin"
+                )
+            }
             Button { chat.showSearchSheet = true } label: {
                 Label("Search in channel", systemImage: "magnifyingglass")
             }
