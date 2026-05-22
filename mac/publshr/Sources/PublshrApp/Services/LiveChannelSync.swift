@@ -1,6 +1,8 @@
 import Foundation
 
 extension Notification.Name {
-    /// Posted when the app becomes active or wakes — triggers GitHub live sync.
+    /// Posted when the app becomes active or wakes — triggers GitHub live sync + Supabase refresh.
     static let publshrPerformLiveSync = Notification.Name("publshrPerformLiveSync")
+    /// Posted after each GitHub live poll — refreshes Chat, Spaces, and enterprise data from Supabase.
+    static let publshrPerformCloudSync = Notification.Name("publshrPerformCloudSync")
 }

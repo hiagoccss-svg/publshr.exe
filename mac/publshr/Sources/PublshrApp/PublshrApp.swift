@@ -47,6 +47,9 @@ struct PublshrApp: App {
                 .onReceive(NotificationCenter.default.publisher(for: .publshrPerformLiveSync)) { _ in
                     Task { await performFullSync() }
                 }
+                .onReceive(NotificationCenter.default.publisher(for: .publshrPerformCloudSync)) { _ in
+                    Task { await performCloudSync() }
+                }
         }
         .windowStyle(.hiddenTitleBar)
         .defaultSize(width: 1280, height: 800)
@@ -134,12 +137,21 @@ struct PublshrApp: App {
     @MainActor
     private func performFullSync() async {
         await updates.performLiveSync()
-        guard auth.flowState == .signedIn else { return }
+        await performCloudSync()
+    }
+
+    @MainActor
+    private func performCloudSync() async {
+        guard auth.flowState == .signedIn else {
+            updates.recordCloudSync(summary: "Not signed in")
+            return
+        }
         await auth.refreshSupabaseConnection()
         await chat.refreshAfterReconnect()
         await spaces.reload()
         await chat.loadPlannerTasks()
         await syncEnterpriseServices()
+        updates.recordCloudSync(summary: auth.supabaseStatusLine)
     }
 
     @MainActor

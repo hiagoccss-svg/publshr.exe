@@ -17,6 +17,9 @@ final class AppUpdateViewModel: ObservableObject {
 
     @Published private(set) var phase: Phase = .idle
     @Published private(set) var lastSyncLine: String = "Waiting for first sync…"
+    @Published private(set) var githubStatusLine: String = "Waiting for first GitHub check…"
+    @Published private(set) var cloudSyncLine: String = "Sign in to sync Chat and Spaces from Supabase"
+    @Published private(set) var remoteManifest: LiveChannelManifest?
     @AppStorage("publshr.autoCheckUpdates") var autoCheckEnabled = true
     @AppStorage("publshr.autoInstallUpdates") var autoInstallEnabled = true
 
@@ -106,9 +109,11 @@ final class AppUpdateViewModel: ObservableObject {
         checkTask?.cancel()
         checkTask = Task {
             await performLiveSync()
+            NotificationCenter.default.post(name: .publshrPerformCloudSync, object: nil)
             while !Task.isCancelled {
                 try? await Task.sleep(nanoseconds: Self.livePollSeconds * 1_000_000_000)
                 await performLiveSync()
+                NotificationCenter.default.post(name: .publshrPerformCloudSync, object: nil)
             }
         }
     }
@@ -145,8 +150,22 @@ final class AppUpdateViewModel: ObservableObject {
         }
 
         if case .upToDate = phase {
-            lastSyncLine = "Up to date · checked \(Self.timeStamp())"
+            refreshGitHubStatusFromService()
         }
+    }
+
+    func recordCloudSync(summary: String) {
+        cloudSyncLine = "\(summary) · \(Self.timeStamp())"
+    }
+
+    func refreshGitHubStatusFromService() {
+        remoteManifest = service.lastRemoteManifest
+        if let remote = remoteManifest {
+            githubStatusLine = "Live channel · \(remote.detailLabel) · checked \(Self.timeStamp())"
+        } else {
+            githubStatusLine = "Up to date · build \(AppReleaseConfig.buildNumber) · \(AppReleaseConfig.liveShellTag) · checked \(Self.timeStamp())"
+        }
+        lastSyncLine = githubStatusLine
     }
 
     /// Settings / menu: force full check → download → in-place install.
@@ -172,13 +191,17 @@ final class AppUpdateViewModel: ObservableObject {
             if let update = try await service.checkForUpdate() {
                 if case .readyToInstall = phase { return }
                 phase = .available(update)
+                remoteManifest = service.lastRemoteManifest
                 if silent {
-                    lastSyncLine = "Update \(update.version) available — downloading…"
+                    lastSyncLine = "Update \(update.version) · \(AppReleaseConfig.liveShellTag) → remote — downloading…"
+                    if let remote = remoteManifest {
+                        githubStatusLine = "Update available · \(remote.detailLabel)"
+                    }
                 }
             } else {
                 phase = .upToDate
                 if silent {
-                    lastSyncLine = "Up to date · checked \(Self.timeStamp())"
+                    refreshGitHubStatusFromService()
                 }
             }
         } catch {

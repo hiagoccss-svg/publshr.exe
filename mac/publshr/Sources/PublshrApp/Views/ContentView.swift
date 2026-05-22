@@ -134,19 +134,9 @@ struct ContentView: View {
 
     private func runPeriodicSupabaseSync() async {
         while !Task.isCancelled {
-            try? await Task.sleep(nanoseconds: 5 * 60 * 1_000_000_000)
+            try? await Task.sleep(nanoseconds: 60 * 1_000_000_000)
             guard auth.flowState == .signedIn else { continue }
-            await chat.refreshAfterReconnect()
-            await spaces.reload()
-            await chat.loadPlannerTasks()
-            await subscription.refresh(client: auth.client, workspace: auth.selectedWorkspace)
-            if let uid = auth.profile?.id {
-                await DeviceIdentityService.register(
-                    client: auth.client,
-                    userId: uid,
-                    workspaceId: auth.selectedWorkspace?.id
-                )
-            }
+            NotificationCenter.default.post(name: .publshrPerformCloudSync, object: nil)
         }
     }
 }
