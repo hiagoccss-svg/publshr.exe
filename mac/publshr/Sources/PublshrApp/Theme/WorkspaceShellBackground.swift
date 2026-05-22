@@ -30,34 +30,21 @@ struct GlassPrimaryBarChrome: View {
                 blendingMode: .behindWindow
             )
             LibraryGlassDesign.primaryBarGlassFill
-            CursorMacShellDesign.columnChromeBackground.opacity(0.04)
+            CursorMacShellDesign.columnChromeBackground.opacity(0.02)
         }
     }
 }
 
-/// Chat / Spaces submenu column — lighter glass than the primary bar, wallpaper tints through.
+/// Chat / Spaces submenu column — solid white (same as editor column).
 struct GlassSubmenuChrome: View {
     var body: some View {
-        ZStack {
-            VisualEffectBlur(
-                material: .sidebar,
-                blendingMode: .behindWindow
-            )
-            LibraryGlassDesign.submenuGlassFill
-            CursorMacShellDesign.columnChromeBackground.opacity(0.08)
-        }
+        LibraryGlassDesign.submenuColumnBackground
     }
 }
 
 struct GlassPrimaryBarBackground: ViewModifier {
     func body(content: Content) -> some View {
-        content
-            .background { GlassPrimaryBarChrome() }
-            .overlay(alignment: .trailing) {
-                Rectangle()
-                    .fill(LibraryGlassDesign.primaryBarGlassStroke)
-                    .frame(width: CursorMacShellDesign.columnDividerWidth)
-            }
+        content.background { GlassPrimaryBarChrome() }
     }
 }
 
@@ -95,9 +82,7 @@ struct GlassDisconnectedFooterBackground: ViewModifier {
 
 struct GlassSubmenuBackground: ViewModifier {
     func body(content: Content) -> some View {
-        content
-            .background { GlassSubmenuChrome() }
-            .cursorColumnDividerTrailing()
+        content.background { GlassSubmenuChrome() }
     }
 }
 
