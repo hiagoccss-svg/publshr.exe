@@ -70,12 +70,25 @@ enum MainWindowChrome {
         if window.responds(to: #selector(setter: NSWindow.titlebarSeparatorStyle)) {
             window.titlebarSeparatorStyle = .none
         }
+        tightenTopSafeArea(for: window)
         // titlebarAccessoryViewControllers KVC crashes on SwiftUI hosting windows (macOS 26+).
         if #available(macOS 14.0, *), !isSwiftUIHosting {
             if window.responds(to: #selector(setter: NSWindow.titlebarAccessoryViewControllers)) {
                 window.titlebarAccessoryViewControllers = []
             }
         }
+    }
+
+    /// Counteract inflated SwiftUI top safe-area so the custom toolbar shares the traffic-light row.
+    @MainActor
+    private static func tightenTopSafeArea(for window: NSWindow) {
+        guard let contentView = window.contentView else { return }
+        let reportedTop = contentView.safeAreaInsets.top
+        let target = AppWindowChromeMetrics.trafficLightRowHeight
+        guard reportedTop > target + 0.5 else { return }
+        var extra = window.additionalSafeAreaInsets
+        extra.top = target - reportedTop
+        window.additionalSafeAreaInsets = extra
     }
 
     /// Re-apply after SwiftUI finishes configuring the hosting window.

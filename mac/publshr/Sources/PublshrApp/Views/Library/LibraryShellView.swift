@@ -14,9 +14,6 @@ struct LibraryShellView: View {
     @Binding var showCommandPalette: Bool
     @Binding var showNotificationsPanel: Bool
 
-    /// Avoid header/submenu jumping when safe-area insets settle after window chrome applies.
-    @State private var stableTopInset: CGFloat = CursorTheme.windowChromeTopInset
-
     private var submenuHidden: Bool {
         !tabStore.sidebarExpanded
             || (module == .chat && chat.chatFocusMode)
@@ -25,7 +22,6 @@ struct LibraryShellView: View {
 
     var body: some View {
         GeometryReader { geometry in
-            let topSafe = geometry.safeAreaInsets.top
             ZStack {
                 WorkspaceDesktopBackdrop()
 
@@ -36,8 +32,7 @@ struct LibraryShellView: View {
                         showNewChannel: $showNewChannel,
                         showNewDM: $showNewDM,
                         showCommandPalette: $showCommandPalette,
-                        showNotificationsPanel: $showNotificationsPanel,
-                        safeAreaTop: stableTopInset
+                        showNotificationsPanel: $showNotificationsPanel
                     )
 
                     HStack(alignment: .top, spacing: 0) {
@@ -69,16 +64,9 @@ struct LibraryShellView: View {
                 }
             }
             .frame(width: geometry.size.width, height: geometry.size.height)
-            .onAppear {
-                if topSafe > 0 { stableTopInset = topSafe }
-            }
-            .onChange(of: topSafe) { _, newValue in
-                guard newValue > 0, abs(newValue - stableTopInset) > 0.5 else { return }
-                withAnimation(.easeInOut(duration: 0.12)) {
-                    stableTopInset = newValue
-                }
-            }
         }
+        // Draw the unified toolbar in the titlebar band under the traffic lights — not one row below.
+        .ignoresSafeArea(.container, edges: .top)
         .background(Color.clear)
         .onAppear {
             tabStore.sidebarExpanded = true

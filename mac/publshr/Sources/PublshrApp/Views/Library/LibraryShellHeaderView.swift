@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Unified window chrome — traffic lights, tabs, pane title, Ask AI, and pane actions share one titlebar row.
+/// Unified window chrome — one fixed-height row shared with macOS traffic lights (Cursor / VS Code style).
 struct LibraryShellHeaderView: View {
     @EnvironmentObject private var tabStore: WorkspaceTabStore
     @EnvironmentObject private var auth: AuthViewModel
@@ -13,34 +13,24 @@ struct LibraryShellHeaderView: View {
     @Binding var showNewDM: Bool
     @Binding var showCommandPalette: Bool
     @Binding var showNotificationsPanel: Bool
-    var safeAreaTop: CGFloat
 
-    private var titlebarHeight: CGFloat {
-        AppWindowChromeMetrics.titlebarHeight(safeAreaTop: safeAreaTop)
-    }
-
-    private var titlebarRowHeight: CGFloat {
-        AppWindowChromeMetrics.titlebarRowHeight(safeAreaTop: safeAreaTop)
+    private var rowHeight: CGFloat {
+        AppWindowChromeMetrics.unifiedTitlebarRowHeight
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            titlebarRow
-            if titlebarHeight > titlebarRowHeight {
-                Spacer(minLength: 0)
+        titlebarRow
+            .padding(.top, AppWindowChromeMetrics.trafficLightVerticalAlignPadding)
+            .frame(height: rowHeight, alignment: .center)
+            .frame(maxWidth: .infinity)
+            .background { AppWindowChromeBackground() }
+            .overlay(alignment: .bottom) {
+                Rectangle()
+                    .fill(LibraryGlassDesign.hairline)
+                    .frame(height: 1)
             }
-        }
-        .frame(height: titlebarHeight, alignment: .top)
-        .frame(maxWidth: .infinity)
-        .background { AppWindowChromeBackground() }
-        .overlay(alignment: .bottom) {
-            Rectangle()
-                .fill(LibraryGlassDesign.hairline)
-                .frame(height: 1)
-        }
     }
 
-    /// Controls live in the top titlebar band (traffic-light row), not pinned to the bottom of a tall safe-area.
     private var titlebarRow: some View {
         HStack(alignment: .center, spacing: AppWindowChromeMetrics.rowSpacing) {
             Color.clear
@@ -75,8 +65,6 @@ struct LibraryShellHeaderView: View {
             trailingPaneCluster
         }
         .padding(.trailing, 12)
-        .frame(height: titlebarRowHeight, alignment: .center)
-        .frame(maxWidth: .infinity)
     }
 
     // MARK: - Tabs

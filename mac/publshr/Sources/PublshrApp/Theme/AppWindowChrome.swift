@@ -6,8 +6,10 @@ enum AppWindowChromeMetrics {
     static let trafficLightLeadingInset: CGFloat = 72
     /// Fallback when SwiftUI reports zero safe-area (pre-layout).
     static let fallbackTitlebarHeight: CGFloat = 28
-    /// Height of the system titlebar row where traffic lights are drawn (do not bottom-pin below this).
+    /// Height of the system titlebar row where traffic lights are drawn (fixed — do not use safe-area height for layout).
     static let trafficLightRowHeight: CGFloat = 28
+    /// Optical nudge so controls line up with the system close button (macOS centers lights ~12pt from window top).
+    static let trafficLightVerticalAlignPadding: CGFloat = 1
     /// Square chrome control (edit, pop-out, close tab) — matches close-button visual size.
     static let controlSize: CGFloat = 24
     static let controlIconSize: CGFloat = 11
@@ -26,14 +28,9 @@ enum AppWindowChromeMetrics {
     static let titlebarActionSpacing: CGFloat = 4
     static let trailingClusterSpacing: CGFloat = 6
 
-    /// Full header band (may exceed the traffic-light row on some macOS safe-area reports).
-    static func titlebarHeight(safeAreaTop: CGFloat) -> CGFloat {
-        safeAreaTop > 0 ? safeAreaTop : fallbackTitlebarHeight
-    }
-
-    /// Toolbar row sits in the top titlebar band — same vertical band as close / minimize / zoom.
-    static func titlebarRowHeight(safeAreaTop: CGFloat) -> CGFloat {
-        min(titlebarHeight(safeAreaTop: safeAreaTop), trafficLightRowHeight)
+    /// Unified toolbar row height — always matches the traffic-light band (never the inflated SwiftUI safe-area).
+    static var unifiedTitlebarRowHeight: CGFloat {
+        trafficLightRowHeight
     }
 }
 
