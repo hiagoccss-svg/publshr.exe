@@ -39,7 +39,7 @@ _validate_app() {
     _is_mach_o_gui "$exec" || return 1
     grep -aq "Welcome to Publshr" "$exec" 2>/dev/null && return 1
     grep -aq "Search files, commands" "$exec" 2>/dev/null && return 1
-    grep -aq "PublshrEnterpriseShell-8" "$exec" 2>/dev/null || return 1
+    grep -aq "PublshrEnterpriseShell-9" "$exec" 2>/dev/null || return 1
     return 0
 }
 

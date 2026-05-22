@@ -9,6 +9,10 @@ struct LibraryShellHeaderView: View {
     @EnvironmentObject private var calls: CallSignalingService
     @ObservedObject var spaces: SpacesViewModel
     @Binding var module: AppModule
+    @Binding var showNewChannel: Bool
+    @Binding var showNewDM: Bool
+    @Binding var showCommandPalette: Bool
+    @Binding var showNotificationsPanel: Bool
     var safeAreaTop: CGFloat
 
     private var titlebarHeight: CGFloat {
@@ -42,77 +46,37 @@ struct LibraryShellHeaderView: View {
             Color.clear
                 .frame(width: AppWindowChromeMetrics.trafficLightLeadingInset)
 
-            ToolbarIconButton(
-                systemName: tabStore.sidebarExpanded ? "sidebar.left" : "sidebar.right",
-                help: "Toggle submenu"
-            ) {
-                withAnimation(.easeInOut(duration: 0.15)) {
-                    tabStore.sidebarExpanded.toggle()
-                }
-            }
-            if module == .chat || module == .spaces {
-                ToolbarIconButton(
-                    systemName: submenuFocusIcon,
-                    help: "Toggle focus mode"
-                ) {
-                    withAnimation(.easeInOut(duration: 0.15)) {
-                        if module == .chat { chat.chatFocusMode.toggle() }
-                        else { spaces.spacesFocusMode.toggle() }
-                    }
-                }
-            }
-
-            ToolbarIconButton(systemName: "chevron.left", enabled: canGoBack, help: "Back") {
-                navigateBack()
-            }
-            ToolbarIconButton(systemName: "chevron.right", enabled: canGoForward, help: "Forward") {
-                navigateForward()
-            }
-            ToolbarIconButton(systemName: "house", help: "Home") {
-                tabStore.openFromModule(module, activate: true)
-            }
+            TitlebarChromeActionBar(
+                spaces: spaces,
+                module: $module,
+                showNewChannel: $showNewChannel,
+                showNewDM: $showNewDM,
+                showCommandPalette: $showCommandPalette,
+                showNotificationsPanel: $showNotificationsPanel,
+                placement: .leading
+            )
 
             tabStrip
 
             paneTitleCluster
 
-            moduleUtilityIcons
-
             Spacer(minLength: 8)
 
-            trailingChromeCluster
+            TitlebarChromeActionBar(
+                spaces: spaces,
+                module: $module,
+                showNewChannel: $showNewChannel,
+                showNewDM: $showNewDM,
+                showCommandPalette: $showCommandPalette,
+                showNotificationsPanel: $showNotificationsPanel,
+                placement: .trailing
+            )
+
+            trailingPaneCluster
         }
         .padding(.trailing, 12)
         .frame(height: titlebarRowHeight, alignment: .center)
         .frame(maxWidth: .infinity)
-    }
-
-    private var submenuFocusIcon: String {
-        switch module {
-        case .chat: chat.chatFocusMode ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right"
-        case .spaces: spaces.spacesFocusMode ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right"
-        case .settings: "arrow.up.left.and.arrow.down.right"
-        }
-    }
-
-    // MARK: - Module utilities
-
-    private var moduleUtilityIcons: some View {
-        HStack(spacing: 2) {
-            ToolbarIconButton(systemName: "square.grid.2x2", help: "Spaces") {
-                module = .spaces
-                tabStore.openFromModule(.spaces, activate: true)
-            }
-            ToolbarIconButton(systemName: "list.bullet", help: "List") {
-                if module == .chat { chat.setSidebarLayout(.organized) }
-            }
-            ToolbarIconButton(systemName: "line.3.horizontal.decrease", help: "Filter") {
-                if module == .chat { chat.showSearchSheet = true }
-            }
-            ToolbarIconButton(systemName: "magnifyingglass", help: "Search") {
-                if module == .chat { chat.showSearchSheet = true }
-            }
-        }
     }
 
     // MARK: - Tabs
@@ -204,9 +168,9 @@ struct LibraryShellHeaderView: View {
         .frame(height: AppWindowChromeMetrics.controlSize)
     }
 
-    // MARK: - Trailing (Ask AI + pane actions)
+    // MARK: - Trailing pane actions (Ask AI + tab chrome)
 
-    private var trailingChromeCluster: some View {
+    private var trailingPaneCluster: some View {
         HStack(alignment: .center, spacing: AppWindowChromeMetrics.trailingClusterSpacing) {
             AskAIChromeButton {
                 chat.showAISheet = true
@@ -230,31 +194,7 @@ struct LibraryShellHeaderView: View {
                     closeTab(tab)
                 }
             }
-
-            ChromeSquareButton(systemName: "gearshape", help: "Settings") {
-                NotificationCenter.default.post(name: .publshrOpenSettings, object: nil)
-            }
         }
-    }
-
-    // MARK: - Navigation
-
-    private var canGoBack: Bool {
-        module == .chat ? chat.canNavigateBack : spaces.canNavigateBack
-    }
-
-    private var canGoForward: Bool {
-        module == .chat ? chat.canNavigateForward : spaces.canNavigateForward
-    }
-
-    private func navigateBack() {
-        if module == .chat { chat.navigateBack() }
-        else { Task { await spaces.navigateBack() } }
-    }
-
-    private func navigateForward() {
-        if module == .chat { chat.navigateForward() }
-        else { Task { await spaces.navigateForward() } }
     }
 
     // MARK: - Tab actions

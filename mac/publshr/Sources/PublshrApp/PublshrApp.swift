@@ -81,16 +81,41 @@ struct PublshrApp: App {
                 }
                 .keyboardShortcut("l", modifiers: [.command, .shift])
             }
+            CommandMenu("View") {
+                Button("Command Palette…") {
+                    NotificationCenter.default.post(name: .publshrTitlebarCommandPalette, object: nil)
+                }
+                .keyboardShortcut("p", modifiers: [.command, .shift])
+                Button("Command Palette…") {
+                    NotificationCenter.default.post(name: .publshrTitlebarCommandPalette, object: nil)
+                }
+                .keyboardShortcut("k", modifiers: .command)
+                Divider()
+                Button(tabStore.sidebarExpanded ? "Hide Submenu" : "Show Submenu") {
+                    NotificationCenter.default.post(name: .publshrTitlebarToggleSidebar, object: nil)
+                }
+                .keyboardShortcut("\\", modifiers: .command)
+                Button("Notifications") {
+                    NotificationCenter.default.post(name: .publshrTitlebarNotifications, object: nil)
+                }
+                Divider()
+                Button("Settings…") {
+                    NotificationCenter.default.post(name: .publshrOpenSettings, object: nil)
+                }
+                .keyboardShortcut(",", modifiers: .command)
+            }
             CommandMenu("Chat") {
+                Button("New Chat") {
+                    NotificationCenter.default.post(name: .publshrTitlebarNewChat, object: nil)
+                }
+                .keyboardShortcut("n", modifiers: .command)
                 Button(tabStore.sidebarExpanded ? "Hide Chat Sidebar" : "Show Chat Sidebar") {
-                    withAnimation(.easeInOut(duration: 0.15)) {
-                        tabStore.sidebarExpanded.toggle()
-                    }
+                    NotificationCenter.default.post(name: .publshrTitlebarToggleSidebar, object: nil)
                 }
                 .keyboardShortcut("\\", modifiers: .command)
                 Divider()
                 Button("Search…") {
-                    chat.showSearchSheet = true
+                    NotificationCenter.default.post(name: .publshrTitlebarSearch, object: nil)
                 }
                 .keyboardShortcut("f", modifiers: [.command, .shift])
                 Button("AI Assistant") {

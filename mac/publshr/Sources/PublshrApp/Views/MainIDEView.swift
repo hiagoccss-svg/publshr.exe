@@ -14,14 +14,19 @@ struct MainIDEView: View {
     @State private var module: AppModule = .chat
     @State private var showNewChannel = false
     @State private var showNewDM = false
+    @State private var showCommandPalette = false
+    @State private var showNotificationsPanel = false
 
     var body: some View {
         LibraryShellView(
             module: $module,
             showNewChannel: $showNewChannel,
-            showNewDM: $showNewDM
+            showNewDM: $showNewDM,
+            showCommandPalette: $showCommandPalette,
+            showNotificationsPanel: $showNotificationsPanel
         )
         .background(WindowChromeConfigurator())
+        .background { TitlebarChromeShortcutBridge() }
         .onAppear(perform: onShellAppear)
         .onChange(of: module) { _, newModule in
             onModuleChange(newModule)
@@ -46,6 +51,54 @@ struct MainIDEView: View {
         }
         .sheet(isPresented: $showNewChannel) { newChannelSheet }
         .sheet(isPresented: $showNewDM) { newDMSheet }
+        .sheet(isPresented: $showCommandPalette) {
+            TitlebarCommandPaletteView(
+                items: TitlebarChromeCommands.paletteItems(
+                    tabStore: tabStore,
+                    auth: auth,
+                    chat: chat,
+                    spaces: spaces,
+                    module: $module,
+                    showNewChannel: $showNewChannel,
+                    showNewDM: $showNewDM,
+                    showCommandPalette: $showCommandPalette,
+                    showNotificationsPanel: $showNotificationsPanel
+                ),
+                isPresented: $showCommandPalette
+            )
+        }
+        .sheet(isPresented: $showNotificationsPanel) {
+            TitlebarNotificationsPanelView(chat: chat, isPresented: $showNotificationsPanel)
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .publshrTitlebarToggleSidebar)) { _ in
+            withAnimation(.easeInOut(duration: 0.15)) { tabStore.sidebarExpanded.toggle() }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .publshrTitlebarNewChat)) { _ in
+            module = .chat
+            tabStore.openFromModule(.chat, activate: true)
+            if chat.selectedChannel != nil {
+                showNewChannel = true
+            } else {
+                chat.selectedChannel = nil
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .publshrTitlebarCommandPalette)) { _ in
+            showCommandPalette = true
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .publshrTitlebarSearch)) { _ in
+            if module == .chat { chat.showSearchSheet = true }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .publshrTitlebarNotifications)) { _ in
+            showNotificationsPanel = true
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .publshrTitlebarNavigateBack)) { _ in
+            if module == .chat { chat.navigateBack() }
+            else { Task { await spaces.navigateBack() } }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .publshrTitlebarNavigateForward)) { _ in
+            if module == .chat { chat.navigateForward() }
+            else { Task { await spaces.navigateForward() } }
+        }
         .onReceive(NotificationCenter.default.publisher(for: .publshrOpenSettings)) { _ in
             WorkspaceModuleWindowManager.shared.openSettings(
                 auth: auth,
