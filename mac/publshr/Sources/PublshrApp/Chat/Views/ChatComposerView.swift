@@ -8,6 +8,9 @@ struct ChatComposerView: View {
 
     var body: some View {
         VStack(spacing: 4) {
+            if let reply = chat.replyingTo {
+                replyBanner(reply)
+            }
             if !chat.typingUsers.isEmpty {
                 ChatTypingIndicatorView(label: chat.typingSummary)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -64,6 +67,34 @@ struct ChatComposerView: View {
                 .fill(CursorTheme.hairline)
                 .frame(height: 1)
         }
+    }
+
+    private func replyBanner(_ message: ChatMessage) -> some View {
+        HStack(spacing: 8) {
+            Rectangle()
+                .fill(CursorTheme.accent)
+                .frame(width: 3)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Replying to \(chat.displayName(for: message.userId))")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(CursorTheme.foreground)
+                Text(message.body ?? "")
+                    .font(.system(size: 11))
+                    .foregroundStyle(CursorTheme.foregroundMuted)
+                    .lineLimit(1)
+            }
+            Spacer()
+            Button {
+                chat.cancelReply()
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(CursorTheme.foregroundDim)
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.horizontal, 16)
+        .padding(.top, 8)
     }
 
     private func composerIcon(_ systemName: String, action: @escaping () -> Void) -> some View {

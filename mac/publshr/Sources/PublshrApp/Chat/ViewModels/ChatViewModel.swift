@@ -14,7 +14,8 @@ final class ChatViewModel: ObservableObject {
     @Published var isLoading = false
     @Published var errorMessage: String?
     @Published var searchQuery = ""
-    @Published var myStatus: ChatPresenceStatus = .online
+    @Published var myStatus: ChatPresenceStatus = ChatUserPreferences.loadMyStatus()
+    @Published var replyingTo: ChatMessage?
     @Published var typingUsers: [ChatTypingState] = []
     @Published var unreadByChannel: [UUID: Int] = [:]
     @Published var permissions = ChatWorkspacePermissions.default
@@ -89,8 +90,7 @@ final class ChatViewModel: ObservableObject {
             presenceHeartbeat?.cancel()
             await service?.stopRealtime()
             self.workspace = workspace
-            parsePermissions(from: workspace)
-            self.permissions = permissions
+            mergePermissions(workspace: workspace, fallback: permissions)
             messages = []
             channels = []
             directMessages = []
@@ -123,7 +123,7 @@ final class ChatViewModel: ObservableObject {
         isLoading = true
         defer { isLoading = false }
 
-        await ChatNotificationService.shared.requestAuthorization()
+        await ChatNotificationService.shared.requestAuthorizationIfNeeded()
 
         do {
             var workspaces = try await service?.fetchMemberWorkspaces(userId: userId) ?? []
@@ -140,7 +140,7 @@ final class ChatViewModel: ObservableObject {
                 return
             }
             workspace = ws
-            parsePermissions(from: ws)
+            mergePermissions(workspace: ws, fallback: auth.workspaceChatPermissions)
             await loadWorkspaceData(workspaceId: ws.id, userId: userId)
             startRealtime(workspaceId: ws.id)
             startPresenceHeartbeat(workspaceId: ws.id, userId: userId)
@@ -161,7 +161,17 @@ final class ChatViewModel: ObservableObject {
         _ = userId
     }
 
-    private func parsePermissions(from ws: Workspace) {
+    func mergePermissions(workspace ws: Workspace, fallback: ChatWorkspacePermissions) {
+        if let cached = ChatUserPreferences.cachedPermissions(workspaceId: ws.id) {
+            permissions = cached
+        } else {
+            permissions = fallback
+        }
+        applyPermissionsFromWorkspace(ws)
+        ChatUserPreferences.cachePermissions(permissions, workspaceId: ws.id)
+    }
+
+    private func applyPermissionsFromWorkspace(_ ws: Workspace) {
         guard let chat = ws.settings?["chat"], case .object(let obj) = chat else { return }
         func bool(_ key: String, _ path: WritableKeyPath<ChatWorkspacePermissions, Bool>) {
             if case .bool(let v) = obj[key] { permissions[keyPath: path] = v }
@@ -178,6 +188,7 @@ final class ChatViewModel: ObservableObject {
         bool("can_use_voice_notes", \.canUseVoiceNotes)
         bool("can_export_chats", \.canExportChats)
         bool("read_receipts_enabled", \.readReceiptsEnabled)
+        ChatUserPreferences.cachePermissions(permissions, workspaceId: ws.id)
     }
 
     private func loadWorkspaceData(workspaceId: UUID, userId: UUID) async {
@@ -237,6 +248,7 @@ final class ChatViewModel: ObservableObject {
             navigationForwardStack.removeAll()
         }
         selectedChannel = channel
+        replyingTo = nil
         unreadByChannel[channel.id] = 0
         service?.localStore().setUnreadCount(channelId: channel.id, count: 0)
         refreshDockBadge()
@@ -267,7 +279,10 @@ final class ChatViewModel: ObservableObject {
     }
 
     func profile(for userId: UUID) -> Profile? {
-        profiles[userId]
+        if userId == currentUserId, let live = auth?.profile {
+            return live
+        }
+        return profiles[userId]
     }
 
     func channelMemberCount(for channel: ChatChannel) -> Int {
@@ -317,6 +332,16 @@ final class ChatViewModel: ObservableObject {
               let userId = currentUserId else { return }
         let text = composerText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return }
+
+        if let parent = replyingTo {
+            replyingTo = nil
+            activeThreadParent = parent
+            showThreadPanel = true
+            threadComposerText = text
+            composerText = ""
+            await sendThreadReply()
+            return
+        }
 
         let optimisticId = UUID()
         var optimistic = ChatMessage(
@@ -459,6 +484,7 @@ final class ChatViewModel: ObservableObject {
 
     func setStatus(_ status: ChatPresenceStatus) async {
         myStatus = status
+        ChatUserPreferences.saveMyStatus(status)
         guard let service, let workspace, let userId = currentUserId else { return }
         try? await service.upsertPresence(workspaceId: workspace.id, userId: userId, status: status)
         presence[userId] = ChatPresence(
@@ -472,7 +498,8 @@ final class ChatViewModel: ObservableObject {
     }
 
     func presence(for userId: UUID) -> ChatPresenceStatus {
-        presence[userId]?.status ?? .offline
+        if userId == currentUserId { return myStatus }
+        return presence[userId]?.status ?? .offline
     }
 
     func displayName(for userId: UUID) -> String {
@@ -566,7 +593,14 @@ final class ChatViewModel: ObservableObject {
         ChatWindowManager.shared.forwardIncomingMessage(message)
 
         if selectedChannel?.id == message.channelId {
-            if !messages.contains(where: { $0.id == message.id }) {
+            if message.userId == currentUserId,
+               let idx = messages.firstIndex(where: {
+                   $0.localStatus == .sending && $0.body == message.body && $0.channelId == message.channelId
+               }) {
+                var confirmed = message
+                confirmed.localStatus = .sent
+                messages[idx] = confirmed
+            } else if !messages.contains(where: { $0.id == message.id }) {
                 messages.append(message)
             }
             if let parent = message.threadParentId {

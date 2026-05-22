@@ -3,42 +3,69 @@ import SwiftUI
 struct ChatPermissionsSheet: View {
     @ObservedObject var chat: ChatViewModel
     @Environment(\.dismiss) private var dismiss
+    @State private var saveTask: Task<Void, Never>?
 
     var body: some View {
         Form {
+            Section {
+                Text("These settings apply to your workspace. Changes save automatically.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
             Section("Workspace permissions") {
-                Toggle("Create channels", isOn: $chat.permissions.canCreateChannels)
-                Toggle("Create group chats", isOn: $chat.permissions.canCreateGroupChats)
-                Toggle("Direct messages", isOn: $chat.permissions.canDM)
-                Toggle("Invite users", isOn: $chat.permissions.canInviteUsers)
-                Toggle("Add guests", isOn: $chat.permissions.canAddGuests)
+                permissionToggle("Create channels", \.canCreateChannels)
+                permissionToggle("Create group chats", \.canCreateGroupChats)
+                permissionToggle("Direct messages", \.canDM)
+                permissionToggle("Invite users", \.canInviteUsers)
+                permissionToggle("Add guests", \.canAddGuests)
             }
             Section("Messages & content") {
-                Toggle("Edit messages", isOn: $chat.permissions.canEditMessages)
-                Toggle("Delete messages", isOn: $chat.permissions.canDeleteMessages)
-                Toggle("Pin messages", isOn: $chat.permissions.canPinMessages)
-                Toggle("Upload files", isOn: $chat.permissions.canUploadFiles)
-                Toggle("Voice notes", isOn: $chat.permissions.canUseVoiceNotes)
-                Toggle("Export chats", isOn: $chat.permissions.canExportChats)
+                permissionToggle("Edit messages", \.canEditMessages)
+                permissionToggle("Delete messages", \.canDeleteMessages)
+                permissionToggle("Pin messages", \.canPinMessages)
+                permissionToggle("Upload files", \.canUploadFiles)
+                permissionToggle("Voice notes", \.canUseVoiceNotes)
+                permissionToggle("Export chats", \.canExportChats)
             }
             Section("Privacy") {
-                Toggle("Read receipts", isOn: $chat.permissions.readReceiptsEnabled)
+                permissionToggle("Read receipts", \.readReceiptsEnabled)
             }
         }
         .formStyle(.grouped)
         .frame(width: 400, height: 480)
         .toolbar {
             ToolbarItem(placement: .confirmationAction) {
-                Button("Save") {
-                    Task {
-                        await chat.savePermissionsToWorkspace()
-                        dismiss()
-                    }
-                }
+                Button("Done") { dismiss() }
             }
-            ToolbarItem(placement: .cancellationAction) {
-                Button("Cancel") { dismiss() }
+        }
+        .onDisappear {
+            saveTask?.cancel()
+            Task { await chat.savePermissionsToWorkspace() }
+        }
+    }
+
+    private func permissionToggle(
+        _ title: String,
+        _ path: WritableKeyPath<ChatWorkspacePermissions, Bool>
+    ) -> some View {
+        Toggle(title, isOn: Binding(
+            get: { chat.permissions[keyPath: path] },
+            set: { newValue in
+                chat.permissions[keyPath: path] = newValue
+                scheduleSave()
             }
+        ))
+    }
+
+    private func scheduleSave() {
+        if let ws = chat.workspace {
+            ChatUserPreferences.cachePermissions(chat.permissions, workspaceId: ws.id)
+        }
+        saveTask?.cancel()
+        saveTask = Task {
+            try? await Task.sleep(nanoseconds: 600_000_000)
+            guard !Task.isCancelled else { return }
+            await chat.savePermissionsToWorkspace()
         }
     }
 }

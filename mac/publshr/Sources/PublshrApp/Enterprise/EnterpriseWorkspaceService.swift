@@ -49,7 +49,12 @@ final class EnterpriseWorkspaceService: ObservableObject {
     ) async throws {
         var chatSettings: [String: JSONValue] = [:]
         chatSettings["can_create_channels"] = .bool(permissions.canCreateChannels)
+        chatSettings["can_create_group_chats"] = .bool(permissions.canCreateGroupChats)
         chatSettings["can_dm"] = .bool(permissions.canDM)
+        chatSettings["can_invite_users"] = .bool(permissions.canInviteUsers)
+        chatSettings["can_add_guests"] = .bool(permissions.canAddGuests)
+        chatSettings["can_delete_messages"] = .bool(permissions.canDeleteMessages)
+        chatSettings["can_edit_messages"] = .bool(permissions.canEditMessages)
         chatSettings["can_use_voice_notes"] = .bool(permissions.canUseVoiceNotes)
         chatSettings["read_receipts_enabled"] = .bool(permissions.readReceiptsEnabled)
         chatSettings["can_upload_files"] = .bool(permissions.canUploadFiles)

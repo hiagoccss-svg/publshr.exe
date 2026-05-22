@@ -74,7 +74,9 @@ struct ContentToolbarView: View {
             }
 
             if let channel = chat.selectedChannel {
-                VStack(alignment: .leading, spacing: 1) {
+                HStack(spacing: 8) {
+                    ChatChannelIconView(channel: channel, size: 18)
+                    VStack(alignment: .leading, spacing: 1) {
                     Text(channel.displayTitle)
                         .font(.system(size: 14, weight: .semibold))
                         .foregroundStyle(CursorTheme.foreground)
@@ -83,6 +85,7 @@ struct ContentToolbarView: View {
                         .font(.system(size: 11))
                         .foregroundStyle(CursorTheme.foregroundMuted)
                         .lineLimit(1)
+                    }
                 }
             } else {
                 Text("Chat")
@@ -303,7 +306,9 @@ struct ContentToolbarView: View {
             .help(chat.chatFocusMode ? "Show sidebars" : "Focus on chat")
 
             toolbarIcon("sparkles") { chat.showAISheet = true }
-            toolbarIcon("gearshape") { chat.showPermissionsSheet = true }
+            if let channel = chat.selectedChannel {
+                channelOptionsMenu(channel)
+            }
 
             if chat.isOffline {
                 Image(systemName: "wifi.slash")
@@ -314,6 +319,20 @@ struct ContentToolbarView: View {
 
             statusMenu
         }
+    }
+
+    private func channelOptionsMenu(_ channel: ChatChannel) -> some View {
+        Menu {
+            ChatChannelActionsMenu(chat: chat, channel: channel)
+        } label: {
+            Image(systemName: "ellipsis.circle")
+                .font(.system(size: 13))
+                .foregroundStyle(CursorTheme.foregroundMuted)
+                .frame(width: 28, height: 28)
+                .background(RoundedRectangle(cornerRadius: 6).fill(CursorTheme.panelBackground))
+        }
+        .menuStyle(.borderlessButton)
+        .help("Channel options")
     }
 
     private var callMenu: some View {
