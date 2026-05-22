@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Only surfaces update failures — successful live installs happen silently.
+/// Optional progress strip (not shown in the main workspace — updates are silent there).
 struct AppUpdateBannerView: View {
     @ObservedObject var updates: AppUpdateViewModel
 
