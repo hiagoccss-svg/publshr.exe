@@ -8,16 +8,11 @@ struct SpacesNavSidebar: View {
     var body: some View {
         LibraryUniversalSubmenuContainer(width: LibraryUniversalSubmenu.width) {
             VStack(alignment: .leading, spacing: 0) {
-                if let error = spaces.errorMessage, !error.isEmpty {
-                    Text(error)
-                        .font(.system(size: 11))
-                        .foregroundStyle(.red)
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 8)
-                }
-
                 spacesListSection
-                    .frame(maxHeight: spaces.selectedSpaceId == nil ? .infinity : 160)
+                    .frame(
+                        minHeight: spaces.selectedSpaceId == nil ? 120 : 0,
+                        maxHeight: spaces.selectedSpaceId == nil ? .infinity : 200
+                    )
 
                 if spaces.selectedSpaceId != nil {
                     LibraryUniversalSubmenu.sectionDivider()
@@ -91,7 +86,7 @@ struct SpacesNavSidebar: View {
                 }
                 .padding(.vertical, 4)
             }
-            .frame(minHeight: 120, maxHeight: spaces.selectedSpaceId == nil ? .infinity : 220)
+            .frame(minHeight: 0, maxHeight: .infinity)
             .animation(nil, value: spaces.selectedSpaceId)
         }
     }
@@ -151,9 +146,17 @@ struct SpacesNavSidebar: View {
             Button {
                 spaces.showNewSpaceSheet = true
             } label: {
-                Label("New", systemImage: "plus")
+                Image(systemName: "plus")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(LibraryGlassDesign.inkSecondary)
+                    .frame(width: 32, height: 32)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                            .fill(LibraryGlassDesign.filterPillInactiveFill)
+                    )
             }
-            .buttonStyle(LibraryPrimaryPillButtonStyle())
+            .buttonStyle(.plain)
+            .help("New space")
         }
     }
 }

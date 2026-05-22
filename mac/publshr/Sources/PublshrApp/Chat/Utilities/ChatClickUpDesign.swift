@@ -6,7 +6,7 @@ enum ChatClickUpDesign {
 
     static let headerHeight: CGFloat = 44
     static let searchHeight: CGFloat = 32
-    static let filterBarHeight: CGFloat = 36
+    static let filterBarHeight: CGFloat = 40
     static let footerHeight: CGFloat = 40
 
     static let filterPillHeight: CGFloat = 26

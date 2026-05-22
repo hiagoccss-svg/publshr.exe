@@ -2,8 +2,8 @@ import SwiftUI
 
 /// Per-column titlebar band — background matches the column below; no full-width separator.
 enum ShellColumnHeaderKind {
-    /// Left column: traffic-light inset + sidebar / back / forward.
-    case trafficLeading(module: Binding<AppModule>)
+    /// Left column: traffic-light inset; back/forward hidden when bar menu is collapsed to icon rail.
+    case trafficLeading(module: Binding<AppModule>, compact: Bool = false)
     /// Middle submenu column: empty band matching sidebar chrome.
     case secondaryChrome
     /// Chat submenu: search in the titlebar row (ClickUp).
@@ -46,14 +46,14 @@ struct LibraryShellHeaderView: View {
     @ViewBuilder
     private var rowContent: some View {
         switch kind {
-        case .trafficLeading(let module):
+        case .trafficLeading(let module, let compact):
             HStack(alignment: .center, spacing: 10) {
                 Color.clear
                     .frame(width: AppWindowChromeMetrics.trafficLightLeadingInset)
-                ShellTrafficLeadingActions(module: module)
+                ShellTrafficLeadingActions(module: module, compact: compact)
                 Spacer(minLength: 0)
             }
-            .padding(.trailing, 8)
+            .padding(.trailing, compact ? 0 : 8)
 
         case .secondaryChrome:
             Color.clear
@@ -89,6 +89,7 @@ struct ShellColumnChromeStack<Content: View>: View {
         VStack(spacing: 0) {
             LibraryShellHeaderView(kind: headerKind)
             content()
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .frame(minHeight: 0, maxHeight: .infinity)
         .modifier(ShellColumnChromeBackground(

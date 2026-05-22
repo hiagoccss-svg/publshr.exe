@@ -3,6 +3,8 @@ import {
   format,
   startOfMonth,
   endOfMonth,
+  startOfWeek,
+  endOfWeek,
   eachDayOfInterval,
   isSameMonth,
   isToday,
@@ -17,7 +19,10 @@ export default function CalendarView() {
   const setSelectedId = usePlannerStore((s) => s.setSelectedId)
 
   const monthStart = startOfMonth(new Date())
-  const days = eachDayOfInterval({ start: monthStart, end: endOfMonth(monthStart) })
+  const days = eachDayOfInterval({
+    start: startOfWeek(monthStart, { weekStartsOn: 1 }),
+    end: endOfWeek(endOfMonth(monthStart), { weekStartsOn: 1 }),
+  })
 
   const byDate = useMemo(() => {
     const map = new Map<string, typeof items>()

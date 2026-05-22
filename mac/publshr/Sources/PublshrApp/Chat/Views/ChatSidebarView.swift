@@ -26,9 +26,9 @@ struct ChatSidebarView: View {
                     }
                     .padding(.bottom, 4)
                 }
-                .frame(maxHeight: .infinity)
+                .frame(minHeight: 0, maxHeight: .infinity)
             }
-            .frame(maxHeight: .infinity)
+            .frame(minHeight: 0, maxHeight: .infinity)
         } footer: {
             layoutFooter
         }
@@ -63,6 +63,7 @@ struct ChatSidebarView: View {
             .padding(.horizontal, 12)
         }
         .frame(height: ChatClickUpDesign.filterBarHeight)
+        .clipped()
     }
 
     private func filterPill(_ filter: ChatSidebarFilter) -> some View {
@@ -185,8 +186,8 @@ struct ChatSidebarView: View {
 
     /// ClickUp: Organized / Recents lower-left; plus + settings gear; flat compose rows.
     private var layoutFooter: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 16) {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 10) {
                 layoutToggle(.organized, icon: "list.bullet.rectangle", label: "Organized")
                 layoutToggle(.recents, icon: "clock", label: "Recents")
                 Spacer(minLength: 0)
@@ -283,6 +284,7 @@ struct ChatSidebarView: View {
                     .font(.system(size: 12, weight: .medium))
                 Text(label)
                     .font(.system(size: 11, weight: selected ? .semibold : .regular))
+                    .lineLimit(1)
             }
             .foregroundStyle(selected ? LibraryGlassDesign.ink : LibraryGlassDesign.inkMuted)
         }

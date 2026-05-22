@@ -14,7 +14,8 @@ struct LibraryShellView: View {
     @Binding var showNotificationsPanel: Bool
 
     private var submenuHidden: Bool {
-        !tabStore.sidebarExpanded
+        module == .settings
+            || !tabStore.sidebarExpanded
             || (module == .chat && chat.chatFocusMode)
             || (module == .spaces && spaces.spacesFocusMode)
     }
@@ -53,7 +54,7 @@ struct LibraryShellView: View {
     private var shellBody: some View {
         HStack(alignment: .top, spacing: 0) {
             ShellColumnChromeStack(
-                headerKind: .trafficLeading(module: $module),
+                headerKind: .trafficLeading(module: $module, compact: !tabStore.barMenuExpanded),
                 appliesPrimaryBarGlass: true
             ) {
                 Group {
@@ -64,8 +65,6 @@ struct LibraryShellView: View {
                     }
                 }
             }
-            .fixedSize(horizontal: true, vertical: false)
-            .layoutPriority(2)
 
             if !submenuHidden {
                 ShellColumnChromeStack(
@@ -80,8 +79,6 @@ struct LibraryShellView: View {
                         showNewDM: $showNewDM
                     )
                 }
-                .fixedSize(horizontal: true, vertical: false)
-                .layoutPriority(2)
                 .transition(.move(edge: .leading).combined(with: .opacity))
             }
 

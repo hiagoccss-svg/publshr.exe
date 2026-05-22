@@ -20,14 +20,13 @@ struct LibraryBarMenuColumn: View {
                     }
                 }
             }
-            .padding(.horizontal, 10)
             .padding(.top, 6)
             .padding(.bottom, 8)
 
             Spacer(minLength: 0)
         }
         .frame(width: LibraryGlassDesign.barMenuWidth)
-        .frame(maxHeight: .infinity)
+        .frame(minHeight: 0, maxHeight: .infinity)
     }
 
     private var chatUnreadBadge: Int {
@@ -50,6 +49,8 @@ struct LibraryBarMenuColumn: View {
                 Text(title)
                     .font(.system(size: 13, weight: selected ? .semibold : .regular))
                     .foregroundStyle(selected ? LibraryGlassDesign.ink : LibraryGlassDesign.inkSecondary)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
                 Spacer(minLength: 0)
                 if badge > 0 {
                     Text(badge > 99 ? "99+" : "\(badge)")
@@ -61,10 +62,10 @@ struct LibraryBarMenuColumn: View {
                         .clipShape(Capsule())
                 }
             }
-            .padding(.horizontal, 12)
+            .padding(.horizontal, LibraryGlassDesign.sidebarRowHorizontal)
             .frame(height: LibraryGlassDesign.barMenuRowHeight)
             .background(
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                RoundedRectangle(cornerRadius: LibraryGlassDesign.sidebarRowRadius, style: .continuous)
                     .fill(selected ? LibraryGlassDesign.sidebarSelection.opacity(0.72) : Color.clear)
             )
         }

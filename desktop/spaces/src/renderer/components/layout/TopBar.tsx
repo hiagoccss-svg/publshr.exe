@@ -40,6 +40,7 @@ export function TopBar(): React.ReactElement {
 
   return (
     <header className="glass-toolbar drag-region flex h-12 shrink-0 items-center gap-3 px-4">
+      <div className="no-drag w-14 shrink-0" aria-hidden />
       <div className="no-drag flex min-w-0 items-center gap-3">
         <div className="flex h-7 w-7 items-center justify-center rounded-md bg-accent text-xs font-semibold text-white">
           {(workspace?.name ?? 'P')[0]}
