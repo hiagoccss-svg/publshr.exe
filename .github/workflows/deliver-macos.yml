@@ -69,11 +69,15 @@ jobs:
           cp "$SRC" "mac/publshr/dist/Publshr-macos-aarch64.tar.gz"
           LIVE_TAR="mac/publshr/dist/Publshr-macos-aarch64.tar.gz"
           SHA="$(shasum -a 256 "$LIVE_TAR" | awk '{print $1}')"
-          printf '%s\n%s\n%s\n%s\n' \
+          # shellcheck source=lib-shell-tag.sh
+          source mac/publshr/scripts/lib-shell-tag.sh
+          SHELL_TAG="$(resolve_publshr_shell_tag mac/publshr/Sources/PublshrApp/Config/AppShellIdentity.swift)"
+          printf '%s\n%s\n%s\n%s\n%s\n' \
             "${FULL}" \
             "${{ steps.ver.outputs.build }}" \
             "${{ github.sha }}" \
-            "${SHA}" > mac/publshr/dist/VERSION.txt
+            "${SHA}" \
+            "${SHELL_TAG}" > mac/publshr/dist/VERSION.txt
 
       - name: Package one-file macOS installer zip
         run: |
@@ -95,6 +99,7 @@ jobs:
           build_number: ${BUILD}
           version: ${FULL}
           commit: ${{ github.sha }}
+          shell: $(grep -E 'distributionTag' mac/publshr/Sources/PublshrApp/Config/AppShellIdentity.swift | head -1 | sed -E 's/.*"([^"]+)".*/\1/')
 
           ## Download Publshr for Mac
 
@@ -154,9 +159,11 @@ jobs:
             REMOTE_VER="$(echo "$REMOTE" | sed -n '1p' | tr -d '[:space:]')"
             REMOTE_BUILD="$(echo "$REMOTE" | sed -n '2p' | tr -d '[:space:]')"
             REMOTE_COMMIT="$(echo "$REMOTE" | sed -n '3p' | tr -d '[:space:]')"
+            REMOTE_SHELL="$(echo "$REMOTE" | sed -n '5p' | tr -d '[:space:]')"
             if [[ "$REMOTE_VER" = "$EXPECT" && "$REMOTE_BUILD" = "$BUILD" ]]; then
-              echo "Remote VERSION.txt: ${REMOTE_VER} build ${REMOTE_BUILD} commit ${REMOTE_COMMIT}"
+              echo "Remote VERSION.txt: ${REMOTE_VER} build ${REMOTE_BUILD} commit ${REMOTE_COMMIT} shell ${REMOTE_SHELL}"
               test "$REMOTE_COMMIT" = "${{ github.sha }}"
+              test -n "$REMOTE_SHELL"
               echo "Live channel verified for build ${BUILD}"
               exit 0
             fi

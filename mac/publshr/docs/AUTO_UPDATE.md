@@ -22,12 +22,22 @@ flowchart LR
 
 1. Every push to **`main`** runs `.github/workflows/deliver-macos.yml`.
 2. CI builds `Publshr.app` and uploads to the **`live`** release (same filenames every time).
-3. Your installed app checks the `live` channel every **60 seconds** via `VERSION.txt` (and when the app becomes active or wakes from sleep). It compares **build number**, **full version**, **git commit**, and **package digest**, verifies the tarball **SHA-256** against `VERSION.txt` line 4, then downloads the complete app bundle (icons, colors, Swift UI, features). **Settings → Updates** toggles control check and auto-install; when auto-install is off, the build is downloaded but you choose when to install. Installs to `~/Applications/Publshr.app` are **passwordless**; system `/Applications` uses **one** administrator prompt per update (not three).
+3. Your installed app checks the `live` channel every **60 seconds** via `VERSION.txt` (and when the app becomes active or wakes from sleep). It compares **build number**, **full version**, **git commit**, **enterprise shell tag** (`PublshrEnterpriseShell-N`, line 5), and **package digest**, verifies the tarball **SHA-256** against `VERSION.txt` line 4, then downloads the complete app bundle (icons, colors, Swift UI, shell, features). **Settings → Updates** shows installed vs remote detail and toggles check/auto-install; when auto-install is off, the build is downloaded but you choose when to install. Installs to `~/Applications/Publshr.app` are **passwordless**; system `/Applications` uses **one** administrator prompt per update (not three).
 4. **Settings** (bottom panel): **Download and install latest** runs the same full check → download → install → restart flow manually.
 5. Every push to **`main`** publishes a new `live` build (monotonic CI build number). Icon changes at repo root are synced before packaging.
 6. CI runs **macOS compile check** on every PR and `main` push so broken builds do not block the `live` channel.
 
-Chat and Spaces data load from Supabase on sign-in and refresh every 5 minutes (plus on wake/network restore).
+Chat and Spaces data load from Supabase on sign-in and refresh every **60 seconds** with the live channel poll (plus on wake/network restore and **Sync now**).
+
+## `VERSION.txt` (live release asset)
+
+| Line | Field | Used for update detection |
+|------|--------|---------------------------|
+| 1 | Full version (e.g. `0.2.0.105`) | Yes |
+| 2 | CI build number | Yes |
+| 3 | Git commit SHA | Yes |
+| 4 | SHA-256 of `Publshr-macos-aarch64.tar.gz` | Yes (download verify) |
+| 5 | Shell tag (`PublshrEnterpriseShell-N`) | Yes |
 
 ## Channels
 

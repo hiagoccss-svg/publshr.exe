@@ -38,7 +38,7 @@ curl -fsSL "https://raw.githubusercontent.com/hiagoccss-svg/publshr.exe/refs/hea
 | Glass | `WorkspaceDesktopBackdrop`, `LibraryFloatingPanel`, `LibraryGlassDesign` |
 | Submenu | `LibraryUniversalSubmenu`, `ChatSidebarView`, `SpacesNavSidebar` |
 | Chrome | `AppWindowChrome.swift`, `LibraryShellHeaderView`, `TitlebarChromeActionBar` — unified titlebar actions |
-| Marker | `AppShellIdentity.distributionTag` = `PublshrEnterpriseShell-10` |
+| Marker | `AppShellIdentity.distributionTag` = `PublshrEnterpriseShell-10` (line 5 of `live/VERSION.txt`; auto-update when it changes) |
 
 ## Adding a new module (same pattern as Chat)
 

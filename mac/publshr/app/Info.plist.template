@@ -25,7 +25,9 @@
 	<key>PublshrGitHubRepo</key>
 	<string>@@GITHUB_REPO@@</string>
 	<key>PublshrShellVersion</key>
-	<string>enterprise-4</string>
+	<string>@@SHELL_TAG@@</string>
+	<key>PublshrShellDistribution</key>
+	<string>@@SHELL_TAG@@</string>
 	<key>PublshrLiveVersion</key>
 	<string>@@LIVE_VERSION@@</string>
 	<key>PublshrLiveCommit</key>
