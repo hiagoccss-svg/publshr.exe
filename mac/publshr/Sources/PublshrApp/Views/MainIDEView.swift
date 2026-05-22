@@ -50,6 +50,7 @@ struct MainIDEView: View {
         .background(CursorTheme.editorBackground)
         .background(WindowChromeConfigurator())
         .onAppear {
+            _ = AppShellIdentity.distributionTag
             if let restored = AppModule(rawValue: storedModule) {
                 module = restored
             }

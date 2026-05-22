@@ -56,23 +56,25 @@ if [[ "$SIZE" -lt "$MIN_BYTES" ]]; then
     exit 1
 fi
 
-if command -v strings >/dev/null 2>&1; then
-    if strings "$EXEC" | grep -q "Welcome to Publshr"; then
-        echo "ERROR: Binary still contains fake IDE Welcome screen — wrong build" >&2
-        exit 1
-    fi
-    if strings "$EXEC" | grep -q "Search files, commands"; then
-        echo "ERROR: Binary still contains fake IDE file search bar — wrong build" >&2
-        exit 1
-    fi
-    if strings "$EXEC" | grep -q "EXPLORER"; then
-        echo "ERROR: Binary still contains fake Explorer sidebar — wrong build" >&2
-        exit 1
-    fi
-    if ! strings "$EXEC" | grep -q "PublshrEnterpriseShell-4"; then
-        echo "ERROR: Binary missing enterprise shell marker (PublshrEnterpriseShell-4) — wrong build" >&2
-        exit 1
-    fi
+_binary_contains() {
+    grep -aq "$1" "$EXEC" 2>/dev/null
+}
+
+if _binary_contains "Welcome to Publshr"; then
+    echo "ERROR: Binary still contains fake IDE Welcome screen — wrong build" >&2
+    exit 1
+fi
+if _binary_contains "Search files, commands"; then
+    echo "ERROR: Binary still contains fake IDE file search bar — wrong build" >&2
+    exit 1
+fi
+if _binary_contains "EXPLORER"; then
+    echo "ERROR: Binary still contains fake Explorer sidebar — wrong build" >&2
+    exit 1
+fi
+if ! _binary_contains "PublshrEnterpriseShell-4"; then
+    echo "ERROR: Binary missing enterprise shell marker (PublshrEnterpriseShell-4) — wrong build" >&2
+    exit 1
 fi
 
 echo "OK: $APP — native GUI Publshr ($SIZE bytes)" >&2
