@@ -108,6 +108,7 @@ final class InstallerViewModel: ObservableObject {
     }
 
     private func validateAppTree(_ tree: URL) -> Bool {
+        repairAppTreeIfNeeded(tree)
         let gui = tree.appendingPathComponent("Publshr.app/Contents/MacOS/Publshr")
         guard FileManager.default.fileExists(atPath: gui.path) else { return false }
         let stale = tree.appendingPathComponent("Publshr.app/Contents/MacOS/PublshrApp")
@@ -117,6 +118,23 @@ final class InstallerViewModel: ObservableObject {
             return false
         }
         return true
+    }
+
+    private func repairAppTreeIfNeeded(_ tree: URL) {
+        let app = tree.appendingPathComponent("Publshr.app")
+        let gui = app.appendingPathComponent("Contents/MacOS/Publshr")
+        let legacy = app.appendingPathComponent("Contents/MacOS/PublshrApp")
+        guard FileManager.default.fileExists(atPath: legacy.path),
+              !FileManager.default.fileExists(atPath: gui.path) else { return }
+        guard let attrs = try? FileManager.default.attributesOfItem(atPath: legacy.path),
+              let size = attrs[.size] as? Int, size >= 500_000 else { return }
+        try? FileManager.default.copyItem(at: legacy, to: gui)
+        try? FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: gui.path)
+        try? FileManager.default.removeItem(at: legacy)
+        let cli = app.appendingPathComponent("Contents/MacOS/publshr")
+        if FileManager.default.fileExists(atPath: cli.path) {
+            try? FileManager.default.removeItem(at: cli)
+        }
     }
 
     private func findAppTree(in tmp: URL) -> URL? {
