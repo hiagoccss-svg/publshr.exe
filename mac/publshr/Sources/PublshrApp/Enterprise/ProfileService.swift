@@ -36,6 +36,26 @@ enum ProfileService {
         return updated
     }
 
+    static func updateDisplayName(
+        client: SupabaseClient,
+        userId: UUID,
+        displayName: String
+    ) async throws -> Profile {
+        struct Patch: Encodable {
+            let display_name: String
+        }
+        let trimmed = displayName.trimmingCharacters(in: .whitespacesAndNewlines)
+        let updated: Profile = try await client
+            .from("profiles")
+            .update(Patch(display_name: trimmed))
+            .eq("id", value: userId.uuidString)
+            .select()
+            .single()
+            .execute()
+            .value
+        return updated
+    }
+
     /// Resolves `avatar_url` for display — supports legacy https URLs and storage paths.
     static func resolveAvatarURL(client: SupabaseClient?, avatarUrl: String?) async -> URL? {
         guard let avatarUrl, !avatarUrl.isEmpty else { return nil }

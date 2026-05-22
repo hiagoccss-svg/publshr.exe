@@ -1,8 +1,7 @@
 import SwiftUI
 
-/// Traffic-header trailing actions — profile, notifications, command palette.
+/// Traffic-header trailing actions — notifications and command palette (profile lives in bar menu).
 struct TitlebarChromeActionBar: View {
-    @EnvironmentObject private var auth: AuthViewModel
     @EnvironmentObject private var chat: ChatViewModel
     @Binding var module: AppModule
     @Binding var showCommandPalette: Bool
@@ -26,8 +25,6 @@ struct TitlebarChromeActionBar: View {
 
     private var trailingCluster: some View {
         HStack(alignment: .center, spacing: CursorMacShellDesign.titlebarActionSpacing) {
-            profileMenu
-
             TitlebarChromeIconButton(
                 systemName: "bell",
                 help: "Notifications",
@@ -47,93 +44,4 @@ struct TitlebarChromeActionBar: View {
         }
     }
 
-    private var profileMenu: some View {
-        Menu {
-            if let profile = auth.profile {
-                HStack(spacing: 10) {
-                    ChatProfileAvatar(
-                        profile: profile,
-                        displayName: profile.displayName ?? profile.email,
-                        size: 36,
-                        presence: chat.myStatus
-                    )
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(profile.displayName ?? profile.email)
-                            .font(.headline)
-                        HStack(spacing: 4) {
-                            ChatPresenceDot(status: chat.myStatus, size: 8)
-                            Text(chat.myStatus.label)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-                }
-                .padding(.vertical, 4)
-            }
-            Divider()
-            Text("Set status")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            ForEach(ChatPresenceStatus.allCases.filter { $0 != .invisible }, id: \.self) { status in
-                Button {
-                    Task { await chat.setStatus(status) }
-                } label: {
-                    Label(
-                        status.label,
-                        systemImage: status == chat.myStatus ? "checkmark.circle.fill" : "circle.fill"
-                    )
-                }
-            }
-            Divider()
-            Button("Account & profile") {
-                NotificationCenter.default.post(name: .publshrOpenSettings, object: SettingsSection.account.rawValue)
-            }
-            Button("Workspace settings") {
-                NotificationCenter.default.post(name: .publshrOpenSettings, object: SettingsSection.workspace.rawValue)
-            }
-            if module == .chat {
-                Button("Chat permissions") {
-                    chat.showPermissionsSheet = true
-                }
-            }
-            Divider()
-            Button("Sign out", role: .destructive) {
-                Task { await auth.signOut() }
-            }
-        } label: {
-            HStack(spacing: 6) {
-                if let profile = auth.profile {
-                    ChatProfileAvatar(
-                        profile: profile,
-                        displayName: profile.displayName ?? profile.email,
-                        size: 22,
-                        presence: chat.myStatus
-                    )
-                }
-                TitlebarChromeMenuLabel(title: profileShortTitle)
-            }
-        }
-        .menuStyle(.borderlessButton)
-        .help("Profile & presence")
-    }
-
-    private var profileShortTitle: String {
-        if let name = auth.profile?.displayName?.trimmingCharacters(in: .whitespacesAndNewlines), !name.isEmpty {
-            let parts = name.split(separator: " ")
-            if let first = parts.first {
-                return String(first)
-            }
-        }
-        if let email = auth.profile?.email.split(separator: "@").first {
-            return String(email)
-        }
-        return "Account"
-    }
-}
-
-private extension String {
-    var nonEmptyOrNil: String? {
-        let t = trimmingCharacters(in: .whitespacesAndNewlines)
-        return t.isEmpty ? nil : t
-    }
 }

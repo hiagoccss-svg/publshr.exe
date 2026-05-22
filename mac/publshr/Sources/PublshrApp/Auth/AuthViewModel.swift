@@ -546,6 +546,18 @@ final class AuthViewModel: ObservableObject {
         profile = updated
     }
 
+    func updateDisplayName(_ name: String) async throws {
+        guard let userId = session?.user.id else {
+            throw ChatServiceError.notAuthenticated
+        }
+        let updated = try await ProfileService.updateDisplayName(
+            client: client,
+            userId: userId,
+            displayName: name
+        )
+        profile = updated
+    }
+
     private var emailPrefix: String {
         email.split(separator: "@").first.map(String.init) ?? "User"
     }

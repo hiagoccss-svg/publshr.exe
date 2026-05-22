@@ -5,6 +5,7 @@ struct LibraryBarMenuColumn: View {
     @EnvironmentObject private var tabStore: WorkspaceTabStore
     @EnvironmentObject private var chat: ChatViewModel
     @Binding var module: AppModule
+    @Binding var profilePresentation: WorkspaceProfilePresentation?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -25,6 +26,8 @@ struct LibraryBarMenuColumn: View {
             .padding(.bottom, 8)
 
             Spacer(minLength: 0)
+
+            LibraryBarMenuProfileFooter(profilePresentation: $profilePresentation)
         }
         .frame(width: LibraryGlassDesign.barMenuWidth)
         .frame(maxHeight: .infinity)
