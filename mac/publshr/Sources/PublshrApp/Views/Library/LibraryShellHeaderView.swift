@@ -34,7 +34,7 @@ struct LibraryShellHeaderView: View {
         case .primaryLeading, .secondaryChrome:
             return CursorMacShellDesign.columnChromeBackground
         case .editor:
-            return CursorMacShellDesign.workspaceBackground
+            return CursorMacShellDesign.editorColumnBackground
         }
     }
 

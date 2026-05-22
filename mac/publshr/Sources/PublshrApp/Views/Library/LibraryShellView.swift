@@ -97,13 +97,20 @@ struct LibraryShellView: View {
                 showNotificationsPanel: $showNotificationsPanel
             )
         ) {
-            moduleContent
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .cursorEditorColumnBox()
-                .padding(CursorMacShellDesign.editorBoxPadding)
+            Group {
+                if module == .chat {
+                    moduleContent
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else {
+                    moduleContent
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .cursorEditorColumnBox()
+                        .padding(CursorMacShellDesign.editorBoxPadding)
+                }
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(CursorMacShellDesign.workspaceBackground)
+        .background(module == .chat ? CursorMacShellDesign.editorColumnBackground : CursorMacShellDesign.workspaceBackground)
     }
 
     private var editorColumnTitle: String {

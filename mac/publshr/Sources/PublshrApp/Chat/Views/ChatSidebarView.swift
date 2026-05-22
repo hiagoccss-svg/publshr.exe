@@ -211,26 +211,29 @@ struct ChatSidebarView: View {
             .padding(.vertical, 8)
     }
 
-    /// Disconnected footer — organized/recents toggles (not a full-width bar).
+    /// Layout toggles + Slack-style black compose bar (channel + DM).
     private var layoutFooter: some View {
-        HStack(spacing: 0) {
-            layoutToggle(.organized, icon: "list.bullet.rectangle")
-            layoutToggle(.recents, icon: "clock")
-            Spacer()
-            Menu {
-                Button { showNewChannel = true } label: {
-                    Label("New channel", systemImage: "number")
-                }
-                Button { showNewDM = true } label: {
-                    Label("New message", systemImage: "person.badge.plus")
-                }
-            } label: {
-                Image(systemName: "plus")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(LibraryGlassDesign.inkSecondary)
+        VStack(spacing: 10) {
+            HStack(spacing: 0) {
+                layoutToggle(.organized, icon: "list.bullet.rectangle")
+                layoutToggle(.recents, icon: "clock")
+                Spacer(minLength: 0)
             }
-            .menuStyle(.borderlessButton)
-            .menuIndicator(.hidden)
+
+            VStack(spacing: 8) {
+                if chat.permissions.canCreateChannels {
+                    Button { showNewChannel = true } label: {
+                        Label("Create channel", systemImage: "number")
+                    }
+                    .buttonStyle(LibraryPrimaryPillButtonStyle())
+                }
+                if chat.permissions.canDM {
+                    Button { showNewDM = true } label: {
+                        Label("New message", systemImage: "person.badge.plus")
+                    }
+                    .buttonStyle(LibraryPrimaryPillButtonStyle())
+                }
+            }
         }
     }
 
