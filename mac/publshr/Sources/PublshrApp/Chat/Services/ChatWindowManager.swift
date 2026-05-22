@@ -44,7 +44,7 @@ final class ChatWindowManager: ObservableObject {
             object: window,
             queue: .main
         ) { [weak self] _ in
-            DispatchQueue.main.async {
+            DispatchQueue.main.async { [weak self] in
                 AppWindowStateStore.saveChatPopOutFrame(channelId: channelId, frame: window.frame)
                 self?.sessions[channelId]?.teardown()
                 self?.sessions.removeValue(forKey: channelId)

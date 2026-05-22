@@ -52,7 +52,7 @@ struct SessionConversationView: View {
             sessionComposer
         }
         .fileImporter(isPresented: $showFileImporter, allowedContentTypes: [.image, .pdf, .data], allowsMultipleSelection: false) { result in
-            if case .success(let url) = result {
+            if case .success(let urls) = result, let url = urls.first {
                 Task { await session.uploadFile(from: url) }
             }
         }

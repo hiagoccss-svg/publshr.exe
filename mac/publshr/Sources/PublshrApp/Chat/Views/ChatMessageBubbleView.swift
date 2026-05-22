@@ -122,7 +122,8 @@ struct ChatMessageBubbleView: View {
     @ViewBuilder
     private var attachmentContent: some View {
         if let image = message.attachments.first(where: { $0.type == "image" }),
-           let url = URL(string: image.url) {
+           let urlString = image.url,
+           let url = URL(string: urlString) {
             AsyncImage(url: url) { phase in
                 switch phase {
                 case .success(let img):

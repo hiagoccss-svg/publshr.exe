@@ -385,10 +385,12 @@ final class ChatViewModel: ObservableObject {
 
     private func notifyMentions(in text: String, channel: ChatChannel, messageId: UUID) {
         let tokens = ChatMentionParser.parse(text, profiles: profiles)
-        for token in tokens where token.type == .user, let mentionedId = token.userId, mentionedId != currentUserId {
+        for token in tokens {
+            guard token.type == .user, let mentionedId = token.userId, mentionedId != currentUserId else { continue }
+            let authorId = currentUserId ?? mentionedId
             ChatNotificationService.shared.notify(
                 title: "Mention in \(channel.displayTitle)",
-                body: "\(displayName(for: currentUserId ?? mentionedId)) mentioned you",
+                body: "\(displayName(for: authorId)) mentioned you",
                 channelId: channel.id,
                 messageId: messageId,
                 category: .mention
@@ -505,21 +507,22 @@ final class ChatViewModel: ObservableObject {
         typingListenTask?.cancel()
         await typingBroadcaster.configureHandlers(
             onTyping: { [weak self] cid, name in
-                Task { @MainActor in
-                    guard let self, self.selectedChannel?.id == cid, let userId = self.currentUserId else { return }
-                    let state = ChatTypingState(
-                        channelId: cid,
-                        userId: UUID(), // display-only from broadcast
-                        displayName: name,
-                        expiresAt: Date().addingTimeInterval(4)
-                    )
-                    self.typingUsers = [state]
+                Task { @MainActor [weak self] in
+                    guard let chat = self, chat.selectedChannel?.id == cid else { return }
+                    chat.typingUsers = [
+                        ChatTypingState(
+                            channelId: cid,
+                            userId: UUID(),
+                            displayName: name,
+                            expiresAt: Date().addingTimeInterval(4)
+                        ),
+                    ]
                 }
             },
             onStop: { [weak self] cid in
-                Task { @MainActor in
-                    guard let self, self.selectedChannel?.id == cid else { return }
-                    self.typingUsers = []
+                Task { @MainActor [weak self] in
+                    guard let chat = self, chat.selectedChannel?.id == cid else { return }
+                    chat.typingUsers = []
                 }
             }
         )
