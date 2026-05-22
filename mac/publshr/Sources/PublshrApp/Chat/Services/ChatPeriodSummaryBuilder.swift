@@ -169,13 +169,20 @@ enum ChatPeriodSummaryBuilder {
         }
         return out
     }
+
+    private static func extractDeadlines(from text: String) -> [String] {
+        let tokens = ["today", "tomorrow", "eod", "eow", "monday", "tuesday", "wednesday", "thursday", "friday", "due"]
+        return tokens.compactMap { token in
+            text.range(of: token, options: .caseInsensitive).map { _ in "Mentioned: \(token)" }
+        }
+    }
 }
 
 private extension ChatAttachment {
     var kindLabel: String {
         if isVoice { return "a voice note" }
-        if mimeType.hasPrefix("image/") { return "an image" }
-        if mimeType.hasPrefix("video/") { return "a video" }
+        if isImage { return "an image" }
+        if isVideo { return "a video" }
         return "a file"
     }
 }
