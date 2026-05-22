@@ -73,12 +73,16 @@ jobs:
             "${{ github.sha }}" \
             "${SHA}" > mac/publshr/dist/VERSION.txt
 
-      - name: Package lightweight installer download (zip + script)
+      - name: Package one-file macOS installer zip
         run: |
           chmod +x mac/publshr/scripts/package-install-download.sh
           bash mac/publshr/scripts/package-install-download.sh
           test -f mac/publshr/dist/Publshr-Install-macos.zip
           test -f mac/publshr/dist/Publshr-install-macos.sh
+          unzip -l mac/publshr/dist/Publshr-Install-macos.zip | grep -q 'Publshr.app/Contents/MacOS/Publshr'
+          SIZE="$(wc -c < mac/publshr/dist/Publshr-Install-macos.zip | tr -d ' ')"
+          echo "Install zip size: $SIZE bytes"
+          test "$SIZE" -gt 4000000
 
       - name: Publish versioned + live releases
         env:
@@ -96,19 +100,21 @@ jobs:
           version: ${FULL}
           commit: ${{ github.sha }}
 
-          **Downloads**
+          ## Install on Mac (one file)
+
+          Download **[Publshr-Install-macos.zip](https://github.com/${REPO}/releases/download/live/Publshr-Install-macos.zip)** — unzip, double-click **Publshr Install.command**.
+
+          The zip includes the full **Publshr.app** (Chat, Spaces, Supabase auth). No second download.
+
           | File | Use |
           |------|-----|
-          | \`Publshr-Install-macos.zip\` | Share with your team — unzip, double-click **Publshr Install.command** |
-          | \`Publshr-install-macos.sh\` | Shell script only |
-          | \`Publshr-macos-aarch64.tar.gz\` | Full app tarball (IT / offline extract) |
+          | **Publshr-Install-macos.zip** | **Primary** — team / website download |
+          | \`Publshr-install-macos.sh\` | Terminal fallback |
+          | \`Publshr-macos-aarch64.tar.gz\` | In-app auto-update channel |
 
-          **One-line install:**
           \`\`\`bash
           curl -fsSL \"https://raw.githubusercontent.com/${REPO}/refs/heads/main/install-macos.sh\" | bash
-          \`\`\`
-
-          Installed Publshr.app auto-updates from the \`live\` release when you push to \`main\`."
+          \`\`\`"
 
           # Versioned release (history)
           if gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then

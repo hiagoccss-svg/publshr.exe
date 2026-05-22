@@ -8,33 +8,34 @@ Native desktop tools for **Publshr** — a Cursor-style macOS IDE with Supabase 
 | **Linux** | CLI via `./install.sh` | `desktop/spaces` | `desktop/media-monitoring` | — |
 | **Windows** | [`windows/`](windows/) — `publshr.exe` from [Releases](https://github.com/hiagoccss-svg/publshr.exe/releases) | `desktop/spaces` | `desktop/media-monitoring` | — |
 
-## macOS — native desktop IDE (Swift/SwiftUI, not a web app)
+## macOS — download ONE zip, double-click install
 
-**One install command** (always the same URL):
+**This is your real app.** Push to `main` → GitHub Actions builds **`Publshr-Install-macos.zip`** on the **`live`** release.
+
+### Download (share this link)
+
+**[Download Publshr-Install-macos.zip](https://github.com/hiagoccss-svg/publshr.exe/releases/download/live/Publshr-Install-macos.zip)**
+
+1. Unzip the file  
+2. Double-click **`Publshr Install.command`**  
+3. Sign in — Supabase, Chat, and Spaces are already wired in the build  
+
+Full guide: [DOWNLOAD-MACOS.md](DOWNLOAD-MACOS.md)
+
+The zip contains the complete **`Publshr.app`** (no second download). Installs to **`~/Applications/Publshr.app`** with your brand icon.
+
+### Terminal install (optional)
 
 ```bash
-curl -fsSL "https://raw.githubusercontent.com/hiagoccss-svg/publshr.exe/refs/heads/main/install-publshr-macos.sh" | bash
+curl -fsSL "https://raw.githubusercontent.com/hiagoccss-svg/publshr.exe/refs/heads/main/install-macos.sh" | bash
 ```
 
-If you still see installer **v8**, GitHub CDN cached the old file — save and run (do not pipe the old URL):
+| Also on `live` release | Use |
+|------------------------|-----|
+| [Publshr-install-macos.sh](https://github.com/hiagoccss-svg/publshr.exe/releases/download/live/Publshr-install-macos.sh) | Script only |
+| [Publshr-macos-aarch64.tar.gz](https://github.com/hiagoccss-svg/publshr.exe/releases/download/live/Publshr-macos-aarch64.tar.gz) | IT / auto-updater channel |
 
-```bash
-curl -fsSL "https://raw.githubusercontent.com/hiagoccss-svg/publshr.exe/refs/heads/main/install/macos/install-macos.sh" -o /tmp/publshr-install.sh && bash /tmp/publshr-install.sh
-```
-
-Opens the **Publshr Installer** window (native UI matching the app). Click **Install**, then sign in with email or biometrics.
-
-**Download installer for your team** (zip — share on a website or drive):
-
-| File | Link |
-|------|------|
-| **Publshr-Install-macos.zip** | [Releases → live → Publshr-Install-macos.zip](https://github.com/hiagoccss-svg/publshr.exe/releases/download/live/Publshr-Install-macos.zip) |
-| **install script only** | [Publshr-install-macos.sh](https://github.com/hiagoccss-svg/publshr.exe/releases/download/live/Publshr-install-macos.sh) |
-| **Full app tarball** | [Publshr-macos-aarch64.tar.gz](https://github.com/hiagoccss-svg/publshr.exe/releases/download/live/Publshr-macos-aarch64.tar.gz) |
-
-Unzip **Publshr-Install-macos.zip** and double-click **Publshr Install.command**. See [mac/publshr/docs/INSTALL.md](mac/publshr/docs/INSTALL.md).
-
-Installs **Publshr.app** to `/Applications` — a real macOS desktop application (Launchpad, native windows, offline cache). This is **not** Electron or a browser wrapper.
+Native Swift/SwiftUI desktop — **not** Electron or a browser wrapper.
 
 Or from a clone:
 

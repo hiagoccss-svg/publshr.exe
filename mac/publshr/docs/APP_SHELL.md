@@ -6,7 +6,7 @@ The product is a **native Swift/SwiftUI desktop app** with a fixed shell and **p
 
 | Artifact | Purpose |
 |----------|---------|
-| **`Publshr-Install-macos.zip`** | User-facing installer (from CI `live` release): `Publshr Install.command`, `install-macos.sh`, optional `PublshrInstaller.app`, README |
+| **`Publshr-Install-macos.zip`** | **Canonical download** — full `Publshr.app` inside zip; double-click `Publshr Install.command` (CI `live` release) |
 | **`Publshr-macos-aarch64.tar.gz`** | Full app bundle the installer downloads from GitHub `releases/download/live/` |
 | **`icon.png`** (repo root) | Synced to `mac/publshr/app/icon.png` before build → Dock/Finder/installer icons |
 
