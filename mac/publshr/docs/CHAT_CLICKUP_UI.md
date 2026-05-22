@@ -105,6 +105,8 @@ Per [Notification settings](https://help.clickup.com/hc/en-us/articles/632591895
 | `Chat/Views/ChatSidebarTitlebarChrome.swift` | Search in submenu titlebar row |
 | `Chat/Views/ChatSidebarView.swift` | Filters, sections, flat footer + settings gear |
 | `Chat/Views/ChatNotificationSettingsSheet.swift` | Notification defaults sheet |
+| `Chat/Models/ChatInAppNotification.swift` | In-app notification feed items |
+| `Chat/Services/ChatNotificationService.swift` | macOS Notification Center delivery |
 | `Chat/Views/ChatComposerView.swift` | Composer toolbar |
 | `Chat/Views/ChatEnterpriseUI.swift` | Status bar, typing indicator |
 | `Chat/Views/ChatChannelActionsMenu.swift` | Row + toolbar actions |

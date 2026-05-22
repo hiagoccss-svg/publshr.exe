@@ -31,7 +31,9 @@ struct TitlebarChromeActionBar: View {
             TitlebarChromeIconButton(
                 systemName: "bell",
                 help: "Notifications",
-                badgeCount: module == .chat ? min(chat.totalUnread, 99) : 0
+                badgeCount: module == .chat
+                    ? min(max(chat.totalUnread, chat.unreadInAppNotificationCount), 99)
+                    : 0
             ) {
                 showNotificationsPanel = true
             }

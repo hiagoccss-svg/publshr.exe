@@ -168,6 +168,9 @@ struct PublshrApp: App {
     }
 
     private func configureLifecycle() {
+        Task {
+            await ChatNotificationService.shared.requestAuthorizationIfNeeded()
+        }
         ChatNotificationService.shared.onNotificationTap = { channelId in
             guard auth.isAuthenticated else { return }
             chat.selectChannelById(channelId)
@@ -191,6 +194,9 @@ struct PublshrApp: App {
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
+        Task { @MainActor in
+            await ChatNotificationService.shared.requestAuthorizationIfNeeded()
+        }
         if let frame = AppWindowStateStore.loadMainWindowFrame(),
            let window = NSApp.windows.first {
             window.setFrame(frame, display: true)
@@ -209,8 +215,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationDidBecomeActive(_ notification: Notification) {
+        ChatNotificationFocusState.shared.setAppActive(true)
         MainWindowChrome.apply(to: NSApp.mainWindow ?? NSApp.windows.first)
         NotificationCenter.default.post(name: .publshrPerformLiveSync, object: nil)
+    }
+
+    func applicationDidResignActive(_ notification: Notification) {
+        ChatNotificationFocusState.shared.setAppActive(false)
     }
 
     func applicationWillTerminate(_ notification: Notification) {
