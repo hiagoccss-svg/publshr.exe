@@ -39,9 +39,11 @@ Plans live in Supabase `subscription_plans` (see migration `002_enterprise_platf
 
 ## Calls
 
-`CallSignalingService` creates `call_rooms` and `call_participants` rows. The in-app `CallRoomView` shows participants and mute/video toggles.
+`CallSignalingService` runs **local-first** voice/video: the app starts an embedded **livekit-server** SFU on the call host, LAN signaling via Bonjour/TCP, and LiveKit Swift for capture/playback. Up to **20** participants on the same network — no cloud media API.
 
-**Media:** Full duplex voice/video requires a **LiveKit** URL in workspace settings (`livekit_url`). Without it, signaling and participant UI still work; status text explains the limitation.
+See [LOCAL_CALLS.md](LOCAL_CALLS.md) for bundling `livekit-server` and LAN requirements.
+
+Optional Supabase `call_rooms` rows are used only for **discovery** when online (not for media). Set workspace `calls_mode` to `"cloud"` to prefer cloud discovery; media stays local unless you configure an external SFU separately.
 
 ## Local files
 

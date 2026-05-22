@@ -248,16 +248,26 @@ extension ChatViewModel {
         do {
             let data = try FileAccessService.readData(from: url)
             let fileName = "voice-\(UUID().uuidString).m4a"
-            let uploaded = try await service.uploadChatFile(
+            let localURL = try LocalVoiceNoteStore.saveRecording(
+                from: url,
+                workspaceId: workspace.id,
+                channelId: channel.id
+            )
+            var playbackURL = localURL.absoluteString
+            var storagePath = localURL.path
+            if let uploaded = try? await service.uploadChatFile(
                 workspaceId: workspace.id,
                 userId: userId,
                 fileName: fileName,
                 mimeType: "audio/mp4",
                 data: data
-            )
+            ) {
+                playbackURL = uploaded.publicURL.absoluteString
+                storagePath = uploaded.fileRecord.path
+            }
             let attachment = ChatAttachment(
                 type: "voice",
-                url: uploaded.publicURL.absoluteString,
+                url: playbackURL,
                 name: fileName,
                 size: data.count,
                 voiceNoteDurationMs: durationMs
@@ -272,7 +282,7 @@ extension ChatViewModel {
             _ = try await service.saveVoiceTranscript(
                 workspaceId: workspace.id,
                 messageId: msg.id,
-                storagePath: uploaded.fileRecord.path,
+                storagePath: storagePath,
                 durationMs: durationMs,
                 waveform: waveform
             )

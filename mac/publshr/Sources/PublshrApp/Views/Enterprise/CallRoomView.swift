@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// In-call UI — native macOS panel with live participant list (Supabase signaling).
+/// In-call UI — local SFU + LAN signaling (no cloud media APIs).
 struct CallRoomView: View {
     @EnvironmentObject private var calls: CallSignalingService
     @EnvironmentObject private var chat: ChatViewModel
@@ -14,18 +14,36 @@ struct CallRoomView: View {
             Divider()
             controls
         }
-        .frame(width: 360, height: 420)
+        .frame(width: 380, height: 460)
         .background(Color(nsColor: .windowBackgroundColor))
+        .onChange(of: calls.isMuted) { _, _ in
+            Task { await calls.onMuteChanged() }
+        }
+        .onChange(of: calls.isVideoEnabled) { _, _ in
+            Task { await calls.onMuteChanged() }
+        }
     }
 
     private var header: some View {
-        VStack(spacing: 4) {
+        VStack(spacing: 6) {
             Text(calls.activeRoom?.title ?? "Call")
                 .font(.headline)
             Text(calls.mediaStatus)
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
+            if let code = calls.localRoomCode {
+                Text("LAN room · \(code) · up to 20 participants")
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+            }
+            if let hint = calls.localJoinHint {
+                Text(hint)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 8)
+            }
         }
         .padding()
     }

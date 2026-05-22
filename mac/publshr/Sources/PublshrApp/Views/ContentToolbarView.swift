@@ -348,7 +348,8 @@ struct ContentToolbarView: View {
                 channelId: channel.id,
                 title: channel.displayTitle,
                 video: video,
-                workspaceSettings: auth.selectedWorkspace?.settings
+                workspaceSettings: auth.selectedWorkspace?.settings,
+                userDisplayName: auth.profile?.displayName ?? auth.displayName
             )
         }
     }
