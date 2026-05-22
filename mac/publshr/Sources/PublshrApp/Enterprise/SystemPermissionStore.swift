@@ -83,19 +83,28 @@ enum SystemPermissionStore {
         return true
     }
 
-    /// Notification Center — one prompt per install.
-    static func ensureNotificationAccess() async {
+    /// Notification Center — prompts once when undetermined; returns whether alerts are allowed.
+    @discardableResult
+    static func ensureNotificationAccess() async -> Bool {
         migrateLegacyPromptFlagsIfNeeded()
-        guard !UserDefaults.standard.bool(forKey: notificationsPromptedKey) else { return }
         let center = UNUserNotificationCenter.current()
         let settings = await center.notificationSettings()
-        guard settings.authorizationStatus == .notDetermined else {
+        switch settings.authorizationStatus {
+        case .authorized, .provisional:
             UserDefaults.standard.set(true, forKey: notificationsPromptedKey)
             UserDefaults.standard.set(true, forKey: legacyNotificationsKey)
-            return
+            return true
+        case .denied:
+            UserDefaults.standard.set(true, forKey: notificationsPromptedKey)
+            UserDefaults.standard.set(true, forKey: legacyNotificationsKey)
+            return false
+        case .notDetermined:
+            let granted = (try? await center.requestAuthorization(options: [.alert, .sound, .badge])) ?? false
+            UserDefaults.standard.set(true, forKey: notificationsPromptedKey)
+            UserDefaults.standard.set(true, forKey: legacyNotificationsKey)
+            return granted
+        @unknown default:
+            return false
         }
-        _ = try? await center.requestAuthorization(options: [.alert, .sound, .badge])
-        UserDefaults.standard.set(true, forKey: notificationsPromptedKey)
-        UserDefaults.standard.set(true, forKey: legacyNotificationsKey)
     }
 }

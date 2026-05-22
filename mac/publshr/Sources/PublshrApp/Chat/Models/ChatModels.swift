@@ -138,6 +138,20 @@ struct ChatAttachment: Codable, Equatable {
     var isMediaAttachment: Bool { isVoice || isVideo || isImage }
 }
 
+/// macOS Notification Center + in-app feed categories for chat alerts.
+enum ChatNotificationCategory: String {
+    case message
+    case mention
+    case reply
+    case approval
+    case voiceNote = "voice_note"
+    case assignment
+    case channelInvite = "channel_invite"
+    case fileUpload = "file_upload"
+    case clientMessage = "client_message"
+    case reminder
+}
+
 // MARK: - Presence
 
 enum ChatPresenceStatus: String, Codable, CaseIterable {

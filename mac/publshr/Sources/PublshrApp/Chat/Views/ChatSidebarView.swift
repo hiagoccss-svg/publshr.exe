@@ -93,24 +93,28 @@ struct ChatSidebarView: View {
 
     private var organizedContent: some View {
         Group {
-            if chat.sidebarFilter == .all, !chat.pinnedSidebarChannels.isEmpty {
-                sidebarSection("Pinned", items: chat.pinnedSidebarChannels, onAdd: nil)
-                LibraryUniversalSubmenu.sectionDivider()
-            }
-            if chat.sidebarFilter != .dms {
-                sidebarSection(
-                    "Channels",
-                    items: chat.filteredChannels.filter { !chat.isSidebarPinned($0) },
-                    onAdd: { showNewChannel = true }
-                )
-                LibraryUniversalSubmenu.sectionDivider()
-            }
-            if chat.sidebarFilter != .channels {
-                sidebarSection(
-                    "Direct Messages",
-                    items: chat.filteredDMs.filter { !chat.isSidebarPinned($0) },
-                    onAdd: { showNewDM = true }
-                )
+            if chat.sidebarFilter == .pinned {
+                sidebarSection("Pinned", items: chat.filteredChannels + chat.filteredDMs, onAdd: nil)
+            } else {
+                if chat.sidebarFilter == .all, !chat.pinnedSidebarChannels.isEmpty {
+                    sidebarSection("Pinned", items: chat.pinnedSidebarChannels, onAdd: nil)
+                    LibraryUniversalSubmenu.sectionDivider()
+                }
+                if chat.sidebarFilter != .dms {
+                    sidebarSection(
+                        "Channels",
+                        items: chat.filteredChannels.filter { !chat.isSidebarPinned($0) },
+                        onAdd: { showNewChannel = true }
+                    )
+                    LibraryUniversalSubmenu.sectionDivider()
+                }
+                if chat.sidebarFilter != .channels {
+                    sidebarSection(
+                        "Direct Messages",
+                        items: chat.filteredDMs.filter { !chat.isSidebarPinned($0) },
+                        onAdd: { showNewDM = true }
+                    )
+                }
             }
         }
     }
@@ -179,7 +183,7 @@ struct ChatSidebarView: View {
             .padding(.vertical, 8)
     }
 
-    /// ClickUp: Organized / Recents icons lower-left; compose as flat text rows.
+    /// ClickUp: Organized / Recents lower-left; plus + settings gear; flat compose rows.
     private var layoutFooter: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 16) {
@@ -205,6 +209,8 @@ struct ChatSidebarView: View {
                 .menuStyle(.borderlessButton)
                 .menuIndicator(.hidden)
                 .help("New channel or message")
+
+                sidebarSettingsMenu
             }
 
             if chat.permissions.canCreateChannels {
@@ -220,6 +226,51 @@ struct ChatSidebarView: View {
                 .buttonStyle(LibrarySubmenuTextButtonStyle())
             }
         }
+    }
+
+    private var sidebarSettingsMenu: some View {
+        Menu {
+            Button {
+                chat.showNotificationSettings = true
+            } label: {
+                Label("Notification settings", systemImage: "bell.badge")
+            }
+            Button {
+                chat.markAllChannelsRead()
+            } label: {
+                Label("Mark all as read", systemImage: "checkmark.circle")
+            }
+            Button {
+                chat.showSearchSheet = true
+            } label: {
+                Label("Search workspace", systemImage: "magnifyingglass")
+            }
+            Divider()
+            Button {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    chat.chatFocusMode.toggle()
+                }
+            } label: {
+                Label(
+                    chat.chatFocusMode ? "Exit focus mode" : "Focus on chat",
+                    systemImage: chat.chatFocusMode ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right"
+                )
+            }
+            Divider()
+            Button {
+                chat.showPermissionsSheet = true
+            } label: {
+                Label("Workspace chat permissions", systemImage: "lock.shield")
+            }
+        } label: {
+            Image(systemName: "gearshape")
+                .font(.system(size: 13, weight: .medium))
+                .foregroundStyle(LibraryGlassDesign.inkSecondary)
+                .frame(width: 28, height: 28)
+        }
+        .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
+        .help("Chat settings")
     }
 
     private func layoutToggle(_ layout: ChatSidebarLayout, icon: String, label: String) -> some View {

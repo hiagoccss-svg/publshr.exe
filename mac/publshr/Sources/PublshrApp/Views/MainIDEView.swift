@@ -16,6 +16,7 @@ struct MainIDEView: View {
     @State private var showNewDM = false
     @State private var showCommandPalette = false
     @State private var showNotificationsPanel = false
+    @State private var profilePresentation: WorkspaceProfilePresentation?
 
     var body: some View {
         LibraryShellView(
@@ -23,7 +24,8 @@ struct MainIDEView: View {
             showNewChannel: $showNewChannel,
             showNewDM: $showNewDM,
             showCommandPalette: $showCommandPalette,
-            showNotificationsPanel: $showNotificationsPanel
+            showNotificationsPanel: $showNotificationsPanel,
+            profilePresentation: $profilePresentation
         )
         .environmentObject(TrafficLightLayoutStore.shared)
         .background(WindowChromeConfigurator())
@@ -70,6 +72,12 @@ struct MainIDEView: View {
         }
         .sheet(isPresented: $showNotificationsPanel) {
             TitlebarNotificationsPanelView(chat: chat, isPresented: $showNotificationsPanel)
+        }
+        .sheet(item: $profilePresentation) { _ in
+            WorkspaceProfileSheet(
+                presentation: $profilePresentation,
+                module: $module
+            )
         }
         .onReceive(NotificationCenter.default.publisher(for: .publshrTitlebarToggleSidebar)) { _ in
             withAnimation(.easeInOut(duration: 0.15)) { tabStore.sidebarExpanded.toggle() }

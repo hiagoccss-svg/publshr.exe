@@ -69,4 +69,32 @@ enum DeviceIdentityService {
             .upsert(row, onConflict: "user_id,device_key")
             .execute()
     }
+
+    /// Records a successful cloud session (password or biometric) so Supabase knows this device is active.
+    @MainActor
+    static func recordSessionUnlock(
+        client: SupabaseClient,
+        userId: UUID,
+        workspaceId: UUID?,
+        method: String
+    ) async {
+        await register(client: client, userId: userId, workspaceId: workspaceId)
+        struct Insert: Encodable {
+            let user_id: UUID
+            let workspace_id: UUID?
+            let event_type: String
+            let detail: String
+        }
+        let info = current
+        let detail = "method=\(method);device_key=\(info.deviceKey);platform=\(info.platform)"
+        try? await client
+            .from("privacy_audit_events")
+            .insert(Insert(
+                user_id: userId,
+                workspace_id: workspaceId,
+                event_type: "session_unlock",
+                detail: detail
+            ))
+            .execute()
+    }
 }

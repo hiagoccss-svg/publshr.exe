@@ -1,14 +1,9 @@
 import SwiftUI
-import UniformTypeIdentifiers
 
-/// Editor-column toolbar content (embedded in `ShellUnifiedTitlebar`).
+/// Editor-column toolbar content (embedded in `ShellUnifiedTitlebar`). Profile lives in the bar menu footer.
 struct ChatEditorToolbarContent: View {
-    @EnvironmentObject private var auth: AuthViewModel
     @EnvironmentObject private var chat: ChatViewModel
     @Binding var showCommandPalette: Bool
-
-    @State private var showAvatarPicker = false
-    @State private var isUploadingAvatar = false
 
     var body: some View {
         HStack(alignment: .center, spacing: AppWindowChromeMetrics.toolbarItemSpacing) {
@@ -28,17 +23,8 @@ struct ChatEditorToolbarContent: View {
                 chat.showChannelSettings = true
             }
             .disabled(chat.selectedChannel == nil)
-            profileAvatarMenu
         }
         .frame(maxWidth: .infinity)
-        .fileImporter(
-            isPresented: $showAvatarPicker,
-            allowedContentTypes: [.jpeg, .png],
-            allowsMultipleSelection: false
-        ) { result in
-            guard case .success(let urls) = result, let url = urls.first else { return }
-            Task { await uploadAvatar(from: url) }
-        }
     }
 
     @ViewBuilder
@@ -54,27 +40,6 @@ struct ChatEditorToolbarContent: View {
         }
     }
 
-    private var profileAvatarMenu: some View {
-        TitlebarToolbarProfileMenu(
-            isUploadingAvatar: isUploadingAvatar,
-            onUploadPhoto: { showAvatarPicker = true },
-            onChatPermissions: { chat.showPermissionsSheet = true }
-        )
-    }
-
-    private func uploadAvatar(from url: URL) async {
-        isUploadingAvatar = true
-        defer { isUploadingAvatar = false }
-        let accessed = url.startAccessingSecurityScopedResource()
-        defer { if accessed { url.stopAccessingSecurityScopedResource() } }
-        do {
-            let data = try Data(contentsOf: url)
-            let mime = url.pathExtension.lowercased() == "png" ? "image/png" : "image/jpeg"
-            try await auth.uploadAvatar(data: data, mimeType: mime)
-        } catch {
-            // Settings account pane shows errors; header stays minimal.
-        }
-    }
 }
 
 /// Channel title cluster aligned to the same row as icon buttons.

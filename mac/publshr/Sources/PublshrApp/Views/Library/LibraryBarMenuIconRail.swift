@@ -2,9 +2,11 @@ import SwiftUI
 
 /// Primary column — enterprise module icons only (52px), below the traffic-light header band.
 struct LibraryBarMenuIconRail: View {
+    @EnvironmentObject private var auth: AuthViewModel
     @EnvironmentObject private var tabStore: WorkspaceTabStore
     @EnvironmentObject private var chat: ChatViewModel
     @Binding var module: AppModule
+    @Binding var profilePresentation: WorkspaceProfilePresentation?
 
     var body: some View {
         VStack(spacing: AppWindowChromeMetrics.toolbarItemSpacing) {
@@ -12,6 +14,22 @@ struct LibraryBarMenuIconRail: View {
                 moduleIcon(item)
             }
             Spacer(minLength: 0)
+
+            Button {
+                profilePresentation = .currentUser
+            } label: {
+                if let profile = auth.profile {
+                    ChatProfileAvatar(
+                        profile: profile,
+                        displayName: profile.displayName ?? profile.email,
+                        size: 30,
+                        presence: chat.myStatus
+                    )
+                }
+            }
+            .buttonStyle(.plain)
+            .help("Your profile")
+            .padding(.bottom, 10)
         }
         .padding(.top, 8)
         .padding(.horizontal, 6)

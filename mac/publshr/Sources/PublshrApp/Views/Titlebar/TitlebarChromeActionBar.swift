@@ -1,8 +1,7 @@
 import SwiftUI
 
-/// Traffic-header trailing actions — profile, notifications, command palette.
+/// Traffic-header trailing actions — notifications and command palette (profile lives in bar menu).
 struct TitlebarChromeActionBar: View {
-    @EnvironmentObject private var auth: AuthViewModel
     @EnvironmentObject private var chat: ChatViewModel
     @Binding var module: AppModule
     @Binding var showCommandPalette: Bool
@@ -29,7 +28,9 @@ struct TitlebarChromeActionBar: View {
             TitlebarChromeIconButton(
                 systemName: "bell",
                 help: "Notifications",
-                badgeCount: module == .chat ? min(chat.totalUnread, 99) : 0
+                badgeCount: module == .chat
+                    ? min(max(chat.totalUnread, chat.unreadInAppNotificationCount), 99)
+                    : 0
             ) {
                 showNotificationsPanel = true
             }
@@ -40,11 +41,6 @@ struct TitlebarChromeActionBar: View {
             ) {
                 showCommandPalette = true
             }
-
-            TitlebarToolbarProfileMenu(
-                showChatPermissions: module == .chat,
-                onChatPermissions: { chat.showPermissionsSheet = true }
-            )
         }
     }
 }

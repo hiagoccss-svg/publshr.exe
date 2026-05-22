@@ -21,6 +21,7 @@ export interface ResultFilterOptions {
 
 const api = {
   restoreSession: () => ipcRenderer.invoke('auth:restore'),
+  reconcileCloud: () => ipcRenderer.invoke('auth:reconcile-cloud'),
   signIn: (email: string, password: string) => ipcRenderer.invoke('auth:sign-in', email, password),
   signUp: (email: string, password: string, displayName: string) =>
     ipcRenderer.invoke('auth:sign-up', email, password, displayName),

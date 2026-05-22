@@ -8,7 +8,17 @@ enum ChatUserPreferences {
     private static let permissionsPrefix = "publshr.chat.permissions."
     private static let sidebarFilterKey = "publshr.chat.sidebarFilter"
     private static let sidebarLayoutKey = "publshr.chat.sidebarLayout"
+    private static let defaultNotificationKey = "publshr.chat.defaultNotificationLevel"
     private static let pinnedChannelsPrefix = "publshr.chat.pinnedChannels."
+
+    /// Default notify level for new channel memberships (ClickUp: All / Mentions / Mute).
+    static func loadDefaultNotificationLevel() -> String {
+        UserDefaults.standard.string(forKey: defaultNotificationKey) ?? "all"
+    }
+
+    static func saveDefaultNotificationLevel(_ level: String) {
+        UserDefaults.standard.set(level, forKey: defaultNotificationKey)
+    }
 
     static func loadPinnedChannelIds(workspaceId: UUID) -> Set<UUID> {
         let key = pinnedChannelsPrefix + workspaceId.uuidString

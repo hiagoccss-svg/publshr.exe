@@ -12,6 +12,7 @@ struct LibraryShellView: View {
     @Binding var showNewDM: Bool
     @Binding var showCommandPalette: Bool
     @Binding var showNotificationsPanel: Bool
+    @Binding var profilePresentation: WorkspaceProfilePresentation?
 
     private var submenuHidden: Bool {
         !tabStore.sidebarExpanded
@@ -36,6 +37,9 @@ struct LibraryShellView: View {
         .onChange(of: tabStore.sidebarExpanded) { _, _ in
             withAnimation(.easeInOut(duration: 0.2)) {}
         }
+        .onChange(of: tabStore.barMenuExpanded) { _, _ in
+            withAnimation(.easeInOut(duration: 0.15)) {}
+        }
         .onChange(of: chat.chatFocusMode) { _, _ in
             withAnimation(.easeInOut(duration: 0.2)) {}
         }
@@ -58,7 +62,19 @@ struct LibraryShellView: View {
 
             HStack(alignment: .top, spacing: 0) {
                 ShellColumnChromeStack(showsTitlebar: false, appliesPrimaryBarGlass: true) {
-                    LibraryBarMenuIconRail(module: $module)
+                    Group {
+                        if tabStore.barMenuExpanded {
+                            LibraryBarMenuColumn(
+                                module: $module,
+                                profilePresentation: $profilePresentation
+                            )
+                        } else {
+                            LibraryBarMenuIconRail(
+                                module: $module,
+                                profilePresentation: $profilePresentation
+                            )
+                        }
+                    }
                 }
                 .fixedSize(horizontal: true, vertical: false)
                 .layoutPriority(2)
@@ -86,6 +102,7 @@ struct LibraryShellView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .animation(.easeInOut(duration: 0.15), value: submenuHidden)
+        .animation(.easeInOut(duration: 0.15), value: tabStore.barMenuExpanded)
     }
 
     private var editorColumn: some View {

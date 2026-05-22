@@ -47,7 +47,11 @@ final class AppLifecycleService: ObservableObject {
 
     private func pollReachabilityLoop() async {
         while !Task.isCancelled {
-            let reachable = await checkGitHubReachable()
+            async let githubReachable = checkHEADReachable("https://github.com")
+            async let supabaseReachable = checkHEADReachable(SupabaseConfig.url.absoluteString)
+            let githubUp = await githubReachable
+            let supabaseUp = await supabaseReachable
+            let reachable = githubUp || supabaseUp
             let wasOffline = !isNetworkReachable
             isNetworkReachable = reachable
             if reachable && wasOffline {
@@ -57,15 +61,15 @@ final class AppLifecycleService: ObservableObject {
         }
     }
 
-    private func checkGitHubReachable() async -> Bool {
-        guard let url = URL(string: "https://github.com") else { return false }
+    private func checkHEADReachable(_ urlString: String) async -> Bool {
+        guard let url = URL(string: urlString) else { return false }
         var request = URLRequest(url: url)
         request.httpMethod = "HEAD"
         request.timeoutInterval = 8
         do {
             let (_, response) = try await URLSession.shared.data(for: request)
             guard let http = response as? HTTPURLResponse else { return false }
-            return (200 ... 399).contains(http.statusCode)
+            return (200 ... 499).contains(http.statusCode)
         } catch {
             return false
         }

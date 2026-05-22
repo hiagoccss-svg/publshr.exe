@@ -23,6 +23,9 @@ struct EnterpriseChatView: View {
         .sheet(isPresented: $chat.showAISheet) { ChatAISheet(chat: chat) }
         .sheet(isPresented: $chat.showPermissionsSheet) { ChatPermissionsSheet(chat: chat) }
         .sheet(isPresented: $chat.showChannelSettings) { ChatChannelSettingsSheet(chat: chat) }
+        .sheet(isPresented: $chat.showNotificationSettings) {
+            ChatNotificationSettingsSheet(chat: chat)
+        }
         .sheet(isPresented: $showPlannerShare) { plannerShareSheet }
         .onAppear {
             if chat.currentUserId == nil {
@@ -33,7 +36,12 @@ struct EnterpriseChatView: View {
 
     @ViewBuilder
     private var chatStatusBanner: some View {
-        if chat.isOffline {
+        if auth.isAuthenticated, !auth.isCloudValidated {
+            ModuleStatusBanner(
+                text: "Signed in on this Mac. Reconnecting to Supabase to refresh permissions…",
+                style: .warning
+            )
+        } else if chat.isOffline {
             ModuleStatusBanner(
                 text: chat.errorMessage ?? "Offline — showing cached channels. Check network or Supabase.",
                 style: .warning
