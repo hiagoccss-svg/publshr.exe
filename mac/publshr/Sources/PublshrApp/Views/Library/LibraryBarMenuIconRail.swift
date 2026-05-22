@@ -2,6 +2,7 @@ import SwiftUI
 
 /// Primary column — enterprise module icons only (52px), below the traffic-light header band.
 struct LibraryBarMenuIconRail: View {
+    var barWidth: CGFloat = ShellColumnLayout.barCollapsedMax
     @EnvironmentObject private var auth: AuthViewModel
     @EnvironmentObject private var tabStore: WorkspaceTabStore
     @EnvironmentObject private var chat: ChatViewModel
@@ -33,7 +34,7 @@ struct LibraryBarMenuIconRail: View {
         }
         .padding(.top, 8)
         .padding(.horizontal, 6)
-        .frame(width: CursorMacShellDesign.barMenuIconRailWidth)
+        .frame(width: barWidth, alignment: .center)
         .frame(maxHeight: .infinity)
     }
 

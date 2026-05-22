@@ -4,6 +4,7 @@ import SwiftUI
 struct ShellUnifiedTitlebar: View {
     @EnvironmentObject private var tabStore: WorkspaceTabStore
     @EnvironmentObject private var chat: ChatViewModel
+    @EnvironmentObject private var spaces: SpacesViewModel
     @ObservedObject private var layout = TrafficLightLayoutStore.shared
 
     @Binding var module: AppModule
@@ -54,13 +55,19 @@ struct ShellUnifiedTitlebar: View {
     private var leadingBand: some View {
         TitlebarToolbarRow(trailingPadding: 6) {
             Color.clear
-                .frame(width: min(layout.leadingInset, max(0, barColumnWidth - AppWindowChromeMetrics.controlSize * 4)))
+                .frame(width: min(layout.leadingInset, max(0, barColumnWidth - AppWindowChromeMetrics.controlSize * 2)))
                 .accessibilityHidden(true)
-            TitlebarGlobalLeadingActions(
-                module: $module,
-                showCommandPalette: $showCommandPalette,
-                showNotificationsPanel: $showNotificationsPanel
-            )
+            TitlebarChromeIconButton(
+                systemName: tabStore.sidebarExpanded ? "sidebar.left" : "sidebar.right",
+                help: tabStore.sidebarExpanded
+                    ? "Hide submenu"
+                    : "Show submenu",
+                isActive: !tabStore.sidebarExpanded
+            ) {
+                withAnimation(.easeInOut(duration: 0.15)) {
+                    tabStore.sidebarExpanded.toggle()
+                }
+            }
             ShellTrafficLeadingActions(
                 module: $module,
                 compact: !tabStore.barMenuExpanded || barColumnCompact
@@ -74,17 +81,10 @@ struct ShellUnifiedTitlebar: View {
 
     @ViewBuilder
     private var submenuBand: some View {
-        Group {
-            if module == .chat {
-                ChatSidebarTitlebarChrome(chat: chat)
-                    .padding(.horizontal, 10)
-            } else {
-                Color.clear
-            }
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-        .frame(height: layout.rowHeight)
-        .background(LibraryGlassDesign.submenuColumnBackground)
+        UniversalSubmenuTitlebarChrome(module: module, chat: chat, spaces: spaces)
+            .padding(.horizontal, 10)
+            .frame(height: layout.rowHeight)
+            .background(LibraryGlassDesign.submenuColumnBackground)
     }
 
     // MARK: - Column 3 (channel / actions)
@@ -93,7 +93,10 @@ struct ShellUnifiedTitlebar: View {
     private var editorBand: some View {
         Group {
             if module == .chat {
-                ChatEditorToolbarContent()
+                ChatEditorToolbarContent(
+                    showCommandPalette: $showCommandPalette,
+                    showNotificationsPanel: $showNotificationsPanel
+                )
                 .padding(.leading, 10)
                 .padding(.trailing, 12)
             } else {

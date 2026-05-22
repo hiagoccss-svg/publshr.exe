@@ -24,7 +24,7 @@ curl -fsSL "https://raw.githubusercontent.com/hiagoccss-svg/publshr.exe/refs/hea
 │  ┌────────┬──────────────┬─────────────────────────────────┐ │
 │  │ Bar    │  Universal   │  Floating glass panel (20px     │ │
 │  │ menu   │  submenu     │  radius) — Chat / Spaces        │ │
-│  │ ~20%   │  ~30%        │  ~50% editor (white columns)    │ │
+│  │ 200pt  │  272pt       │  editor (flex, min 420pt)       │ │
 │  └────────┴──────────────┴─────────────────────────────────┘ │
 │  Per-column title bands (traffic: sidebar/back/forward; editor: profile, notifications, command) │
 │  Disconnected status line                                     │
@@ -34,7 +34,7 @@ curl -fsSL "https://raw.githubusercontent.com/hiagoccss-svg/publshr.exe/refs/hea
 | Layer | Files |
 |-------|--------|
 | Flow | `ContentView.swift`, `AuthViewModel`, `AuthView`, `WorkspacePickerView` |
-| Shell | `MainIDEView.swift`, `ShellUnifiedTitlebar`, `TrafficLightLayoutStore` (measured traffic lights), `LibraryBarMenuColumn` (~20% width), `AppSecondarySidebar` (~30%) |
+| Shell | `MainIDEView.swift`, `ShellUnifiedTitlebar`, `ShellColumnLayout` (200pt bar + 272pt submenu + flex editor), `LibraryBarMenuColumn`, `AppSecondarySidebar` |
 | Glass | `WorkspaceDesktopBackdrop`, `LibraryFloatingPanel`, `LibraryGlassDesign` |
 | Submenu | `LibraryUniversalSubmenu`, `ChatSidebarView`, `SpacesNavSidebar` |
 | Chrome | `ShellColumnChromeStack` + `LibraryShellHeaderView` (per-column title bands), `TitlebarToolbarRow` / `TitlebarToolbarSlot` (`AppWindowChromeMetrics`), `TitlebarChromeActionBar`, `WindowChromeConfigurator` |
