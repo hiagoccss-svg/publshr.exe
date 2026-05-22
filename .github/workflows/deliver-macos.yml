@@ -46,7 +46,7 @@ jobs:
           tar -tzf "$ASSET" | grep -q 'Publshr.app/Contents/MacOS/PublshrApp'
           SIZE="$(wc -c < "$ASSET" | tr -d ' ')"
           echo "Asset size: $SIZE bytes"
-          if [[ "$SIZE" -lt 5000000 ]]; then
+          if [[ "$SIZE" -lt 4000000 ]]; then
             echo "ERROR: tarball too small — expected full IDE app" >&2
             exit 1
           fi

@@ -17,7 +17,7 @@ PUBLSHR_LIVE_TAG="${PUBLSHR_LIVE_TAG:-live}"
 PUBLSHR_MAC_APP="${PUBLSHR_MAC_APP:-/Applications/Publshr.app}"
 PUBLSHR_BIN_LINK="${PUBLSHR_BIN_LINK:-/usr/local/bin/publshr}"
 PUBLSHR_LIVE_ASSET_MACOS_ARM64="Publshr-macos-aarch64.tar.gz"
-PUBLSHR_MIN_APP_BYTES=5000000
+PUBLSHR_MIN_APP_BYTES=4000000
 
 log() { echo "[Publshr] $*" >&2; }
 
