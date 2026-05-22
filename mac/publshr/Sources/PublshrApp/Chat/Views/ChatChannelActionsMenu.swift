@@ -31,13 +31,25 @@ struct ChatChannelActionsMenu: View {
                 Divider()
             }
             if subscription.canUseCalls(workspace: auth.selectedWorkspace) {
-                Menu("Voice call") {
-                    Button("Private") { startCall(video: false, scope: .private) }
-                    Button("Meeting") { startCall(video: false, scope: .meeting) }
+                Button {
+                    startCall(video: false, scope: .private)
+                } label: {
+                    Label("Voice call (private)", systemImage: "phone.fill")
                 }
-                Menu("Video call") {
-                    Button("Private") { startCall(video: true, scope: .private) }
-                    Button("Meeting") { startCall(video: true, scope: .meeting) }
+                Button {
+                    startCall(video: false, scope: .meeting)
+                } label: {
+                    Label("Voice meeting", systemImage: "phone.badge.waveform.fill")
+                }
+                Button {
+                    startCall(video: true, scope: .private)
+                } label: {
+                    Label("Video call (private)", systemImage: "video.fill")
+                }
+                Button {
+                    startCall(video: true, scope: .meeting)
+                } label: {
+                    Label("Video meeting", systemImage: "video.badge.plus")
                 }
                 Divider()
             }
