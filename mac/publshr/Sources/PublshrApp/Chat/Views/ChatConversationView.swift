@@ -25,8 +25,13 @@ struct ChatConversationView: View {
             allowedContentTypes: [.image, .movie, .video, .pdf, .data],
             allowsMultipleSelection: false
         ) { result in
-            if case .success(let urls) = result, let url = urls.first {
+            switch result {
+            case .success(let urls):
+                guard let url = urls.first else { return }
+                FileAccessService.saveBookmark(for: url, key: "upload.\(url.lastPathComponent)")
                 Task { await chat.uploadFile(from: url) }
+            case .failure(let error):
+                chat.errorMessage = error.localizedDescription
             }
         }
         .sheet(isPresented: $showVoiceSheet) {
@@ -204,17 +209,31 @@ struct ChatConversationView: View {
     }
 
     private func attachFiles() {
-        guard chat.permissions.canUploadFiles else { return }
-        let urls = FileAccessService.pickFiles(allowedTypes: [.image, .pdf, .data])
+        guard chat.permissions.canUploadFiles else {
+            chat.errorMessage = "File uploads are disabled for this workspace."
+            return
+        }
+        let urls = FileAccessService.pickFiles(allowedTypes: [.image, .jpeg, .png, .heic, .pdf, .movie, .video, .data])
         guard let url = urls.first else { return }
         Task { await chat.uploadFile(from: url) }
     }
 
     private func handleDrop(_ providers: [NSItemProvider]) -> Bool {
-        guard chat.permissions.canUploadFiles else { return false }
+        guard chat.permissions.canUploadFiles else {
+            chat.errorMessage = "File uploads are disabled for this workspace."
+            return false
+        }
         for provider in providers where provider.hasItemConformingToTypeIdentifier(UTType.fileURL.identifier) {
-            provider.loadItem(forTypeIdentifier: UTType.fileURL.identifier, options: nil) { item, _ in
-                guard let data = item as? Data, let url = URL(dataRepresentation: data, relativeTo: nil) else { return }
+            provider.loadFileRepresentation(forTypeIdentifier: UTType.fileURL.identifier) { url, error in
+                guard let url else {
+                    if let error {
+                        Task { @MainActor in
+                            chat.errorMessage = error.localizedDescription
+                        }
+                    }
+                    return
+                }
+                FileAccessService.saveBookmark(for: url, key: "upload.\(url.lastPathComponent)")
                 Task { @MainActor in await chat.uploadFile(from: url) }
             }
             return true

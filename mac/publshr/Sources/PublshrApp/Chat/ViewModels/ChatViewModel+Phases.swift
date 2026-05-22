@@ -220,7 +220,16 @@ extension ChatViewModel {
             await loadChannelExtras()
         } catch {
             uploadProgress = nil
-            errorMessage = error.localizedDescription
+            let text = error.localizedDescription
+            if text.localizedCaseInsensitiveContains("security")
+                || text.localizedCaseInsensitiveContains("policy")
+                || text.localizedCaseInsensitiveContains("permission")
+                || text.localizedCaseInsensitiveContains("row-level") {
+                errorMessage =
+                    "Upload blocked: \(text). Use the paperclip button to pick the image, and confirm workspace file uploads are enabled in Chat permissions."
+            } else {
+                errorMessage = text
+            }
         }
     }
 

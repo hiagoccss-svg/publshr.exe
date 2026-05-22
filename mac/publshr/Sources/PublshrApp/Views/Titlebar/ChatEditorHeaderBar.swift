@@ -4,8 +4,6 @@ import SwiftUI
 struct ChatEditorToolbarContent: View {
     @EnvironmentObject private var auth: AuthViewModel
     @EnvironmentObject private var chat: ChatViewModel
-    @Binding var showCommandPalette: Bool
-    @Binding var showNotificationsPanel: Bool
 
     var body: some View {
         TitlebarToolbarRow(leadingPadding: 0, trailingPadding: 0) {
@@ -34,92 +32,51 @@ struct ChatEditorToolbarContent: View {
 
     @ViewBuilder
     private var trailingActions: some View {
-        if chat.selectedChannel != nil {
-            TitlebarChromeIconButton(systemName: "arrow.up.forward.square", help: "Open in new window") {
-                if let channel = chat.selectedChannel {
-                    ChatWindowManager.shared.openChannel(channel, chat: chat, auth: auth)
+        HStack(alignment: .center, spacing: AppWindowChromeMetrics.toolbarEditorActionSpacing) {
+            if chat.selectedChannel != nil {
+                TitlebarChromeIconButton(systemName: "arrow.up.forward.square", help: "Open in new window") {
+                    if let channel = chat.selectedChannel {
+                        ChatWindowManager.shared.openChannel(channel, chat: chat, auth: auth)
+                    }
                 }
-            }
 
-            TitlebarChromeIconButton(
-                systemName: chat.chatFocusMode ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right",
-                help: chat.chatFocusMode ? "Show sidebars" : "Focus on chat",
-                isActive: chat.chatFocusMode
-            ) {
-                withAnimation(.easeInOut(duration: 0.15)) {
-                    chat.chatFocusMode.toggle()
-                }
-            }
-
-            TitlebarChromeIconButton(systemName: "sparkles", help: "Chat recap & AI") {
-                chat.showAISheet = true
-            }
-
-            TitlebarChromeIconButton(systemName: "magnifyingglass", help: "Search in channel") {
-                chat.openChannelSearch()
-            }
-
-            TitlebarChromeIconButton(
-                systemName: chat.showPinnedPanel ? "pin.fill" : "pin",
-                help: "Pinned messages",
-                isActive: chat.showPinnedPanel
-            ) {
-                chat.showPinnedPanel.toggle()
-            }
-
-            if let channel = chat.selectedChannel,
-               channel.kind == .dm || channel.kind == .group {
                 TitlebarChromeIconButton(
-                    systemName: "info.circle",
-                    help: "Conversation details",
-                    isActive: chat.showDMInspector
+                    systemName: chat.chatFocusMode ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right",
+                    help: chat.chatFocusMode ? "Show sidebars" : "Focus on chat",
+                    isActive: chat.chatFocusMode
                 ) {
-                    chat.showDMInspector.toggle()
+                    withAnimation(.easeInOut(duration: 0.15)) {
+                        chat.chatFocusMode.toggle()
+                    }
+                }
+
+                TitlebarChromeIconButton(systemName: "sparkles", help: "Chat recap & AI") {
+                    chat.showAISheet = true
+                }
+
+                TitlebarChromeIconButton(systemName: "magnifyingglass", help: "Search in channel") {
+                    chat.openChannelSearch()
+                }
+
+                TitlebarChromeIconButton(
+                    systemName: chat.showPinnedPanel ? "pin.fill" : "pin",
+                    help: "Pinned messages",
+                    isActive: chat.showPinnedPanel
+                ) {
+                    chat.showPinnedPanel.toggle()
+                }
+
+                if let channel = chat.selectedChannel,
+                   channel.kind == .dm || channel.kind == .group {
+                    TitlebarChromeIconButton(
+                        systemName: "info.circle",
+                        help: "Conversation details",
+                        isActive: chat.showDMInspector
+                    ) {
+                        chat.showDMInspector.toggle()
+                    }
                 }
             }
-
-            if let channel = chat.selectedChannel {
-                channelMoreMenu(channel)
-            }
-        }
-
-        TitlebarChromeIconButton(
-            systemName: "bell",
-            help: "Notifications",
-            badgeCount: min(max(chat.totalUnread, chat.unreadInAppNotificationCount), 99)
-        ) {
-            showNotificationsPanel = true
-        }
-
-        TitlebarChromeIconButton(
-            systemName: "command",
-            help: TitlebarShortcutHint.tooltip("Command palette", shortcut: TitlebarShortcutHint.commandPalette)
-        ) {
-            showCommandPalette = true
-        }
-
-        TitlebarChromeIconButton(systemName: "gearshape", help: "Channel settings") {
-            chat.showChannelSettings = true
-        }
-        .disabled(chat.selectedChannel == nil)
-    }
-
-    private func channelMoreMenu(_ channel: ChatChannel) -> some View {
-        TitlebarToolbarSlot {
-            Menu {
-                ChatChannelActionsMenu(chat: chat, channel: channel)
-            } label: {
-                Image(systemName: "ellipsis")
-                    .font(.system(size: AppWindowChromeMetrics.controlIconSize, weight: .regular))
-                    .foregroundStyle(LibraryGlassDesign.inkSecondary)
-                    .frame(
-                        width: AppWindowChromeMetrics.controlSize,
-                        height: AppWindowChromeMetrics.controlSize
-                    )
-                    .contentShape(Rectangle())
-            }
-            .menuStyle(.borderlessButton)
-            .help("More")
         }
     }
 

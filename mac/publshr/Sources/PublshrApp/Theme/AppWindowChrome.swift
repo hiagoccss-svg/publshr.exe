@@ -33,6 +33,10 @@ enum AppWindowChromeMetrics {
     static let toolbarTitleFontSize: CGFloat = 13
     /// Gap between toolbar slots (sidebar toggle, icons, title cluster).
     static let toolbarItemSpacing: CGFloat = 8
+    /// Far-left global cluster (settings, command, bell, menu).
+    static let toolbarLeadingClusterSpacing: CGFloat = 10
+    /// Editor column channel tools (pop-out, search, pin, …).
+    static let toolbarEditorActionSpacing: CGFloat = 12
     /// Ask AI pill — same vertical footprint as chrome controls.
     static let askAIPillHeight: CGFloat = 24
     static let askAIPillHorizontalPadding: CGFloat = 10

@@ -54,19 +54,13 @@ struct ShellUnifiedTitlebar: View {
     private var leadingBand: some View {
         TitlebarToolbarRow(trailingPadding: 6) {
             Color.clear
-                .frame(width: min(layout.leadingInset, max(0, barColumnWidth - AppWindowChromeMetrics.controlSize * 2)))
+                .frame(width: min(layout.leadingInset, max(0, barColumnWidth - AppWindowChromeMetrics.controlSize * 4)))
                 .accessibilityHidden(true)
-            TitlebarChromeIconButton(
-                systemName: tabStore.sidebarExpanded ? "sidebar.left" : "sidebar.right",
-                help: tabStore.sidebarExpanded
-                    ? "Hide chat/spaces submenu"
-                    : "Show chat/spaces submenu",
-                isActive: !tabStore.sidebarExpanded
-            ) {
-                withAnimation(.easeInOut(duration: 0.15)) {
-                    tabStore.sidebarExpanded.toggle()
-                }
-            }
+            TitlebarGlobalLeadingActions(
+                module: $module,
+                showCommandPalette: $showCommandPalette,
+                showNotificationsPanel: $showNotificationsPanel
+            )
             ShellTrafficLeadingActions(
                 module: $module,
                 compact: !tabStore.barMenuExpanded || barColumnCompact
@@ -99,10 +93,7 @@ struct ShellUnifiedTitlebar: View {
     private var editorBand: some View {
         Group {
             if module == .chat {
-                ChatEditorToolbarContent(
-                    showCommandPalette: $showCommandPalette,
-                    showNotificationsPanel: $showNotificationsPanel
-                )
+                ChatEditorToolbarContent()
                 .padding(.leading, 10)
                 .padding(.trailing, 12)
             } else {

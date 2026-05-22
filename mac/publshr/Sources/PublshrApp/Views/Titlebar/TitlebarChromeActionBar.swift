@@ -24,23 +24,6 @@ struct TitlebarChromeActionBar: View {
     }
 
     private var trailingCluster: some View {
-        HStack(alignment: .center, spacing: AppWindowChromeMetrics.toolbarItemSpacing) {
-            TitlebarChromeIconButton(
-                systemName: "bell",
-                help: "Notifications",
-                badgeCount: module == .chat
-                    ? min(max(chat.totalUnread, chat.unreadInAppNotificationCount), 99)
-                    : 0
-            ) {
-                showNotificationsPanel = true
-            }
-
-            TitlebarChromeIconButton(
-                systemName: "command",
-                help: TitlebarShortcutHint.tooltip("Command palette", shortcut: TitlebarShortcutHint.commandPalette)
-            ) {
-                showCommandPalette = true
-            }
-        }
+        EmptyView()
     }
 }

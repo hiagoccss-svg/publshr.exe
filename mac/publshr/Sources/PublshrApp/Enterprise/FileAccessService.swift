@@ -13,6 +13,9 @@ enum FileAccessService {
         panel.allowedContentTypes = allowedTypes
         panel.message = "Select files to upload to your workspace"
         guard panel.runModal() == .OK else { return [] }
+        for url in panel.urls {
+            saveBookmark(for: url, key: "upload.\(url.lastPathComponent)")
+        }
         return panel.urls
     }
 
@@ -28,11 +31,36 @@ enum FileAccessService {
 
     /// Read file bytes with security-scoped access when required.
     static func readData(from url: URL) throws -> Data {
-        let accessed = url.startAccessingSecurityScopedResource()
+        var accessed = url.startAccessingSecurityScopedResource()
+        if !accessed, let resolved = resolveBookmark(key: "upload.\(url.lastPathComponent)") {
+            accessed = resolved.startAccessingSecurityScopedResource()
+            defer {
+                if accessed { resolved.stopAccessingSecurityScopedResource() }
+            }
+            return try Data(contentsOf: resolved)
+        }
         defer {
             if accessed { url.stopAccessingSecurityScopedResource() }
         }
-        return try Data(contentsOf: url)
+        do {
+            return try Data(contentsOf: url)
+        } catch {
+            throw FileAccessError.cannotRead(
+                url.lastPathComponent,
+                underlying: error.localizedDescription
+            )
+        }
+    }
+
+    enum FileAccessError: LocalizedError {
+        case cannotRead(String, underlying: String)
+
+        var errorDescription: String? {
+            switch self {
+            case .cannotRead(let name, let underlying):
+                return "Could not read “\(name)”. \(underlying) Grant access via the attach button (paperclip), not drag-from-Finder, if macOS blocked the file."
+            }
+        }
     }
 
     static func saveBookmark(for url: URL, key: String) {
