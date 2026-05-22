@@ -47,8 +47,9 @@ esac
 echo "Building publshr $VERSION ($os-$arch) ..." >&2
 
 if [[ "$os" == "macos" ]]; then
-    # Desktop delivery: PublshrApp + branded installer; CLI optional.
-    swift build -c release --product PublshrApp --product PublshrInstaller
+    # Build each product separately — combined --product flags may only link the last one on some SwiftPM versions.
+    swift build -c release --product PublshrApp
+    swift build -c release --product PublshrInstaller
     swift build -c release --product publshr 2>/dev/null || true
 else
     swift build -c release --product publshr
@@ -65,7 +66,7 @@ if [[ -n "$CLI_BIN" && -f "$CLI_BIN" ]]; then
 fi
 
 if [[ "$os" == "macos" ]]; then
-    APP_BIN="$(find_swift_release_binary PublshrApp "$SCRIPT_DIR")"
+    APP_BIN="$(find_swift_release_binary PublshrApp "$SCRIPT_DIR" || true)"
     if [[ ! -f "$APP_BIN" ]]; then
         echo "ERROR: PublshrApp release binary not found under ${SCRIPT_DIR}/.build" >&2
         find "$SCRIPT_DIR/.build" -type f -path '*/release/*' 2>/dev/null | head -20 >&2 || true
@@ -77,7 +78,7 @@ if [[ "$os" == "macos" ]]; then
     # Never ship duplicate/wrong executables in the bundle (breaks Dock launch).
     rm -f "$STAGE/Publshr.app/Contents/MacOS/PublshrApp"
     rm -f "$STAGE/Publshr.app/Contents/MacOS/publshr"
-    INSTALLER_BIN="$(find_swift_release_binary PublshrInstaller "$SCRIPT_DIR" 2>/dev/null || true)"
+    INSTALLER_BIN="$(find_swift_release_binary PublshrInstaller "$SCRIPT_DIR" || true)"
     if [[ -n "$INSTALLER_BIN" && -f "$INSTALLER_BIN" ]]; then
         bash "$SCRIPT_DIR/scripts/build-macos-installer.sh" "$INSTALLER_BIN" "$SHORT_VERSION" "$BUILD_NUM" "$STAGE"
     fi
