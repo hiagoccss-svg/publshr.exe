@@ -82,10 +82,10 @@ struct SpacesNavSidebar: View {
             tabStore.openFromSpace(space)
             Task { await spaces.selectSpace(space.id) }
         } label: {
-            HStack(spacing: 10) {
+            HStack(spacing: 8) {
                 Circle()
                     .fill(SpaceColor.hex(space.color))
-                    .frame(width: 8, height: 8)
+                    .frame(width: 7, height: 7)
                 Text(space.name)
                     .font(selected ? SpacesClickUpDesign.treeRowSelectedFont : SpacesClickUpDesign.treeRowFont)
                     .foregroundStyle(selected ? CursorTheme.foreground : CursorTheme.foregroundMuted)
@@ -98,9 +98,9 @@ struct SpacesNavSidebar: View {
                 }
             }
             .frame(height: SpacesClickUpDesign.sidebarRowHeight)
-            .padding(.horizontal, 12)
+            .padding(.horizontal, 10)
             .background(
-                RoundedRectangle(cornerRadius: SpacesClickUpDesign.sidebarRowRadius)
+                RoundedRectangle(cornerRadius: SpacesClickUpDesign.sidebarRowRadius, style: .continuous)
                     .fill(selected ? CursorTheme.accent.opacity(0.08) : Color.clear)
             )
         }

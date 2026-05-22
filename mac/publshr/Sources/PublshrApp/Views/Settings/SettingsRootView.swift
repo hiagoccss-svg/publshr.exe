@@ -34,30 +34,68 @@ enum SettingsSection: String, CaseIterable, Identifiable {
     }
 }
 
-/// Native macOS Settings layout — sidebar list + detail pane (System Settings pattern).
+/// Settings — single nav column + detail (no duplicate shell sidebar).
 struct SettingsRootView: View {
     @State private var selection: SettingsSection = .updates
 
     var body: some View {
-        NavigationSplitView {
-            List(selection: $selection) {
-                ForEach(SettingsSection.allCases) { section in
-                    Label(section.title, systemImage: section.icon)
-                        .tag(section)
-                }
-            }
-            .listStyle(.sidebar)
-            .navigationTitle("Settings")
-            .frame(minWidth: 200)
-            .onReceive(NotificationCenter.default.publisher(for: .publshrOpenSettings)) { output in
-                if let raw = output.object as? String, let section = SettingsSection(rawValue: raw) {
-                    selection = section
-                }
-            }
-        } detail: {
+        HStack(spacing: 0) {
+            settingsNavColumn
+                .frame(width: CursorTheme.settingsSidebarWidth)
+                .background(settingsNavBackground)
+
+            Rectangle()
+                .fill(CursorTheme.border.opacity(0.45))
+                .frame(width: 1)
+
             detailView
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(Color(nsColor: .windowBackgroundColor))
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .publshrOpenSettings)) { output in
+            if let raw = output.object as? String, let section = SettingsSection(rawValue: raw) {
+                selection = section
+            }
+        }
+    }
+
+    private var settingsNavBackground: some View {
+        ZStack {
+            Color(hex: 0xF5F5F3)
+            LinearGradient(
+                colors: [
+                    Color.white.opacity(0.55),
+                    Color(hex: 0xF0F0EE).opacity(0.9)
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+        }
+    }
+
+    private var settingsNavColumn: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text("Settings")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(CursorTheme.foreground)
+                .padding(.horizontal, 14)
+                .padding(.top, 14)
+                .padding(.bottom, 10)
+
+            VStack(alignment: .leading, spacing: 2) {
+                ForEach(SettingsSection.allCases) { section in
+                    EnterpriseSidebarRow(
+                        title: section.title,
+                        icon: section.icon,
+                        selected: selection == section
+                    ) {
+                        selection = section
+                    }
+                }
+            }
+            .padding(.horizontal, 8)
+
+            Spacer(minLength: 0)
         }
     }
 

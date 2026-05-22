@@ -89,16 +89,17 @@ struct MainIDEView: View {
     private func leftRail(topInset: CGFloat) -> some View {
         HStack(spacing: 0) {
             ActivityBarView(module: $module, topInset: topInset)
-                .frame(width: CursorTheme.activityBarWidth)
 
-            AppSecondarySidebar(
-                module: module,
-                chat: chat,
-                spaces: spaces,
-                showNewChannel: $showNewChannel,
-                showNewDM: $showNewDM,
-                topInset: topInset
-            )
+            if module != .settings {
+                AppSecondarySidebar(
+                    module: module,
+                    chat: chat,
+                    spaces: spaces,
+                    showNewChannel: $showNewChannel,
+                    showNewDM: $showNewDM,
+                    topInset: topInset
+                )
+            }
         }
         .frame(maxHeight: .infinity)
     }
