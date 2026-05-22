@@ -67,6 +67,7 @@ if [[ "$os" == "macos" ]]; then
     chmod 755 "$STAGE/bin/PublshrApp"
     bash "$SCRIPT_DIR/scripts/build-macos-app.sh" "$APP_BIN" "$SHORT_VERSION" "$BUILD_NUM" "$STAGE"
     if [[ -f "$SCRIPT_DIR/.build/release/publshr" ]]; then
+        rm -f "$STAGE/Publshr.app/Contents/MacOS/publshr"
         cp "$SCRIPT_DIR/.build/release/publshr" "$STAGE/Publshr.app/Contents/MacOS/publshr"
         chmod 755 "$STAGE/Publshr.app/Contents/MacOS/publshr"
     fi
