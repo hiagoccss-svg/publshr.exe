@@ -17,35 +17,27 @@ struct WindowChromeConfigurator: NSViewRepresentable {
 
     func updateNSView(_ nsView: NSView, context: Context) {
         guard let window = nsView.window else { return }
+        MainWindowChrome.apply(to: window)
         guard context.coordinator.configuredWindow !== window else { return }
         context.coordinator.configuredWindow = window
-        MainWindowChrome.apply(to: window)
+        MainWindowChrome.applyWithRetries(to: window)
     }
 }
 
-/// Defensive window styling — SwiftUI hosting windows reject some titlebar KVC on macOS 26+.
+/// Frameless chrome: traffic lights overlay the app header; no separate grey title strip.
 enum MainWindowChrome {
     @MainActor
     static func apply(to window: NSWindow?) {
         guard let window, window.isKind(of: NSWindow.self) else { return }
 
         let className = NSStringFromClass(type(of: window))
-        // SwiftUI uses private hosting window subclasses on macOS 26+; only plain AppKit windows
-        // reliably support titlebar KVC (build 83 crashed on titlebarAccessoryViewControllers).
         let isPlainAppKitWindow = className == "NSWindow" || className == "NSPanel"
         let isSwiftUIHosting =
             !isPlainAppKitWindow
             || className.contains("Hosting")
             || className.contains("SwiftUI")
 
-        window.backgroundColor = NSColor(CursorTheme.editorBackground)
-
-        if isSwiftUIHosting {
-            if window.responds(to: #selector(setter: NSWindow.isMovableByWindowBackground)) {
-                window.isMovableByWindowBackground = true
-            }
-            return
-        }
+        window.backgroundColor = NSColor(CursorTheme.titleBar)
 
         if window.responds(to: #selector(setter: NSWindow.titlebarAppearsTransparent)) {
             window.titlebarAppearsTransparent = true
@@ -61,15 +53,29 @@ enum MainWindowChrome {
         if window.responds(to: #selector(setter: NSWindow.isMovableByWindowBackground)) {
             window.isMovableByWindowBackground = true
         }
-        if window.responds(to: #selector(setter: NSWindow.toolbarStyle)) {
+        if !isSwiftUIHosting,
+           window.responds(to: #selector(setter: NSWindow.toolbarStyle)) {
             window.toolbarStyle = .unifiedCompact
         }
         if window.responds(to: #selector(setter: NSWindow.titlebarSeparatorStyle)) {
             window.titlebarSeparatorStyle = .none
         }
-        if #available(macOS 14.0, *) {
+        // titlebarAccessoryViewControllers KVC crashes on SwiftUI hosting windows (macOS 26+).
+        if #available(macOS 14.0, *), !isSwiftUIHosting {
             if window.responds(to: #selector(setter: NSWindow.titlebarAccessoryViewControllers)) {
                 window.titlebarAccessoryViewControllers = []
+            }
+        }
+    }
+
+    /// Re-apply after SwiftUI finishes configuring the hosting window.
+    @MainActor
+    static func applyWithRetries(to window: NSWindow?) {
+        apply(to: window)
+        guard let window else { return }
+        for delay in [0.05, 0.15, 0.35, 0.75] {
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+                apply(to: window)
             }
         }
     }

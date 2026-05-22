@@ -16,31 +16,40 @@ struct WorkspaceHeaderView: View {
     @State private var hoveredTabId: String?
     @State private var tabDragOffsets: [String: CGSize] = [:]
 
-    private var chromeBarHeight: CGFloat {
-        max(safeAreaTop, CursorTheme.windowChromeTopInset) + CursorTheme.workspaceHeaderHeight
+    /// Top band reserved for macOS traffic lights (close / minimize / zoom).
+    private var trafficLightBandHeight: CGFloat {
+        safeAreaTop > 0 ? safeAreaTop : CursorTheme.windowChromeTopInset
+    }
+
+    private var totalHeaderHeight: CGFloat {
+        trafficLightBandHeight + CursorTheme.workspaceHeaderHeight
     }
 
     var body: some View {
-        HStack(alignment: .center, spacing: 0) {
+        VStack(spacing: 0) {
             Color.clear
-                .frame(width: CursorTheme.trafficLightLeadingPadding)
+                .frame(height: trafficLightBandHeight)
+                .frame(maxWidth: .infinity)
+                .accessibilityHidden(true)
 
-            HStack(spacing: 0) {
-                leadingControls
+            HStack(alignment: .center, spacing: 0) {
+                HStack(spacing: 0) {
+                    leadingControls
 
-                tabStrip
-                    .frame(maxWidth: .infinity)
+                    tabStrip
+                        .frame(maxWidth: .infinity)
 
-                trailingActions
-                    .padding(.trailing, 4)
+                    trailingActions
+                        .padding(.trailing, 4)
+                }
+                .padding(.leading, 8)
+                .frame(height: CursorTheme.workspaceHeaderHeight)
+
+                headerSettingsButton
+                    .padding(.trailing, 10)
             }
-            .padding(.leading, 4)
-            .frame(height: CursorTheme.workspaceHeaderHeight)
-
-            headerSettingsButton
-                .padding(.trailing, 10)
         }
-        .frame(height: chromeBarHeight, alignment: .bottom)
+        .frame(height: totalHeaderHeight)
         .frame(maxWidth: .infinity)
         .background(CursorTheme.titleBar)
     }

@@ -152,12 +152,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             window.setFrame(frame, display: true)
         }
         DispatchQueue.main.async {
-            MainWindowChrome.apply(to: NSApp.mainWindow ?? NSApp.windows.first)
+            MainWindowChrome.applyWithRetries(to: NSApp.mainWindow ?? NSApp.windows.first)
         }
         NotificationCenter.default.post(name: .publshrPerformLiveSync, object: nil)
     }
 
     func applicationDidBecomeActive(_ notification: Notification) {
+        MainWindowChrome.apply(to: NSApp.mainWindow ?? NSApp.windows.first)
         NotificationCenter.default.post(name: .publshrPerformLiveSync, object: nil)
     }
 
