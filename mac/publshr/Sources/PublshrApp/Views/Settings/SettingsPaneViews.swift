@@ -358,6 +358,11 @@ struct SettingsSecurityPane: View {
             Section("Session") {
                 Text("Sessions are stored in the macOS Keychain (accessible only when unlocked).")
                     .font(.caption)
+                if auth.isAuthenticated, !auth.isCloudValidated {
+                    Text("Offline unlock is active. Permissions refresh automatically when Supabase reconnects.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
             }
             if BiometricAuthService.isAvailable {
                 Section(BiometricAuthService.biometricLabel) {

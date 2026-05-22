@@ -180,6 +180,17 @@ final class ChatService {
             .value
     }
 
+    /// Current user's membership rows — used for per-channel notification prefs.
+    func fetchMyChannelMemberships(workspaceId: UUID, userId: UUID) async throws -> [ChatChannelMember] {
+        try await client
+            .from("chat_channel_members")
+            .select()
+            .eq("workspace_id", value: workspaceId.uuidString)
+            .eq("user_id", value: userId.uuidString)
+            .execute()
+            .value
+    }
+
     func createDM(
         workspaceId: UUID,
         currentUserId: UUID,

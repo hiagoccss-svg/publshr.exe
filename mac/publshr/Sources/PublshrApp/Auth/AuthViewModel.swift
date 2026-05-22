@@ -8,6 +8,12 @@ enum AuthScreen: Equatable {
     case confirmEmail
 }
 
+enum SessionUnlockMethod: String {
+    case persisted
+    case biometric
+    case password
+}
+
 @MainActor
 final class AuthViewModel: ObservableObject {
     @Published var screen: AuthScreen = .signIn
@@ -28,6 +34,8 @@ final class AuthViewModel: ObservableObject {
     @Published var isCreatingWorkspace = false
     @Published var supabaseStatusLine = "Connecting…"
     @Published var isRefreshingConnection = false
+    /// False when signed in from cache / expired JWT until Supabase refresh succeeds.
+    @Published private(set) var isCloudValidated = true
 
     /// Optional quick unlock — never required to use the app.
     @AppStorage("publshr.useBiometricUnlock") var biometricUnlockEnabled = false
@@ -100,45 +108,65 @@ final class AuthViewModel: ObservableObject {
 
     var isAuthenticated: Bool { session != nil && flowState == .signedIn }
 
+    private var isNetworkReachable: Bool {
+        AppLifecycleService.shared.isNetworkReachable
+    }
+
     func bootstrap() async {
         await completeBootstrap()
     }
 
     func completeBootstrap() async {
         flowState = .bootstrapping
+        isCloudValidated = false
         updateSupabaseStatus(connected: false)
 
-        // 1) Restore persisted Supabase session (stay signed in — no login form).
+        // 1) Restore persisted Supabase session (online refresh when needed).
         if let existing = await loadPersistedSession() {
             session = existing
             if await gateSessionWithBiometricIfNeeded() {
-                await finishSessionRestore()
+                await finishSessionRestore(
+                    reconcileCloud: isNetworkReachable,
+                    unlockMethod: .persisted
+                )
             }
             return
         }
 
-        // 2) Keychain session when Supabase storage was cleared (e.g. after Sign out with Touch ID on).
-        if prefersBiometricUnlock, let restored = await unlockWithBiometricsInternal() {
+        // 2) Keychain + biometrics — works offline (cached permissions) and online (Supabase reconcile).
+        if canAttemptKeychainUnlock, let restored = await restoreSessionFromKeychain(requireBiometric: prefersBiometricUnlock) {
             session = restored
-            if await gateSessionWithBiometricIfNeeded() {
-                await finishSessionRestore()
-            }
+            await finishSessionRestore(
+                reconcileCloud: isNetworkReachable,
+                unlockMethod: prefersBiometricUnlock ? .biometric : .persisted
+            )
             return
         }
 
         flowState = .signedOut
+        isCloudValidated = false
         supabaseStatusLine = "Not signed in"
+    }
+
+    private var canAttemptKeychainUnlock: Bool {
+        AuthKeychain.load() != nil || AuthOfflineSessionCache.load() != nil
     }
 
     private func loadPersistedSession() async -> Session? {
         do {
             let current = try await client.auth.session
-            if current.isExpired {
-                let refreshed = try await client.auth.refreshSession()
+            if isNetworkReachable {
+                if current.isExpired {
+                    let refreshed = try await client.auth.refreshSession()
+                    updateSupabaseStatus(connected: true)
+                    return refreshed
+                }
                 updateSupabaseStatus(connected: true)
-                return refreshed
+                return current
             }
-            updateSupabaseStatus(connected: true)
+            if AuthJWT.isAccessTokenExpired(current.accessToken) {
+                return nil
+            }
             return current
         } catch {
             return nil
@@ -155,14 +183,108 @@ final class AuthViewModel: ObservableObject {
         } else if BiometricAuthService.isAvailable, !didOfferBiometricSetup {
             showBiometricSetupOffer = true
         }
-        await finishSessionRestore()
+        await finishSessionRestore(reconcileCloud: true, unlockMethod: .password)
     }
 
-    private func finishSessionRestore() async {
-        await loadProfile()
-        await loadWorkspaces()
-        restoreLastWorkspaceSelection()
+    private func finishSessionRestore(reconcileCloud: Bool, unlockMethod: SessionUnlockMethod) async {
+        if reconcileCloud, isNetworkReachable {
+            await reconcileCloudSession(unlockMethod: unlockMethod)
+        } else {
+            applyOfflineSnapshotIfAvailable()
+            isCloudValidated = false
+            supabaseStatusLine = isNetworkReachable
+                ? "Reconnecting to Supabase…"
+                : "Offline — cached workspace and permissions"
+        }
         resolveFlowStateAfterSession()
+    }
+
+    /// Refresh JWT, reload workspaces/permissions from Supabase, register device, and refresh offline cache.
+    func reconcileCloudSession(unlockMethod: SessionUnlockMethod?) async {
+        guard isNetworkReachable, session != nil else { return }
+        isRefreshingConnection = true
+        defer { isRefreshingConnection = false }
+
+        do {
+            if let current = try? await client.auth.session, current.isExpired {
+                session = try await client.auth.refreshSession()
+            } else if session == nil, let stored = AuthKeychain.load() {
+                try await client.auth.setSession(
+                    accessToken: stored.accessToken,
+                    refreshToken: stored.refreshToken
+                )
+                session = try await client.auth.session
+            }
+            if let active = session, active.isExpired {
+                session = try await client.auth.refreshSession()
+            }
+            session = try await client.auth.session
+            await loadProfile()
+            await loadWorkspaces()
+            restoreLastWorkspaceSelection()
+            persistOfflineSnapshot()
+            isCloudValidated = true
+            updateSupabaseStatus(connected: true)
+            persistSessionToKeychain()
+            if let method = unlockMethod, let uid = session?.user.id {
+                await DeviceIdentityService.recordSessionUnlock(
+                    client: client,
+                    userId: uid,
+                    workspaceId: selectedWorkspace?.id,
+                    method: method.rawValue
+                )
+            }
+            errorMessage = nil
+        } catch {
+            if applyOfflineSnapshotIfAvailable() {
+                isCloudValidated = false
+                supabaseStatusLine = "Offline — cached workspace until Supabase reconnects"
+            } else {
+                errorMessage = friendlyAuthError(error)
+                supabaseStatusLine = "Connection error"
+            }
+        }
+    }
+
+    @discardableResult
+    private func applyOfflineSnapshotIfAvailable() -> Bool {
+        guard let snap = AuthOfflineSessionCache.load() else { return false }
+        profile = snap.profile
+        workspaceMemberships = AuthOfflineSessionCache.memberships(from: snap)
+        if let selectedId = snap.selectedWorkspaceId,
+           let match = workspaceMemberships.first(where: { $0.workspace.id == selectedId }) {
+            selectedMembership = match
+        } else {
+            restoreLastWorkspaceSelection()
+        }
+        if session == nil, let stored = AuthKeychain.load() {
+            Task {
+                try? await client.auth.setSession(
+                    accessToken: stored.accessToken,
+                    refreshToken: stored.refreshToken
+                )
+            }
+        }
+        return true
+    }
+
+    private func persistOfflineSnapshot() {
+        AuthOfflineSessionCache.save(
+            profile: profile,
+            memberships: workspaceMemberships,
+            selectedWorkspaceId: selectedMembership?.workspace.id
+        )
+        if let session {
+            let stored = AuthKeychain.StoredSession(
+                email: session.user.email ?? email,
+                accessToken: session.accessToken,
+                refreshToken: session.refreshToken,
+                userId: session.user.id
+            )
+            if biometricUnlockEnabled {
+                _ = AuthKeychain.save(stored)
+            }
+        }
     }
 
     /// When Touch ID is enabled, require a successful scan before showing the IDE.
@@ -230,10 +352,14 @@ final class AuthViewModel: ObservableObject {
                 selectedMembership = workspaceMemberships.first
                 saveLastWorkspaceSelection()
             }
+            persistOfflineSnapshot()
             resolveFlowStateAfterSession()
         } catch {
             errorMessage = friendlyWorkspaceError(error)
-            workspaceMemberships = []
+            if !applyOfflineSnapshotIfAvailable() {
+                workspaceMemberships = []
+            }
+            isCloudValidated = false
             supabaseStatusLine = "Workspace sync failed"
         }
     }
@@ -291,17 +417,14 @@ final class AuthViewModel: ObservableObject {
     }
 
     func unlockWithBiometrics() async -> Bool {
-        guard canOfferBiometricUnlock else { return false }
-        guard let restored = await unlockWithBiometricsInternal() else { return false }
+        guard canOfferBiometricUnlock || AuthKeychain.load() != nil else { return false }
+        guard let restored = await restoreSessionFromKeychain(requireBiometric: true) else { return false }
         session = restored
-        await finishSessionRestore()
-        return true
-    }
-
-    private func unlockWithBiometricsInternal() async -> Session? {
-        let ok = await BiometricAuthService.authenticate(reason: "Unlock Publshr")
-        guard ok else { return nil }
-        return await restoreSessionFromKeychain()
+        await finishSessionRestore(
+            reconcileCloud: isNetworkReachable,
+            unlockMethod: .biometric
+        )
+        return flowState == .signedIn || flowState == .selectWorkspace
     }
 
     func setBiometricUnlockEnabled(_ enabled: Bool) {
@@ -351,39 +474,45 @@ final class AuthViewModel: ObservableObject {
             userId: session.user.id
         )
         _ = AuthKeychain.save(stored)
+        persistOfflineSnapshot()
     }
 
-    private func restoreSessionFromKeychain() async -> Session? {
-        guard let stored = AuthKeychain.load() else { return nil }
-        do {
-            try await client.auth.setSession(accessToken: stored.accessToken, refreshToken: stored.refreshToken)
-            let current = try await client.auth.session
-            updateSupabaseStatus(connected: true)
-            return current
-        } catch {
-            return nil
+    private func restoreSessionFromKeychain(requireBiometric: Bool) async -> Session? {
+        if requireBiometric {
+            let ok = await BiometricAuthService.authenticate(reason: "Unlock Publshr")
+            guard ok else { return nil }
         }
+
+        _ = applyOfflineSnapshotIfAvailable()
+
+        guard let stored = AuthKeychain.load() else {
+            return try? await client.auth.session
+        }
+
+        try? await client.auth.setSession(
+            accessToken: stored.accessToken,
+            refreshToken: stored.refreshToken
+        )
+
+        if isNetworkReachable {
+            do {
+                var current = try await client.auth.session
+                if current.isExpired {
+                    current = try await client.auth.refreshSession()
+                }
+                updateSupabaseStatus(connected: true)
+                return current
+            } catch {
+                return try? await client.auth.session
+            }
+        }
+
+        return try? await client.auth.session
     }
 
     func refreshSupabaseConnection() async {
-        isRefreshingConnection = true
-        defer { isRefreshingConnection = false }
-        do {
-            if let current = try? await client.auth.session, current.isExpired {
-                _ = try await client.auth.refreshSession()
-            } else {
-                _ = try await client.auth.session
-            }
-            session = try await client.auth.session
-            await loadProfile()
-            await loadWorkspaces()
-            restoreLastWorkspaceSelection()
-            updateSupabaseStatus(connected: true)
-            resolveFlowStateAfterSession()
-        } catch {
-            supabaseStatusLine = "Connection error"
-            errorMessage = friendlyAuthError(error)
-        }
+        await reconcileCloudSession(unlockMethod: nil)
+        resolveFlowStateAfterSession()
     }
 
     private func updateSupabaseStatus(connected: Bool) {
@@ -496,6 +625,8 @@ final class AuthViewModel: ObservableObject {
             otpCode = ""
             screen = .signIn
             flowState = .signedOut
+            isCloudValidated = false
+            AuthOfflineSessionCache.clear()
             if !biometricUnlockEnabled {
                 AuthKeychain.delete()
             }
@@ -542,6 +673,18 @@ final class AuthViewModel: ObservableObject {
             userId: userId,
             data: data,
             mimeType: mimeType
+        )
+        profile = updated
+    }
+
+    func updateDisplayName(_ name: String) async throws {
+        guard let userId = session?.user.id else {
+            throw ChatServiceError.notAuthenticated
+        }
+        let updated = try await ProfileService.updateDisplayName(
+            client: client,
+            userId: userId,
+            displayName: name
         )
         profile = updated
     }

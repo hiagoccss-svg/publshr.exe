@@ -12,6 +12,7 @@ struct LibraryShellView: View {
     @Binding var showNewDM: Bool
     @Binding var showCommandPalette: Bool
     @Binding var showNotificationsPanel: Bool
+    @Binding var profilePresentation: WorkspaceProfilePresentation?
 
     private var submenuHidden: Bool {
         module == .settings
@@ -59,9 +60,15 @@ struct LibraryShellView: View {
             ) {
                 Group {
                     if tabStore.barMenuExpanded {
-                        LibraryBarMenuColumn(module: $module)
+                        LibraryBarMenuColumn(
+                            module: $module,
+                            profilePresentation: $profilePresentation
+                        )
                     } else {
-                        LibraryBarMenuIconRail(module: $module)
+                        LibraryBarMenuIconRail(
+                            module: $module,
+                            profilePresentation: $profilePresentation
+                        )
                     }
                 }
             }

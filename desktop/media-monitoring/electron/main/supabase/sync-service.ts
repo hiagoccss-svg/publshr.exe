@@ -3,6 +3,8 @@ import type Database from 'better-sqlite3'
 import { BrowserWindow } from 'electron'
 import WebSocket from 'ws'
 import { SUPABASE_URL, SUPABASE_ANON_KEY, LOCAL_WORKSPACE_ID, LOCAL_WORKSPACE_NAME } from '../config'
+import { clearAuthCache, loadAuthCache, saveAuthCache } from '../auth/auth-cache'
+import { isNetworkReachable } from '../auth/network'
 import { loadSession, saveSession } from './session-store'
 
 function createSupabaseClient(): SupabaseClient {
@@ -41,14 +43,20 @@ export class SyncService {
   private lastError: string | null = null
   private realtimeChannel: RealtimeChannel | null = null
   private profile: UserProfile | null = null
+  private cloudValidated = false
 
   constructor(private db: Database.Database) {
     this.client = createSupabaseClient()
     this.session = loadSession()
     if (this.session) {
-      void this.applySession(this.session).catch((err) => {
+      void this.restoreSession().catch((err) => {
         console.error('Failed to restore session on startup:', err)
-        this.setStatus('offline', err instanceof Error ? err.message : 'Session restore failed')
+        const stored = loadSession()
+        if (stored) {
+          this.applySessionOffline(stored)
+        } else {
+          this.setStatus('offline', err instanceof Error ? err.message : 'Session restore failed')
+        }
       })
     } else {
       this.setStatus('offline')
@@ -92,6 +100,37 @@ export class SyncService {
     }
   }
 
+  private persistAuthCache(): void {
+    if (!this.session?.user?.id || !this.workspaceId) return
+    saveAuthCache({
+      userId: this.session.user.id,
+      email: this.session.user.email ?? '',
+      workspaceId: this.workspaceId,
+      workspaceName: this.workspaceName ?? 'Workspace',
+      profile: this.profile,
+      savedAt: new Date().toISOString()
+    })
+  }
+
+  private applySessionOffline(session: Session): AuthState {
+    this.session = session
+    this.client = createSupabaseClient()
+    void this.client.auth.setSession({
+      access_token: session.access_token,
+      refresh_token: session.refresh_token
+    })
+    saveSession(session)
+    const cache = loadAuthCache()
+    if (cache) {
+      this.workspaceId = cache.workspaceId
+      this.workspaceName = cache.workspaceName
+      this.profile = cache.profile
+    }
+    this.cloudValidated = false
+    this.setStatus('offline', 'Cached session — reconnect to refresh permissions')
+    return this.getAuthState()
+  }
+
   private async applySession(session: Session): Promise<void> {
     this.session = session
     this.client = createSupabaseClient()
@@ -104,7 +143,29 @@ export class SyncService {
     await this.ensureWorkspace()
     await this.pullAll()
     this.subscribeRealtime()
+    this.persistAuthCache()
+    this.cloudValidated = true
     this.setStatus('synced')
+  }
+
+  async reconcileCloudSession(): Promise<AuthState> {
+    if (!this.session) return this.getAuthState()
+    if (!(await isNetworkReachable())) return this.getAuthState()
+    try {
+      this.setStatus('syncing')
+      await this.client.auth.setSession({
+        access_token: this.session.access_token,
+        refresh_token: this.session.refresh_token
+      })
+      const { data, error } = await this.client.auth.refreshSession()
+      if (error || !data.session) throw error ?? new Error('Could not refresh session')
+      await this.applySession(data.session)
+    } catch (e) {
+      const stored = loadSession()
+      if (stored) return this.applySessionOffline(stored)
+      this.setStatus('error', e instanceof Error ? e.message : 'Reconnect failed')
+    }
+    return this.getAuthState()
   }
 
   async signIn(email: string, password: string): Promise<AuthState> {
@@ -182,10 +243,22 @@ export class SyncService {
   }
 
   async refreshSessionFromToken(refreshToken: string): Promise<AuthState> {
-    const { data, error } = await this.client.auth.refreshSession({ refresh_token: refreshToken })
-    if (error || !data.session) throw error ?? new Error('Could not refresh session')
-    await this.applySession(data.session)
-    return this.getAuthState()
+    const online = await isNetworkReachable()
+    if (!online) {
+      const stored = loadSession()
+      if (stored) return this.applySessionOffline(stored)
+      throw new Error('Offline — no cached session on this Mac')
+    }
+    try {
+      const { data, error } = await this.client.auth.refreshSession({ refresh_token: refreshToken })
+      if (error || !data.session) throw error ?? new Error('Could not refresh session')
+      await this.applySession(data.session)
+      return this.getAuthState()
+    } catch (e) {
+      const stored = loadSession()
+      if (stored) return this.applySessionOffline(stored)
+      throw e
+    }
   }
 
   async signOut(): Promise<void> {
@@ -196,7 +269,9 @@ export class SyncService {
     this.profile = null
     this.workspaceId = null
     this.workspaceName = null
+    this.cloudValidated = false
     saveSession(null)
+    clearAuthCache()
     this.setStatus('offline')
   }
 
@@ -206,6 +281,9 @@ export class SyncService {
       this.setStatus('offline')
       return this.getAuthState()
     }
+    if (!(await isNetworkReachable())) {
+      return this.applySessionOffline(stored)
+    }
     try {
       this.setStatus('syncing')
       const { data, error } = await this.client.auth.setSession({
@@ -213,16 +291,12 @@ export class SyncService {
         refresh_token: stored.refresh_token
       })
       if (error || !data.session) {
-        saveSession(null)
-        this.setStatus('offline')
-        return this.getAuthState()
+        return this.applySessionOffline(stored)
       }
       await this.applySession(data.session)
       return this.getAuthState()
     } catch (e) {
-      saveSession(null)
-      this.setStatus('offline', e instanceof Error ? e.message : 'Session expired')
-      return this.getAuthState()
+      return this.applySessionOffline(stored)
     }
   }
 
