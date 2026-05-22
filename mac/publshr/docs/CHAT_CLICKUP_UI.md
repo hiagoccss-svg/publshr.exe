@@ -6,7 +6,7 @@ Publshr Chat follows [ClickUp Chat Sidebar](https://help.clickup.com/hc/en-us/ar
 
 | Zone | Width | Contents |
 |------|-------|----------|
-| **Activity bar** (far left) | 48px | **Chat** (`bubble.left.and.bubble.right`) with red unread badge · **Spaces** (`square.grid.2x2`) |
+| **Bar menu** (far left) | 200px | **Chat** · **Spaces** (real app modules only) |
 | **Chat sidebar** | 272px | Search, filters, channel/DM lists, layout toggle |
 | **Main column** | flex | Channel status bar, messages, composer |
 | **Thread panel** (optional) | ~320px | Right-side thread replies |
