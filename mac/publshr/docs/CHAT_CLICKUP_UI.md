@@ -10,7 +10,7 @@ Publshr Chat follows [ClickUp Chat Sidebar](https://help.clickup.com/hc/en-us/ar
 | **Chat sidebar** | 272px | Search, filters, channel/DM lists, layout toggle |
 | **Main column** | flex | Channel status bar, messages, composer |
 | **Thread panel** (optional) | ~320px | Right-side thread replies |
-| **Workspace header** (top) | full width | Tabs, search, calls, pin, focus, pop-out, AI, profile |
+| **Workspace header** (top) | full width | Tabs, search, pin, focus, pop-out, AI, profile |
 
 Settings opens in a **separate window** (not in the activity strip), matching a focused IDE shell.
 
@@ -56,7 +56,7 @@ Preference keys: `publshr.chat.sidebarFilter`, `publshr.chat.sidebarLayout` (Use
 
 ## Conversation column
 
-- **Status bar** — channel icon, title, member count, search + pin shortcuts, typing indicator, join-call banner.
+- **Status bar** — channel icon, title, member count, search + pin shortcuts, typing indicator.
 - **Composer** — placeholder `Message {channel}…`, attach, voice, send (⌘↩).
 - **Unread** — bold sidebar row; numeric badge on the right; thread icon for unread thread replies.
 

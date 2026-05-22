@@ -89,7 +89,6 @@ struct EnterpriseOnboardingView: View {
                 LabeledContent("Seats", value: "\(subscription.features.seatLimit)")
                 LabeledContent("Chat", value: subscription.features.chatEnabled ? "Included" : "—")
                 LabeledContent("Spaces", value: subscription.features.spacesEnabled ? "Included" : "—")
-                LabeledContent("Calls", value: subscription.features.callsEnabled ? "Included" : "—")
             }
         }
         .formStyle(.grouped)
