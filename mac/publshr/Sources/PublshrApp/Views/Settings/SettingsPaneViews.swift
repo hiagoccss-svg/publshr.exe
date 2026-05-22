@@ -10,6 +10,7 @@ struct SettingsUpdatesPane: View {
         Form {
             Section("GitHub live channel") {
                 LabeledContent("Status", value: updates.githubStatusLine)
+                LabeledContent("Update phase", value: updates.statusLine)
                 LabeledContent("Installed", value: AppReleaseConfig.installedLabel)
                 LabeledContent("Installed build", value: "\(AppReleaseConfig.buildNumber)")
                 LabeledContent("Installed shell", value: AppReleaseConfig.liveShellTag)

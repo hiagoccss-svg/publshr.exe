@@ -85,19 +85,18 @@ struct ChatChannelStatusBar: View {
                     Task { await calls.joinActiveCall(for: channel.id) }
                 }
             }
-            HStack(spacing: 12) {
+            HStack(spacing: 10) {
                 if let channel = chat.selectedChannel {
-                    ChatChannelIconView(channel: channel, size: 20)
-                    VStack(alignment: .leading, spacing: 2) {
+                    VStack(alignment: .leading, spacing: 1) {
                         Text(channel.displayTitle)
-                            .font(.system(size: 14, weight: .semibold))
+                            .font(.system(size: 13, weight: .semibold))
                             .foregroundStyle(CursorTheme.foreground)
                         Text(memberLine(channel))
                             .font(.system(size: 11))
                             .foregroundStyle(CursorTheme.foregroundDim)
                     }
                 }
-                Spacer()
+                Spacer(minLength: 8)
                 if let channel = chat.selectedChannel {
                     channelQuickActions(channel)
                 }
@@ -105,12 +104,12 @@ struct ChatChannelStatusBar: View {
                     ChatTypingIndicatorView(label: chat.typingSummary)
                 }
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 10)
+            .padding(.horizontal, CursorMacShellDesign.editorHorizontalPadding)
+            .frame(height: CursorMacShellDesign.chatToolbarHeight)
         }
-        .background(Color.clear)
+        .background(CursorMacShellDesign.editorSurface)
         .overlay(alignment: .bottom) {
-            Rectangle().fill(LibraryGlassDesign.hairline).frame(height: 1)
+            Rectangle().fill(CursorMacShellDesign.borderSubtle).frame(height: 1)
         }
     }
 

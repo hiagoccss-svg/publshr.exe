@@ -14,7 +14,7 @@ struct ChatConversationView: View {
                 ChatThreadPanelView(chat: chat)
             }
         }
-        .background(Color.clear)
+        .background(CursorMacShellDesign.editorSurface)
         .fileImporter(
             isPresented: $showFileImporter,
             allowedContentTypes: [.image, .movie, .video, .pdf, .data],
@@ -114,8 +114,9 @@ struct ChatConversationView: View {
                                 }
                             }
                         }
-                        .padding(.horizontal, 20)
-                        .padding(.vertical, 16)
+                        .padding(.horizontal, CursorMacShellDesign.editorHorizontalPadding)
+                        .padding(.top, CursorMacShellDesign.editorTopPadding)
+                        .padding(.bottom, CursorMacShellDesign.editorBottomPadding)
                     }
                     .onChange(of: chat.mainChannelMessages.count) { _, _ in
                         if let last = chat.mainChannelMessages.last {

@@ -7,7 +7,7 @@ enum AppWindowChromeMetrics {
     /// Fallback when SwiftUI reports zero safe-area (pre-layout).
     static let fallbackTitlebarHeight: CGFloat = 28
     /// Height of the system titlebar row where traffic lights are drawn (fixed — do not use safe-area height for layout).
-    static let trafficLightRowHeight: CGFloat = 28
+    static let trafficLightRowHeight: CGFloat = CursorMacShellDesign.titleBarHeight
     /// Optical nudge so controls line up with the system close button (macOS centers lights ~12pt from window top).
     static let trafficLightVerticalAlignPadding: CGFloat = 1
     /// Square chrome control (edit, pop-out, close tab) — matches close-button visual size.
@@ -21,8 +21,8 @@ enum AppWindowChromeMetrics {
     static let askAIIconSize: CGFloat = 11
     static let askAITextSize: CGFloat = 11
     /// Browser-style document tab chip in the titlebar.
-    static let documentTabHeight: CGFloat = 24
-    static let documentTabCornerRadius: CGFloat = 8
+    static let documentTabHeight: CGFloat = 28
+    static let documentTabCornerRadius: CGFloat = CursorMacShellDesign.tabCornerRadius
     static let documentTabHorizontalPadding: CGFloat = 10
     static let rowSpacing: CGFloat = 8
     static let titlebarActionSpacing: CGFloat = 4
@@ -38,8 +38,7 @@ enum AppWindowChromeMetrics {
 struct AppWindowChromeBackground: View {
     var body: some View {
         Rectangle()
-            .fill(.ultraThinMaterial)
-            .background(LibraryGlassDesign.headerGlass)
+            .fill(CursorMacShellDesign.titleBarBackground)
     }
 }
 
@@ -110,7 +109,6 @@ struct ChromeSquareButton: View {
 /// Browser-style tab chip for the unified titlebar.
 struct ChromeDocumentTab: View {
     let title: String
-    let iconSystemName: String
     var isSelected: Bool
     var canClose: Bool
     var onSelect: () -> Void
@@ -118,9 +116,6 @@ struct ChromeDocumentTab: View {
 
     var body: some View {
         HStack(spacing: 6) {
-            Image(systemName: iconSystemName)
-                .font(.system(size: 10, weight: .medium))
-                .foregroundStyle(isSelected ? LibraryGlassDesign.ink : LibraryGlassDesign.inkMuted)
             Text(title)
                 .font(.system(size: 11, weight: isSelected ? .semibold : .regular))
                 .foregroundStyle(isSelected ? LibraryGlassDesign.ink : LibraryGlassDesign.inkSecondary)
@@ -140,11 +135,11 @@ struct ChromeDocumentTab: View {
         .frame(height: AppWindowChromeMetrics.documentTabHeight)
         .background(
             RoundedRectangle(cornerRadius: AppWindowChromeMetrics.documentTabCornerRadius, style: .continuous)
-                .fill(isSelected ? LibraryGlassDesign.documentTabSelectedFill : LibraryGlassDesign.documentTabFill)
+                .fill(isSelected ? CursorTheme.tabActiveBackground : CursorTheme.tabInactiveBackground)
         )
         .overlay(
             RoundedRectangle(cornerRadius: AppWindowChromeMetrics.documentTabCornerRadius, style: .continuous)
-                .strokeBorder(LibraryGlassDesign.hairline, lineWidth: isSelected ? 1 : 0.5)
+                .strokeBorder(CursorMacShellDesign.borderSubtle, lineWidth: isSelected ? 0 : 1)
         )
         .contentShape(Rectangle())
         .onTapGesture(perform: onSelect)

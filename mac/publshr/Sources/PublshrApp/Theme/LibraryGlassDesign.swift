@@ -11,9 +11,11 @@ enum LibraryGlassDesign {
     @available(*, deprecated, message: "Use barMenuWidth for the reference shell")
     static let activityBarWidth: CGFloat = 48
 
-    static let sidebarSelection = Color(hex: 0xE8E6E1).opacity(0.95)
-    static let sidebarGlassFill = Color.white.opacity(0.52)
-    static let panelGlassFill = Color.white.opacity(0.68)
+    /// Selected sidebar row (reference: warm beige pill on Chat).
+    static let sidebarSelection = Color(hex: 0xE8E4DC)
+    static let sidebarGlassFill = Color(hex: 0xF7F6F3).opacity(0.88)
+    /// Main chat/spaces floating panel — near-opaque white card on gray shell.
+    static let panelGlassFill = Color.white.opacity(0.96)
 
     // Spacing (reference image)
     static let outerMargin: CGFloat = 20
@@ -35,8 +37,12 @@ enum LibraryGlassDesign {
     static let ctaPillHorizontal: CGFloat = 16
     static let askAIPillFill = Color(hex: 0xE8D4DC).opacity(0.72)
     static let askAIPillStroke = Color(hex: 0xD4B8C4).opacity(0.45)
-    static let documentTabFill = Color.white.opacity(0.42)
-    static let documentTabSelectedFill = Color.white.opacity(0.62)
+    static let documentTabFill = Color(hex: 0xEEEDEA)
+    static let documentTabSelectedFill = Color.white
+
+    /// Inactive filter pills (All / Unread / DMs / Channels).
+    static let filterPillInactiveFill = Color(hex: 0xEEEDEA)
+    static let filterPillInactiveStroke = Color(hex: 0xE4E2DC)
 
     // Masonry
     static let masonryMinColumnWidth: CGFloat = 240
@@ -53,7 +59,8 @@ enum LibraryGlassDesign {
     static let ink = Color(hex: 0x1A1917)
     static let inkMuted = Color(hex: 0x8A877F)
     static let inkSecondary = Color(hex: 0x5C5A54)
-    static let hairline = Color(hex: 0xE4E2DC).opacity(0.55)
+    static let hairline = Color(hex: 0xE4E2DC)
+    static let contentDivider = Color(hex: 0xEBEAE6)
     static let cardShadow = Color.black.opacity(0.08)
     static let panelShadow = Color.black.opacity(0.14)
 }

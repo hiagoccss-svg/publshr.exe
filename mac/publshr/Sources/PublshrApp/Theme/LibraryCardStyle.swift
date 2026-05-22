@@ -29,14 +29,10 @@ struct LibraryCardStyle: ViewModifier {
 struct GlassSidebarBackground: ViewModifier {
     func body(content: Content) -> some View {
         content
-            .background {
-                Rectangle()
-                    .fill(.ultraThinMaterial)
-                    .background(LibraryGlassDesign.sidebarGlassFill)
-            }
+            .background(CursorMacShellDesign.sidebarBackground)
             .overlay(alignment: .trailing) {
                 Rectangle()
-                    .fill(LibraryGlassDesign.hairline)
+                    .fill(CursorMacShellDesign.border)
                     .frame(width: 1)
             }
     }
