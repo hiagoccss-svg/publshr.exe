@@ -14,19 +14,9 @@ struct LibraryFloatingPanelStyle: ViewModifier {
             }
             .overlay(
                 RoundedRectangle(cornerRadius: LibraryGlassDesign.contentPanelRadius, style: .continuous)
-                    .strokeBorder(
-                        LinearGradient(
-                            colors: [
-                                Color.white.opacity(0.9),
-                                Color.white.opacity(0.35),
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        ),
-                        lineWidth: 1
-                    )
+                    .strokeBorder(LibraryGlassDesign.hairline, lineWidth: 1)
             )
-            .shadow(color: LibraryGlassDesign.panelShadow, radius: 28, y: 14)
+            .shadow(color: LibraryGlassDesign.panelShadow, radius: 20, y: 10)
             .clipShape(RoundedRectangle(cornerRadius: LibraryGlassDesign.contentPanelRadius, style: .continuous))
     }
 }

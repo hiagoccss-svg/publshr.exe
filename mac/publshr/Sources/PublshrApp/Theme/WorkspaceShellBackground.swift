@@ -10,22 +10,8 @@ enum WorkspaceShellBackground {
 /// Full-window desktop vibrancy (user wallpaper shows through the app).
 struct WorkspaceDesktopBackdrop: View {
     var body: some View {
-        ZStack {
-            VisualEffectBlur(
-                material: WorkspaceShellBackground.desktopBlurMaterial,
-                blendingMode: WorkspaceShellBackground.desktopBlurBlending
-            )
-            // Subtle warm tint only — must not read as solid white.
-            LinearGradient(
-                colors: [
-                    LibraryGlassDesign.shellBackground.opacity(0.04),
-                    Color.clear,
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-        }
-        .ignoresSafeArea()
+        CursorMacShellDesign.columnChromeBackground
+            .ignoresSafeArea()
     }
 }
 

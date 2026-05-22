@@ -1,11 +1,10 @@
 import SwiftUI
 
-/// Full library-reference shell — desktop glass, 200px bar menu, universal submenu, floating main panel.
+/// Cursor Mac 3-column shell — grey side columns, white boxed editor column, minimal titlebar.
 struct LibraryShellView: View {
     @EnvironmentObject private var auth: AuthViewModel
     @EnvironmentObject private var chat: ChatViewModel
     @EnvironmentObject private var spaces: SpacesViewModel
-    @EnvironmentObject private var updates: AppUpdateViewModel
     @EnvironmentObject private var subscription: SubscriptionService
     @EnvironmentObject private var tabStore: WorkspaceTabStore
     @Binding var module: AppModule
@@ -22,46 +21,17 @@ struct LibraryShellView: View {
 
     var body: some View {
         GeometryReader { geometry in
-            ZStack {
+            ZStack(alignment: .top) {
                 WorkspaceDesktopBackdrop()
 
-                VStack(spacing: 0) {
-                    // Titlebar chrome is drawn by NSTitlebarAccessoryViewController (same row as traffic lights).
-                    Color.clear
-                        .frame(height: AppWindowChromeMetrics.unifiedTitlebarRowHeight)
-                        .accessibilityHidden(true)
+                shellBody
 
-                    HStack(alignment: .top, spacing: 0) {
-                        LibraryBarMenuColumn(
-                            module: $module,
-                            showNewChannel: $showNewChannel,
-                            showNewDM: $showNewDM
-                        )
-
-                        if !submenuHidden {
-                            AppSecondarySidebar(
-                                module: module,
-                                chat: chat,
-                                spaces: spaces,
-                                showNewChannel: $showNewChannel,
-                                showNewDM: $showNewDM
-                            )
-                            .transition(.move(edge: .leading).combined(with: .opacity))
-                        }
-
-                        mainStage
-                            .frame(minWidth: 420, maxWidth: .infinity, maxHeight: .infinity)
-                            .layoutPriority(0)
-                    }
-                    .frame(maxWidth: .infinity, minHeight: 0, maxHeight: .infinity)
-                    .animation(.easeInOut(duration: 0.15), value: submenuHidden)
-
-                    shellStatusLine
-                }
+                titlebarOverlay
             }
             .frame(width: geometry.size.width, height: geometry.size.height)
         }
-        .background(Color.clear)
+        .ignoresSafeArea(.container, edges: .top)
+        .background(CursorMacShellDesign.columnChromeBackground)
         .onAppear {
             tabStore.sidebarExpanded = true
             syncModulesIfNeeded()
@@ -80,13 +50,62 @@ struct LibraryShellView: View {
         }
     }
 
+    private var titlebarOverlay: some View {
+        LibraryShellHeaderView(
+            spaces: spaces,
+            module: $module,
+            showNewChannel: $showNewChannel,
+            showNewDM: $showNewDM,
+            showCommandPalette: $showCommandPalette,
+            showNotificationsPanel: $showNotificationsPanel,
+            reservesTrafficLightLeadingInset: false
+        )
+        .frame(height: AppWindowChromeMetrics.unifiedTitlebarRowHeight)
+        .frame(maxWidth: .infinity, alignment: .top)
+    }
+
+    private var shellBody: some View {
+        VStack(spacing: 0) {
+            Color.clear
+                .frame(height: AppWindowChromeMetrics.unifiedTitlebarRowHeight)
+                .accessibilityHidden(true)
+
+            HStack(alignment: .top, spacing: 0) {
+                LibraryBarMenuColumn(
+                    module: $module,
+                    showNewChannel: $showNewChannel,
+                    showNewDM: $showNewDM
+                )
+                .cursorColumnDividerTrailing()
+
+                if !submenuHidden {
+                    AppSecondarySidebar(
+                        module: module,
+                        chat: chat,
+                        spaces: spaces,
+                        showNewChannel: $showNewChannel,
+                        showNewDM: $showNewDM
+                    )
+                    .cursorColumnDividerTrailing()
+                    .transition(.move(edge: .leading).combined(with: .opacity))
+                }
+
+                mainStage
+                    .frame(minWidth: 420, maxWidth: .infinity, maxHeight: .infinity)
+                    .layoutPriority(0)
+            }
+            .frame(maxWidth: .infinity, minHeight: 0, maxHeight: .infinity)
+            .animation(.easeInOut(duration: 0.15), value: submenuHidden)
+        }
+    }
+
     private var mainStage: some View {
         moduleContent
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .libraryFloatingPanel()
-            .padding(.horizontal, LibraryGlassDesign.outerMargin)
-            .padding(.vertical, 12)
-            .background(Color.clear)
+            .cursorEditorColumnBox()
+            .padding(CursorMacShellDesign.editorBoxPadding)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(CursorMacShellDesign.workspaceBackground)
     }
 
     @ViewBuilder
@@ -107,29 +126,6 @@ struct LibraryShellView: View {
         case .settings:
             EnterpriseModuleGate(moduleName: "Settings", planName: subscription.features.planName)
         }
-    }
-
-    private var shellStatusLine: some View {
-        HStack(spacing: 10) {
-            Text(updates.statusLine)
-                .font(.system(size: 10))
-                .foregroundStyle(LibraryGlassDesign.inkMuted)
-            Text("·")
-                .foregroundStyle(LibraryGlassDesign.inkMuted.opacity(0.5))
-            Text(AppShellIdentity.distributionTag)
-                .font(.system(size: 10, weight: .medium))
-                .foregroundStyle(LibraryGlassDesign.inkSecondary)
-            Spacer()
-            if let email = auth.profile?.email {
-                Text(email)
-                    .font(.system(size: 10))
-                    .foregroundStyle(LibraryGlassDesign.inkMuted)
-                    .lineLimit(1)
-            }
-        }
-        .padding(.horizontal, LibraryGlassDesign.outerMargin + 4)
-        .padding(.vertical, 6)
-        .background(Color.clear)
     }
 
     private func syncModulesIfNeeded() {

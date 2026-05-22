@@ -61,10 +61,8 @@ final class AppUpdateViewModel: ObservableObject {
         nil
     }
 
+    /// Settings-only summary — never shown in the main workspace footer (Cursor-style shell has no status bar).
     var statusLine: String {
-        if !isActivelyUpdating, !lastSyncLine.isEmpty, lastSyncLine != "Waiting for first sync…" {
-            return lastSyncLine
-        }
         switch phase {
         case .idle, .upToDate:
             return "Version \(AppReleaseConfig.shortVersion) (build \(AppReleaseConfig.buildNumber))"
