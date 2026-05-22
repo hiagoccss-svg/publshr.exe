@@ -22,45 +22,16 @@ struct LibraryShellView: View {
 
     var body: some View {
         GeometryReader { geometry in
-            ZStack {
+            ZStack(alignment: .top) {
                 WorkspaceDesktopBackdrop()
 
-                VStack(spacing: 0) {
-                    // Titlebar chrome is drawn by NSTitlebarAccessoryViewController (same row as traffic lights).
-                    Color.clear
-                        .frame(height: AppWindowChromeMetrics.unifiedTitlebarRowHeight)
-                        .accessibilityHidden(true)
+                shellBody
 
-                    HStack(alignment: .top, spacing: 0) {
-                        LibraryBarMenuColumn(
-                            module: $module,
-                            showNewChannel: $showNewChannel,
-                            showNewDM: $showNewDM
-                        )
-
-                        if !submenuHidden {
-                            AppSecondarySidebar(
-                                module: module,
-                                chat: chat,
-                                spaces: spaces,
-                                showNewChannel: $showNewChannel,
-                                showNewDM: $showNewDM
-                            )
-                            .transition(.move(edge: .leading).combined(with: .opacity))
-                        }
-
-                        mainStage
-                            .frame(minWidth: 420, maxWidth: .infinity, maxHeight: .infinity)
-                            .layoutPriority(0)
-                    }
-                    .frame(maxWidth: .infinity, minHeight: 0, maxHeight: .infinity)
-                    .animation(.easeInOut(duration: 0.15), value: submenuHidden)
-
-                    shellStatusLine
-                }
+                titlebarOverlay
             }
             .frame(width: geometry.size.width, height: geometry.size.height)
         }
+        .ignoresSafeArea(.container, edges: .top)
         .background(Color.clear)
         .onAppear {
             tabStore.sidebarExpanded = true
@@ -77,6 +48,55 @@ struct LibraryShellView: View {
         }
         .onChange(of: auth.selectedMembership?.workspace.id) { _, _ in
             syncModulesIfNeeded()
+        }
+    }
+
+    /// Titlebar pinned to the top edge of the window (traffic-light row).
+    private var titlebarOverlay: some View {
+        LibraryShellHeaderView(
+            spaces: spaces,
+            module: $module,
+            showNewChannel: $showNewChannel,
+            showNewDM: $showNewDM,
+            showCommandPalette: $showCommandPalette,
+            showNotificationsPanel: $showNotificationsPanel
+        )
+        .frame(height: AppWindowChromeMetrics.unifiedTitlebarRowHeight)
+        .frame(maxWidth: .infinity, alignment: .top)
+    }
+
+    private var shellBody: some View {
+        VStack(spacing: 0) {
+            Color.clear
+                .frame(height: AppWindowChromeMetrics.unifiedTitlebarRowHeight)
+                .accessibilityHidden(true)
+
+            HStack(alignment: .top, spacing: 0) {
+                LibraryBarMenuColumn(
+                    module: $module,
+                    showNewChannel: $showNewChannel,
+                    showNewDM: $showNewDM
+                )
+
+                if !submenuHidden {
+                    AppSecondarySidebar(
+                        module: module,
+                        chat: chat,
+                        spaces: spaces,
+                        showNewChannel: $showNewChannel,
+                        showNewDM: $showNewDM
+                    )
+                    .transition(.move(edge: .leading).combined(with: .opacity))
+                }
+
+                mainStage
+                    .frame(minWidth: 420, maxWidth: .infinity, maxHeight: .infinity)
+                    .layoutPriority(0)
+            }
+            .frame(maxWidth: .infinity, minHeight: 0, maxHeight: .infinity)
+            .animation(.easeInOut(duration: 0.15), value: submenuHidden)
+
+            shellStatusLine
         }
     }
 
