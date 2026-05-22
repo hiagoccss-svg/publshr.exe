@@ -108,9 +108,9 @@ struct ChatChannelStatusBar: View {
             .padding(.horizontal, 16)
             .padding(.vertical, 8)
         }
-        .background(Color.clear)
+        .background(LibraryGlassDesign.cardBackground)
         .overlay(alignment: .bottom) {
-            Rectangle().fill(LibraryGlassDesign.hairline).frame(height: 1)
+            Rectangle().fill(LibraryGlassDesign.contentDivider).frame(height: 1)
         }
     }
 

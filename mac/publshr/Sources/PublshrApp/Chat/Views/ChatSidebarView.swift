@@ -111,16 +111,19 @@ struct ChatSidebarView: View {
         } label: {
             Text(filter.label)
                 .font(ChatClickUpDesign.filterFont)
-                .foregroundStyle(selected ? Color.white : LibraryGlassDesign.inkSecondary)
+                .foregroundStyle(selected ? Color.white : LibraryGlassDesign.ink)
                 .padding(.horizontal, ChatClickUpDesign.filterPillHPadding)
                 .frame(height: ChatClickUpDesign.filterPillHeight)
                 .background(
                     Capsule(style: .continuous)
-                        .fill(selected ? LibraryGlassDesign.primaryCTA : LibraryGlassDesign.sidebarGlassFill)
+                        .fill(selected ? LibraryGlassDesign.primaryCTA : LibraryGlassDesign.filterPillInactiveFill)
                 )
                 .overlay(
                     Capsule(style: .continuous)
-                        .strokeBorder(selected ? Color.clear : LibraryGlassDesign.hairline, lineWidth: 1)
+                        .strokeBorder(
+                            selected ? Color.clear : LibraryGlassDesign.filterPillInactiveStroke,
+                            lineWidth: 1
+                        )
                 )
         }
         .buttonStyle(.plain)

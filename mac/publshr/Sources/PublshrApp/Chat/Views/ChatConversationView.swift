@@ -14,7 +14,7 @@ struct ChatConversationView: View {
                 ChatThreadPanelView(chat: chat)
             }
         }
-        .background(Color.clear)
+        .background(LibraryGlassDesign.cardBackground)
         .fileImporter(
             isPresented: $showFileImporter,
             allowedContentTypes: [.image, .movie, .video, .pdf, .data],
