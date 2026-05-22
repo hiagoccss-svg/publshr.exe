@@ -23,7 +23,7 @@ struct ContentView: View {
                 MainIDEView()
             }
         }
-        .frame(minWidth: 1280, minHeight: 760)
+        .frame(minWidth: 1280, maxWidth: .infinity, minHeight: 760, maxHeight: .infinity)
         .background(Color.clear)
         .preferredColorScheme(.light)
         .onAppear {
