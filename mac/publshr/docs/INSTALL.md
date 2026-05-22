@@ -34,6 +34,12 @@ bash ~/Downloads/Publshr-install-macos.sh
 curl -fsSL "https://raw.githubusercontent.com/hiagoccss-svg/publshr.exe/refs/heads/main/install-publshr-macos.sh" | bash
 ```
 
+If Terminal shows **installer v8**, save the uncached script instead:
+
+```bash
+curl -fsSL "https://raw.githubusercontent.com/hiagoccss-svg/publshr.exe/refs/heads/main/install/macos/install-macos.sh" -o /tmp/publshr-install.sh && bash /tmp/publshr-install.sh
+```
+
 1. Downloads the current **live** build from GitHub Releases  
 2. Opens **Publshr Installer** (native UI with app icon)  
 3. Installs to `/Applications/Publshr.app` and launches the app  
