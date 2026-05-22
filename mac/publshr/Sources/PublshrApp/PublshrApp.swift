@@ -75,13 +75,17 @@ struct PublshrApp: App {
                 Button("Refresh") { Task { await spaces.reload() } }
                 .keyboardShortcut("r", modifiers: [.command, .shift])
                 Button(spaces.spacesFocusMode ? "Exit Focus" : "Focus on Space") {
-                    spaces.spacesFocusMode.toggle()
+                    withAnimation(.easeInOut(duration: 0.15)) {
+                        spaces.spacesFocusMode.toggle()
+                    }
                 }
                 .keyboardShortcut("l", modifiers: [.command, .shift])
             }
             CommandMenu("Chat") {
                 Button(tabStore.sidebarExpanded ? "Hide Chat Sidebar" : "Show Chat Sidebar") {
-                    tabStore.sidebarExpanded.toggle()
+                    withAnimation(.easeInOut(duration: 0.15)) {
+                        tabStore.sidebarExpanded.toggle()
+                    }
                 }
                 .keyboardShortcut("\\", modifiers: .command)
                 Divider()

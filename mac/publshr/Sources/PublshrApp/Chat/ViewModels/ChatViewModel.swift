@@ -64,7 +64,7 @@ final class ChatViewModel: ObservableObject {
     private var navigationBackStack: [UUID] = []
     private var navigationForwardStack: [UUID] = []
 
-    var currentUserId: UUID? { auth?.profile?.id }
+    var currentUserId: UUID? { auth?.profile?.id ?? auth?.session?.user.id }
     var attachedClient: SupabaseClient? { auth?.client }
 
     func attach(auth: AuthViewModel) {
@@ -357,8 +357,11 @@ final class ChatViewModel: ObservableObject {
     // MARK: - Send
 
     func sendMessage() async {
-        guard let service, let workspace, let channel = selectedChannel,
-              let userId = currentUserId else { return }
+        guard let service, let workspace, let channel = selectedChannel else { return }
+        guard let userId = currentUserId else {
+            errorMessage = "Your profile is still loading. Wait a moment or sign out and back in."
+            return
+        }
         let text = composerText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return }
 
@@ -414,6 +417,7 @@ final class ChatViewModel: ObservableObject {
                 messages[idx] = failed
             }
             composerText = text
+            errorMessage = error.localizedDescription
         }
     }
 
@@ -473,8 +477,14 @@ final class ChatViewModel: ObservableObject {
     // MARK: - Channels / DMs
 
     func createChannel(name: String) async {
-        guard permissions.canCreateChannels,
-              let service, let workspace, let userId = currentUserId else { return }
+        guard permissions.canCreateChannels else {
+            errorMessage = "You do not have permission to create channels in this workspace."
+            return
+        }
+        guard let service, let workspace, let userId = currentUserId else {
+            errorMessage = "Sign in and select a workspace to create channels."
+            return
+        }
         let clean = name.trimmingCharacters(in: .whitespaces).replacingOccurrences(of: "#", with: "")
         guard !clean.isEmpty else { return }
         do {

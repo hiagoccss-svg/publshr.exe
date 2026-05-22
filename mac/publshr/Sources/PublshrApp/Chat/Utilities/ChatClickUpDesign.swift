@@ -2,7 +2,7 @@ import SwiftUI
 
 /// ClickUp Chat 3.0 / 4.0 layout tokens — sidebar filters, sections, badges.
 enum ChatClickUpDesign {
-    static let sidebarWidth: CGFloat = 272
+    static let sidebarWidth: CGFloat = LibraryGlassDesign.sidebarWidth
 
     static let headerHeight: CGFloat = 44
     static let searchHeight: CGFloat = 32

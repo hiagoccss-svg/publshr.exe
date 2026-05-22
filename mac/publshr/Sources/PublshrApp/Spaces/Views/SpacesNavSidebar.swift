@@ -8,6 +8,14 @@ struct SpacesNavSidebar: View {
     var body: some View {
         LibraryUniversalSubmenuContainer(width: LibraryUniversalSubmenu.width) {
             VStack(alignment: .leading, spacing: 0) {
+                if let error = spaces.errorMessage, !error.isEmpty {
+                    Text(error)
+                        .font(.system(size: 11))
+                        .foregroundStyle(.red)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 8)
+                }
+
                 spacesListSection
                     .frame(maxHeight: spaces.selectedSpaceId == nil ? .infinity : 160)
 
@@ -83,6 +91,8 @@ struct SpacesNavSidebar: View {
                 }
                 .padding(.vertical, 4)
             }
+            .frame(minHeight: 120, maxHeight: spaces.selectedSpaceId == nil ? .infinity : 220)
+            .animation(nil, value: spaces.selectedSpaceId)
         }
     }
 

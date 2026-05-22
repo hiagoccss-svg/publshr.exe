@@ -22,10 +22,21 @@ struct LibraryShellHeaderView: View {
 
             ToolbarIconButton(
                 systemName: tabStore.sidebarExpanded ? "sidebar.left" : "sidebar.right",
-                help: "Toggle sidebar"
+                help: "Toggle submenu"
             ) {
                 withAnimation(.easeInOut(duration: 0.15)) {
                     tabStore.sidebarExpanded.toggle()
+                }
+            }
+            if module == .chat || module == .spaces {
+                ToolbarIconButton(
+                    systemName: submenuFocusIcon,
+                    help: "Toggle focus mode"
+                ) {
+                    withAnimation(.easeInOut(duration: 0.15)) {
+                        if module == .chat { chat.chatFocusMode.toggle() }
+                        else { spaces.spacesFocusMode.toggle() }
+                    }
                 }
             }
 
@@ -61,7 +72,15 @@ struct LibraryShellHeaderView: View {
         }
     }
 
-    // MARK: - Module utilities (list / filter / search beside pane title)
+    private var submenuFocusIcon: String {
+        switch module {
+        case .chat: chat.chatFocusMode ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right"
+        case .spaces: spaces.spacesFocusMode ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right"
+        case .settings: "arrow.up.left.and.arrow.down.right"
+        }
+    }
+
+    // MARK: - Module utilities
 
     private var moduleUtilityIcons: some View {
         HStack(spacing: 2) {

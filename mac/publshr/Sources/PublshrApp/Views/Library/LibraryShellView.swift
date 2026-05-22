@@ -12,6 +12,9 @@ struct LibraryShellView: View {
     @Binding var showNewChannel: Bool
     @Binding var showNewDM: Bool
 
+    /// Avoid header/submenu jumping when safe-area insets settle after window chrome applies.
+    @State private var stableTopInset: CGFloat = CursorTheme.windowChromeTopInset
+
     private var submenuHidden: Bool {
         !tabStore.sidebarExpanded
             || (module == .chat && chat.chatFocusMode)
@@ -28,7 +31,7 @@ struct LibraryShellView: View {
                     LibraryShellHeaderView(
                         spaces: spaces,
                         module: $module,
-                        safeAreaTop: topSafe
+                        safeAreaTop: stableTopInset
                     )
 
                     HStack(alignment: .top, spacing: 0) {
@@ -53,12 +56,22 @@ struct LibraryShellView: View {
                             .frame(minWidth: 420, maxWidth: .infinity, maxHeight: .infinity)
                             .layoutPriority(0)
                     }
-                    .frame(minHeight: 0, maxHeight: .infinity)
+                    .frame(minHeight: 0, maxWidth: .infinity, maxHeight: .infinity)
+                    .animation(.easeInOut(duration: 0.15), value: submenuHidden)
 
                     shellStatusLine
                 }
             }
             .frame(width: geometry.size.width, height: geometry.size.height)
+            .onAppear {
+                if topSafe > 0 { stableTopInset = topSafe }
+            }
+            .onChange(of: topSafe) { _, newValue in
+                guard newValue > 0, abs(newValue - stableTopInset) > 0.5 else { return }
+                withAnimation(.easeInOut(duration: 0.12)) {
+                    stableTopInset = newValue
+                }
+            }
         }
         .background(Color.clear)
         .onAppear {

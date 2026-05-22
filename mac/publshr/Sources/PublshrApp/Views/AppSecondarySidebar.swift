@@ -26,6 +26,6 @@ struct AppSecondarySidebar: View {
         }
         .frame(minHeight: 0, maxHeight: .infinity)
         .fixedSize(horizontal: true, vertical: false)
-        .layoutPriority(1)
+        .layoutPriority(2)
     }
 }
