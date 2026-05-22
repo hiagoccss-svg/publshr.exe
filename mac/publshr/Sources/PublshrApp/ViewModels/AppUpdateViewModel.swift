@@ -68,12 +68,19 @@ final class AppUpdateViewModel: ObservableObject {
         guard autoCheckEnabled else { return }
         checkTask?.cancel()
         checkTask = Task {
-            await checkForUpdates(silent: true)
+            await syncLiveBuildIfNeeded()
             while !Task.isCancelled {
                 try? await Task.sleep(nanoseconds: 10 * 60 * 1_000_000_000)
                 await checkForUpdates(silent: true)
             }
         }
+    }
+
+    /// On launch: if GitHub live is newer than this install, download and install without opening Settings.
+    func syncLiveBuildIfNeeded() async {
+        await checkForUpdates(silent: true)
+        guard case .available = phase else { return }
+        await updateNow()
     }
 
     func checkForUpdates(silent: Bool = false) async {

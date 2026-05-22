@@ -144,4 +144,12 @@ final class SpacesViewModel: ObservableObject {
     func tasks(in status: SpaceTaskStatus) -> [SpaceTaskRecord] {
         tasks.filter { $0.status == status }
     }
+
+    private func friendlySpacesError(_ error: Error) -> String {
+        let text = error.localizedDescription.lowercased()
+        if text.contains("does not exist") || text.contains("42p01") || text.contains("relation") {
+            return "Spaces tables are missing in Supabase. Apply desktop/spaces/supabase/migrations/001_spaces_schema.sql to your project."
+        }
+        return error.localizedDescription
+    }
 }

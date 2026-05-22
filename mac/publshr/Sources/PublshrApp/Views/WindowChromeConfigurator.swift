@@ -22,7 +22,7 @@ struct WindowChromeConfigurator: NSViewRepresentable {
         window.titlebarAppearsTransparent = true
         window.titleVisibility = .hidden
         window.styleMask.insert(.fullSizeContentView)
-        window.isMovableByWindowBackground = true
+        window.isMovableByWindowBackground = false
         window.backgroundColor = NSColor(CursorTheme.editorBackground)
     }
 }

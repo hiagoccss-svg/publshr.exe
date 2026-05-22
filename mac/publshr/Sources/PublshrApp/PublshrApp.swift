@@ -26,6 +26,11 @@ struct PublshrApp: App {
                     configureLifecycle()
                     updates.startAutomaticChecks()
                 }
+                .onChange(of: auth.flowState) { _, state in
+                    if state == .signedIn {
+                        Task { await updates.syncLiveBuildIfNeeded() }
+                    }
+                }
         }
         .windowStyle(.hiddenTitleBar)
         .defaultSize(width: 1280, height: 800)

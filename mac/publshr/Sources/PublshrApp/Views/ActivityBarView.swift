@@ -47,6 +47,7 @@ struct ActivityBarView: View {
                 }
         }
         .buttonStyle(.plain)
+        .contentShape(Rectangle())
         .help(item.label)
     }
 }
