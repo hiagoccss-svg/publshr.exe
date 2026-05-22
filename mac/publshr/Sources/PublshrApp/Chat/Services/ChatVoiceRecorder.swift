@@ -49,8 +49,9 @@ final class ChatVoiceRecorder: NSObject, ObservableObject {
         elapsedMs = 0
         waveformSamples = []
         timer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
-            guard let self else { return }
-            Task { @MainActor in self.tick() }
+            DispatchQueue.main.async {
+                self?.tick()
+            }
         }
         return url
     }

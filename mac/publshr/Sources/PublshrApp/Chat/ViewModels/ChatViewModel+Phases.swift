@@ -225,7 +225,7 @@ extension ChatViewModel {
             _ = try await service.attachLink(
                 workspaceId: workspace.id,
                 messageId: msg.id,
-                linkType: .task,
+                linkType: ChatLinkType.task,
                 linkId: task.id,
                 preview: preview
             )
@@ -266,7 +266,7 @@ extension ChatViewModel {
                 workspaceId: workspace.id,
                 channelId: channel.id,
                 userId: userId,
-                body: nil,
+                body: Optional<String>.none,
                 attachments: [attachment]
             )
             _ = try await service.saveVoiceTranscript(
@@ -278,7 +278,7 @@ extension ChatViewModel {
             )
             let transcript = ChatAIService.mockTranscribeVoice(durationMs: durationMs)
             if let vt = try? await service.fetchVoiceTranscript(messageId: msg.id) {
-                try? await service.updateTranscript(id: vt.id, transcript: transcript, status: .ready)
+                try? await service.updateTranscript(id: vt.id, transcript: transcript, status: ChatTranscriptStatus.ready)
                 voiceTranscripts[msg.id] = transcript
             }
             messages.append(msg)

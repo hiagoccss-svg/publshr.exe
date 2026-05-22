@@ -29,7 +29,7 @@ final class ChatWindowManager: ObservableObject {
             object: window,
             queue: .main
         ) { [weak self] _ in
-            Task { @MainActor in
+            DispatchQueue.main.async {
                 self?.windows.removeValue(forKey: channelId)
             }
         }

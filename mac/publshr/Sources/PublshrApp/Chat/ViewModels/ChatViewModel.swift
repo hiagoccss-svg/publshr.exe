@@ -47,7 +47,7 @@ final class ChatViewModel: ObservableObject {
     @Published var isAILoading = false
 
     private var auth: AuthViewModel?
-    private var service: ChatService?
+    var service: ChatService?
     private var draftSaveTask: Task<Void, Never>?
     private var presenceHeartbeat: Task<Void, Never>?
     private var didAttach = false
@@ -344,24 +344,13 @@ final class ChatViewModel: ObservableObject {
     // MARK: - Realtime
 
     private func startRealtime(workspaceId: UUID) {
-        service?.subscribeMessages(workspaceId: workspaceId) { [weak self] message in
-            Task { @MainActor in
-                self?.handleIncomingMessage(message)
-            }
-        }
-        service?.subscribePresence(workspaceId: workspaceId) { [weak self] record in
-            Task { @MainActor in
-                self?.presence[record.userId] = record
-            }
-        }
-        service?.subscribeReactions(workspaceId: workspaceId) { [weak self] in
-            Task { @MainActor in
-                await self?.loadChannelExtras()
-            }
-        }
+        let handler = IncomingMessageHandler(viewModel: self)
+        service?.subscribeMessages(workspaceId: workspaceId, onInsert: handler.handleMessage)
+        service?.subscribePresence(workspaceId: workspaceId, onChange: handler.handlePresence)
+        service?.subscribeReactions(workspaceId: workspaceId, onChange: handler.handleReactions)
     }
 
-    private func handleIncomingMessage(_ message: ChatMessage) {
+    func handleIncomingMessage(_ message: ChatMessage) {
         if selectedChannel?.id == message.channelId {
             if !messages.contains(where: { $0.id == message.id }) {
                 messages.append(message)
@@ -420,5 +409,32 @@ final class ChatViewModel: ObservableObject {
 
     var totalUnread: Int {
         unreadByChannel.values.reduce(0, +)
+    }
+}
+
+/// Bridges realtime callbacks into the main-actor view model without Swift 6 capture errors.
+private final class IncomingMessageHandler: @unchecked Sendable {
+    private weak var viewModel: ChatViewModel?
+
+    init(viewModel: ChatViewModel) {
+        self.viewModel = viewModel
+    }
+
+    func handleMessage(_ message: ChatMessage) {
+        Task { @MainActor [weak viewModel] in
+            viewModel?.handleIncomingMessage(message)
+        }
+    }
+
+    func handlePresence(_ record: ChatPresence) {
+        Task { @MainActor [weak viewModel] in
+            viewModel?.presence[record.userId] = record
+        }
+    }
+
+    func handleReactions() {
+        Task { @MainActor [weak viewModel] in
+            await viewModel?.loadChannelExtras()
+        }
     }
 }

@@ -22,6 +22,9 @@ let package = Package(
                 .product(name: "Supabase", package: "supabase-swift"),
             ],
             path: "Sources/PublshrApp",
+            swiftSettings: [
+                .unsafeFlags(["-Xfrontend", "-strict-concurrency=minimal"]),
+            ],
             linkerSettings: [
                 .linkedLibrary("sqlite3"),
             ]

@@ -123,7 +123,7 @@ final class ChatLocalStore {
                 INSERT OR REPLACE INTO messages (id, channel_id, workspace_id, payload, created_at)
                 VALUES (?, ?, ?, ?, ?);
                 """,
-                msg.id.uuidString, channelId.uuidString, msg.workspaceId.uuidString, json, msg.createdAt.timeIntervalSince1970
+                msg.id.uuidString, channelId.uuidString, msg.workspaceId.uuidString, json, String(msg.createdAt.timeIntervalSince1970)
             )
             if let body = msg.body, !body.isEmpty {
                 indexMessageForSearch(
@@ -156,14 +156,14 @@ final class ChatLocalStore {
             VALUES (?, ?, ?, ?, ?);
             """,
             message.id.uuidString, message.channelId.uuidString, message.workspaceId.uuidString,
-            json, message.createdAt.timeIntervalSince1970
+            json, String(message.createdAt.timeIntervalSince1970)
         )
     }
 
     func saveDraft(_ draft: ChatDraft) {
         exec(
             "INSERT OR REPLACE INTO drafts (channel_id, body, updated_at) VALUES (?, ?, ?);",
-            draft.channelId.uuidString, draft.body, draft.updatedAt.timeIntervalSince1970
+            draft.channelId.uuidString, draft.body, String(draft.updatedAt.timeIntervalSince1970)
         )
     }
 
