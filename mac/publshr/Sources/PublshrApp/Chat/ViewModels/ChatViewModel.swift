@@ -123,6 +123,7 @@ final class ChatViewModel: ObservableObject {
         isLoading = true
         defer { isLoading = false }
 
+        SystemPermissionStore.migrateLegacyPromptFlagsIfNeeded()
         await ChatNotificationService.shared.requestAuthorizationIfNeeded()
 
         do {
@@ -223,6 +224,14 @@ final class ChatViewModel: ObservableObject {
             if channels.isEmpty { errorMessage = error.localizedDescription }
             isOffline = true
         }
+    }
+
+    func hasChannel(_ channelId: UUID) -> Bool {
+        channels.contains { $0.id == channelId } || directMessages.contains { $0.id == channelId }
+    }
+
+    func upsertProfile(_ profile: Profile) {
+        profiles[profile.id] = profile
     }
 
     private func selectFirstChannelIfNeeded() {
