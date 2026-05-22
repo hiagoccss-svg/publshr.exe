@@ -16,7 +16,7 @@ struct SettingsUpdatesPane: View {
                 LabeledContent("Installed shell", value: AppReleaseConfig.liveShellTag)
                 LabeledContent("Installed commit", value: commitLabel(AppReleaseConfig.liveCommit))
                 LabeledContent("Remote (live)", value: remoteDetailLabel)
-                Toggle("Auto-check every minute", isOn: $updates.autoCheckEnabled)
+                Toggle("Auto-check every 30 seconds", isOn: $updates.autoCheckEnabled)
                     .onChange(of: updates.autoCheckEnabled) { _, on in
                         if on {
                             updates.startAutomaticChecks()
@@ -28,7 +28,7 @@ struct SettingsUpdatesPane: View {
             }
             Section("Supabase (Chat & Spaces)") {
                 LabeledContent("Cloud sync", value: updates.cloudSyncLine)
-                Text("Refreshes messages, channels, spaces, subscription, and devices from your Supabase project on the same schedule as the live channel check.")
+                Text("Refreshes messages, channels, spaces, subscription, and devices every 30 seconds with the live channel check (or use Sync now).")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
