@@ -41,8 +41,6 @@ USING (
     JOIN public.workspace_members wm_owner
       ON wm_owner.workspace_id = wm_self.workspace_id
     WHERE wm_self.user_id = auth.uid()
-      AND wm_self.status = 'active'
-      AND wm_owner.status = 'active'
       AND (
         name LIKE wm_owner.user_id::text || '/avatar.%'
         OR name LIKE 'avatars/' || wm_owner.user_id::text || '.%'
