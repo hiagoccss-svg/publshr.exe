@@ -22,6 +22,7 @@ final class AppUpdateViewModel: ObservableObject {
 
     private let service = AppUpdateService.shared
     private var checkTask: Task<Void, Never>?
+    private var syncInFlight = false
 
     /// Poll interval for GitHub `live` channel (every push to main publishes there).
     private static let livePollSeconds: UInt64 = 60
@@ -120,8 +121,11 @@ final class AppUpdateViewModel: ObservableObject {
 
     /// Background path: check, download, install in place (enterprise default).
     func performLiveSync() async {
+        guard !syncInFlight else { return }
         if case .installing = phase { return }
         if case .downloading = phase { return }
+        syncInFlight = true
+        defer { syncInFlight = false }
 
         await checkForUpdates(silent: true)
         if case .failed = phase {
@@ -149,10 +153,10 @@ final class AppUpdateViewModel: ObservableObject {
         }
     }
 
-    /// Settings / menu: always check, download, and install (even if background sync is mid-flight).
+    /// Settings / menu: force full check → download → in-place install.
     func installLiveUpdateNow() async {
         if case .installing = phase { return }
-        if case .failed = phase { phase = .idle }
+        phase = .idle
         lastSyncLine = "Syncing live channel…"
         await updateNow()
     }
@@ -209,7 +213,6 @@ final class AppUpdateViewModel: ObservableObject {
                 }
             }
             _ = try service.extract(archiveURL: archiveURL, version: update.version)
-            service.recordAppliedLiveManifest(update)
             phase = .readyToInstall(update)
             if silent { lastSyncLine = "Downloaded \(update.version) — installing…" }
         } catch {
@@ -255,24 +258,26 @@ final class AppUpdateViewModel: ObservableObject {
                 .appendingPathComponent("Publshr/updates", isDirectory: true)
             let staging = updatesRoot.appendingPathComponent("staging-\(update.version)", isDirectory: true)
             try service.applyUpdate(treeURL: staging, parentPID: ProcessInfo.processInfo.processIdentifier)
+            service.recordAppliedLiveManifest(update)
             NSApplication.shared.terminate(nil)
         } catch {
-            if let err = error as? AppUpdateError, case .applyScriptMissing = err {
-                phase = .failed(err.localizedDescription)
-                lastSyncLine = err.localizedDescription
-            } else {
-                handleTransientFailure(error, silent: false)
-            }
+            setFailure(error, silent: false)
         }
     }
 
     private func setFailure(_ error: Error, silent: Bool) {
-        service.appendSyncLog("sync: \((error as? LocalizedError)?.errorDescription ?? error.localizedDescription)")
+        let detail = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+        service.appendSyncLog("sync: \(detail)")
+        if let err = error as? AppUpdateError, case .applyScriptMissing = err {
+            phase = .failed(detail)
+            lastSyncLine = detail
+            return
+        }
         phase = .upToDate
         if silent {
-            lastSyncLine = "Up to date · will retry sync"
+            lastSyncLine = "Up to date · will retry sync (\(detail))"
         } else {
-            lastSyncLine = "Could not sync right now. Will retry automatically."
+            lastSyncLine = detail
         }
     }
 
