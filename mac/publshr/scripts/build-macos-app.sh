@@ -25,6 +25,7 @@ DIR="$(cd "$(dirname "$0")" && pwd)"
 exec "${DIR}/PublshrApp" "$@"
 LAUNCHER
 chmod 755 "${MACOS_DIR}/Publshr"
+ln -sf Publshr "${MACOS_DIR}/publshr"
 
 sed -e "s/@@SHORT_VERSION@@/${SHORT_VERSION}/g" \
     -e "s/@@BUILD@@/${BUILD}/g" \

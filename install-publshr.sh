@@ -120,7 +120,11 @@ _publshr_install_app() {
     chmod -R 755 "$PUBLSHR_MAC_APP"
     xattr -cr "$PUBLSHR_MAC_APP" 2>/dev/null || true
     mkdir -p "$(dirname "$PUBLSHR_BIN_LINK")"
-    ln -sf "$PUBLSHR_MAC_APP/Contents/MacOS/publshr" "$PUBLSHR_BIN_LINK"
+    if [[ -x "$PUBLSHR_MAC_APP/Contents/MacOS/publshr" ]]; then
+        ln -sf "$PUBLSHR_MAC_APP/Contents/MacOS/publshr" "$PUBLSHR_BIN_LINK"
+    else
+        ln -sf "$PUBLSHR_MAC_APP/Contents/MacOS/Publshr" "$PUBLSHR_BIN_LINK"
+    fi
     log "Done."
     log "  App:  $PUBLSHR_MAC_APP"
     log "  CLI:  $PUBLSHR_BIN_LINK"
