@@ -57,13 +57,11 @@ struct ShellUnifiedTitlebar: View {
             Color.clear
                 .frame(width: layout.leadingInset)
                 .accessibilityHidden(true)
-
             TitlebarGlobalLeadingActions(
                 module: $module,
                 showCommandPalette: $showCommandPalette,
                 showNotificationsPanel: $showNotificationsPanel
             )
-
             ShellTrafficLeadingActions(
                 module: $module,
                 compact: !tabStore.barMenuExpanded || barColumnCompact
