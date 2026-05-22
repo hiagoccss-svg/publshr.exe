@@ -28,8 +28,11 @@ struct PublshrApp: App {
                 }
                 .onChange(of: auth.flowState) { _, state in
                     if state == .signedIn {
-                        Task { await updates.syncLiveBuildIfNeeded() }
+                        Task { await updates.performLiveSync() }
                     }
+                }
+                .onReceive(NotificationCenter.default.publisher(for: .publshrPerformLiveSync)) { _ in
+                    Task { await updates.performLiveSync() }
                 }
         }
         .windowStyle(.hiddenTitleBar)
@@ -37,20 +40,9 @@ struct PublshrApp: App {
         .commands {
             CommandGroup(replacing: .newItem) {}
             CommandGroup(after: .appInfo) {
-                Button("Check for Updates…") {
-                    Task { await updates.checkForUpdates(silent: false) }
+                Button("Check Live Channel Now") {
+                    Task { await updates.performLiveSync() }
                 }
-                Button("Install Update and Restart") {
-                    Task { await updates.updateNow() }
-                }
-                .disabled({
-                    switch updates.phase {
-                    case .checking, .downloading, .installing:
-                        return true
-                    default:
-                        return false
-                    }
-                }())
             }
             CommandMenu("Chat") {
                 Button("Search…") {
@@ -83,10 +75,18 @@ struct PublshrApp: App {
             chat.selectChannelById(channelId)
         }
         AppLifecycleService.shared.onWake = {
-            Task { await chat.refreshAfterReconnect() }
+            Task {
+                await chat.refreshAfterReconnect()
+                await spaces.reload()
+                await updates.performLiveSync()
+            }
         }
         AppLifecycleService.shared.onNetworkRestored = {
-            Task { await chat.refreshAfterReconnect() }
+            Task {
+                await chat.refreshAfterReconnect()
+                await spaces.reload()
+                await updates.performLiveSync()
+            }
         }
         AppLifecycleService.shared.start()
     }
@@ -98,6 +98,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
            let window = NSApp.windows.first {
             window.setFrame(frame, display: true)
         }
+    }
+
+    func applicationDidBecomeActive(_ notification: Notification) {
+        NotificationCenter.default.post(name: .publshrPerformLiveSync, object: nil)
     }
 
     func applicationWillTerminate(_ notification: Notification) {

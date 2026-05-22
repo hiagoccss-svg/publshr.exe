@@ -92,32 +92,25 @@ struct SettingsView: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
 
-            HStack(spacing: 8) {
-                Button("Check for updates") {
-                    Task { await updates.checkForUpdates(silent: false) }
-                }
-                .buttonStyle(.bordered)
-
-                Button("Download and install") {
-                    Task { await updates.updateNow() }
-                }
-                .buttonStyle(.borderedProminent)
-                .disabled(updateActionBusy)
-            }
-
-            Text("Updates install from the GitHub live channel (same build as install-macos.sh). After install, the app restarts automatically.")
+            Text("Every push to GitHub `main` publishes to the live channel. This app checks every 3 minutes, downloads newer builds, installs, and restarts automatically — no reinstall or status-bar clicks.")
                 .font(.system(size: 11))
                 .foregroundStyle(CursorTheme.foregroundMuted)
                 .fixedSize(horizontal: false, vertical: true)
 
-            Toggle("Check automatically every 10 minutes", isOn: $updates.autoCheckEnabled)
+            Toggle("Live channel auto-sync", isOn: $updates.autoCheckEnabled)
                 .font(.system(size: 12))
-                .foregroundStyle(CursorTheme.foregroundMuted)
                 .onChange(of: updates.autoCheckEnabled) { _, enabled in
-                    if enabled {
-                        updates.startAutomaticChecks()
-                    }
+                    if enabled { updates.startAutomaticChecks() }
                 }
+
+            Toggle("Install updates automatically", isOn: $updates.autoInstallEnabled)
+                .font(.system(size: 12))
+
+            Button("Sync live channel now") {
+                Task { await updates.performLiveSync() }
+            }
+            .buttonStyle(.bordered)
+            .disabled(updateActionBusy)
         }
         .padding(.horizontal, 20)
         .padding(.bottom, 8)

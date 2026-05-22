@@ -1,58 +1,57 @@
 import SwiftUI
 
+/// Only surfaces update failures — successful live installs happen silently.
 struct AppUpdateBannerView: View {
     @ObservedObject var updates: AppUpdateViewModel
 
     var body: some View {
         Group {
-            if updates.hasPendingUpdate || updates.errorMessage != nil {
-                bannerContent
+            if let error = updates.errorMessage {
+                errorBanner(error)
+            } else if updates.isActivelyUpdating {
+                progressBanner
             }
         }
     }
 
-    @ViewBuilder
-    private var bannerContent: some View {
+    private func errorBanner(_ message: String) -> some View {
         HStack(spacing: 10) {
-            Image(systemName: updates.errorMessage != nil ? "exclamationmark.triangle.fill" : "arrow.down.circle.fill")
-                .foregroundStyle(updates.errorMessage != nil ? CursorTheme.error : CursorTheme.accent)
-
-            Text(updates.statusLine)
+            Image(systemName: "exclamationmark.triangle.fill")
+                .foregroundStyle(CursorTheme.error)
+            Text(message)
                 .font(.system(size: 11, weight: .medium))
                 .foregroundStyle(CursorTheme.foreground)
-                .lineLimit(2)
-
+                .lineLimit(3)
             Spacer()
-
-            if updates.errorMessage != nil {
-                Button("Retry") {
-                    Task { await updates.checkForUpdates(silent: false) }
-                }
-                .buttonStyle(.bordered)
-                .controlSize(.small)
-            } else if updates.canInstallNow {
-                Button("Update now") {
-                    Task { await updates.updateNow() }
-                }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.small)
-                .disabled(isBusy)
+            Button("Retry") {
+                Task { await updates.performLiveSync() }
             }
+            .buttonStyle(.bordered)
+            .controlSize(.small)
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 7)
-        .background(updates.errorMessage != nil ? CursorTheme.error.opacity(0.1) : CursorTheme.accent.opacity(0.12))
+        .background(CursorTheme.error.opacity(0.1))
         .overlay(alignment: .bottom) {
             Rectangle().fill(CursorTheme.border).frame(height: 1)
         }
     }
 
-    private var isBusy: Bool {
-        switch updates.phase {
-        case .downloading, .installing, .checking:
-            return true
-        default:
-            return false
+    private var progressBanner: some View {
+        HStack(spacing: 10) {
+            ProgressView()
+                .controlSize(.small)
+            Text(updates.statusLine)
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(CursorTheme.foreground)
+                .lineLimit(2)
+            Spacer()
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 7)
+        .background(CursorTheme.accent.opacity(0.1))
+        .overlay(alignment: .bottom) {
+            Rectangle().fill(CursorTheme.border).frame(height: 1)
         }
     }
 }

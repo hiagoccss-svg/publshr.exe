@@ -55,10 +55,11 @@ final class ChatViewModel: ObservableObject {
     var currentUserId: UUID? { auth?.profile?.id }
 
     func attach(auth: AuthViewModel) {
-        guard !didAttach else { return }
-        didAttach = true
         self.auth = auth
-        service = ChatService(client: auth.client)
+        if service == nil {
+            service = ChatService(client: auth.client)
+        }
+        didAttach = true
     }
 
     /// Called when user picks a workspace — loads channels/chat for that workspace only.
@@ -72,7 +73,10 @@ final class ChatViewModel: ObservableObject {
             detach()
             return
         }
-        guard self.workspace?.id != workspace.id else { return }
+        let sameWorkspace = self.workspace?.id == workspace.id
+        if sameWorkspace, !channels.isEmpty || !directMessages.isEmpty {
+            return
+        }
         Task {
             presenceHeartbeat?.cancel()
             await service?.stopRealtime()
@@ -161,11 +165,14 @@ final class ChatViewModel: ObservableObject {
 
     private func loadWorkspaceData(workspaceId: UUID, userId: UUID) async {
         guard let service else { return }
+        isLoading = true
+        defer { isLoading = false }
         service.localStore().setMeta("last_workspace_id", value: workspaceId.uuidString)
 
         let cached = service.cachedChannels(workspaceId: workspaceId)
         if !cached.isEmpty {
             partitionChannels(cached)
+            selectFirstChannelIfNeeded()
         }
 
         async let remoteChannels = service.fetchChannels(workspaceId: workspaceId)
@@ -182,9 +189,18 @@ final class ChatViewModel: ObservableObject {
             presence = Dictionary(uniqueKeysWithValues: pres.map { ($0.userId, $0) })
             isOffline = false
             errorMessage = nil
+            selectFirstChannelIfNeeded()
+            await loadPlannerTasks()
         } catch {
             if channels.isEmpty { errorMessage = error.localizedDescription }
             isOffline = true
+        }
+    }
+
+    private func selectFirstChannelIfNeeded() {
+        guard selectedChannel == nil else { return }
+        if let first = channels.first ?? directMessages.first {
+            selectChannel(first)
         }
     }
 

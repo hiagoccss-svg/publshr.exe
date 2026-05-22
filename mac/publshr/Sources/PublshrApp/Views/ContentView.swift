@@ -3,6 +3,7 @@ import SwiftUI
 struct ContentView: View {
     @EnvironmentObject private var auth: AuthViewModel
     @EnvironmentObject private var chat: ChatViewModel
+    @EnvironmentObject private var spaces: SpacesViewModel
 
     var body: some View {
         Group {
@@ -22,14 +23,18 @@ struct ContentView: View {
         .preferredColorScheme(CursorTheme.appearance == .light ? .light : .dark)
         .onAppear {
             applyAppearance()
-            syncChatWorkspace()
+            syncEnterpriseData()
         }
         .onChange(of: auth.flowState) { _, _ in
             applyAppearance()
-            syncChatWorkspace()
+            syncEnterpriseData()
         }
         .onChange(of: auth.selectedMembership?.id) { _, _ in
-            syncChatWorkspace()
+            syncEnterpriseData()
+        }
+        .task(id: auth.flowState) {
+            guard auth.flowState == .signedIn else { return }
+            await runPeriodicSupabaseSync()
         }
     }
 
@@ -56,12 +61,25 @@ struct ContentView: View {
         }
     }
 
-    private func syncChatWorkspace() {
+    /// Pull Chat + Spaces from Supabase whenever workspace/session is ready — no status-bar clicks.
+    private func syncEnterpriseData() {
         guard auth.flowState == .signedIn else { return }
+        chat.attach(auth: auth)
         chat.applyWorkspaceContext(
             workspace: auth.selectedWorkspace,
             permissions: auth.workspaceChatPermissions,
             auth: auth
         )
+        spaces.attach(auth: auth)
+    }
+
+    private func runPeriodicSupabaseSync() async {
+        while !Task.isCancelled {
+            try? await Task.sleep(nanoseconds: 5 * 60 * 1_000_000_000)
+            guard auth.flowState == .signedIn else { continue }
+            await chat.refreshAfterReconnect()
+            await spaces.reload()
+            await chat.loadPlannerTasks()
+        }
     }
 }

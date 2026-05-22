@@ -30,10 +30,14 @@ final class SpacesViewModel: ObservableObject {
     private var userId: UUID?
 
     func attach(auth: AuthViewModel) {
+        let newWorkspaceId = auth.selectedWorkspace?.id
+        let workspaceChanged = workspaceId != newWorkspaceId
         service = SpacesService(client: auth.client)
-        workspaceId = auth.selectedWorkspace?.id
-        userId = auth.session?.user.id
-        Task { await reload() }
+        workspaceId = newWorkspaceId
+        userId = auth.session?.user.id ?? auth.profile?.id
+        if workspaceChanged || spaces.isEmpty {
+            Task { await reload() }
+        }
     }
 
     func detach() {

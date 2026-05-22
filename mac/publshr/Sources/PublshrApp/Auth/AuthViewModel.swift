@@ -161,9 +161,11 @@ final class AuthViewModel: ObservableObject {
                 return WorkspaceMembership(workspace: ws, role: role)
             }.sorted { $0.workspace.name.localizedCaseInsensitiveCompare($1.workspace.name) == .orderedAscending }
 
-            if workspaceMemberships.count == 1, selectedMembership == nil {
+            if workspaceMemberships.count == 1 {
                 selectedMembership = workspaceMemberships.first
+                saveLastWorkspaceSelection()
             }
+            resolveFlowStateAfterSession()
         } catch {
             errorMessage = error.localizedDescription
             workspaceMemberships = []

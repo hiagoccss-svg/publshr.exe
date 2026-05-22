@@ -18,9 +18,6 @@ struct ChatSidebarView: View {
             }
         }
         .frame(maxHeight: .infinity)
-        .onAppear {
-            Task { await chat.loadPlannerTasks() }
-        }
     }
 
     private var projectsSection: some View {

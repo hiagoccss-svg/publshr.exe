@@ -15,14 +15,27 @@ final class AppUpdateViewModel: ObservableObject {
     }
 
     @Published private(set) var phase: Phase = .idle
-    @Published var autoCheckEnabled = true
+    @AppStorage("publshr.autoCheckUpdates") var autoCheckEnabled = true
+    @AppStorage("publshr.autoInstallUpdates") var autoInstallEnabled = true
 
     private let service = AppUpdateService.shared
     private var checkTask: Task<Void, Never>?
 
+    /// Poll interval for GitHub `live` channel (every push to main publishes there).
+    private static let livePollSeconds: UInt64 = 180
+
     var hasPendingUpdate: Bool {
         switch phase {
-        case .available, .readyToInstall, .downloading:
+        case .available, .readyToInstall, .downloading, .installing, .checking:
+            return true
+        default:
+            return false
+        }
+    }
+
+    var isActivelyUpdating: Bool {
+        switch phase {
+        case .checking, .downloading, .installing:
             return true
         default:
             return false
@@ -46,19 +59,19 @@ final class AppUpdateViewModel: ObservableObject {
     var statusLine: String {
         switch phase {
         case .idle:
-            return "v\(AppReleaseConfig.installedLabel)"
+            return "Live · v\(AppReleaseConfig.installedLabel)"
         case .checking:
-            return "Checking for updates…"
+            return "Checking live channel…"
         case .upToDate:
-            return "Up to date · v\(AppReleaseConfig.installedLabel)"
+            return "Live · v\(AppReleaseConfig.installedLabel)"
         case .available(let update):
-            return "Update \(update.version) available — download to install"
+            return "Update \(update.version) — downloading…"
         case .downloading(let progress):
-            return "Downloading update… \(Int(progress * 100))%"
+            return "Downloading live build… \(Int(progress * 100))%"
         case .readyToInstall(let update):
-            return "Ready to install \(update.version)"
+            return autoInstallEnabled ? "Installing \(update.version)…" : "Ready to install \(update.version)"
         case .installing:
-            return "Installing update…"
+            return "Installing update — restarting…"
         case .failed(let message):
             return message
         }
@@ -68,19 +81,34 @@ final class AppUpdateViewModel: ObservableObject {
         guard autoCheckEnabled else { return }
         checkTask?.cancel()
         checkTask = Task {
-            await syncLiveBuildIfNeeded()
+            await performLiveSync()
             while !Task.isCancelled {
-                try? await Task.sleep(nanoseconds: 10 * 60 * 1_000_000_000)
-                await checkForUpdates(silent: true)
+                try? await Task.sleep(nanoseconds: Self.livePollSeconds * 1_000_000_000)
+                await performLiveSync()
             }
         }
     }
 
-    /// On launch: if GitHub live is newer than this install, download and install without opening Settings.
-    func syncLiveBuildIfNeeded() async {
+    /// Check GitHub `live`, download if newer, install and restart — no Settings click.
+    func performLiveSync() async {
+        guard autoCheckEnabled else { return }
+        if case .installing = phase { return }
+        if case .downloading = phase { return }
+
         await checkForUpdates(silent: true)
-        guard case .available = phase else { return }
-        await updateNow()
+
+        if autoInstallEnabled {
+            if case .available = phase {
+                await downloadUpdate()
+            }
+            if case .readyToInstall = phase {
+                await installAndRestart()
+            }
+        }
+    }
+
+    func syncLiveBuildIfNeeded() async {
+        await performLiveSync()
     }
 
     func checkForUpdates(silent: Bool = false) async {
@@ -93,14 +121,13 @@ final class AppUpdateViewModel: ObservableObject {
             if let update = try await service.checkForUpdate() {
                 if case .readyToInstall = phase { return }
                 phase = .available(update)
-                if silent {
-                    await downloadUpdate()
-                }
             } else {
                 phase = .upToDate
             }
         } catch {
-            phase = .failed(error.localizedDescription)
+            if !silent {
+                phase = .failed(error.localizedDescription)
+            }
         }
     }
 
@@ -109,7 +136,7 @@ final class AppUpdateViewModel: ObservableObject {
         switch phase {
         case .available(let u):
             update = u
-        case .readyToInstall(let u):
+        case .readyToInstall:
             return
         default:
             return
@@ -132,7 +159,6 @@ final class AppUpdateViewModel: ObservableObject {
         }
     }
 
-    /// Check → download → install → restart (Settings / banner primary action).
     func updateNow() async {
         if case .readyToInstall = phase {
             await installAndRestart()
