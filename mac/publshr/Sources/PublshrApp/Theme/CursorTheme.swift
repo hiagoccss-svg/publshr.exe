@@ -61,10 +61,10 @@ enum CursorTheme {
         editorLineHighlight: Color(hex: 0xE8E8E8),
         tabActiveBackground: Color(hex: 0xFFFFFF),
         tabInactiveBackground: Color(hex: 0xECECEC),
-        panelBackground: Color(hex: 0xF8F8F8),
+        panelBackground: Color(hex: 0xFAFAFA),
         chatBackground: Color(hex: 0xFFFFFF),
-        border: Color(hex: 0xE5E5E5),
-        borderSubtle: Color(hex: 0xCECECE),
+        border: Color(hex: 0xECECEC),
+        borderSubtle: Color(hex: 0xF0F0F0),
         foreground: Color(hex: 0x3B3B3B),
         foregroundMuted: Color(hex: 0x717171),
         foregroundDim: Color(hex: 0x9D9D9D),
@@ -164,6 +164,9 @@ enum CursorTheme {
     static let sideBarWidth: CGFloat = 260
     static let chatPanelWidth: CGFloat = 520
     static let titleBarHeight: CGFloat = 38
+    static let chatToolbarHeight: CGFloat = 44
+    static let chatRowSpacing: CGFloat = 16
+    static let chatSidebarRowHeight: CGFloat = 30
     static let statusBarHeight: CGFloat = 22
     static let tabBarHeight: CGFloat = 35
 }

@@ -59,7 +59,6 @@ struct ChatConversationView: View {
     @ViewBuilder
     private func conversation(_ channel: ChatChannel) -> some View {
         VStack(spacing: 0) {
-            channelHeader(channel)
             if chat.showPinnedPanel && !chat.pinnedItems.isEmpty {
                 ChatPinnedPanelView(chat: chat)
             }
@@ -90,7 +89,7 @@ struct ChatConversationView: View {
             } else {
                 ScrollViewReader { proxy in
                     ScrollView {
-                        LazyVStack(alignment: .leading, spacing: 12) {
+                        LazyVStack(alignment: .leading, spacing: CursorTheme.chatRowSpacing) {
                             ForEach(groupedMessages(), id: \.0) { day, msgs in
                                 dayDivider(day)
                                 ForEach(msgs) { msg in
@@ -99,7 +98,8 @@ struct ChatConversationView: View {
                                 }
                             }
                         }
-                        .padding(16)
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 16)
                     }
                     .onChange(of: chat.mainChannelMessages.count) { _, _ in
                         if let last = chat.mainChannelMessages.last {
@@ -117,6 +117,8 @@ struct ChatConversationView: View {
         ChatMessageBubbleView(
             message: message,
             authorName: chat.displayName(for: message.userId),
+            authorProfile: chat.profile(for: message.userId),
+            presence: chat.presence(for: message.userId),
             isOwn: message.userId == chat.currentUserId,
             showAvatar: shouldShowAvatar(message, in: list),
             reactions: chat.reactions[message.id] ?? [],
@@ -132,50 +134,19 @@ struct ChatConversationView: View {
         )
     }
 
-    private func channelHeader(_ channel: ChatChannel) -> some View {
-        HStack(spacing: 10) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(channel.displayTitle)
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(CursorTheme.foreground)
-                if let desc = channel.description, !desc.isEmpty {
-                    Text(desc)
-                        .font(.system(size: 11))
-                        .foregroundStyle(CursorTheme.foregroundMuted)
-                        .lineLimit(1)
-                }
-            }
-            Spacer()
-            Button {
-                chat.showPinnedPanel.toggle()
-            } label: {
-                Image(systemName: "pin")
-                    .font(.system(size: 12))
-            }
-            .buttonStyle(.plain)
-            if chat.isOffline {
-                Label("Offline", systemImage: "wifi.slash")
-                    .font(.system(size: 10))
-                    .foregroundStyle(CursorTheme.foregroundDim)
-            }
-        }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
-        .background(CursorTheme.panelBackground)
-        .overlay(alignment: .bottom) {
-            Rectangle().fill(CursorTheme.border).frame(height: 1)
-        }
-    }
-
     private func dayDivider(_ day: String) -> some View {
         HStack {
-            Rectangle().fill(CursorTheme.borderSubtle).frame(height: 1)
+            Spacer()
             Text(day)
-                .font(.system(size: 10, weight: .medium))
+                .font(.system(size: 11, weight: .medium))
                 .foregroundStyle(CursorTheme.foregroundDim)
-            Rectangle().fill(CursorTheme.borderSubtle).frame(height: 1)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 4)
+                .background(CursorTheme.panelBackground)
+                .clipShape(Capsule())
+            Spacer()
         }
-        .padding(.vertical, 8)
+        .padding(.vertical, 10)
     }
 
     private func groupedMessages() -> [(String, [ChatMessage])] {

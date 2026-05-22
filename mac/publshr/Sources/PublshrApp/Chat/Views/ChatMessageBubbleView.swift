@@ -3,6 +3,8 @@ import SwiftUI
 struct ChatMessageBubbleView: View {
     let message: ChatMessage
     let authorName: String
+    var authorProfile: Profile?
+    var presence: ChatPresenceStatus = .offline
     let isOwn: Bool
     let showAvatar: Bool
     var reactions: [ChatReactionSummary] = []
@@ -16,18 +18,23 @@ struct ChatMessageBubbleView: View {
     var onEdit: (() -> Void)?
     var onDelete: (() -> Void)?
 
-    @State private var showReactionPicker = false
-
     var body: some View {
-        HStack(alignment: .top, spacing: 10) {
+        HStack(alignment: .top, spacing: 12) {
             if showAvatar {
-                avatar
+                ChatProfileAvatar(
+                    profile: authorProfile,
+                    displayName: authorName,
+                    size: 36,
+                    presence: presence
+                )
             } else {
-                Color.clear.frame(width: 32, height: 32)
+                Color.clear.frame(width: 36, height: 36)
             }
 
-            VStack(alignment: .leading, spacing: 6) {
-                headerRow
+            VStack(alignment: .leading, spacing: 4) {
+                if showAvatar {
+                    headerRow
+                }
                 contentBody
                 ForEach(links) { link in
                     ChatLinkPreviewCard(link: link)
@@ -42,15 +49,20 @@ struct ChatMessageBubbleView: View {
                     Button {
                         onThread?()
                     } label: {
-                        Text("\(threadReplyCount) \(threadReplyCount == 1 ? "reply" : "replies")")
-                            .font(.system(size: 11, weight: .medium))
-                            .foregroundStyle(CursorTheme.accent)
+                        HStack(spacing: 4) {
+                            Image(systemName: "bubble.left.and.bubble.right")
+                                .font(.system(size: 10))
+                            Text("\(threadReplyCount) \(threadReplyCount == 1 ? "reply" : "replies")")
+                                .font(.system(size: 11, weight: .medium))
+                        }
+                        .foregroundStyle(CursorTheme.accent)
                     }
                     .buttonStyle(.plain)
+                    .padding(.top, 2)
                 }
             }
         }
-        .padding(.vertical, 2)
+        .padding(.vertical, showAvatar ? 4 : 1)
         .contextMenu {
             Button("Reply in thread") { onThread?() }
             Menu("React") {
@@ -73,7 +85,7 @@ struct ChatMessageBubbleView: View {
     private var headerRow: some View {
         HStack(spacing: 8) {
             Text(authorName)
-                .font(.system(size: 12, weight: .semibold))
+                .font(.system(size: 13, weight: .semibold))
                 .foregroundStyle(CursorTheme.foreground)
             Text(message.createdAt, style: .time)
                 .font(.system(size: 11))
@@ -97,9 +109,11 @@ struct ChatMessageBubbleView: View {
                 .foregroundStyle(CursorTheme.foregroundDim)
         } else if let body = message.body, !body.isEmpty {
             Text(attributedBody(body))
-                .font(.system(size: 13))
+                .font(.system(size: 14))
+                .foregroundStyle(CursorTheme.foreground)
                 .textSelection(.enabled)
                 .fixedSize(horizontal: false, vertical: true)
+                .padding(.top, showAvatar ? 0 : 2)
         } else if !message.attachments.isEmpty, voiceAttachment == nil {
             attachmentLabel
         }
@@ -119,21 +133,10 @@ struct ChatMessageBubbleView: View {
         for (range, isMention) in ChatMentionParser.highlightRanges(in: body) {
             if isMention, let attrRange = Range(range, in: result) {
                 result[attrRange].foregroundColor = .init(CursorTheme.accent)
-                result[attrRange].font = .system(size: 13, weight: .semibold)
+                result[attrRange].font = .system(size: 14, weight: .semibold)
             }
         }
         return result
-    }
-
-    private var avatar: some View {
-        ZStack {
-            Circle()
-                .fill(CursorTheme.inputBackground)
-                .frame(width: 32, height: 32)
-            Text(String(authorName.prefix(1)).uppercased())
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(CursorTheme.foregroundMuted)
-        }
     }
 
     @ViewBuilder

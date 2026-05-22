@@ -10,6 +10,10 @@ struct MainIDEView: View {
     @State private var showNewChannel = false
     @State private var showNewDM = false
 
+    private var chatFocusLayout: Bool {
+        module == .chat && chat.chatFocusMode
+    }
+
     var body: some View {
         GeometryReader { geometry in
             let topInset = max(geometry.safeAreaInsets.top, CursorTheme.windowChromeTopInset)
@@ -18,21 +22,22 @@ struct MainIDEView: View {
                 AppUpdateBannerView(updates: updates)
 
                 HStack(alignment: .top, spacing: 0) {
-                    ActivityBarView(module: $module, topInset: topInset)
-                        .frame(width: CursorTheme.activityBarWidth)
+                    if !chatFocusLayout {
+                        ActivityBarView(module: $module, topInset: topInset)
+                            .frame(width: CursorTheme.activityBarWidth)
 
-                    AppSecondarySidebar(
-                        module: module,
-                        chat: chat,
-                        spaces: spaces,
-                        showNewChannel: $showNewChannel,
-                        showNewDM: $showNewDM,
-                        topInset: topInset
-                    )
+                        AppSecondarySidebar(
+                            module: module,
+                            chat: chat,
+                            spaces: spaces,
+                            showNewChannel: $showNewChannel,
+                            showNewDM: $showNewDM,
+                            topInset: topInset
+                        )
+                    }
 
                     VStack(spacing: 0) {
                         ContentToolbarView(spaces: spaces, module: module)
-                            .frame(height: CursorTheme.titleBarHeight)
 
                         moduleMainContent
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -59,6 +64,9 @@ struct MainIDEView: View {
         }
         .onChange(of: module) { _, newModule in
             storedModule = newModule.rawValue
+            if newModule != .chat {
+                chat.chatFocusMode = false
+            }
             if newModule == .chat {
                 chat.attach(auth: auth)
             }
@@ -144,7 +152,12 @@ private struct NewDMSheet: View {
                         }
                     } label: {
                         HStack {
-                            ChatPresenceDot(status: chat.presence(for: profile.id))
+                            ChatProfileAvatar(
+                                profile: profile,
+                                displayName: profile.displayName ?? profile.email,
+                                size: 28,
+                                presence: chat.presence(for: profile.id)
+                            )
                             Text(profile.displayName ?? profile.email)
                         }
                     }

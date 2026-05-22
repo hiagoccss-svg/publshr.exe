@@ -33,7 +33,7 @@ struct AppSecondarySidebar: View {
         .frame(maxHeight: .infinity)
         .background(CursorTheme.navSidebar)
         .overlay(alignment: .trailing) {
-            Rectangle().fill(CursorTheme.borderSubtle).frame(width: 1)
+            Rectangle().fill(CursorTheme.borderSubtle.opacity(0.65)).frame(width: 1)
         }
     }
 }
