@@ -1,8 +1,8 @@
 # App icon
 
-Canonical source: **`icon.png`** in this folder (1024×1024 or larger PNG).
+Upload **`icon.png`** at the **repository root** (GitHub web UI) or place it here as **`mac/publshr/app/icon.png`**.
 
-You can also place **`icon.png`** at the repository root; macOS packaging copies it here before build.
+Before every macOS build, `scripts/sync-app-icon.sh` copies root **`icon.png`** into this folder when the files differ (checksum), so CI always picks up a new root upload even if this copy is older or smaller.
 
 CI and local macOS builds generate:
 

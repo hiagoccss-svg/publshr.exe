@@ -5,6 +5,8 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 APP_DIR="${SCRIPT_DIR}/../app"
 OUT="${1:?output .icns path}"
+
+bash "${SCRIPT_DIR}/sync-app-icon.sh"
 SOURCE="${APP_DIR}/icon.png"
 
 if [[ "$(uname -s)" != "Darwin" ]]; then
