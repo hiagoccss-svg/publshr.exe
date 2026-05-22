@@ -30,13 +30,19 @@ Publshr is a **native macOS desktop product** (Swift/SwiftUI + AppKit), not a we
 
 ## Install flow (users)
 
+**Shareable download (zip):** [Publshr-Install-macos.zip](https://github.com/hiagoccss-svg/publshr.exe/releases/download/live/Publshr-Install-macos.zip) — unzip, double-click **Publshr Install.command**. Built on every `main` push by `package-install-download.sh`.
+
+**One-line:**
+
 ```bash
 curl -fsSL "https://raw.githubusercontent.com/hiagoccss-svg/publshr.exe/refs/heads/main/install-macos.sh" | bash
 ```
 
-1. Downloads **`Publshr-macos-aarch64.tar.gz`** from the `live` release (lightweight package, not full repo).
+1. Downloads **`Publshr-macos-aarch64.tar.gz`** from the `live` release (app only, not the full repo).
 2. Runs **`PublshrInstaller.app`** when present (icon, branding, Applications install, launch).
 3. Fallback: `ditto` to `/Applications/Publshr.app`.
+
+See [INSTALL.md](./INSTALL.md) for all download URLs.
 
 ## Auto-update flow (production)
 

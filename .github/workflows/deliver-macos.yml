@@ -59,6 +59,13 @@ jobs:
           echo "${FULL}" > mac/publshr/dist/VERSION.txt
           echo "${{ steps.ver.outputs.build }}" >> mac/publshr/dist/VERSION.txt
 
+      - name: Package lightweight installer download (zip + script)
+        run: |
+          chmod +x mac/publshr/scripts/package-install-download.sh
+          bash mac/publshr/scripts/package-install-download.sh
+          test -f mac/publshr/dist/Publshr-Install-macos.zip
+          test -f mac/publshr/dist/Publshr-install-macos.sh
+
       - name: Publish versioned + live releases
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -69,13 +76,22 @@ jobs:
           REPO="${{ github.repository }}"
           VERSIONED="mac/publshr/dist/publshr-${FULL}-macos-aarch64.tar.gz"
           LIVE="mac/publshr/dist/Publshr-macos-aarch64.tar.gz"
+          INSTALL_ZIP="mac/publshr/dist/Publshr-Install-macos.zip"
+          INSTALL_SH="mac/publshr/dist/Publshr-install-macos.sh"
           NOTES="build_number: ${BUILD}
           version: ${FULL}
           commit: ${{ github.sha }}
 
-          **Install (same command every time):**
+          **Downloads**
+          | File | Use |
+          |------|-----|
+          | \`Publshr-Install-macos.zip\` | Share with your team — unzip, double-click **Publshr Install.command** |
+          | \`Publshr-install-macos.sh\` | Shell script only |
+          | \`Publshr-macos-aarch64.tar.gz\` | Full app tarball (IT / offline extract) |
+
+          **One-line install:**
           \`\`\`bash
-          curl -fsSL "https://raw.githubusercontent.com/${REPO}/refs/heads/main/install-macos.sh" | bash
+          curl -fsSL \"https://raw.githubusercontent.com/${REPO}/refs/heads/main/install-macos.sh\" | bash
           \`\`\`
 
           Installed Publshr.app auto-updates from the \`live\` release when you push to \`main\`."
@@ -90,9 +106,10 @@ jobs:
           # Live channel (fixed URL — installer + auto-updater)
           if gh release view "live" --repo "$REPO" >/dev/null 2>&1; then
             gh release edit "live" --repo "$REPO" --title "Publshr live (${FULL})" --notes "$NOTES"
-            gh release upload "live" "$LIVE" --repo "$REPO" --clobber
+            gh release upload "live" "$LIVE" "$INSTALL_ZIP" "$INSTALL_SH" --repo "$REPO" --clobber
           else
-            gh release create "live" --repo "$REPO" --title "Publshr live (${FULL})" --notes "$NOTES" "$LIVE"
+            gh release create "live" --repo "$REPO" --title "Publshr live (${FULL})" --notes "$NOTES" \
+              "$LIVE" "$INSTALL_ZIP" "$INSTALL_SH"
           fi
 
-          echo "Published ${TAG} and live → Publshr-macos-aarch64.tar.gz"
+          echo "Published ${TAG} and live → Publshr-macos-aarch64.tar.gz, Publshr-Install-macos.zip"
