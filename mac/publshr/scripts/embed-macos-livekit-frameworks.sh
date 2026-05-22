@@ -32,7 +32,12 @@ _select_framework_src() {
         *) arch="$(uname -m)" ;;
     esac
 
-    mapfile -t _candidates < <(
+    # Bash 3.2 (macOS /bin/bash) has no mapfile — use a read loop.
+    local _candidates=()
+    local _line
+    while IFS= read -r _line; do
+        [[ -n "$_line" ]] && _candidates+=("$_line")
+    done < <(
         find "${PKG_ROOT}/.build" -type d -name "${fw_name}.framework" 2>/dev/null \
             | LC_ALL=C sort -u
     )
