@@ -31,12 +31,12 @@ enum AppReleaseConfig {
         Bundle.main.object(forInfoDictionaryKey: "PublshrLiveCommit") as? String ?? ""
     }
 
-    /// SHA-256 of the last live tarball applied on this Mac (detects any packaged file change).
+    /// SHA-256 of the last applied live tarball (line 4 of VERSION.txt when present).
     static var livePackageDigest: String {
         if let stored = UserDefaults.standard.string(forKey: "publshr.appliedLiveDigest"), !stored.isEmpty {
             return stored
         }
-        return Bundle.main.object(forInfoDictionaryKey: "PublshrLiveDigest") as? String ?? ""
+        return Bundle.main.object(forInfoDictionaryKey: "PublshrLivePackageDigest") as? String ?? ""
     }
 
     static var installedLabel: String {

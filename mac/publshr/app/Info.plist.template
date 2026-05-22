@@ -30,7 +30,7 @@
 	<string>@@LIVE_VERSION@@</string>
 	<key>PublshrLiveCommit</key>
 	<string>@@COMMIT_SHA@@</string>
-	<key>PublshrLiveDigest</key>
+	<key>PublshrLivePackageDigest</key>
 	<string>@@LIVE_DIGEST@@</string>
 	<key>LSMinimumSystemVersion</key>
 	<string>14.0</string>

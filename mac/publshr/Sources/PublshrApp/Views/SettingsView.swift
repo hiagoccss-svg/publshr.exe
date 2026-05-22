@@ -124,7 +124,7 @@ struct SettingsView: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
 
-            Text("GitHub and Supabase sync automatically every minute. Updates install in place — no separate installer. Build \(AppReleaseConfig.buildNumber).")
+            Text("GitHub and Supabase sync every minute. Updates install in place — build \(AppReleaseConfig.buildNumber).")
                 .font(.system(size: 10))
                 .foregroundStyle(CursorTheme.foregroundDim)
                 .fixedSize(horizontal: false, vertical: true)

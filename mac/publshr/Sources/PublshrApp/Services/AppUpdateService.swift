@@ -63,7 +63,7 @@ enum AppUpdateError: LocalizedError {
     }
 }
 
-/// Checks GitHub `live` release (same as install-publshr.sh) and installs updates in place.
+/// Checks GitHub `live` release (same as install-publshr.sh) and installs updates.
 final class AppUpdateService: @unchecked Sendable {
     static let shared = AppUpdateService()
 
@@ -91,25 +91,57 @@ final class AppUpdateService: @unchecked Sendable {
         return request
     }
 
-    private func headAssetRequest(url: URL) -> URLRequest {
-        var request = URLRequest(url: url)
-        request.httpMethod = "HEAD"
-        request.setValue("Publshr/1.0", forHTTPHeaderField: "User-Agent")
-        request.cachePolicy = .reloadIgnoringLocalCacheData
-        return request
-    }
-
     private func resolvedDownloadURL(for update: AvailableUpdate) -> URL {
         AppReleaseConfig.releaseDownloadURL(tag: update.tag, assetName: update.assetName)
             ?? update.downloadURL
     }
 
-    /// Primary path: fixed `releases/download/live/...` URLs only (no GitHub REST API).
     func checkForUpdate() async throws -> AvailableUpdate? {
-        if let update = try await checkLiveChannelViaDirectURLs() {
+        if let update = try await checkForUpdateViaLiveManifest() {
             return update
         }
         return await checkVersionedFallbackSilently()
+    }
+
+    /// Compares installed build/version/commit/digest against `live/VERSION.txt` (published on every push to main).
+    private func checkForUpdateViaLiveManifest() async throws -> AvailableUpdate? {
+        guard let manifest = await fetchLiveManifestFromURL() else {
+            appendSyncLog("VERSION.txt check: unavailable")
+            return nil
+        }
+
+        appendSyncLog(
+            "VERSION.txt check: local=\(AppReleaseConfig.installedLabel) "
+                + "remote=\(manifest.fullVersion) build=\(manifest.build) "
+                + "commit=\(manifest.commit.prefix(7)) digest=\(manifest.packageDigest?.prefix(12) ?? "—")"
+        )
+
+        guard manifest.isNewerThanInstalled() else { return nil }
+
+        let assetName = AppReleaseConfig.liveAssetName()
+        guard let downloadURL = AppReleaseConfig.releaseDownloadURL(
+            tag: AppReleaseConfig.liveTag,
+            assetName: assetName
+        ),
+        let pageURL = URL(string: "https://github.com/\(AppReleaseConfig.githubRepo)/releases/tag/live") else {
+            throw AppUpdateError.noCompatibleAsset
+        }
+
+        if let assetBytes = await headAssetByteCount(url: downloadURL),
+           assetBytes < AppReleaseConfig.minAppAssetBytes {
+            appendSyncLog("VERSION.txt check: asset too small (\(assetBytes) bytes)")
+            return nil
+        }
+
+        return AvailableUpdate(
+            version: manifest.fullVersion,
+            build: manifest.build,
+            tag: AppReleaseConfig.liveTag,
+            downloadURL: downloadURL,
+            releasePage: pageURL,
+            assetName: assetName,
+            packageDigest: manifest.packageDigest
+        )
     }
 
     func download(
@@ -206,6 +238,11 @@ final class AppUpdateService: @unchecked Sendable {
         try process.run()
     }
 
+    private func supportUpdatesDirectory() -> URL {
+        let base = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+        return base.appendingPathComponent("Publshr/updates", isDirectory: true)
+    }
+
     private func resolveApplyUpdateScript() -> URL? {
         if let url = Bundle.main.url(forResource: "apply-macos-update", withExtension: "sh") {
             return url
@@ -216,11 +253,6 @@ final class AppUpdateService: @unchecked Sendable {
             return resources
         }
         return nil
-    }
-
-    private func supportUpdatesDirectory() -> URL {
-        let base = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-        return base.appendingPathComponent("Publshr/updates", isDirectory: true)
     }
 
     func appendSyncLog(_ line: String) {
@@ -238,40 +270,68 @@ final class AppUpdateService: @unchecked Sendable {
         }
     }
 
-    // MARK: - Live channel (direct download URLs)
+    private func githubRequest(url: URL) -> URLRequest {
+        var request = URLRequest(url: url)
+        request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
+        request.setValue("Publshr/1.0", forHTTPHeaderField: "User-Agent")
+        request.cachePolicy = .reloadIgnoringLocalCacheData
+        return request
+    }
 
-    private func checkLiveChannelViaDirectURLs() async throws -> AvailableUpdate? {
-        guard let manifest = await fetchLiveManifestDirect() else {
-            appendSyncLog("live check: VERSION.txt unavailable or invalid")
+    private func fetchLiveRelease() async throws -> GitHubRelease? {
+        guard let url = AppReleaseConfig.liveReleaseURL() else {
+            throw AppUpdateError.invalidRepo
+        }
+        let (data, response) = try await session.data(for: githubRequest(url: url))
+        guard let http = response as? HTTPURLResponse else {
+            appendSyncLog("live release: no HTTP response")
+            throw AppUpdateError.downloadFailed
+        }
+        if http.statusCode == 404 { return nil }
+        guard (200 ... 299).contains(http.statusCode) else {
+            appendSyncLog("live release metadata HTTP \(http.statusCode)")
+            throw AppUpdateError.downloadFailed
+        }
+        return try decoder.decode(GitHubRelease.self, from: data)
+    }
+
+    private func fetchRecentReleases() async throws -> [GitHubRelease] {
+        guard let url = AppReleaseConfig.releasesURL() else {
+            throw AppUpdateError.invalidRepo
+        }
+        let (data, response) = try await session.data(for: githubRequest(url: url))
+        guard let http = response as? HTTPURLResponse, (200 ... 299).contains(http.statusCode) else {
+            appendSyncLog("releases list HTTP \((response as? HTTPURLResponse)?.statusCode ?? -1)")
+            throw AppUpdateError.downloadFailed
+        }
+        return try decoder.decode([GitHubRelease].self, from: data)
+    }
+
+    private func parseLiveRelease(_ live: GitHubRelease) async throws -> AvailableUpdate? {
+        let assetName = AppReleaseConfig.liveAssetName()
+        guard let asset = live.assets.first(where: { $0.name == assetName }),
+              asset.size >= AppReleaseConfig.minAppAssetBytes,
+              let downloadURL = AppReleaseConfig.releaseDownloadURL(tag: AppReleaseConfig.liveTag, assetName: assetName),
+              let pageURL = URL(string: live.htmlURL) else {
+            throw AppUpdateError.noCompatibleAsset
+        }
+
+        let manifest = await fetchLiveManifestFromURL()
+            ?? manifestFromReleaseNotes(live)
+
+        guard let manifest else {
+            appendSyncLog("live check: could not parse VERSION.txt or release notes")
             return nil
         }
 
         appendSyncLog(
             "live check: local=\(AppReleaseConfig.installedLabel) "
                 + "remote=\(manifest.fullVersion) build=\(manifest.build) "
-                + "commit=\(manifest.commit.prefix(7)) digest=\(manifest.packageDigest?.prefix(12) ?? "—")"
+                + "commit=\(manifest.commit.prefix(7)) asset=\(asset.size)"
         )
 
-        guard manifest.isNewerThanInstalled() else {
-            appendSyncLog("live check: up to date")
-            return nil
-        }
+        guard manifest.isNewerThanInstalled() else { return nil }
 
-        let assetName = AppReleaseConfig.liveAssetName()
-        guard let downloadURL = AppReleaseConfig.releaseDownloadURL(tag: AppReleaseConfig.liveTag, assetName: assetName) else {
-            throw AppUpdateError.invalidRepo
-        }
-
-        let assetBytes = await headAssetByteCount(url: downloadURL)
-        if let assetBytes, assetBytes < AppReleaseConfig.minAppAssetBytes {
-            appendSyncLog("live check: asset too small (\(assetBytes) bytes)")
-            return nil
-        }
-
-        let pageURL = URL(string: "https://github.com/\(AppReleaseConfig.githubRepo)/releases/tag/live")
-            ?? downloadURL
-
-        appendSyncLog("live check: update available → in-place install")
         return AvailableUpdate(
             version: manifest.fullVersion,
             build: manifest.build,
@@ -283,31 +343,13 @@ final class AppUpdateService: @unchecked Sendable {
         )
     }
 
-    private func fetchLiveManifestDirect() async -> LiveChannelManifest? {
-        guard let url = AppReleaseConfig.releaseDownloadURL(tag: AppReleaseConfig.liveTag, assetName: "VERSION.txt") else {
-            return nil
-        }
-        do {
-            let (data, response) = try await session.data(for: assetDownloadRequest(url: url))
-            guard let http = response as? HTTPURLResponse, (200 ... 299).contains(http.statusCode) else {
-                let code = (response as? HTTPURLResponse)?.statusCode ?? -1
-                appendSyncLog("VERSION.txt HTTP \(code)")
-                return nil
-            }
-            guard let text = String(data: data, encoding: .utf8),
-                  let manifest = LiveChannelManifest.parse(text) else {
-                return nil
-            }
-            return manifest
-        } catch {
-            appendSyncLog("VERSION.txt fetch failed: \(error.localizedDescription)")
-            return nil
-        }
-    }
-
     private func headAssetByteCount(url: URL) async -> Int? {
+        var request = URLRequest(url: url)
+        request.httpMethod = "HEAD"
+        request.setValue("Publshr/1.0", forHTTPHeaderField: "User-Agent")
+        request.cachePolicy = .reloadIgnoringLocalCacheData
         do {
-            let (_, response) = try await session.data(for: headAssetRequest(url: url))
+            let (_, response) = try await session.data(for: request)
             guard let http = response as? HTTPURLResponse, (200 ... 399).contains(http.statusCode) else {
                 return nil
             }
@@ -316,25 +358,23 @@ final class AppUpdateService: @unchecked Sendable {
             }
             return nil
         } catch {
-            appendSyncLog("HEAD asset skipped: \(error.localizedDescription)")
             return nil
         }
     }
 
-    // MARK: - Optional API fallback (never surfaces to UI)
-
-    private func githubRequest(url: URL) -> URLRequest {
-        var request = URLRequest(url: url)
-        request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
-        request.setValue("Publshr/1.0", forHTTPHeaderField: "User-Agent")
-        request.cachePolicy = .reloadIgnoringLocalCacheData
-        return request
-    }
-
     private func checkVersionedFallbackSilently() async -> AvailableUpdate? {
         do {
-            let releases = try await fetchRecentReleases()
+            guard let live = try await fetchLiveRelease(),
+                  let update = try await parseLiveRelease(live) else {
+                return nil
+            }
+            return update
+        } catch {
+            appendSyncLog("API fallback skipped: \(error.localizedDescription)")
+        }
+        do {
             let localBuild = AppReleaseConfig.buildNumber
+            let releases = try await fetchRecentReleases()
             var best: AvailableUpdate?
             for release in releases where release.tagName != AppReleaseConfig.liveTag {
                 guard let candidate = parseVersionedRelease(release) else { continue }
@@ -345,9 +385,6 @@ final class AppUpdateService: @unchecked Sendable {
                     best = candidate
                 }
             }
-            if let best {
-                appendSyncLog("fallback versioned update build=\(best.build)")
-            }
             return best
         } catch {
             appendSyncLog("versioned fallback skipped: \(error.localizedDescription)")
@@ -355,15 +392,70 @@ final class AppUpdateService: @unchecked Sendable {
         }
     }
 
-    private func fetchRecentReleases() async throws -> [GitHubRelease] {
-        guard let url = AppReleaseConfig.releasesURL() else {
-            throw AppUpdateError.invalidRepo
+    private func manifestFromReleaseNotes(_ live: GitHubRelease) -> LiveChannelManifest? {
+        guard let build = parseBuildNumber(from: live) else { return nil }
+        let version = parseVersionLabel(from: live) ?? "\(AppReleaseConfig.shortVersion).\(build)"
+        let commit = parseCommitSha(from: live) ?? ""
+        return LiveChannelManifest(fullVersion: version, build: build, commit: commit, packageDigest: nil)
+    }
+
+    private func parseCommitSha(from release: GitHubRelease) -> String? {
+        let text = release.body ?? ""
+        for line in text.split(separator: "\n") {
+            let s = String(line)
+            guard s.contains("commit:") else { continue }
+            let value = s.split(separator: ":", maxSplits: 1).last?
+                .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            if !value.isEmpty { return value }
         }
-        let (data, response) = try await session.data(for: githubRequest(url: url))
-        guard let http = response as? HTTPURLResponse, (200 ... 299).contains(http.statusCode) else {
-            throw AppUpdateError.downloadFailed
+        return nil
+    }
+
+    private func parseBuildNumber(from release: GitHubRelease) -> Int? {
+        let text = "\(release.body ?? "")\n\(release.name ?? "")"
+        for line in text.split(separator: "\n") {
+            let s = String(line)
+            guard s.contains("build_number:") else { continue }
+            let value = s.split(separator: ":", maxSplits: 1).last?
+                .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            if let n = Int(value) { return n }
         }
-        return try decoder.decode([GitHubRelease].self, from: data)
+        return nil
+    }
+
+    /// Reads `VERSION.txt` from the live release (version, build, commit, package digest).
+    private func fetchLiveManifestFromURL() async -> LiveChannelManifest? {
+        guard let url = AppReleaseConfig.releaseDownloadURL(tag: AppReleaseConfig.liveTag, assetName: "VERSION.txt") else {
+            return nil
+        }
+        do {
+            let (data, response) = try await session.data(for: assetDownloadRequest(url: url))
+            guard let http = response as? HTTPURLResponse, (200 ... 299).contains(http.statusCode) else {
+                appendSyncLog("VERSION.txt HTTP \((response as? HTTPURLResponse)?.statusCode ?? -1)")
+                return nil
+            }
+            guard let text = String(data: data, encoding: .utf8),
+                  let manifest = LiveChannelManifest.parse(text) else {
+                appendSyncLog("VERSION.txt parse failed")
+                return nil
+            }
+            return manifest
+        } catch {
+            appendSyncLog("VERSION.txt fetch failed: \(error.localizedDescription)")
+            return nil
+        }
+    }
+
+    private func parseVersionLabel(from release: GitHubRelease) -> String? {
+        if let body = release.body,
+           let line = body.split(separator: "\n").first(where: { $0.contains("version:") }) {
+            let value = line.split(separator: ":").last.map { $0.trimmingCharacters(in: .whitespaces) }
+            if let value, !value.isEmpty { return value }
+        }
+        return release.name?
+            .replacingOccurrences(of: "Publshr live (", with: "")
+            .replacingOccurrences(of: ")", with: "")
+            .trimmingCharacters(in: .whitespaces)
     }
 
     private func parseVersionedRelease(_ release: GitHubRelease) -> AvailableUpdate? {

@@ -99,12 +99,7 @@ struct PublshrApp: App {
 
     @MainActor
     private func performFullSync() async {
-        await updates.performLiveSync(silent: true)
-        await performEnterpriseSync()
-    }
-
-    @MainActor
-    private func performEnterpriseSync() async {
+        await updates.performLiveSync()
         guard auth.flowState == .signedIn else { return }
         await auth.refreshSupabaseConnection()
         await chat.refreshAfterReconnect()
@@ -156,6 +151,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
            let window = NSApp.windows.first {
             window.setFrame(frame, display: true)
         }
+        NotificationCenter.default.post(name: .publshrPerformLiveSync, object: nil)
     }
 
     func applicationDidBecomeActive(_ notification: Notification) {

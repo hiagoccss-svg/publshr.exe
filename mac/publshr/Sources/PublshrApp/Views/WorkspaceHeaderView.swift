@@ -33,7 +33,7 @@ struct WorkspaceHeaderView: View {
             .background(CursorTheme.titleBar)
             .overlay(alignment: .bottom) {
                 Rectangle()
-                    .fill(CursorTheme.border.opacity(0.55))
+                    .fill(CursorTheme.hairline)
                     .frame(height: 1)
             }
         }
@@ -72,7 +72,7 @@ struct WorkspaceHeaderView: View {
                 .frame(width: 30, height: 30)
                 .background(
                     RoundedRectangle(cornerRadius: 7)
-                        .fill(tabStore.sidebarExpanded ? CursorTheme.panelBackground : CursorTheme.tabInactiveBackground)
+                        .strokeBorder(CursorTheme.hairline, lineWidth: 1)
                 )
         }
         .buttonStyle(.plain)
@@ -168,7 +168,7 @@ struct WorkspaceHeaderView: View {
                 .frame(width: 28, height: 28)
                 .background(
                     RoundedRectangle(cornerRadius: 6)
-                        .strokeBorder(CursorTheme.border, lineWidth: 1)
+                        .strokeBorder(CursorTheme.hairline, lineWidth: 1)
                 )
         }
         .menuStyle(.borderlessButton)
@@ -199,15 +199,22 @@ struct WorkspaceHeaderView: View {
     }
 
     private var chatTrailingActions: some View {
-        HStack(spacing: 6) {
+        HStack(spacing: 8) {
             compactSearchField(
                 placeholder: "Search in channel",
                 text: $chat.searchQuery
             )
-            .frame(maxWidth: 200)
+            .frame(maxWidth: 180)
+
+            HeaderActionDivider()
 
             if chat.selectedChannel != nil, subscription.canUseCalls(workspace: auth.selectedWorkspace) {
-                callMenu
+                headerIconButton("phone", enabled: true, help: "Voice call") {
+                    startCall(video: false)
+                }
+                headerIconButton("video", enabled: true, help: "Video call") {
+                    startCall(video: true)
+                }
             }
 
             if chat.selectedChannel != nil {
@@ -231,19 +238,28 @@ struct WorkspaceHeaderView: View {
             }
 
             headerIconButton("sparkles", enabled: true, help: "AI") { chat.showAISheet = true }
-            headerIconButton("gearshape", enabled: true, help: "Permissions") { chat.showPermissionsSheet = true }
+
+            HeaderActionDivider()
+
+            profileMenuChip
             presenceMenuChip
+            appSettingsMenuChip
+
+            HeaderActionDivider()
+
             workspaceMenuChip
         }
     }
 
     private var spacesTrailingActions: some View {
-        HStack(spacing: 6) {
+        HStack(spacing: 8) {
             compactSearchField(
                 placeholder: "Search spaces",
                 text: $spaces.searchQuery
             )
-            .frame(maxWidth: 200)
+            .frame(maxWidth: 180)
+
+            HeaderActionDivider()
 
             if spaces.selectedSpace != nil {
                 viewModePicker
@@ -270,6 +286,8 @@ struct WorkspaceHeaderView: View {
                 }
             }
 
+            HeaderActionDivider()
+
             workspaceMenuChip
         }
     }
@@ -282,32 +300,53 @@ struct WorkspaceHeaderView: View {
                         .font(.system(size: 11))
                         .foregroundStyle(spaces.taskView == mode ? CursorTheme.accent : CursorTheme.foregroundMuted)
                         .frame(width: 26, height: 26)
-                        .background(
-                            RoundedRectangle(cornerRadius: 6)
-                                .fill(spaces.taskView == mode ? CursorTheme.accent.opacity(0.1) : Color.clear)
-                        )
                 }
                 .buttonStyle(.plain)
             }
         }
     }
 
-    private var callMenu: some View {
+    private var profileMenuChip: some View {
         Menu {
-            Button { startCall(video: false) } label: {
-                Label("Voice call", systemImage: "phone.fill")
+            if let profile = auth.profile {
+                Text(profile.displayName ?? profile.email)
             }
-            Button { startCall(video: true) } label: {
-                Label("Video call", systemImage: "video.fill")
+            Divider()
+            Button("Sign out", role: .destructive) {
+                Task { await auth.signOut() }
             }
         } label: {
-            Image(systemName: "phone")
-                .font(.system(size: 12))
-                .foregroundStyle(CursorTheme.foregroundMuted)
-                .frame(width: 28, height: 28)
-                .background(RoundedRectangle(cornerRadius: 6).fill(CursorTheme.panelBackground))
+            ChatProfileAvatar(
+                profile: auth.profile,
+                displayName: auth.profile?.displayName ?? auth.profile?.email ?? "You",
+                size: 26,
+                presence: chat.myStatus
+            )
         }
         .menuStyle(.borderlessButton)
+        .help("Profile")
+    }
+
+    private var appSettingsMenuChip: some View {
+        Menu {
+            Button {
+                NotificationCenter.default.post(name: .publshrOpenSettings, object: nil)
+            } label: {
+                Label("App settings", systemImage: "gearshape")
+            }
+            Button {
+                chat.showPermissionsSheet = true
+            } label: {
+                Label("Channel permissions", systemImage: "lock.shield")
+            }
+        } label: {
+            Image(systemName: "gearshape")
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(CursorTheme.foregroundMuted)
+                .frame(width: 28, height: 28)
+        }
+        .menuStyle(.borderlessButton)
+        .help("Settings")
     }
 
     private var presenceMenuChip: some View {
@@ -324,12 +363,11 @@ struct WorkspaceHeaderView: View {
                     .font(.system(size: 8))
                     .foregroundStyle(CursorTheme.foregroundDim)
             }
-            .padding(.horizontal, 6)
-            .padding(.vertical, 5)
-            .background(CursorTheme.panelBackground)
-            .clipShape(RoundedRectangle(cornerRadius: 6))
+            .padding(.horizontal, 4)
+            .padding(.vertical, 4)
         }
         .menuStyle(.borderlessButton)
+        .help("Status")
     }
 
     private var workspaceMenuChip: some View {
@@ -348,10 +386,8 @@ struct WorkspaceHeaderView: View {
                     .font(.system(size: 8))
             }
             .foregroundStyle(CursorTheme.foregroundMuted)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 5)
-            .background(CursorTheme.panelBackground)
-            .clipShape(RoundedRectangle(cornerRadius: 6))
+            .padding(.horizontal, 4)
+            .padding(.vertical, 4)
         }
         .menuStyle(.borderlessButton)
     }
@@ -367,8 +403,10 @@ struct WorkspaceHeaderView: View {
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 6)
-        .background(CursorTheme.panelBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .strokeBorder(CursorTheme.hairline, lineWidth: 1)
+        )
     }
 
     private func headerIconButton(
@@ -382,10 +420,6 @@ struct WorkspaceHeaderView: View {
                 .font(.system(size: 12, weight: .medium))
                 .foregroundStyle(enabled ? CursorTheme.foregroundMuted : CursorTheme.foregroundDim.opacity(0.35))
                 .frame(width: 28, height: 28)
-                .background(
-                    RoundedRectangle(cornerRadius: 6)
-                        .fill(enabled ? CursorTheme.panelBackground : Color.clear)
-                )
         }
         .buttonStyle(.plain)
         .disabled(!enabled)
@@ -545,11 +579,11 @@ private struct WorkspaceTabChip: View {
     private var chipBackground: some View {
         Group {
             if isSelected {
-                CursorTheme.tabActiveBackground
+                Color.clear
             } else if isHovered {
-                CursorTheme.tabInactiveBackground.opacity(0.9)
+                CursorTheme.tabInactiveBackground.opacity(0.65)
             } else {
-                CursorTheme.tabInactiveBackground
+                Color.clear
             }
         }
     }

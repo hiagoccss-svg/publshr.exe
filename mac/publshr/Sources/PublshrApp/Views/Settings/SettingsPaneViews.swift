@@ -9,15 +9,32 @@ struct SettingsUpdatesPane: View {
         Form {
             Section("Live channel") {
                 LabeledContent("Status", value: updates.statusLine)
-                LabeledContent("Build", value: AppShellIdentity.distributionTag)
-                Text("Checks GitHub live channel every minute and installs in place when anything changed (icons, UI, or app bundle).")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                Button("Sync now") { Task { await updates.installLiveUpdateNow() } }
+                LabeledContent("Sync", value: updates.lastSyncLine)
+                LabeledContent("Installed build", value: "\(AppReleaseConfig.buildNumber)")
+                LabeledContent("Shell", value: AppShellIdentity.distributionTag)
+                Toggle("Auto-check every minute", isOn: $updates.autoCheckEnabled)
+                    .onChange(of: updates.autoCheckEnabled) { _, on in
+                        if on {
+                            updates.startAutomaticChecks()
+                        } else {
+                            updates.stopAutomaticChecks()
+                        }
+                    }
+                Toggle("Install updates automatically", isOn: $updates.autoInstallEnabled)
+                Button("Sync now") {
+                    Task { await updates.installLiveUpdateNow() }
+                }
+                .disabled(updates.isActivelyUpdating)
             }
         }
         .formStyle(.grouped)
         .navigationTitle("App updates")
+        .onAppear {
+            if updates.autoCheckEnabled {
+                updates.startAutomaticChecks()
+            }
+            Task { await updates.performLiveSync() }
+        }
     }
 }
 
