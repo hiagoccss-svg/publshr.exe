@@ -27,6 +27,9 @@ done
 APP_SRC="${TREE}/Publshr.app"
 if [[ ! -d "$APP_SRC" ]]; then
     APP_BIN="${TREE}/bin/PublshrApp"
+    if [[ ! -f "$APP_BIN" ]]; then
+        APP_BIN="${TREE}/Publshr.app/Contents/MacOS/Publshr"
+    fi
     if [[ -f "$APP_BIN" ]]; then
         SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
         bash "${SCRIPT_DIR}/build-macos-app.sh" "$APP_BIN" "${PUBLSHR_SHORT_VERSION:-0.2.0}" "${PUBLSHR_BUILD_NUMBER:-0}" "$TREE"
