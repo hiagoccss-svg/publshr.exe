@@ -169,24 +169,28 @@ struct ChatSidebarView: View {
 
     private var organizedContent: some View {
         Group {
-            if chat.sidebarFilter == .all, !chat.pinnedSidebarChannels.isEmpty {
-                sidebarSection("Pinned", items: chat.pinnedSidebarChannels, onAdd: nil)
-                LibraryUniversalSubmenu.sectionDivider()
-            }
-            if chat.sidebarFilter != .dms {
-                sidebarSection(
-                    "Channels",
-                    items: chat.filteredChannels.filter { !chat.isSidebarPinned($0) },
-                    onAdd: { showNewChannel = true }
-                )
-                LibraryUniversalSubmenu.sectionDivider()
-            }
-            if chat.sidebarFilter != .channels {
-                sidebarSection(
-                    "Direct Messages",
-                    items: chat.filteredDMs.filter { !chat.isSidebarPinned($0) },
-                    onAdd: { showNewDM = true }
-                )
+            if chat.sidebarFilter == .pinned {
+                sidebarSection("Pinned", items: chat.filteredChannels + chat.filteredDMs, onAdd: nil)
+            } else {
+                if chat.sidebarFilter == .all, !chat.pinnedSidebarChannels.isEmpty {
+                    sidebarSection("Pinned", items: chat.pinnedSidebarChannels, onAdd: nil)
+                    LibraryUniversalSubmenu.sectionDivider()
+                }
+                if chat.sidebarFilter != .dms {
+                    sidebarSection(
+                        "Channels",
+                        items: chat.filteredChannels.filter { !chat.isSidebarPinned($0) },
+                        onAdd: { showNewChannel = true }
+                    )
+                    LibraryUniversalSubmenu.sectionDivider()
+                }
+                if chat.sidebarFilter != .channels {
+                    sidebarSection(
+                        "Direct Messages",
+                        items: chat.filteredDMs.filter { !chat.isSidebarPinned($0) },
+                        onAdd: { showNewDM = true }
+                    )
+                }
             }
         }
     }
@@ -255,30 +259,91 @@ struct ChatSidebarView: View {
             .padding(.vertical, 8)
     }
 
-    /// Layout toggles + Slack-style black compose bar (channel + DM).
+    /// ClickUp Chat Sidebar footer — layout toggles lower-left, label + settings lower-right.
     private var layoutFooter: some View {
-        VStack(spacing: 10) {
-            HStack(spacing: 0) {
-                layoutToggle(.organized, icon: "list.bullet.rectangle")
-                layoutToggle(.recents, icon: "clock")
-                Spacer(minLength: 0)
-            }
+        VStack(spacing: 0) {
+            Rectangle()
+                .fill(LibraryGlassDesign.hairline)
+                .frame(height: 1)
+                .padding(.bottom, 10)
 
-            VStack(spacing: 8) {
+            HStack(spacing: 8) {
+                HStack(spacing: 2) {
+                    layoutToggle(.organized, icon: "list.bullet.rectangle")
+                    layoutToggle(.recents, icon: "clock")
+                }
+
+                Text(chat.sidebarLayout.label)
+                    .font(ChatClickUpDesign.footerFont)
+                    .foregroundStyle(LibraryGlassDesign.inkMuted)
+
+                Spacer(minLength: 0)
+
+                sidebarSettingsMenu
+            }
+        }
+    }
+
+    private var sidebarSettingsMenu: some View {
+        Menu {
+            Button {
+                chat.showNotificationSettings = true
+            } label: {
+                Label("Notification settings", systemImage: "bell.badge")
+            }
+            Button {
+                chat.markAllChannelsRead()
+            } label: {
+                Label("Mark all as read", systemImage: "checkmark.circle")
+            }
+            Button {
+                chat.showSearchSheet = true
+            } label: {
+                Label("Search workspace", systemImage: "magnifyingglass")
+            }
+            Divider()
+            Button {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    chat.chatFocusMode.toggle()
+                }
+            } label: {
+                Label(
+                    chat.chatFocusMode ? "Exit focus mode" : "Focus on chat",
+                    systemImage: chat.chatFocusMode ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right"
+                )
+            }
+            if chat.permissions.canCreateChannels || chat.permissions.canDM {
+                Divider()
                 if chat.permissions.canCreateChannels {
                     Button { showNewChannel = true } label: {
-                        Label("Create channel", systemImage: "number")
+                        Label("New channel", systemImage: "number")
                     }
-                    .buttonStyle(LibraryPrimaryPillButtonStyle())
                 }
                 if chat.permissions.canDM {
                     Button { showNewDM = true } label: {
                         Label("New message", systemImage: "person.badge.plus")
                     }
-                    .buttonStyle(LibraryPrimaryPillButtonStyle())
                 }
             }
+            Divider()
+            Button {
+                chat.showPermissionsSheet = true
+            } label: {
+                Label("Workspace chat permissions", systemImage: "lock.shield")
+            }
+        } label: {
+            Image(systemName: "gearshape")
+                .font(.system(size: 13, weight: .medium))
+                .foregroundStyle(LibraryGlassDesign.inkSecondary)
+                .frame(width: 32, height: 28)
+                .background(
+                    RoundedRectangle(cornerRadius: 6, style: .continuous)
+                        .fill(LibraryGlassDesign.filterPillInactiveFill)
+                )
         }
+        .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
+        .help("Chat settings")
     }
 
     private func layoutToggle(_ layout: ChatSidebarLayout, icon: String) -> some View {
