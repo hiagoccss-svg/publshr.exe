@@ -31,12 +31,22 @@ enum AppReleaseConfig {
         Bundle.main.object(forInfoDictionaryKey: "PublshrLiveCommit") as? String ?? ""
     }
 
-    /// SHA-256 of the last applied live tarball (line 4 of VERSION.txt when present).
+    /// SHA-256 of the installed live tarball (line 4 of VERSION.txt when present), from the app bundle only.
     static var livePackageDigest: String {
-        if let stored = UserDefaults.standard.string(forKey: "publshr.appliedLiveDigest"), !stored.isEmpty {
-            return stored
-        }
-        return Bundle.main.object(forInfoDictionaryKey: "PublshrLivePackageDigest") as? String ?? ""
+        Bundle.main.object(forInfoDictionaryKey: "PublshrLivePackageDigest") as? String ?? ""
+    }
+
+    /// Clears stale "applied update" markers when an install was recorded but the running bundle did not change.
+    static func reconcileAppliedManifestWithBundle() {
+        let bundleBuild = buildNumber
+        let storedBuild = UserDefaults.standard.integer(forKey: "publshr.appliedLiveBuild")
+        guard storedBuild > 0, storedBuild > bundleBuild else { return }
+        UserDefaults.standard.removeObject(forKey: "publshr.appliedLiveVersion")
+        UserDefaults.standard.removeObject(forKey: "publshr.appliedLiveBuild")
+        UserDefaults.standard.removeObject(forKey: "publshr.appliedLiveDigest")
+        AppUpdateService.shared.appendSyncLog(
+            "cleared stale applied manifest (recorded build \(storedBuild), running build \(bundleBuild))"
+        )
     }
 
     static var installedLabel: String {
