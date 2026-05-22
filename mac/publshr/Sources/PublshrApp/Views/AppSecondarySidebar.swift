@@ -24,7 +24,7 @@ struct AppSecondarySidebar: View {
             }
         }
         .frame(maxHeight: .infinity)
-        .frame(width: module == .spaces ? SpacesClickUpDesign.sidebarWidth : CursorTheme.navSidebarWidth)
+        .frame(width: module == .spaces ? SpacesClickUpDesign.sidebarWidth : ChatClickUpDesign.sidebarWidth)
         .background(CursorTheme.navSidebar)
         .overlay(alignment: .trailing) {
             Rectangle()

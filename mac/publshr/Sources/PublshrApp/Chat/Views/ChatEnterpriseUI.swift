@@ -84,21 +84,26 @@ struct ChatChannelStatusBar: View {
             }
             HStack(spacing: 12) {
                 if let channel = chat.selectedChannel {
-                    ChatChannelIconView(channel: channel, size: 18)
-                    Text(channel.displayTitle)
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(CursorTheme.foreground)
-                    Text(memberLine(channel))
-                        .font(.system(size: 11))
-                        .foregroundStyle(CursorTheme.foregroundDim)
+                    ChatChannelIconView(channel: channel, size: 20)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(channel.displayTitle)
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundStyle(CursorTheme.foreground)
+                        Text(memberLine(channel))
+                            .font(.system(size: 11))
+                            .foregroundStyle(CursorTheme.foregroundDim)
+                    }
                 }
                 Spacer()
+                if let channel = chat.selectedChannel {
+                    channelQuickActions(channel)
+                }
                 if !chat.typingUsers.isEmpty {
                     ChatTypingIndicatorView(label: chat.typingSummary)
                 }
             }
             .padding(.horizontal, 16)
-            .padding(.vertical, 8)
+            .padding(.vertical, 10)
         }
         .background(Color.white)
         .overlay(alignment: .bottom) {
@@ -109,6 +114,33 @@ struct ChatChannelStatusBar: View {
     private func memberLine(_ channel: ChatChannel) -> String {
         let n = chat.channelMemberCount(for: channel)
         return n == 1 ? "1 member" : "\(n) members"
+    }
+
+    @ViewBuilder
+    private func channelQuickActions(_ channel: ChatChannel) -> some View {
+        HStack(spacing: 4) {
+            Button {
+                chat.showSearchSheet = true
+            } label: {
+                Image(systemName: "magnifyingglass")
+                    .font(.system(size: 12))
+                    .foregroundStyle(CursorTheme.foregroundMuted)
+                    .frame(width: 28, height: 28)
+            }
+            .buttonStyle(.plain)
+            .help("Search in workspace")
+
+            Button {
+                chat.showPinnedPanel.toggle()
+            } label: {
+                Image(systemName: chat.showPinnedPanel ? "pin.fill" : "pin")
+                    .font(.system(size: 12))
+                    .foregroundStyle(chat.showPinnedPanel ? CursorTheme.accent : CursorTheme.foregroundMuted)
+                    .frame(width: 28, height: 28)
+            }
+            .buttonStyle(.plain)
+            .help("Pinned messages")
+        }
     }
 }
 

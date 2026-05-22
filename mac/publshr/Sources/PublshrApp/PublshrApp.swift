@@ -80,6 +80,11 @@ struct PublshrApp: App {
                 .keyboardShortcut("l", modifiers: [.command, .shift])
             }
             CommandMenu("Chat") {
+                Button(tabStore.sidebarExpanded ? "Hide Chat Sidebar" : "Show Chat Sidebar") {
+                    tabStore.sidebarExpanded.toggle()
+                }
+                .keyboardShortcut("\\", modifiers: .command)
+                Divider()
                 Button("Search…") {
                     chat.showSearchSheet = true
                 }

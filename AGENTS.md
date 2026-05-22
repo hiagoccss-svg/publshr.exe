@@ -22,7 +22,7 @@ swift build -c release   # release build
 
 ### Enterprise chat (mac IDE)
 
-Chat lives under `mac/publshr/Sources/PublshrApp/Chat/`. See `mac/publshr/docs/CHAT_SYSTEM.md`. Supabase migrations: `20260521180000_chat_presence_and_members.sql`, `20260521200000_chat_phases_2_4.sql`.
+Chat lives under `mac/publshr/Sources/PublshrApp/Chat/`. See `mac/publshr/docs/CHAT_SYSTEM.md` and `mac/publshr/docs/CHAT_CLICKUP_UI.md` (ClickUp-style sidebar, filters, badges). Supabase migrations: `20260521180000_chat_presence_and_members.sql`, `20260521200000_chat_phases_2_4.sql`.
 
 ### Enterprise platform (mac IDE)
 
