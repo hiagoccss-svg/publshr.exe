@@ -10,8 +10,8 @@ struct MainIDEView: View {
     @State private var showNewChannel = false
     @State private var showNewDM = false
 
-    private var chatFocusLayout: Bool {
-        module == .chat && chat.chatFocusMode
+    private var sidebarHidden: Bool {
+        (module == .chat && chat.chatFocusMode) || (module == .spaces && spaces.spacesFocusMode)
     }
 
     var body: some View {
@@ -22,7 +22,7 @@ struct MainIDEView: View {
                 AppUpdateBannerView(updates: updates)
 
                 HStack(alignment: .top, spacing: 0) {
-                    if !chatFocusLayout {
+                    if !sidebarHidden {
                         ActivityBarView(module: $module, topInset: topInset)
                             .frame(width: CursorTheme.activityBarWidth)
 
@@ -64,15 +64,10 @@ struct MainIDEView: View {
         }
         .onChange(of: module) { _, newModule in
             storedModule = newModule.rawValue
-            if newModule != .chat {
-                chat.chatFocusMode = false
-            }
-            if newModule == .chat {
-                chat.attach(auth: auth)
-            }
-            if newModule == .spaces {
-                spaces.attach(auth: auth)
-            }
+            if newModule != .chat { chat.chatFocusMode = false }
+            if newModule != .spaces { spaces.spacesFocusMode = false }
+            if newModule == .chat { chat.attach(auth: auth) }
+            if newModule == .spaces { spaces.attach(auth: auth) }
         }
         .onChange(of: auth.selectedMembership?.workspace.id) { _, _ in
             if module == .spaces {
