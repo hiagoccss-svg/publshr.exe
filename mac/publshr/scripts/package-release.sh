@@ -13,8 +13,13 @@ resolve_version() {
         BUILD="${PUBLSHR_BUILD_NUMBER:-0}"
         FULL="${BASE}.${BUILD}"
     fi
-    SHORT="${FULL%.*}"
-    BUILD_NUM="${FULL##*.}"
+    if [[ "$FULL" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+        SHORT="$FULL"
+        BUILD_NUM="${PUBLSHR_BUILD_NUMBER:-0}"
+    else
+        SHORT="${FULL%.*}"
+        BUILD_NUM="${FULL##*.}"
+    fi
     echo "$FULL $SHORT $BUILD_NUM"
 }
 
