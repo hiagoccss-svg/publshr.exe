@@ -64,7 +64,7 @@ struct SpacesNavSidebar: View {
         } label: {
             HStack(spacing: 10) {
                 Circle()
-                    .fill(SpaceColor(hex: space.color))
+                    .fill(SpaceColor.hex(space.color))
                     .frame(width: 8, height: 8)
                 Text(space.name)
                     .font(.system(size: 13, weight: selected ? .semibold : .regular))

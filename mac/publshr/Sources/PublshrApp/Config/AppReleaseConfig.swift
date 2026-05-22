@@ -29,6 +29,13 @@ enum AppReleaseConfig {
         return URL(string: "https://api.github.com/repos/\(parts[0])/\(parts[1])/releases?per_page=30")
     }
 
+    /// Single-release endpoint — reliable for the `live` channel (not paginated).
+    static func liveReleaseURL() -> URL? {
+        let parts = githubRepo.split(separator: "/", omittingEmptySubsequences: true)
+        guard parts.count == 2 else { return nil }
+        return URL(string: "https://api.github.com/repos/\(parts[0])/\(parts[1])/releases/tags/live")
+    }
+
     static func liveAssetName() -> String {
         #if arch(arm64)
         return "Publshr-macos-aarch64.tar.gz"

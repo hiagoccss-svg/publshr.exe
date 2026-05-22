@@ -126,9 +126,7 @@ final class AppUpdateViewModel: ObservableObject {
                 phase = .upToDate
             }
         } catch {
-            if !silent {
-                phase = .failed(error.localizedDescription)
-            }
+            phase = .failed(error.localizedDescription)
         }
     }
 

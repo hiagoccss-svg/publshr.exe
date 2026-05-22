@@ -99,9 +99,15 @@ final class SpacesViewModel: ObservableObject {
 
             if !realtimeAttached {
                 service.subscribeWorkspace(workspaceId: workspaceId) { [weak self] in
-                    Task { @MainActor in await self?.refreshTasksFromRealtime() }
+                    Task { @MainActor [weak self] in
+                        guard let self else { return }
+                        await self.refreshTasksFromRealtime()
+                    }
                 } onSpaceChange: { [weak self] in
-                    Task { @MainActor in await self?.reloadSpacesOnly() }
+                    Task { @MainActor [weak self] in
+                        guard let self else { return }
+                        await self.reloadSpacesOnly()
+                    }
                 }
                 realtimeAttached = true
             }
