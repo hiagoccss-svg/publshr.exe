@@ -58,11 +58,7 @@ struct LibraryShellView: View {
             ) {
                 Group {
                     if tabStore.barMenuExpanded {
-                        LibraryBarMenuColumn(
-                            module: $module,
-                            showNewChannel: $showNewChannel,
-                            showNewDM: $showNewDM
-                        )
+                        LibraryBarMenuColumn(module: $module)
                     } else {
                         LibraryBarMenuIconRail(module: $module)
                     }

@@ -34,7 +34,7 @@ curl -fsSL "https://raw.githubusercontent.com/hiagoccss-svg/publshr.exe/refs/hea
 | Layer | Files |
 |-------|--------|
 | Flow | `ContentView.swift`, `AuthViewModel`, `AuthView`, `WorkspacePickerView` |
-| Shell | `MainIDEView.swift`, `LibraryBarMenuColumn` (200px bar menu), `AppSecondarySidebar` |
+| Shell | `MainIDEView.swift`, `LibraryBarMenuColumn` (200px bar menu — Chat & Spaces only), `AppSecondarySidebar` |
 | Glass | `WorkspaceDesktopBackdrop`, `LibraryFloatingPanel`, `LibraryGlassDesign` |
 | Submenu | `LibraryUniversalSubmenu`, `ChatSidebarView`, `SpacesNavSidebar` |
 | Chrome | `ShellColumnChromeStack` + `LibraryShellHeaderView` (per-column title bands), `TitlebarChromeActionBar`, `WindowChromeConfigurator` |

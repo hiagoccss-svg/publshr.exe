@@ -3,6 +3,7 @@ import UniformTypeIdentifiers
 
 struct ChatConversationView: View {
     @ObservedObject var chat: ChatViewModel
+    var onNewMessage: () -> Void = {}
     @State private var showFileImporter = false
     @State private var showVoiceSheet = false
     @State private var editText = ""
