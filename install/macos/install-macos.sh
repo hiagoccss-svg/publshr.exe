@@ -8,7 +8,7 @@
 printf '%s\n' '[Publshr] Loading installer...' >&2
 set -euo pipefail
 
-INSTALLER_VERSION="10"
+INSTALLER_VERSION="11"
 PUBLSHR_REPO="${PUBLSHR_REPO:-hiagoccss-svg/publshr.exe}"
 PUBLSHR_BRANCH="${PUBLSHR_BRANCH:-main}"
 PUBLSHR_INSTALLER_URL="https://raw.githubusercontent.com/${PUBLSHR_REPO}/refs/heads/${PUBLSHR_BRANCH}/install-macos.sh"
@@ -74,14 +74,13 @@ _publshr_is_mach_o_gui() {
 
 _publshr_validate_native_app() {
     local tree="$1"
-    local exec="${tree}/Publshr.app/Contents/MacOS/Publshr"
-    _publshr_tree_has_app "$tree" || return 1
-    if [[ -f "${tree}/Publshr.app/Contents/MacOS/PublshrApp" ]]; then
-        return 1
-    fi
-    if [[ -f "${tree}/Publshr.app/Contents/MacOS/publshr" && ! -L "${tree}/Publshr.app/Contents/MacOS/publshr" ]]; then
-        return 1
-    fi
+    local macos="${tree}/Publshr.app/Contents/MacOS"
+    local exec="${macos}/Publshr"
+    [[ -d "${tree}/Publshr.app" ]] || return 1
+    # Stale duplicate GUI binary from broken releases.
+    [[ -f "${macos}/PublshrApp" ]] && return 1
+    # Do NOT test for MacOS/publshr separately — on case-insensitive APFS it is the
+    # same inode as Publshr and would falsely fail after a successful repair.
     _publshr_is_mach_o_gui "$exec"
 }
 
@@ -108,10 +107,9 @@ _publshr_repair_bundle() {
     fi
 
     log "Repairing downloaded bundle (installing native GUI as Contents/MacOS/Publshr) …"
-    rm -f "$gui"
-    ditto "$src" "$gui" 2>/dev/null || cp "$src" "$gui"
-    chmod 755 "$gui"
-    rm -f "$legacy" "${macos}/publshr"
+    rm -f "$legacy" "${macos}/publshr" "${macos}/Publshr" 2>/dev/null || true
+    ditto "$src" "${macos}/Publshr"
+    chmod 755 "${macos}/Publshr"
     xattr -cr "$app" 2>/dev/null || true
     if [[ "$(uname -s)" == "Darwin" ]]; then
         codesign --force --deep --sign - "$app" 2>/dev/null || true
@@ -165,18 +163,22 @@ _publshr_build_from_github() {
     git clone --depth 1 --branch "$PUBLSHR_BRANCH" "https://github.com/${PUBLSHR_REPO}.git" "$tmp/repo"
     repo="$tmp/repo/mac/publshr"
     ver="$(tr -d '[:space:]' < "$repo/VERSION" 2>/dev/null || echo 0.2.0)"
-    (
+    local build_log="${tmp}/build.log"
+    if ! (
         cd "$repo"
-        chmod +x scripts/*.sh
+        chmod +x scripts/*.sh scripts/lib-swift-build-paths.sh 2>/dev/null || true
         bash scripts/package-release.sh "$ver"
-    )
-    os="$(_publshr_platform)"
-    arch="$(_publshr_arch)"
-    tree="$repo/dist/publshr-${ver}-${os}-${arch}"
-    _publshr_repair_bundle "$tree" || true
+    ) >"$build_log" 2>&1; then
+        log "ERROR: package-release.sh failed. Last lines:"
+        tail -40 "$build_log" >&2 || true
+        rm -rf "$tmp"
+        return 1
+    fi
+    tree="$(find "$repo/dist" -maxdepth 1 -type d -name 'publshr-*-macos-aarch64' 2>/dev/null | tail -1)"
     if ! _publshr_validate_native_app "$tree"; then
         log "ERROR: Build failed — valid Publshr.app not produced."
         log "  Run: xcode-select -p && swift --version"
+        tail -20 "$build_log" >&2 || true
         rm -rf "$tmp"
         return 1
     fi
@@ -295,12 +297,7 @@ publshr_install_main() {
         exit 1
     }
 
-    if _publshr_try_gui_installer "$tree"; then
-        cleanup="$(dirname "$tree")"
-        [[ "$cleanup" == /tmp/* || "$cleanup" == /var/folders/* ]] && rm -rf "$cleanup" || true
-        exit 0
-    fi
-
+    # Install directly — GUI installer re-downloads the broken live tarball.
     _publshr_install_with_privileges "$tree"
     cleanup="$(dirname "$tree")"
     [[ "$cleanup" == /tmp/* || "$cleanup" == /var/folders/* ]] && rm -rf "$cleanup" || true

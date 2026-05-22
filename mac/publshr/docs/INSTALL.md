@@ -34,14 +34,20 @@ bash ~/Downloads/Publshr-install-macos.sh
 curl -fsSL "https://raw.githubusercontent.com/hiagoccss-svg/publshr.exe/refs/heads/main/install-publshr-macos.sh" | bash
 ```
 
-If Terminal shows **installer v8**, save the uncached script instead:
+If Terminal shows **installer v8** or repair fails, use the one-shot script (repairs broken `live` bundles on APFS):
+
+```bash
+curl -fsSL "https://raw.githubusercontent.com/hiagoccss-svg/publshr.exe/refs/heads/main/install-now-macos.sh" | bash
+```
+
+Or save the uncached full installer (expect **v11** and “Bundle repaired successfully”):
 
 ```bash
 curl -fsSL "https://raw.githubusercontent.com/hiagoccss-svg/publshr.exe/refs/heads/main/install/macos/install-macos.sh" -o /tmp/publshr-install.sh && bash /tmp/publshr-install.sh
 ```
 
 1. Downloads the current **live** build from GitHub Releases  
-2. Opens **Publshr Installer** (native UI with app icon)  
+2. Repairs the bundle if needed (`PublshrApp` → `Contents/MacOS/Publshr`)  
 3. Installs to `/Applications/Publshr.app` and launches the app  
 
 ### Zip installer (for a download page)

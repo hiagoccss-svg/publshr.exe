@@ -35,7 +35,7 @@ jobs:
         env:
           PUBLSHR_BUILD_NUMBER: ${{ steps.ver.outputs.build }}
         run: |
-          chmod +x scripts/*.sh scripts/generate-app-icon.swift
+          chmod +x scripts/*.sh scripts/lib-swift-build-paths.sh scripts/generate-app-icon.swift
           bash scripts/package-release.sh "${{ steps.ver.outputs.full }}"
 
       - name: Verify Publshr.app in tarball
