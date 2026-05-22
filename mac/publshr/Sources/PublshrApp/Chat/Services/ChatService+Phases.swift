@@ -334,15 +334,34 @@ extension ChatService {
     // MARK: - Planner
 
     func fetchTasks(workspaceId: UUID, limit: Int = 20) async throws -> [PlannerTask] {
-        try await client
-            .from("tasks")
-            .select("id, workspace_id, title, status, due_date, assignee_id")
+        struct Row: Decodable {
+            let id: UUID
+            let workspace_id: UUID
+            let title: String
+            let status: String
+            let due_date: String?
+            let owner_id: UUID?
+        }
+        let rows: [Row] = try await client
+            .from("planner_items")
+            .select("id, workspace_id, title, status, due_date, owner_id")
             .eq("workspace_id", value: workspaceId.uuidString)
-            .eq("is_archived", value: false)
             .order("updated_at", ascending: false)
             .limit(limit)
             .execute()
             .value
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withFullDate]
+        return rows.map { row in
+            PlannerTask(
+                id: row.id,
+                workspaceId: row.workspace_id,
+                title: row.title,
+                status: row.status,
+                dueDate: row.due_date.flatMap { formatter.date(from: $0) },
+                assigneeId: row.owner_id
+            )
+        }
     }
 
     // MARK: - Search (remote + local)
@@ -371,14 +390,23 @@ extension ChatService {
     func subscribeReactions(workspaceId: UUID, onChange: @escaping @Sendable () -> Void) {
         Task {
             let channel = await client.channel("chat-reactions-\(workspaceId.uuidString)")
-            let stream = await channel.postgresChange(
+            let inserts = await channel.postgresChange(
                 InsertAction.self,
                 schema: "public",
                 table: "chat_reactions",
                 filter: "workspace_id=eq.\(workspaceId.uuidString)"
             )
+            let deletes = await channel.postgresChange(
+                DeleteAction.self,
+                schema: "public",
+                table: "chat_reactions",
+                filter: "workspace_id=eq.\(workspaceId.uuidString)"
+            )
             await channel.subscribe()
-            for await _ in stream { onChange() }
+            await withTaskGroup(of: Void.self) { group in
+                group.addTask { for await _ in inserts { onChange() } }
+                group.addTask { for await _ in deletes { onChange() } }
+            }
         }
     }
 

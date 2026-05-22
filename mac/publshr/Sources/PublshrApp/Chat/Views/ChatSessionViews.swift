@@ -52,9 +52,8 @@ struct SessionConversationView: View {
             sessionComposer
         }
         .fileImporter(isPresented: $showFileImporter, allowedContentTypes: [.image, .pdf, .data], allowsMultipleSelection: false) { result in
-            if case .success(let url) = result {
-                // Upload via shared ChatViewModel pattern — session could expose upload later
-                _ = url
+            if case .success(let urls) = result, let url = urls.first {
+                Task { await session.uploadFile(from: url) }
             }
         }
     }

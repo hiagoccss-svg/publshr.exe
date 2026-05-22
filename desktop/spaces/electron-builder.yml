@@ -1,0 +1,18 @@
+appId: com.publshr.spaces
+productName: Publshr Spaces
+directories:
+  output: release
+files:
+  - out/**/*
+  - package.json
+mac:
+  category: public.app-category.productivity
+  target:
+    - dmg
+    - zip
+linux:
+  target:
+    - AppImage
+win:
+  target:
+    - nsis

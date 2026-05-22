@@ -2,7 +2,9 @@ import { useState } from 'react'
 import { getSpacesAPI } from '../../lib/api'
 import { useSpacesStore } from '../../stores/spaces-store'
 import { TaskStatusBadge } from '../layout/TopBar'
-import type { Task, TaskStatus } from '../../../shared/types'
+import type { Task, TaskPriority, TaskStatus } from '../../../shared/types'
+
+const PRIORITIES: TaskPriority[] = ['none', 'low', 'normal', 'high', 'urgent']
 
 const STATUSES: TaskStatus[] = [
   'todo',
@@ -22,16 +24,21 @@ export function TaskDetailForm({
   onClose: () => void
 }): React.ReactElement {
   const refreshActiveSpace = useSpacesStore((s) => s.refreshActiveSpace)
+  const members = useSpacesStore((s) => s.members)
   const [title, setTitle] = useState(task.title)
   const [description, setDescription] = useState(task.description)
   const [status, setStatus] = useState(task.status)
+  const [priority, setPriority] = useState(task.priority)
+  const [assigneeId, setAssigneeId] = useState<string | null>(task.assigneeId)
 
   const save = async (): Promise<void> => {
     await getSpacesAPI().updateTask({
       id: task.id,
       title,
       description,
-      status
+      status,
+      priority,
+      assigneeId
     })
     await refreshActiveSpace()
   }
@@ -75,8 +82,44 @@ export function TaskDetailForm({
           </option>
         ))}
       </select>
+      <label className="mb-1 mt-3 text-[10px] font-semibold uppercase text-ink-muted">Priority</label>
+      <select
+        value={priority}
+        onChange={(e) => {
+          setPriority(e.target.value as TaskPriority)
+          void getSpacesAPI()
+            .updateTask({ id: task.id, priority: e.target.value as TaskPriority })
+            .then(() => refreshActiveSpace())
+        }}
+        className="mb-3 w-full rounded-lg border border-surface-border bg-surface px-2 py-1.5 text-xs text-ink"
+      >
+        {PRIORITIES.map((p) => (
+          <option key={p} value={p}>
+            {p}
+          </option>
+        ))}
+      </select>
+      <label className="mb-1 text-[10px] font-semibold uppercase text-ink-muted">Assignee</label>
+      <select
+        value={assigneeId ?? ''}
+        onChange={(e) => {
+          const next = e.target.value || null
+          setAssigneeId(next)
+          void getSpacesAPI()
+            .updateTask({ id: task.id, assigneeId: next })
+            .then(() => refreshActiveSpace())
+        }}
+        className="w-full rounded-lg border border-surface-border bg-surface px-2 py-1.5 text-xs text-ink"
+      >
+        <option value="">Unassigned</option>
+        {members.map((m) => (
+          <option key={m.userId} value={m.userId}>
+            {m.name}
+          </option>
+        ))}
+      </select>
       <p className="mt-4 text-[10px] text-ink-muted">
-        Comments, dependencies, and linked docs — Phase 2.
+        Comments and file attachments sync when Supabase is configured in .env.
       </p>
     </div>
   )

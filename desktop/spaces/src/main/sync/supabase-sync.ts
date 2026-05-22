@@ -58,8 +58,63 @@ export class SupabaseSyncService {
 
   private async flushQueue(): Promise<void> {
     if (!this.client) return
-    // Phase 1: queue is local-first; cloud push runs when credentials are configured.
-    // Records remain in sync_queue until a successful remote write.
+    const rows = this.db.listSyncQueue(200)
+    for (const row of rows) {
+      try {
+        const payload = JSON.parse(row.payload) as Record<string, unknown>
+        if (row.tableName === 'spaces') {
+          if (row.operation === 'delete') {
+            await this.client.from('spaces').delete().eq('id', row.recordId)
+          } else {
+            await this.client.from('spaces').upsert(this.mapSpace(payload))
+          }
+        } else if (row.tableName === 'tasks') {
+          if (row.operation === 'delete') {
+            await this.client.from('tasks').delete().eq('id', row.recordId)
+          } else {
+            await this.client.from('tasks').upsert(this.mapTask(payload))
+          }
+        }
+        this.db.removeSyncQueueItem(row.id)
+      } catch {
+        // Keep in queue for next flush
+      }
+    }
+  }
+
+  private mapSpace(p: Record<string, unknown>) {
+    return {
+      id: p.id,
+      workspace_id: p.workspaceId,
+      name: p.name,
+      description: p.description ?? '',
+      type: p.type ?? 'general',
+      status: p.status ?? 'active',
+      owner_id: p.ownerId,
+      color: p.color ?? '#3d5a80',
+      is_pinned: Boolean(p.isPinned),
+      is_favourite: Boolean(p.isFavourite),
+      is_archived: Boolean(p.isArchived),
+      client_mode: Boolean(p.clientMode)
+    }
+  }
+
+  private mapTask(p: Record<string, unknown>) {
+    return {
+      id: p.id,
+      space_id: p.spaceId,
+      title: p.title,
+      description: p.description ?? '',
+      status: p.status ?? 'todo',
+      priority: p.priority ?? 'normal',
+      assignee_id: p.assigneeId ?? null,
+      start_date: p.startDate ?? null,
+      due_date: p.dueDate ?? null,
+      tags: p.tags ?? [],
+      parent_task_id: p.parentTaskId ?? null,
+      checklist: p.checklist ?? [],
+      sort_order: p.order ?? 0
+    }
   }
 
   stop(): void {

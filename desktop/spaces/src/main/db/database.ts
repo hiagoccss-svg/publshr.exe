@@ -540,6 +540,37 @@ export class SpacesDatabase {
       .run(uuid(), tableName, recordId, operation, JSON.stringify(payload), now())
   }
 
+  listSyncQueue(limit = 100): Array<{
+    id: string
+    tableName: string
+    recordId: string
+    operation: string
+    payload: string
+  }> {
+    const rows = this.db
+      .prepare(
+        `SELECT id, table_name, record_id, operation, payload FROM sync_queue ORDER BY created_at ASC LIMIT ?`
+      )
+      .all(limit) as Array<{
+      id: string
+      table_name: string
+      record_id: string
+      operation: string
+      payload: string
+    }>
+    return rows.map((r) => ({
+      id: r.id,
+      tableName: r.table_name,
+      recordId: r.record_id,
+      operation: r.operation,
+      payload: r.payload
+    }))
+  }
+
+  removeSyncQueueItem(id: string): void {
+    this.db.prepare(`DELETE FROM sync_queue WHERE id = ?`).run(id)
+  }
+
   close(): void {
     this.db.close()
   }

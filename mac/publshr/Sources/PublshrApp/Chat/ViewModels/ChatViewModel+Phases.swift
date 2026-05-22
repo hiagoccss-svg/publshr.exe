@@ -374,7 +374,7 @@ extension ChatViewModel {
     // MARK: - Permissions persistence
 
     func savePermissionsToWorkspace() async {
-        guard var ws = workspace else { return }
+        guard var ws = workspace, let service else { return }
         var chatSettings: [String: JSONValue] = [:]
         chatSettings["can_create_channels"] = .bool(permissions.canCreateChannels)
         chatSettings["can_dm"] = .bool(permissions.canDM)
@@ -387,5 +387,10 @@ extension ChatViewModel {
         settings["chat"] = .object(chatSettings)
         ws.settings = settings
         workspace = ws
+        do {
+            try await service.updateWorkspaceSettings(workspaceId: ws.id, settings: settings)
+        } catch {
+            errorMessage = error.localizedDescription
+        }
     }
 }
