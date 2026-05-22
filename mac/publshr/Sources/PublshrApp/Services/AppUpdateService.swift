@@ -48,6 +48,7 @@ enum AppUpdateError: LocalizedError {
     case downloadFailed
     case extractFailed
     case applyScriptMissing
+    case updateCheckUnavailable
 
     /// Enterprise-facing copy — no HTTP codes, hosts, or delivery channel names.
     var errorDescription: String? {
@@ -60,6 +61,8 @@ enum AppUpdateError: LocalizedError {
             return "The update package could not be prepared. Try again from Settings."
         case .applyScriptMissing:
             return "This installation cannot apply updates automatically. Reinstall from your IT team."
+        case .updateCheckUnavailable:
+            return "Could not reach the update server. Check your connection and tap Sync now."
         }
     }
 }
@@ -97,18 +100,42 @@ final class AppUpdateService: @unchecked Sendable {
             ?? update.downloadURL
     }
 
+    private enum LiveManifestCheck {
+        case updateAvailable(AvailableUpdate)
+        case confirmedUpToDate
+        case unavailable
+    }
+
+    private enum FallbackCheck {
+        case updateAvailable(AvailableUpdate)
+        case confirmedUpToDate
+        case unavailable
+    }
+
     func checkForUpdate() async throws -> AvailableUpdate? {
-        if let update = try await checkForUpdateViaLiveManifest() {
+        switch await evaluateLiveManifest() {
+        case .updateAvailable(let update):
             return update
+        case .confirmedUpToDate:
+            return nil
+        case .unavailable:
+            break
         }
-        return await checkVersionedFallbackSilently()
+        switch await evaluateVersionedFallback() {
+        case .updateAvailable(let update):
+            return update
+        case .confirmedUpToDate:
+            return nil
+        case .unavailable:
+            throw AppUpdateError.updateCheckUnavailable
+        }
     }
 
     /// Compares installed build/version/commit/digest against `live/VERSION.txt` (published on every push to main).
-    private func checkForUpdateViaLiveManifest() async throws -> AvailableUpdate? {
+    private func evaluateLiveManifest() async -> LiveManifestCheck {
         guard let manifest = await fetchLiveManifestFromURL() else {
             appendSyncLog("VERSION.txt check: unavailable")
-            return nil
+            return .unavailable
         }
 
         appendSyncLog(
@@ -117,19 +144,27 @@ final class AppUpdateService: @unchecked Sendable {
                 + "commit=\(manifest.commit.prefix(7)) digest=\(manifest.packageDigest?.prefix(12) ?? "—")"
         )
 
-        guard manifest.isNewerThanInstalled() else { return nil }
+        guard manifest.isNewerThanInstalled() else {
+            return .confirmedUpToDate
+        }
 
+        guard let update = availableUpdate(from: manifest) else {
+            return .unavailable
+        }
+        return .updateAvailable(update)
+    }
+
+    private func availableUpdate(from manifest: LiveChannelManifest) -> AvailableUpdate? {
         let assetName = AppReleaseConfig.liveAssetName()
         guard let downloadURL = AppReleaseConfig.releaseDownloadURL(
             tag: AppReleaseConfig.liveTag,
             assetName: assetName
         ),
         let pageURL = URL(string: "https://github.com/\(AppReleaseConfig.githubRepo)/releases/tag/live") else {
-            appendSyncLog("VERSION.txt check: live download URL unavailable")
+            appendSyncLog("live download URL unavailable")
             return nil
         }
 
-        // Do not HEAD the tarball — GitHub returns 302 with Content-Length: 0; download validates size.
         return AvailableUpdate(
             version: manifest.fullVersion,
             build: manifest.build,
@@ -359,24 +394,24 @@ final class AppUpdateService: @unchecked Sendable {
 
         guard manifest.isNewerThanInstalled() else { return nil }
 
-        return AvailableUpdate(
-            version: manifest.fullVersion,
-            build: manifest.build,
-            tag: AppReleaseConfig.liveTag,
-            downloadURL: downloadURL,
-            releasePage: pageURL,
-            assetName: assetName,
-            packageDigest: manifest.packageDigest
-        )
+        return availableUpdate(from: manifest)
     }
 
-    private func checkVersionedFallbackSilently() async -> AvailableUpdate? {
+    private func evaluateVersionedFallback() async -> FallbackCheck {
         do {
-            guard let live = try await fetchLiveRelease(),
-                  let update = try await parseLiveRelease(live) else {
-                return nil
+            guard let live = try await fetchLiveRelease() else {
+                appendSyncLog("live release: not found")
+                return .unavailable
             }
-            return update
+            if let update = try await parseLiveRelease(live) {
+                appendSyncLog("live check: update available via GitHub API fallback")
+                return .updateAvailable(update)
+            }
+            let manifest = await fetchLiveManifestFromURL() ?? manifestFromReleaseNotes(live)
+            if manifest != nil {
+                appendSyncLog("live check: confirmed up to date via GitHub API")
+                return .confirmedUpToDate
+            }
         } catch {
             appendSyncLog("API fallback skipped: \(error.localizedDescription)")
         }
@@ -393,11 +428,13 @@ final class AppUpdateService: @unchecked Sendable {
                     best = candidate
                 }
             }
-            return best
+            if let best {
+                return .updateAvailable(best)
+            }
         } catch {
             appendSyncLog("versioned fallback skipped: \(error.localizedDescription)")
-            return nil
         }
+        return .unavailable
     }
 
     private func manifestFromReleaseNotes(_ live: GitHubRelease) -> LiveChannelManifest? {
