@@ -15,8 +15,10 @@ enum LibraryGlassDesign {
     static let sidebarSelection = Color(hex: 0xE8E4DC)
     static let sidebarGlassFill = Color(hex: 0xF7F6F3).opacity(0.88)
     /// Primary bar menu (~200px) — light tint so the desktop wallpaper tints through.
-    static let primaryBarGlassFill = Color(hex: 0xF7F6F3).opacity(0.42)
-    static let primaryBarGlassStroke = Color.white.opacity(0.22)
+    static let primaryBarGlassFill = Color(hex: 0xF7F6F3).opacity(0.30)
+    static let primaryBarGlassStroke = Color.white.opacity(0.18)
+    /// Universal submenu (chat channels, spaces tree) — softer than primary bar.
+    static let submenuGlassFill = Color(hex: 0xF7F6F3).opacity(0.52)
     /// Main chat/spaces floating panel — near-opaque white card on gray shell.
     static let panelGlassFill = Color.white.opacity(0.96)
 
