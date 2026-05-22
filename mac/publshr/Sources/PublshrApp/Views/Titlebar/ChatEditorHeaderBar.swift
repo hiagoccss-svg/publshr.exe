@@ -4,16 +4,18 @@ import SwiftUI
 struct ChatEditorToolbarContent: View {
     @EnvironmentObject private var auth: AuthViewModel
     @EnvironmentObject private var chat: ChatViewModel
-    @Binding var showCommandPalette: Bool
-    @Binding var showNotificationsPanel: Bool
 
     var body: some View {
-        TitlebarToolbarRow(leadingPadding: 0, trailingPadding: 0) {
+        TitlebarToolbarRow(
+            leadingPadding: 0,
+            trailingPadding: 0,
+            itemSpacing: AppWindowChromeMetrics.toolbarEditorActionSpacing
+        ) {
             channelTitle
-            Spacer(minLength: 8)
+            Spacer(minLength: 12)
             trailingActions
         }
-        .frame(maxWidth: .infinity)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
     }
 
     @ViewBuilder
@@ -77,49 +79,6 @@ struct ChatEditorToolbarContent: View {
                     chat.showDMInspector.toggle()
                 }
             }
-
-            if let channel = chat.selectedChannel {
-                channelMoreMenu(channel)
-            }
-        }
-
-        TitlebarChromeIconButton(
-            systemName: "bell",
-            help: "Notifications",
-            badgeCount: min(max(chat.totalUnread, chat.unreadInAppNotificationCount), 99)
-        ) {
-            showNotificationsPanel = true
-        }
-
-        TitlebarChromeIconButton(
-            systemName: "command",
-            help: TitlebarShortcutHint.tooltip("Command palette", shortcut: TitlebarShortcutHint.commandPalette)
-        ) {
-            showCommandPalette = true
-        }
-
-        TitlebarChromeIconButton(systemName: "gearshape", help: "Channel settings") {
-            chat.showChannelSettings = true
-        }
-        .disabled(chat.selectedChannel == nil)
-    }
-
-    private func channelMoreMenu(_ channel: ChatChannel) -> some View {
-        TitlebarToolbarSlot {
-            Menu {
-                ChatChannelActionsMenu(chat: chat, channel: channel)
-            } label: {
-                Image(systemName: "ellipsis")
-                    .font(.system(size: AppWindowChromeMetrics.controlIconSize, weight: .regular))
-                    .foregroundStyle(LibraryGlassDesign.inkSecondary)
-                    .frame(
-                        width: AppWindowChromeMetrics.controlSize,
-                        height: AppWindowChromeMetrics.controlSize
-                    )
-                    .contentShape(Rectangle())
-            }
-            .menuStyle(.borderlessButton)
-            .help("More")
         }
     }
 
@@ -137,7 +96,7 @@ struct TitlebarToolbarChannelTitle: View {
     var detail: String?
 
     var body: some View {
-        HStack(spacing: 6) {
+        HStack(alignment: .center, spacing: 6) {
             TitlebarToolbarSlot {
                 ChatChannelIconView(channel: channel, size: AppWindowChromeMetrics.channelIconSize)
             }
@@ -145,6 +104,7 @@ struct TitlebarToolbarChannelTitle: View {
                 .font(.system(size: AppWindowChromeMetrics.toolbarTitleFontSize, weight: .semibold))
                 .foregroundStyle(LibraryGlassDesign.ink)
                 .lineLimit(1)
+                .frame(height: AppWindowChromeMetrics.controlSize, alignment: .leading)
         }
         .frame(height: AppWindowChromeMetrics.controlSize, alignment: .leading)
     }

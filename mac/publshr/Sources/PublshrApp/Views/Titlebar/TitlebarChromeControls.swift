@@ -16,50 +16,41 @@ struct TitlebarChromeIconButton: View {
     var body: some View {
         TitlebarToolbarSlot {
             Button(action: action) {
-                ZStack {
-                    Group {
-                        if isLoading {
-                            ProgressView()
-                                .controlSize(.small)
-                                .scaleEffect(0.55)
-                        } else {
-                            Image(systemName: systemName)
-                                .font(.system(size: AppWindowChromeMetrics.controlIconSize, weight: .regular))
-                                .symbolRenderingMode(.monochrome)
-                        }
-                    }
-                    .foregroundStyle(foregroundColor)
-                    .frame(
-                        width: AppWindowChromeMetrics.controlSize,
-                        height: AppWindowChromeMetrics.controlSize
-                    )
-                    .background(backgroundShape)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: AppWindowChromeMetrics.controlCornerRadius, style: .continuous)
-                            .strokeBorder(strokeColor, lineWidth: isActive ? 1 : 0)
-                    )
-
-                    if badgeCount > 0 {
-                        Text(badgeCount > 99 ? "99+" : "\(badgeCount)")
-                            .font(.system(size: 8, weight: .bold))
-                            .foregroundStyle(.white)
-                            .padding(.horizontal, 4)
-                            .padding(.vertical, 1)
-                            .background(Capsule().fill(CursorTheme.accent))
-                            .offset(x: 8, y: -6)
+                Group {
+                    if isLoading {
+                        ProgressView()
+                            .controlSize(.small)
+                            .scaleEffect(0.55)
+                    } else {
+                        Image(systemName: systemName)
+                            .font(.system(size: AppWindowChromeMetrics.controlIconSize, weight: .regular))
+                            .symbolRenderingMode(.monochrome)
                     }
                 }
-                .frame(
-                    width: AppWindowChromeMetrics.controlSize,
-                    height: AppWindowChromeMetrics.controlSize
+                .foregroundStyle(foregroundColor)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(backgroundShape)
+                .overlay(
+                    RoundedRectangle(cornerRadius: AppWindowChromeMetrics.controlCornerRadius, style: .continuous)
+                        .strokeBorder(strokeColor, lineWidth: isActive ? 1 : 0)
                 )
-                .clipped()
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .disabled(!isEnabled || isLoading)
             .help(help)
             .onHover { isHovered = $0 }
+        }
+        .overlay(alignment: .topTrailing) {
+            if badgeCount > 0 {
+                Text(badgeCount > 99 ? "99+" : "\(badgeCount)")
+                    .font(.system(size: 8, weight: .bold))
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 4)
+                    .padding(.vertical, 1)
+                    .background(Capsule().fill(CursorTheme.accent))
+                    .offset(x: 6, y: -5)
+            }
         }
     }
 

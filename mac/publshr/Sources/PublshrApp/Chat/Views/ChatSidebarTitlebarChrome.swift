@@ -15,7 +15,8 @@ struct ChatSidebarTitlebarChrome: View {
                 .textFieldStyle(.plain)
                 .font(.system(size: MacSystemChrome.fieldFontSize))
                 .foregroundStyle(LibraryGlassDesign.ink)
-                .frame(maxWidth: .infinity, alignment: .leading)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+                .frame(height: AppWindowChromeMetrics.controlSize)
             if !chat.sidebarSearchQuery.isEmpty {
                 TitlebarToolbarSlot {
                     Button {

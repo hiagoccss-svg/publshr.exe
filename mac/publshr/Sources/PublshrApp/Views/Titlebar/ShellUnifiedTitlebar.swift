@@ -50,24 +50,18 @@ struct ShellUnifiedTitlebar: View {
         .background(TrafficLightLayoutRefreshView().frame(width: 0, height: 0))
     }
 
-    // MARK: - Column 1 (traffic reserve + shell controls)
+    // MARK: - Column 1 (traffic reserve + global actions + back/forward)
 
     private var leadingBand: some View {
-        TitlebarToolbarRow(trailingPadding: 6) {
+        TitlebarToolbarRow(leadingPadding: 6, trailingPadding: 6) {
             Color.clear
-                .frame(width: min(layout.leadingInset, max(0, barColumnWidth - AppWindowChromeMetrics.controlSize * 2)))
+                .frame(width: layout.leadingInset)
                 .accessibilityHidden(true)
-            TitlebarChromeIconButton(
-                systemName: tabStore.sidebarExpanded ? "sidebar.left" : "sidebar.right",
-                help: tabStore.sidebarExpanded
-                    ? "Hide submenu"
-                    : "Show submenu",
-                isActive: !tabStore.sidebarExpanded
-            ) {
-                withAnimation(.easeInOut(duration: 0.15)) {
-                    tabStore.sidebarExpanded.toggle()
-                }
-            }
+            TitlebarGlobalLeadingActions(
+                module: $module,
+                showCommandPalette: $showCommandPalette,
+                showNotificationsPanel: $showNotificationsPanel
+            )
             ShellTrafficLeadingActions(
                 module: $module,
                 compact: !tabStore.barMenuExpanded || barColumnCompact
@@ -93,12 +87,9 @@ struct ShellUnifiedTitlebar: View {
     private var editorBand: some View {
         Group {
             if module == .chat {
-                ChatEditorToolbarContent(
-                    showCommandPalette: $showCommandPalette,
-                    showNotificationsPanel: $showNotificationsPanel
-                )
-                .padding(.leading, 10)
-                .padding(.trailing, 12)
+                ChatEditorToolbarContent()
+                    .padding(.leading, 10)
+                    .padding(.trailing, 12)
             } else {
                 TitlebarToolbarRow(trailingPadding: 12) {
                     Spacer(minLength: 0)
