@@ -18,7 +18,9 @@ Publshr is a **native macOS desktop product** (Swift/SwiftUI + AppKit), not a we
 | Workspace session restore | Done | `UserDefaults` last workspace + Supabase session |
 | Enterprise chat | Done | Realtime, typing, reactions, voice, SQLite offline cache |
 | Isolated chat pop-outs | Done | `ChatChannelSession` per window via `ChatWindowManager` |
+| Live chat → macOS notifications | Done | Supabase realtime `handleIncomingMessage` → `UNUserNotificationCenter` (respects per-channel mute/mentions) |
 | Notification click → channel | Done | `ChatNotificationService.didReceive` routes to channel |
+| In-app notification feed | Done | `ChatInAppNotification` + titlebar panel (live from realtime, not unread-only) |
 | Offline chat cache | Done | `ChatLocalStore` SQLite |
 | Sleep/wake reconnect | Done | `AppLifecycleService` |
 | Crash logging (local) | Done | `AppCrashReporter` → `~/Library/Application Support/Publshr/crashes/` |

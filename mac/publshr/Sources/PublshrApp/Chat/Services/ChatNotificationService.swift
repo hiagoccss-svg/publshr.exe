@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 import UserNotifications
 
@@ -6,36 +7,69 @@ import UserNotifications
 final class ChatNotificationService: NSObject, UNUserNotificationCenterDelegate {
     static let shared = ChatNotificationService()
 
+    private(set) var isAuthorized = false
+    private var registeredCategories = false
+
     private override init() {
         super.init()
         UNUserNotificationCenter.current().delegate = self
     }
 
-    func requestAuthorizationIfNeeded() async {
-        await SystemPermissionStore.ensureNotificationAccess()
+    func registerCategoriesIfNeeded() {
+        guard !registeredCategories else { return }
+        registeredCategories = true
+        let categories: Set<UNNotificationCategory> = [
+            makeCategory(.message),
+            makeCategory(.mention),
+            makeCategory(.reply),
+        ]
+        UNUserNotificationCenter.current().setNotificationCategories(categories)
     }
 
+    private func makeCategory(_ kind: ChatNotificationCategory) -> UNNotificationCategory {
+        UNNotificationCategory(identifier: kind.rawValue, actions: [], intentIdentifiers: [], options: [])
+    }
+
+    /// Requests macOS notification permission when still undetermined; refreshes `isAuthorized`.
+    @discardableResult
+    func requestAuthorizationIfNeeded() async -> Bool {
+        registerCategoriesIfNeeded()
+        isAuthorized = await SystemPermissionStore.ensureNotificationAccess()
+        return isAuthorized
+    }
+
+    func refreshAuthorizationStatus() async {
+        let settings = await UNUserNotificationCenter.current().notificationSettings()
+        isAuthorized = settings.authorizationStatus == .authorized
+            || settings.authorizationStatus == .provisional
+            || settings.authorizationStatus == .ephemeral
+    }
+
+    /// Posts to Notification Center when authorized. `deliverBanner` controls in-app banner/sound while focused.
     func notify(
         title: String,
         body: String,
         channelId: UUID,
-        messageId: UUID? = nil,
+        messageId: UUID,
         category: ChatNotificationCategory = .message,
-        silent: Bool = false
+        deliverBanner: Bool = true
     ) {
+        guard isAuthorized else { return }
+        registerCategoriesIfNeeded()
+
         let content = UNMutableNotificationContent()
         content.title = title
         content.body = body
-        content.sound = silent ? nil : .default
+        content.sound = deliverBanner ? .default : nil
         content.categoryIdentifier = category.rawValue
         content.userInfo = [
             "channelId": channelId.uuidString,
-            "messageId": messageId?.uuidString as Any,
+            "messageId": messageId.uuidString,
             "category": category.rawValue,
-        ].compactMapValues { $0 }
+        ]
 
         let request = UNNotificationRequest(
-            identifier: "\(channelId.uuidString)-\(messageId?.uuidString ?? UUID().uuidString)",
+            identifier: "chat-\(messageId.uuidString)",
             content: content,
             trigger: nil
         )
@@ -43,6 +77,7 @@ final class ChatNotificationService: NSObject, UNUserNotificationCenterDelegate 
     }
 
     func setBadgeCount(_ count: Int) {
+        guard isAuthorized else { return }
         UNUserNotificationCenter.current().setBadgeCount(count)
     }
 
@@ -50,7 +85,13 @@ final class ChatNotificationService: NSObject, UNUserNotificationCenterDelegate 
         _ center: UNUserNotificationCenter,
         willPresent notification: UNNotification
     ) async -> UNNotificationPresentationOptions {
-        [.banner, .sound, .badge]
+        guard isAuthorized else { return [] }
+        let info = notification.request.content.userInfo
+        let channelId = (info["channelId"] as? String).flatMap(UUID.init(uuidString:))
+        if shouldSuppressBanner(for: channelId) {
+            return []
+        }
+        return [.banner, .sound, .badge]
     }
 
     func userNotificationCenter(
@@ -66,17 +107,32 @@ final class ChatNotificationService: NSObject, UNUserNotificationCenterDelegate 
 
     /// Set from app bootstrap to route notification clicks to chat.
     var onNotificationTap: ((UUID) -> Void)?
+
+    private func shouldSuppressBanner(for channelId: UUID?) -> Bool {
+        guard NSApp.isActive, let channelId else { return false }
+        return ChatNotificationFocusState.shared.isViewingChannel(channelId)
+    }
 }
 
-enum ChatNotificationCategory: String {
-    case message
-    case mention
-    case reply
-    case approval
-    case voiceNote = "voice_note"
-    case assignment
-    case channelInvite = "channel_invite"
-    case fileUpload = "file_upload"
-    case clientMessage = "client_message"
-    case reminder
+/// Tracks which channel is open in the main IDE so we can avoid duplicate banners while reading.
+@MainActor
+enum ChatNotificationFocusState {
+    static let shared = ChatNotificationFocusStateStorage()
+}
+
+final class ChatNotificationFocusStateStorage {
+    private(set) var activeChannelId: UUID?
+    private(set) var appIsActive: Bool = true
+
+    func setActiveChannel(_ channelId: UUID?) {
+        activeChannelId = channelId
+    }
+
+    func setAppActive(_ active: Bool) {
+        appIsActive = active
+    }
+
+    func isViewingChannel(_ channelId: UUID) -> Bool {
+        appIsActive && activeChannelId == channelId
+    }
 }

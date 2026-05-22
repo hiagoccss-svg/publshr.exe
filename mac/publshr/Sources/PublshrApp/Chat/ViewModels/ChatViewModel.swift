@@ -25,6 +25,7 @@ final class ChatViewModel: ObservableObject {
     @Published private(set) var pinnedSidebarChannelIds: Set<UUID> = []
     @Published var permissions = ChatWorkspacePermissions.default
     @Published var isOffline = false
+    @Published private(set) var inAppNotifications: [ChatInAppNotification] = []
 
     // Phase 2
     @Published var reactions: [UUID: [ChatReactionSummary]] = [:]
@@ -66,6 +67,9 @@ final class ChatViewModel: ObservableObject {
     private var didAttach = false
     private var navigationBackStack: [UUID] = []
     private var navigationForwardStack: [UUID] = []
+    private var notificationLevelByChannel: [UUID: String] = [:]
+    private var deliveredMacNotificationMessageIds = Set<UUID>()
+    private let maxInAppNotifications = 80
 
     var currentUserId: UUID? { auth?.profile?.id ?? auth?.session?.user.id }
     var attachedClient: SupabaseClient? { auth?.client }
@@ -122,6 +126,10 @@ final class ChatViewModel: ObservableObject {
         typingExpiryTask?.cancel()
         typingExpiryTask = nil
         typingUsers = []
+        inAppNotifications = []
+        deliveredMacNotificationMessageIds = []
+        notificationLevelByChannel = [:]
+        ChatNotificationFocusState.shared.setActiveChannel(nil)
     }
 
     // MARK: - Bootstrap
@@ -215,9 +223,17 @@ final class ChatViewModel: ObservableObject {
         async let remoteChannels = service.fetchChannels(workspaceId: workspaceId)
         async let remoteProfiles = service.fetchWorkspaceProfiles(workspaceId: workspaceId)
         async let remotePresence = service.fetchPresence(workspaceId: workspaceId)
+        async let remoteMemberships = service.fetchMyChannelMemberships(
+            workspaceId: workspaceId,
+            userId: userId
+        )
 
         do {
             try await service.seedDefaultChannels(workspaceId: workspaceId, userId: userId)
+            let memberships = try await remoteMemberships
+            notificationLevelByChannel = Dictionary(
+                uniqueKeysWithValues: memberships.map { ($0.channelId, $0.notificationLevel) }
+            )
             let all = try await remoteChannels
             partitionChannels(all)
             var unreadMap: [UUID: Int] = [:]
@@ -280,7 +296,9 @@ final class ChatViewModel: ObservableObject {
             navigationForwardStack.removeAll()
         }
         selectedChannel = channel
+        ChatNotificationFocusState.shared.setActiveChannel(channel.id)
         replyingTo = nil
+        markInAppNotificationsRead(for: channel.id)
         unreadByChannel[channel.id] = 0
         unreadThreadsByChannel[channel.id] = 0
         service?.localStore().setUnreadCount(channelId: channel.id, count: 0)
@@ -365,6 +383,10 @@ final class ChatViewModel: ObservableObject {
                 channelId: channel.id,
                 workspaceId: workspace.id
             )
+            if let userId = currentUserId,
+               let mine = selectedChannelMembers.first(where: { $0.userId == userId }) {
+                notificationLevelByChannel[channel.id] = mine.notificationLevel
+            }
         } catch {
             if channel.kind == .dm { selectedChannelMembers = [] }
         }
@@ -399,6 +421,7 @@ final class ChatViewModel: ObservableObject {
             selectedChannelMembers.removeAll { $0.id == member.id }
             if isSelf {
                 selectedChannel = nil
+                ChatNotificationFocusState.shared.setActiveChannel(nil)
                 channels.removeAll { $0.id == channel.id }
                 directMessages.removeAll { $0.id == channel.id }
             }
@@ -443,6 +466,9 @@ final class ChatViewModel: ObservableObject {
                 var copy = selectedChannelMembers[idx]
                 copy.notificationLevel = level
                 selectedChannelMembers[idx] = copy
+            }
+            if let channelId = selectedChannel?.id {
+                notificationLevelByChannel[channelId] = level
             }
         } catch {
             errorMessage = error.localizedDescription
@@ -566,7 +592,6 @@ final class ChatViewModel: ObservableObject {
                 confirmed.localStatus = .sent
                 messages[idx] = confirmed
             }
-            notifyMentions(in: text, channel: channel, messageId: sent.id)
             if let userId = currentUserId {
                 await typingBroadcaster?.stopTyping(channelId: channel.id, userId: userId, displayName: displayName(for: userId))
             }
@@ -601,21 +626,6 @@ final class ChatViewModel: ObservableObject {
                 channelId: channel.id,
                 userId: userId,
                 displayName: displayName(for: userId)
-            )
-        }
-    }
-
-    private func notifyMentions(in text: String, channel: ChatChannel, messageId: UUID) {
-        let tokens = ChatMentionParser.parse(text, profiles: profiles)
-        for token in tokens {
-            guard token.type == .user, let mentionedId = token.userId, mentionedId != currentUserId else { continue }
-            let authorId = currentUserId ?? mentionedId
-            ChatNotificationService.shared.notify(
-                title: "Mention in \(channel.displayTitle)",
-                body: "\(displayName(for: authorId)) mentioned you",
-                channelId: channel.id,
-                messageId: messageId,
-                category: .mention
             )
         }
     }
@@ -858,22 +868,124 @@ final class ChatViewModel: ObservableObject {
     }
 
     private func notifyForIncomingMessage(_ message: ChatMessage) {
+        guard message.userId != currentUserId else { return }
+        guard !deliveredMacNotificationMessageIds.contains(message.id) else { return }
+        guard shouldNotify(for: message) else { return }
+
+        deliveredMacNotificationMessageIds.insert(message.id)
+        if deliveredMacNotificationMessageIds.count > 500 {
+            deliveredMacNotificationMessageIds = Set(deliveredMacNotificationMessageIds.suffix(200))
+        }
+
         let channelName = (channels + directMessages).first { $0.id == message.channelId }?.displayTitle ?? "Chat"
         let author = displayName(for: message.userId)
+        let preview = notificationPreview(for: message)
+        let category = notificationCategory(for: message)
+
+        appendInAppNotification(
+            message: message,
+            channelTitle: channelName,
+            authorName: author,
+            preview: preview,
+            category: category
+        )
+
+        let deliverBanner = !ChatNotificationFocusState.shared.isViewingChannel(message.channelId)
+        ChatNotificationService.shared.notify(
+            title: category == .mention ? "Mention in \(channelName)" : channelName,
+            body: "\(author): \(preview)",
+            channelId: message.channelId,
+            messageId: message.id,
+            category: category,
+            deliverBanner: deliverBanner
+        )
+    }
+
+    private func shouldNotify(for message: ChatMessage) -> Bool {
+        let level = notificationLevelByChannel[message.channelId] ?? "all"
+        switch level {
+        case "nothing", "mute":
+            return false
+        case "mentions":
+            return messageMentionsCurrentUser(message)
+        default:
+            return true
+        }
+    }
+
+    private func messageMentionsCurrentUser(_ message: ChatMessage) -> Bool {
         let body = message.body ?? ""
         let mentions = ChatMentionParser.parse(body, profiles: profiles)
-        let mentionedMe = mentions.contains { token in
+        return mentions.contains { token in
             if token.type == .user, token.userId == currentUserId { return true }
             if token.type == .here || token.type == .channel { return true }
             return false
         }
-        ChatNotificationService.shared.notify(
-            title: channelName,
-            body: "\(author): \(body)",
-            channelId: message.channelId,
+    }
+
+    private func notificationCategory(for message: ChatMessage) -> ChatNotificationCategory {
+        messageMentionsCurrentUser(message) ? .mention : .message
+    }
+
+    private func notificationPreview(for message: ChatMessage) -> String {
+        if let body = message.body?.trimmingCharacters(in: .whitespacesAndNewlines), !body.isEmpty {
+            return String(body.prefix(240))
+        }
+        if message.attachments.contains(where: { $0.kind == "voice" || $0.mimeType?.hasPrefix("audio") == true }) {
+            return "Voice message"
+        }
+        if !message.attachments.isEmpty {
+            return "Shared a file"
+        }
+        return "New message"
+    }
+
+    private func appendInAppNotification(
+        message: ChatMessage,
+        channelTitle: String,
+        authorName: String,
+        preview: String,
+        category: ChatNotificationCategory
+    ) {
+        let item = ChatInAppNotification(
             messageId: message.id,
-            category: mentionedMe ? .mention : .message
+            channelId: message.channelId,
+            channelTitle: channelTitle,
+            authorName: authorName,
+            body: preview,
+            category: category,
+            createdAt: message.createdAt
         )
+        inAppNotifications.removeAll { $0.id == item.id }
+        inAppNotifications.insert(item, at: 0)
+        if inAppNotifications.count > maxInAppNotifications {
+            inAppNotifications = Array(inAppNotifications.prefix(maxInAppNotifications))
+        }
+    }
+
+    func markInAppNotificationsRead(for channelId: UUID) {
+        let updated = inAppNotifications.map { item -> ChatInAppNotification in
+            guard item.channelId == channelId, !item.isRead else { return item }
+            var copy = item
+            copy.isRead = true
+            return copy
+        }
+        if updated != inAppNotifications {
+            inAppNotifications = updated
+        }
+    }
+
+    func markAllInAppNotificationsRead() {
+        guard inAppNotifications.contains(where: { !$0.isRead }) else { return }
+        inAppNotifications = inAppNotifications.map { item in
+            var copy = item
+            copy.isRead = true
+            return copy
+        }
+    }
+
+    var unreadInAppNotificationCount: Int {
+        inAppNotifications.filter { !$0.isRead }.count
     }
 
     private func updateChannelPreview(_ message: ChatMessage) {
