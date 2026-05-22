@@ -69,11 +69,11 @@ enum MainWindowChrome {
         guard let contentView = window.contentView else { return }
         let reportedTop = contentView.safeAreaInsets.top
         let target = AppWindowChromeMetrics.trafficLightRowHeight
-        var extra = window.additionalSafeAreaInsets
+        var extra = contentView.additionalSafeAreaInsets
         let desiredTop = reportedTop > target + 0.5 ? target - reportedTop : 0
         guard abs(extra.top - desiredTop) > 0.5 else { return }
         extra.top = desiredTop
-        window.additionalSafeAreaInsets = extra
+        contentView.additionalSafeAreaInsets = extra
     }
 
     @MainActor
