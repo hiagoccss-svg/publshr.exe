@@ -5,3 +5,5 @@ native/publshr/dist/
 mac/publshr/.build/
 mac/publshr/dist/
 actionlint
+install/macos/Publshr-Install-macos.zip
+mac/publshr/dist/
