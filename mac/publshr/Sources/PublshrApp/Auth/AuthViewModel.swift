@@ -87,10 +87,10 @@ final class AuthViewModel: ObservableObject {
             _ = try await client.auth.signUp(
                 email: email.trimmingCharacters(in: .whitespaces),
                 password: password,
-                redirectTo: SupabaseConfig.authRedirect,
                 data: [
                     "display_name": .string(name.isEmpty ? emailPrefix : name),
-                ]
+                ],
+                redirectTo: SupabaseConfig.authRedirect
             )
             infoMessage = "Check your email for a 6-digit confirmation code."
             screen = .confirmEmail

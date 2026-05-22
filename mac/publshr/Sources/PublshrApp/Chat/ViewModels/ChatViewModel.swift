@@ -188,8 +188,10 @@ final class ChatViewModel: ObservableObject {
             messages = try await service.fetchMainChannelMessages(channelId: channel.id, workspaceId: workspace.id)
             await loadChannelExtras()
             await markMessagesSeen()
-        } catch if messages.isEmpty {
-            errorMessage = error.localizedDescription
+        } catch {
+            if messages.isEmpty {
+                errorMessage = error.localizedDescription
+            }
         }
     }
 

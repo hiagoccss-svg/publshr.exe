@@ -22,13 +22,16 @@ final class ChatWindowManager: ObservableObject {
         window.styleMask = [.titled, .closable, .resizable, .miniaturizable]
         window.isReleasedWhenClosed = false
         window.center()
-        windows[channel.id] = window
+        let channelId = channel.id
+        windows[channelId] = window
         NotificationCenter.default.addObserver(
             forName: NSWindow.willCloseNotification,
             object: window,
             queue: .main
         ) { [weak self] _ in
-            Task { @MainActor in self?.windows.removeValue(forKey: channel.id) }
+            Task { @MainActor in
+                self?.windows.removeValue(forKey: channelId)
+            }
         }
         window.makeKeyAndOrderFront(nil)
     }
