@@ -51,7 +51,7 @@ struct ChatEditorToolbarContent: View {
                 }
             }
 
-            TitlebarChromeIconButton(systemName: "sparkles", help: "Ask AI") {
+            TitlebarChromeIconButton(systemName: "sparkles", help: "Chat recap & AI") {
                 chat.showAISheet = true
             }
 

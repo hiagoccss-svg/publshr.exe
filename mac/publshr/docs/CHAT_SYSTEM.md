@@ -25,6 +25,7 @@ Real-time workspace communication integrated into the Publshr macOS IDE.
 ## Phase 4
 
 - **AI assistant** — local summarization, reply suggestions, action items (`ChatAIService`; swap for AI SDK later)
+- **Period script recap** — pick start/end dates; detailed who-said-what script (`ChatPeriodSummaryBuilder`, `ChatAISheet`)
 - **Transcription-ready** — `chat_voice_transcripts` with `pending` → `ready` pipeline
 - **Search** — `search_workspace` RPC + local SQLite `search_index`
 - **Automations** — deadline / action-item extraction from AI heuristics

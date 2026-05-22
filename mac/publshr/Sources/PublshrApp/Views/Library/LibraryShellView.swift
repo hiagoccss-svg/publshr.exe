@@ -86,6 +86,7 @@ struct LibraryShellView: View {
                     }
                 }
                 .layoutPriority(3)
+                .transition(.move(edge: .leading).combined(with: .opacity))
 
                 if !submenuHidden {
                     ShellColumnChromeStack(
