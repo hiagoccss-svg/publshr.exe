@@ -8,13 +8,14 @@
 printf '%s\n' '[Publshr] Loading installer...' >&2
 set -euo pipefail
 
-INSTALLER_VERSION="11"
+INSTALLER_VERSION="12"
 PUBLSHR_REPO="${PUBLSHR_REPO:-hiagoccss-svg/publshr.exe}"
 PUBLSHR_BRANCH="${PUBLSHR_BRANCH:-main}"
 PUBLSHR_INSTALLER_URL="https://raw.githubusercontent.com/${PUBLSHR_REPO}/refs/heads/${PUBLSHR_BRANCH}/install-macos.sh"
 PUBLSHR_LIVE_TAG="${PUBLSHR_LIVE_TAG:-live}"
 PUBLSHR_MAC_APP="${PUBLSHR_MAC_APP:-${HOME}/Applications/Publshr.app}"
-PUBLSHR_BIN_LINK="${PUBLSHR_BIN_LINK:-/usr/local/bin/publshr}"
+# Default CLI symlink: user-writable (no sudo). Override with PUBLSHR_BIN_LINK if needed.
+PUBLSHR_BIN_LINK="${PUBLSHR_BIN_LINK:-${HOME}/bin/publshr}"
 PUBLSHR_LIVE_ASSET_MACOS_ARM64="Publshr-macos-aarch64.tar.gz"
 PUBLSHR_MIN_APP_BYTES=4000000
 PUBLSHR_PREPARED_TREE_FILE="${PUBLSHR_PREPARED_TREE_FILE:-${HOME}/Library/Application Support/Publshr/install-prepared.tree}"
@@ -212,9 +213,47 @@ _publshr_acquire_valid_tree() {
     return 1
 }
 
+_publshr_cli_target() {
+    if [[ -x "$PUBLSHR_MAC_APP/Contents/MacOS/publshr-cli" ]]; then
+        echo "$PUBLSHR_MAC_APP/Contents/MacOS/publshr-cli"
+    elif [[ -x "$PUBLSHR_MAC_APP/Contents/MacOS/Publshr" ]]; then
+        echo "$PUBLSHR_MAC_APP/Contents/MacOS/Publshr"
+    fi
+}
+
+# Symlink CLI without sudo — never fail the install if /usr/local/bin is not writable.
+_publshr_link_cli() {
+    local target="$1"
+    local link path
+
+    [[ -n "$target" ]] || return 0
+
+    for link in "${PUBLSHR_BIN_LINK}" "${HOME}/bin/publshr" "${HOME}/.local/bin/publshr"; do
+        [[ -n "$link" ]] || continue
+        path="$(dirname "$link")"
+        if ! mkdir -p "$path" 2>/dev/null; then
+            continue
+        fi
+        if [[ ! -w "$path" ]]; then
+            continue
+        fi
+        if ln -sf "$target" "$link" 2>/dev/null; then
+            log "  CLI: $link"
+            if [[ ":$PATH:" != *":${path}:"* ]]; then
+                log "  Tip: add to PATH in ~/.zshrc:  export PATH=\"${path}:\$PATH\""
+            fi
+            return 0
+        fi
+    done
+
+    log "  CLI: not linked (optional). Run the app from Applications or:"
+    log "       open \"${PUBLSHR_MAC_APP}\""
+}
+
 _publshr_install_app() {
     local tree="$1"
     local app="${tree}/Publshr.app"
+    local cli_target=""
     if [[ ! -d "$app" ]]; then
         log "ERROR: Publshr.app missing in $tree"
         exit 1
@@ -224,15 +263,10 @@ _publshr_install_app() {
     ditto "$app" "$PUBLSHR_MAC_APP"
     chmod -R 755 "$PUBLSHR_MAC_APP"
     xattr -cr "$PUBLSHR_MAC_APP" 2>/dev/null || true
-    mkdir -p "$(dirname "$PUBLSHR_BIN_LINK")"
-    if [[ -x "$PUBLSHR_MAC_APP/Contents/MacOS/publshr-cli" ]]; then
-        ln -sf "$PUBLSHR_MAC_APP/Contents/MacOS/publshr-cli" "$PUBLSHR_BIN_LINK"
-    elif [[ -x "$PUBLSHR_MAC_APP/Contents/MacOS/Publshr" ]]; then
-        ln -sf "$PUBLSHR_MAC_APP/Contents/MacOS/Publshr" "$PUBLSHR_BIN_LINK"
-    fi
+    cli_target="$(_publshr_cli_target)"
+    _publshr_link_cli "$cli_target"
     log "Installed."
     log "  App: $PUBLSHR_MAC_APP"
-    log "  CLI: $PUBLSHR_BIN_LINK"
 }
 
 _publshr_install_with_privileges() {
