@@ -99,39 +99,24 @@ struct TitlebarChromeActionBar: View {
                 Task { await auth.signOut() }
             }
         } label: {
-            HStack(spacing: 6) {
-                if let profile = auth.profile {
-                    ChatProfileAvatar(
-                        profile: profile,
-                        displayName: profile.displayName ?? profile.email,
-                        size: 22,
-                        presence: chat.myStatus
+            if let profile = auth.profile {
+                ChatProfileAvatar(
+                    profile: profile,
+                    displayName: profile.displayName ?? profile.email,
+                    size: AppWindowChromeMetrics.controlSize,
+                    presence: chat.myStatus
+                )
+            } else {
+                Image(systemName: "person.circle.fill")
+                    .font(.system(size: AppWindowChromeMetrics.controlIconSize))
+                    .foregroundStyle(LibraryGlassDesign.inkSecondary)
+                    .frame(
+                        width: AppWindowChromeMetrics.controlSize,
+                        height: AppWindowChromeMetrics.controlSize
                     )
-                }
-                TitlebarChromeMenuLabel(title: profileShortTitle)
             }
         }
         .menuStyle(.borderlessButton)
         .help("Profile & presence")
-    }
-
-    private var profileShortTitle: String {
-        if let name = auth.profile?.displayName?.trimmingCharacters(in: .whitespacesAndNewlines), !name.isEmpty {
-            let parts = name.split(separator: " ")
-            if let first = parts.first {
-                return String(first)
-            }
-        }
-        if let email = auth.profile?.email.split(separator: "@").first {
-            return String(email)
-        }
-        return "Account"
-    }
-}
-
-private extension String {
-    var nonEmptyOrNil: String? {
-        let t = trimmingCharacters(in: .whitespacesAndNewlines)
-        return t.isEmpty ? nil : t
     }
 }

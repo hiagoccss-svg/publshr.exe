@@ -57,16 +57,22 @@ struct LibraryShellHeaderView: View {
                 .frame(maxWidth: .infinity)
 
         case .editorTrailing(let module, let showCommandPalette, let showNotificationsPanel):
-            HStack(alignment: .center, spacing: 0) {
-                Spacer(minLength: 0)
-                TitlebarChromeActionBar(
-                    module: module,
-                    showCommandPalette: showCommandPalette,
-                    showNotificationsPanel: showNotificationsPanel,
-                    placement: .trailing
-                )
+            Group {
+                if module.wrappedValue == .chat {
+                    ChatEditorHeaderBar(showCommandPalette: showCommandPalette)
+                } else {
+                    HStack(alignment: .center, spacing: 0) {
+                        Spacer(minLength: 0)
+                        TitlebarChromeActionBar(
+                            module: module,
+                            showCommandPalette: showCommandPalette,
+                            showNotificationsPanel: showNotificationsPanel,
+                            placement: .trailing
+                        )
+                    }
+                    .padding(.trailing, 14)
+                }
             }
-            .padding(.trailing, 14)
         }
     }
 }

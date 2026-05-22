@@ -15,9 +15,6 @@ struct EnterpriseChatView: View {
                 chatStatusBanner
                 if !embedInPopOut {
                     ChatWorkspaceChannelTabs()
-                    if chat.selectedChannel != nil {
-                        ChatChannelStatusBar(chat: chat)
-                    }
                 }
                 ChatConversationView(chat: chat, onNewMessage: onNewMessage ?? {})
             }
