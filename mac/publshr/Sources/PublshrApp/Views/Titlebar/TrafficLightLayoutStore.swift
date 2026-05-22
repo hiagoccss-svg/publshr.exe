@@ -35,11 +35,11 @@ final class TrafficLightLayoutStore: ObservableObject {
 
         if let metrics = Self.measureTrafficLights(in: window, contentView: contentView) {
             leadingInset = metrics.leadingInset
-            titlebarTopPadding = metrics.titlebarTopPadding
+            titlebarTopPadding = Self.clampTopPadding(metrics.titlebarTopPadding)
             rowHeight = metrics.rowHeight
         } else {
             leadingInset = AppWindowChromeMetrics.trafficLightLeadingInset
-            titlebarTopPadding = AppWindowChromeMetrics.trafficLightVerticalAlignPadding
+            titlebarTopPadding = Self.clampTopPadding(AppWindowChromeMetrics.trafficLightVerticalAlignPadding)
             rowHeight = AppWindowChromeMetrics.trafficLightRowHeight
         }
 
@@ -63,8 +63,9 @@ final class TrafficLightLayoutStore: ObservableObject {
         var rowHeight: CGFloat
     }
 
-    /// Prevents a bad measure from pushing the whole shell to the bottom of the window.
-    private static let maxTitlebarTopPadding: CGFloat = 18
+    private static func clampTopPadding(_ value: CGFloat) -> CGFloat {
+        min(max(0, value), AppWindowChromeMetrics.maxTitlebarTopPadding)
+    }
 
     private static func measureTrafficLights(in window: NSWindow, contentView: NSView) -> TrafficMetrics? {
         guard let close = window.standardWindowButton(.closeButton),
@@ -113,7 +114,7 @@ final class TrafficLightLayoutStore: ObservableObject {
               clusterCenterFromTop <= contentHeight * 0.25
         else { return nil }
 
-        let topPad = min(max(0, clusterCenterFromTop - row * 0.5), maxTitlebarTopPadding)
+        let topPad = clampTopPadding(clusterCenterFromTop - row * 0.5)
 
         return TrafficMetrics(
             leadingInset: max(trailingX, AppWindowChromeMetrics.trafficLightLeadingInset),
@@ -137,9 +138,10 @@ struct TrafficLightLayoutRefreshView: NSViewRepresentable {
 final class TrafficLightLayoutRefreshNSView: NSView {
     override var intrinsicContentSize: NSSize {
         let store = TrafficLightLayoutStore.shared
+        let top = min(store.titlebarTopPadding, AppWindowChromeMetrics.maxTitlebarTopPadding)
         return NSSize(
             width: NSView.noIntrinsicMetric,
-            height: store.titlebarTopPadding + store.rowHeight
+            height: top + store.rowHeight
         )
     }
 

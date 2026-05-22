@@ -22,6 +22,8 @@ enum AppWindowChromeMetrics {
     static let trafficLightRowHeight: CGFloat = minimumTitlebarRowHeight
     /// Fallback top inset when traffic lights are not measurable yet (pre-layout).
     static let trafficLightVerticalAlignPadding: CGFloat = 8
+    /// Hard cap so a bad traffic-light measure cannot consume the whole window.
+    static let maxTitlebarTopPadding: CGFloat = 18
     /// Square chrome control — Cursor Mac titlebar hit target.
     static let controlSize: CGFloat = 32
     static let controlIconSize: CGFloat = 13
