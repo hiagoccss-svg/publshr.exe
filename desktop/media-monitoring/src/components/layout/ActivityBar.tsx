@@ -1,4 +1,5 @@
 import {
+  BarChart3,
   LayoutDashboard,
   Radio,
   FolderOpen,
@@ -11,6 +12,7 @@ import type { SidebarSection } from '@/types'
 import { shell } from '@/theme/shellTheme'
 
 const ITEMS: { id: SidebarSection; icon: typeof Radio; label: string }[] = [
+  { id: 'reports', icon: BarChart3, label: 'Reports' },
   { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { id: 'monitoring', icon: Radio, label: 'Monitoring' },
   { id: 'coverage', icon: FolderOpen, label: 'Coverage' },

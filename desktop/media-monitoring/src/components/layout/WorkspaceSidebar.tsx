@@ -4,6 +4,7 @@ import { MonitorList } from '@/components/monitoring/MonitorList'
 import { shell } from '@/theme/shellTheme'
 
 const SECTION_TITLES: Record<string, string> = {
+  reports: 'Reports',
   dashboard: 'Dashboard',
   monitoring: 'Monitoring',
   coverage: 'Saved coverage',
@@ -58,6 +59,12 @@ export function WorkspaceSidebar() {
       {section === 'publications' && (
         <p className="px-3 py-2 text-[11px] text-content-muted leading-relaxed">
           Approved publication sources for monitoring.
+        </p>
+      )}
+      {section === 'reports' && (
+        <p className="px-3 py-2 text-[11px] text-content-muted leading-relaxed">
+          Executive coverage report — sentiment, publications, and clippings. Select a row for
+          full detail in the panel on the right.
         </p>
       )}
       {section === 'dashboard' && (

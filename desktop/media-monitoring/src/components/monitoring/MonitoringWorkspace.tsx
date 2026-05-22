@@ -2,6 +2,7 @@ import { ArticleFeed } from './ArticleFeed'
 import { PublicationsView } from './PublicationsView'
 import { DashboardView } from './DashboardView'
 import { CoverageView } from './CoverageView'
+import { ReportsView } from '@/components/reports/ReportsView'
 import { SettingsPanel } from '@/components/settings/SettingsPanel'
 import { useMonitoringStore } from '@/store/monitoringStore'
 
@@ -10,12 +11,14 @@ export function MonitoringWorkspace() {
 
   return (
     <div className="flex-1 flex flex-col min-h-0 min-w-0">
+      {section === 'reports' && <ReportsView />}
       {section === 'dashboard' && <DashboardView />}
       {section === 'monitoring' && <ArticleFeed />}
       {section === 'coverage' && <CoverageView />}
       {section === 'publications' && <PublicationsView />}
       {section === 'settings' && <SettingsPanel />}
       {![
+        'reports',
         'dashboard',
         'monitoring',
         'coverage',

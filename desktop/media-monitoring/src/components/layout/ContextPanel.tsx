@@ -5,7 +5,7 @@ import { useMonitoringStore } from '@/store/monitoringStore'
 import { formatCurrency, formatCompactNumber } from '@/lib/format'
 import { parseKeywordMatches, highlightKeywords } from '@/lib/keywordHighlight'
 import { shell } from '@/theme/shellTheme'
-import type { MonitorResult, Sentiment } from '@/types'
+import type { CoverageActivity, MonitorResult, Sentiment } from '@/types'
 
 const SENTIMENTS: Sentiment[] = ['positive', 'neutral', 'negative', 'mixed']
 
@@ -16,6 +16,7 @@ export function ContextPanel() {
   const [notes, setNotes] = useState('')
   const [tags, setTags] = useState('')
   const [saving, setSaving] = useState(false)
+  const [activity, setActivity] = useState<CoverageActivity[]>([])
 
   useEffect(() => {
     if (!article) return
@@ -30,6 +31,9 @@ export function ContextPanel() {
     } else {
       setTags('')
     }
+    void window.publshr.getActivity(article.id).then((rows) => {
+      setActivity(rows as CoverageActivity[])
+    })
   }, [article?.id])
 
   const panelStyle = {
@@ -50,6 +54,13 @@ export function ContextPanel() {
   }
 
   const keywords = parseKeywordMatches(article.keyword_matches)
+  const ext = article as MonitorResult & {
+    monitor_name?: string
+    publication_type?: string
+    country?: string
+    coverage_type?: string
+    authority_score?: number
+  }
 
   const refreshArticle = async () => {
     const row = await window.publshr.getArticle(article.id)
@@ -67,6 +78,36 @@ export function ContextPanel() {
 
       <div className="flex-1 overflow-y-auto px-3 py-3 space-y-4 text-[12px]">
         <section>
+          <h3 className="shell-section-header mb-2">Source</h3>
+          <dl className="grid grid-cols-2 gap-x-3 gap-y-2 text-[11px]">
+            {ext.monitor_name && (
+              <div className="col-span-2">
+                <dt className="text-content-dim">Monitor</dt>
+                <dd className="text-content">{ext.monitor_name}</dd>
+              </div>
+            )}
+            <div>
+              <dt className="text-content-dim">Type</dt>
+              <dd className="text-content capitalize">
+                {ext.publication_type ?? ext.coverage_type ?? 'online'}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-content-dim">Region</dt>
+              <dd className="text-content">
+                {[article.region, ext.country].filter(Boolean).join(' · ') || '—'}
+              </dd>
+            </div>
+            {article.author && (
+              <div className="col-span-2">
+                <dt className="text-content-dim">Author</dt>
+                <dd className="text-content">{article.author}</dd>
+              </div>
+            )}
+          </dl>
+        </section>
+
+        <section className="pt-3 border-t border-border">
           <h3 className="shell-section-header mb-2">Metrics</h3>
           <dl className="grid grid-cols-2 gap-x-3 gap-y-2 text-[11px]">
             <div>
@@ -85,8 +126,30 @@ export function ContextPanel() {
               <dt className="text-content-dim">Relevance</dt>
               <dd className="text-content tabular-nums">{Math.round(article.relevance_score)}%</dd>
             </div>
+            {ext.authority_score != null && (
+              <div>
+                <dt className="text-content-dim">Authority</dt>
+                <dd className="text-content tabular-nums">{Math.round(ext.authority_score)}</dd>
+              </div>
+            )}
           </dl>
         </section>
+
+        {keywords.length > 0 && (
+          <section className="pt-3 border-t border-border">
+            <h3 className="shell-section-header mb-2">Keywords</h3>
+            <div className="flex flex-wrap gap-1">
+              {keywords.map((k) => (
+                <span
+                  key={k}
+                  className="text-[10px] px-1.5 py-0.5 rounded-sm bg-accent/15 text-content-muted"
+                >
+                  {k}
+                </span>
+              ))}
+            </div>
+          </section>
+        )}
 
         <section className="pt-3 border-t border-border">
           <label className="shell-section-header block mb-1.5">Sentiment</label>
@@ -135,6 +198,21 @@ export function ContextPanel() {
             <p className="text-[11px] text-content-muted leading-relaxed line-clamp-8">
               {highlightKeywords(article.article_text, keywords)}
             </p>
+          </section>
+        )}
+
+        {activity.length > 0 && (
+          <section className="pt-3 border-t border-border">
+            <h3 className="shell-section-header mb-2">Activity</h3>
+            <ul className="space-y-1 text-[10px] text-content-dim">
+              {activity.map((a, i) => (
+                <li key={`${a.created_at}-${i}`}>
+                  <span className="text-content-muted capitalize">{a.action}</span>
+                  {' · '}
+                  {a.created_at}
+                </li>
+              ))}
+            </ul>
           </section>
         )}
       </div>
