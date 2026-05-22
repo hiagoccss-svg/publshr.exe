@@ -23,6 +23,7 @@ struct ChatSidebarView: View {
             }
         }
         .frame(maxHeight: .infinity)
+        .background(CursorTheme.navSidebar)
     }
 
     private var projectsSection: some View {

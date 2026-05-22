@@ -52,11 +52,13 @@ struct ContentView: View {
         )) {
             BiometricSetupSheet()
         }
-        .sheet(isPresented: Binding(
-            get: { calls.activeRoom != nil },
-            set: { if !$0 { Task { await calls.leaveCall() } } }
-        )) {
-            CallRoomView()
+        .onChange(of: calls.activeRoom?.id) { _, roomId in
+            guard auth.flowState == .signedIn else { return }
+            if roomId != nil {
+                CallWindowManager.shared.present(calls: calls, chat: chat, auth: auth)
+            } else {
+                CallWindowManager.shared.dismiss()
+            }
         }
     }
 

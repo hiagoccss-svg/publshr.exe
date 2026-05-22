@@ -12,11 +12,9 @@ struct ActivityBarView: View {
                 }
             }
             .padding(.top, 8)
+            .padding(.bottom, 10)
 
             Spacer(minLength: 0)
-
-            moduleButton(.settings)
-                .padding(.bottom, 10)
         }
         .frame(maxHeight: .infinity)
         .frame(width: CursorTheme.activityBarWidth)

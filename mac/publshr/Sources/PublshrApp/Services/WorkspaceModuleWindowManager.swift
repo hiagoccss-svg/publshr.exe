@@ -7,12 +7,37 @@ final class WorkspaceModuleWindowManager: ObservableObject {
 
     private var windows: [AppModule: NSWindow] = [:]
 
+    func openSettings(
+        auth: AuthViewModel,
+        chat: ChatViewModel,
+        spaces: SpacesViewModel,
+        updates: AppUpdateViewModel,
+        subscription: SubscriptionService,
+        enterprise: EnterpriseWorkspaceService,
+        calls: CallSignalingService
+    ) {
+        open(
+            module: .settings,
+            chat: chat,
+            spaces: spaces,
+            auth: auth,
+            subscription: subscription,
+            updates: updates,
+            enterprise: enterprise,
+            calls: calls
+        )
+        Task { await updates.performLiveSync() }
+    }
+
     func open(
         module: AppModule,
         chat: ChatViewModel,
         spaces: SpacesViewModel,
         auth: AuthViewModel,
-        subscription: SubscriptionService
+        subscription: SubscriptionService,
+        updates: AppUpdateViewModel? = nil,
+        enterprise: EnterpriseWorkspaceService? = nil,
+        calls: CallSignalingService? = nil
     ) {
         if let existing = windows[module] {
             existing.makeKeyAndOrderFront(nil)
@@ -33,14 +58,27 @@ final class WorkspaceModuleWindowManager: ObservableObject {
                         .environmentObject(auth)
                 )
             case .settings:
-                return AnyView(SettingsRootView().environmentObject(auth))
+                guard let updates, let enterprise, let calls else {
+                    return AnyView(Text("Settings unavailable").padding())
+                }
+                return AnyView(
+                    SettingsRootView()
+                        .environmentObject(auth)
+                        .environmentObject(chat)
+                        .environmentObject(spaces)
+                        .environmentObject(subscription)
+                        .environmentObject(updates)
+                        .environmentObject(enterprise)
+                        .environmentObject(calls)
+                )
             }
         }()
 
         let hosting = NSHostingController(rootView: root.frame(minWidth: 900, minHeight: 640))
         let window = NSWindow(contentViewController: hosting)
-        window.title = module.label
-        window.setContentSize(NSSize(width: 1100, height: 760))
+        window.title = module == .settings ? "Publshr Settings" : module.label
+        let size = module == .settings ? NSSize(width: 920, height: 680) : NSSize(width: 1100, height: 760)
+        window.setContentSize(size)
         window.center()
         window.styleMask = [.titled, .closable, .resizable, .miniaturizable]
         window.isReleasedWhenClosed = false
