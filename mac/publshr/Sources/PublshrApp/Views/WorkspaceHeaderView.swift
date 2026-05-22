@@ -36,15 +36,13 @@ struct WorkspaceHeaderView: View {
             }
             .padding(.leading, 4)
             .frame(height: CursorTheme.workspaceHeaderHeight)
+
+            headerSettingsButton
+                .padding(.trailing, 10)
         }
         .frame(height: chromeBarHeight, alignment: .bottom)
         .frame(maxWidth: .infinity)
         .background(CursorTheme.titleBar)
-        .overlay(alignment: .bottom) {
-            Rectangle()
-                .fill(CursorTheme.hairline)
-                .frame(height: 1)
-        }
     }
 
     // MARK: - Leading
@@ -183,10 +181,26 @@ struct WorkspaceHeaderView: View {
         case .spaces:
             spacesTrailingActions
         case .settings:
-            Text("Settings")
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(CursorTheme.foregroundMuted)
+            EmptyView()
         }
+    }
+
+    private var headerSettingsButton: some View {
+        Button {
+            NotificationCenter.default.post(name: .publshrOpenSettings, object: nil)
+        } label: {
+            HStack(spacing: 5) {
+                Image(systemName: "gearshape")
+                    .font(.system(size: CursorTheme.toolbarIconSize, weight: .regular))
+                Text("Settings")
+                    .font(.system(size: 11, weight: .medium))
+            }
+            .foregroundStyle(CursorTheme.toolbarIconForeground)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 5)
+        }
+        .buttonStyle(.plain)
+        .help("Enterprise settings, security, chat options, and updates")
     }
 
     private var activeModule: AppModule {
@@ -237,7 +251,6 @@ struct WorkspaceHeaderView: View {
 
             profileMenuChip
             presenceMenuChip
-            appSettingsMenuChip
 
             HeaderActionDivider()
 
@@ -315,28 +328,6 @@ struct WorkspaceHeaderView: View {
         }
         .menuStyle(.borderlessButton)
         .help("Profile")
-    }
-
-    private var appSettingsMenuChip: some View {
-        Menu {
-            Button {
-                NotificationCenter.default.post(name: .publshrOpenSettings, object: nil)
-            } label: {
-                Label("App settings", systemImage: "gearshape")
-            }
-            Button {
-                chat.showPermissionsSheet = true
-            } label: {
-                Label("Channel permissions", systemImage: "lock.shield")
-            }
-        } label: {
-            Image(systemName: "gearshape")
-                .font(.system(size: CursorTheme.toolbarIconSize, weight: .regular))
-                .foregroundStyle(CursorTheme.toolbarIconForeground)
-                .frame(width: CursorTheme.toolbarIconHitSize, height: CursorTheme.toolbarIconHitSize)
-        }
-        .menuStyle(.borderlessButton)
-        .help("Settings")
     }
 
     private var presenceMenuChip: some View {

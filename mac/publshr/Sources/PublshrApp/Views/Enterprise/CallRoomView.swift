@@ -14,7 +14,7 @@ struct CallRoomView: View {
             Divider()
             controls
         }
-        .frame(width: 360, height: 420)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color(nsColor: .windowBackgroundColor))
     }
 

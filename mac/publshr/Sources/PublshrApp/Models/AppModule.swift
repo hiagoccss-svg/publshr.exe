@@ -24,6 +24,6 @@ enum AppModule: String, CaseIterable, Identifiable {
         }
     }
 
-    /// Modules pinned in the main activity strip (settings lives at the bottom).
+    /// Modules pinned in the activity strip. Settings opens from the title bar (separate window).
     static let mainStrip: [AppModule] = [.chat, .spaces]
 }

@@ -163,6 +163,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             AppWindowStateStore.saveMainWindowFrame(window.frame)
         }
         ChatWindowManager.shared.closeAll()
+        CallWindowManager.shared.closeAll()
+        WorkspaceModuleWindowManager.shared.closeAll()
         AppLifecycleService.shared.stop()
     }
 }

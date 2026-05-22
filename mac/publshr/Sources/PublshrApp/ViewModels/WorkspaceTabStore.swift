@@ -13,8 +13,23 @@ final class WorkspaceTabStore: ObservableObject {
     // MARK: - Tab lifecycle
 
     func ensureDefaultTabs(module: AppModule) {
+        removeSettingsTabs()
         if tabs.isEmpty {
-            openTab(.app(module), activate: true)
+            let seed = module == .settings ? AppModule.chat : module
+            openTab(.app(seed), activate: true)
+        }
+    }
+
+    func removeSettingsTabs() {
+        let hadSettings = tabs.contains { if case .app(.settings) = $0.kind { return true }; return false }
+        guard hadSettings else { return }
+        tabs.removeAll { if case .app(.settings) = $0.kind { return true }; return false }
+        if tabs.isEmpty {
+            openTab(.app(.chat), activate: true)
+            return
+        }
+        if selectedTabId == nil || !tabs.contains(where: { $0.id == selectedTabId }) {
+            selectedTabId = tabs.first?.id
         }
     }
 
@@ -83,6 +98,7 @@ final class WorkspaceTabStore: ObservableObject {
     }
 
     func openFromModule(_ module: AppModule, activate: Bool = true) {
+        guard module != .settings else { return }
         openTab(.app(module), activate: activate)
     }
 
@@ -98,7 +114,7 @@ final class WorkspaceTabStore: ObservableObject {
 
         switch tab.kind {
         case .app(let appModule):
-            module = appModule
+            module = appModule == .settings ? .chat : appModule
         case .chatChannel(let id), .chatDirectMessage(let id):
             module = .chat
             chat.selectChannelById(id, recordHistory: true)
@@ -168,6 +184,7 @@ final class WorkspaceTabStore: ObservableObject {
                 SpacesWindowManager.shared.openSpace(space, spaces: spaces, auth: auth)
             }
         case .app(let module):
+            guard module != .settings else { return }
             WorkspaceModuleWindowManager.shared.open(
                 module: module,
                 chat: chat,

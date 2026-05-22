@@ -80,6 +80,7 @@ final class CallSignalingService: ObservableObject {
         } else {
             mediaStatus = "Signaling only — add LiveKit URL in workspace settings for HD voice/video."
         }
+        isVideoEnabled = video
         await requestMediaPermissions(video: video)
         do {
             struct Insert: Encodable {
