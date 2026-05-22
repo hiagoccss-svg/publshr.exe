@@ -13,7 +13,7 @@ enum MacSystemChrome {
     }
 
     static func submenuFieldBackground() -> Color {
-        CursorMacShellDesign.columnChromeBackground.opacity(0.35)
+        LibraryGlassDesign.submenuColumnBackground
     }
 
     static var fieldHoverFill: Color {

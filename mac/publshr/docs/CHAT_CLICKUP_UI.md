@@ -7,8 +7,8 @@ Publshr Chat follows [ClickUp Chat Sidebar](https://help.clickup.com/hc/en-us/ar
 | Zone | Width | Contents |
 |------|-------|----------|
 | **Bar menu** (far left) | 200px expanded · 72px collapsed (traffic-light row) | **Chat** · **Spaces** (real app modules only) |
-| **Chat sidebar** | 272px fixed | Search, filters, channel/DM lists, **bottom footer** |
-| **Main column** | flex | Channel tabs, status bar, messages, composer toolbar |
+| **Chat sidebar** | 272px fixed · **#FFFFFF** | Search in unified titlebar row; filters, lists, footer (flat, no boxed chrome) |
+| **Main column** | flex · **#FFFFFF** | Unified titlebar icons align with columns 1–2; messages + composer |
 | **Thread panel** (optional) | ~320px | Right-side thread replies |
 | **Unified titlebar** | full width | Traffic lights row: sidebar, back/forward, submenu search, channel title + actions |
 | **Bar menu profile** | bottom of rail | Avatar opens profile sheet (photo, status, sign out) |

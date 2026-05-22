@@ -67,6 +67,8 @@ struct LibraryShellView: View {
                 module: $module,
                 showCommandPalette: $showCommandPalette,
                 showNotificationsPanel: $showNotificationsPanel,
+                barColumnWidth: barColumnWidth,
+                submenuColumnWidth: LibraryGlassDesign.submenuColumnWidth,
                 submenuHidden: submenuHidden
             )
 
@@ -92,6 +94,8 @@ struct LibraryShellView: View {
                 }
                 .layoutPriority(3)
 
+                ShellColumnVerticalRule()
+
                 if !submenuHidden {
                     ShellColumnChromeStack(
                         showsTitlebar: false,
@@ -108,6 +112,8 @@ struct LibraryShellView: View {
                     }
                     .layoutPriority(3)
                     .transition(.move(edge: .leading).combined(with: .opacity))
+
+                    ShellColumnVerticalRule()
                 }
 
                 editorColumn
