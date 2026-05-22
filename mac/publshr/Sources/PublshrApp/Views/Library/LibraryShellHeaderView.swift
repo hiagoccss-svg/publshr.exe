@@ -19,6 +19,8 @@ enum ShellColumnHeaderKind {
 struct LibraryShellHeaderView: View {
     @EnvironmentObject private var chat: ChatViewModel
     let kind: ShellColumnHeaderKind
+    /// When set, the header band matches a fixed shell column (prevents HStack equal-width stretch).
+    var columnWidth: CGFloat?
 
     private var rowHeight: CGFloat {
         AppWindowChromeMetrics.unifiedTitlebarRowHeight
@@ -27,7 +29,8 @@ struct LibraryShellHeaderView: View {
     var body: some View {
         rowContent
             .frame(height: rowHeight, alignment: .center)
-            .frame(maxWidth: .infinity)
+            .frame(width: columnWidth, alignment: .leading)
+            .frame(maxWidth: columnWidth == nil ? .infinity : columnWidth)
             .background { headerBackground }
     }
 
@@ -47,21 +50,26 @@ struct LibraryShellHeaderView: View {
     private var rowContent: some View {
         switch kind {
         case .trafficLeading(let module, let compact):
-            HStack(alignment: .center, spacing: 10) {
-                Color.clear
-                    .frame(width: AppWindowChromeMetrics.trafficLightLeadingInset)
+            HStack(alignment: .center, spacing: compact ? 0 : 10) {
+                if !compact {
+                    Color.clear
+                        .frame(width: AppWindowChromeMetrics.trafficLightLeadingInset)
+                }
                 ShellTrafficLeadingActions(module: module, compact: compact)
-                Spacer(minLength: 0)
+                if !compact {
+                    Spacer(minLength: 0)
+                }
             }
+            .frame(maxWidth: .infinity, alignment: compact ? .center : .leading)
             .padding(.trailing, compact ? 0 : 8)
 
         case .secondaryChrome:
             Color.clear
-                .frame(maxWidth: .infinity)
+                .frame(width: columnWidth, height: 1)
 
         case .chatSubmenu:
             ChatSidebarTitlebarChrome(chat: chat)
-                .frame(maxWidth: .infinity)
+                .frame(width: columnWidth, alignment: .leading)
 
         case .editorTrailing(let module, let showCommandPalette, let showNotificationsPanel):
             HStack(alignment: .center, spacing: 0) {
@@ -81,17 +89,25 @@ struct LibraryShellHeaderView: View {
 /// Stacks a column header band above content with matching chrome background.
 struct ShellColumnChromeStack<Content: View>: View {
     let headerKind: ShellColumnHeaderKind
+    /// Locks column width in the shell `HStack` (nil = flexible editor column).
+    var columnWidth: CGFloat?
     var appliesSidebarChrome: Bool = false
     var appliesPrimaryBarGlass: Bool = false
     @ViewBuilder var content: () -> Content
 
     var body: some View {
         VStack(spacing: 0) {
-            LibraryShellHeaderView(kind: headerKind)
+            LibraryShellHeaderView(kind: headerKind, columnWidth: columnWidth)
             content()
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .frame(
+                    maxWidth: columnWidth == nil ? .infinity : columnWidth,
+                    maxHeight: .infinity,
+                    alignment: .topLeading
+                )
         }
+        .frame(width: columnWidth, alignment: .leading)
         .frame(minHeight: 0, maxHeight: .infinity)
+        .fixedSize(horizontal: columnWidth != nil, vertical: false)
         .modifier(ShellColumnChromeBackground(
             appliesSidebarChrome: appliesSidebarChrome,
             appliesPrimaryBarGlass: appliesPrimaryBarGlass

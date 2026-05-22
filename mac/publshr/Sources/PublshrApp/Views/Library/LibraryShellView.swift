@@ -52,10 +52,15 @@ struct LibraryShellView: View {
         }
     }
 
+    private var barColumnWidth: CGFloat {
+        LibraryGlassDesign.barMenuColumnWidth(expanded: tabStore.barMenuExpanded)
+    }
+
     private var shellBody: some View {
         HStack(alignment: .top, spacing: 0) {
             ShellColumnChromeStack(
                 headerKind: .trafficLeading(module: $module, compact: !tabStore.barMenuExpanded),
+                columnWidth: barColumnWidth,
                 appliesPrimaryBarGlass: true
             ) {
                 Group {
@@ -72,10 +77,12 @@ struct LibraryShellView: View {
                     }
                 }
             }
+            .layoutPriority(3)
 
             if !submenuHidden {
                 ShellColumnChromeStack(
                     headerKind: module == .chat ? .chatSubmenu : .secondaryChrome,
+                    columnWidth: LibraryGlassDesign.submenuColumnWidth,
                     appliesSidebarChrome: true
                 ) {
                     AppSecondarySidebar(
@@ -86,6 +93,7 @@ struct LibraryShellView: View {
                         showNewDM: $showNewDM
                     )
                 }
+                .layoutPriority(3)
                 .transition(.move(edge: .leading).combined(with: .opacity))
             }
 
