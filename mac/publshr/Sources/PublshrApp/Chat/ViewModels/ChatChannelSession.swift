@@ -45,19 +45,24 @@ final class ChatChannelSession: ObservableObject {
             composerText = draft.body
         }
         Task { await load() }
-        typingBroadcast?.onTyping = { [weak self] channelId, name in
-            Task { @MainActor in
-                guard self?.channel.id == channelId else { return }
-                self?.typingLabel = "\(name) is typing…"
-            }
+        let channelId = channel.id
+        Task { [weak self] in
+            await self?.typingBroadcast?.configureHandlers(
+                onTyping: { cid, name in
+                    Task { @MainActor in
+                        guard let self, self.channel.id == cid else { return }
+                        self.typingLabel = "\(name) is typing…"
+                    }
+                },
+                onStop: { cid in
+                    Task { @MainActor in
+                        guard let self, self.channel.id == cid else { return }
+                        self.typingLabel = nil
+                    }
+                }
+            )
+            await self?.typingBroadcast?.subscribe(channelId: channelId)
         }
-        typingBroadcast?.onStop = { [weak self] channelId in
-            Task { @MainActor in
-                guard self?.channel.id == channelId else { return }
-                self?.typingLabel = nil
-            }
-        }
-        Task { await typingBroadcast?.subscribe(channelId: channel.id) }
     }
 
     var mainChannelMessages: [ChatMessage] {
@@ -91,7 +96,8 @@ final class ChatChannelSession: ObservableObject {
         if let pins = try? await service.fetchPinned(channelId: channel.id, workspaceId: workspaceId) {
             pinnedItems = pins
         }
-        threadCounts = countThreads(in: try? await service.fetchMessages(channelId: channel.id, workspaceId: workspaceId) ?? messages)
+        let allMessages = (try? await service.fetchMessages(channelId: channel.id, workspaceId: workspaceId)) ?? messages
+        threadCounts = countThreads(in: allMessages)
     }
 
     private func loadReactionMap(messageIds: [UUID]) async throws -> [UUID: [ChatReactionSummary]] {
@@ -119,7 +125,7 @@ final class ChatChannelSession: ObservableObject {
         let text = composerText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return }
         composerText = ""
-        typingBroadcast?.stopTyping(channelId: channel.id, userId: userId, displayName: displayName(for: userId))
+        await typingBroadcast?.stopTyping(channelId: channel.id, userId: userId, displayName: displayName(for: userId))
         do {
             let sent = try await service.sendMessageExtended(
                 workspaceId: workspaceId,

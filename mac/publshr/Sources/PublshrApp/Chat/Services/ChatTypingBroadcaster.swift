@@ -16,6 +16,14 @@ actor ChatTypingBroadcaster {
         self.workspaceId = workspaceId
     }
 
+    func configureHandlers(
+        onTyping: (@Sendable (UUID, String) -> Void)?,
+        onStop: (@Sendable (UUID) -> Void)?
+    ) {
+        self.onTyping = onTyping
+        self.onStop = onStop
+    }
+
     func subscribe(channelId: UUID) async {
         listenTask?.cancel()
         let ch = await client.channel("chat-typing-\(workspaceId.uuidString)-\(channelId.uuidString)")
