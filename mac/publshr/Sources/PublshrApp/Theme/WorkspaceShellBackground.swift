@@ -10,8 +10,40 @@ enum WorkspaceShellBackground {
 /// Full-window desktop vibrancy (user wallpaper shows through the app).
 struct WorkspaceDesktopBackdrop: View {
     var body: some View {
-        CursorMacShellDesign.columnChromeBackground
-            .ignoresSafeArea()
+        ZStack {
+            VisualEffectBlur(
+                material: WorkspaceShellBackground.desktopBlurMaterial,
+                blendingMode: WorkspaceShellBackground.desktopBlurBlending
+            )
+            CursorMacShellDesign.columnChromeBackground.opacity(0.12)
+        }
+        .ignoresSafeArea()
+    }
+}
+
+/// First column shell — frosted glass with a hint of desktop color (not a solid grey block).
+struct GlassPrimaryBarChrome: View {
+    var body: some View {
+        ZStack {
+            VisualEffectBlur(
+                material: .sidebar,
+                blendingMode: .behindWindow
+            )
+            LibraryGlassDesign.primaryBarGlassFill
+            CursorMacShellDesign.columnChromeBackground.opacity(0.18)
+        }
+    }
+}
+
+struct GlassPrimaryBarBackground: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .background { GlassPrimaryBarChrome() }
+            .overlay(alignment: .trailing) {
+                Rectangle()
+                    .fill(LibraryGlassDesign.primaryBarGlassStroke)
+                    .frame(width: CursorMacShellDesign.columnDividerWidth)
+            }
     }
 }
 
@@ -50,5 +82,9 @@ struct GlassDisconnectedFooterBackground: ViewModifier {
 extension View {
     func glassDisconnectedFooter() -> some View {
         modifier(GlassDisconnectedFooterBackground())
+    }
+
+    func glassPrimaryBar() -> some View {
+        modifier(GlassPrimaryBarBackground())
     }
 }

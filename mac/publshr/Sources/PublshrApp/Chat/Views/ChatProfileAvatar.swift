@@ -15,7 +15,7 @@ struct ChatProfileAvatar: View {
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
             avatarContent
-            if let presence, presence != .offline {
+            if let presence, presence != .invisible {
                 ChatPresenceDot(status: presence, size: max(8, size * 0.28))
                     .offset(x: 1, y: 1)
             }
