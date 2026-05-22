@@ -338,6 +338,54 @@ extension ChatService {
 
     // MARK: - Planner
 
+    func createPlannerItem(
+        workspaceId: UUID,
+        title: String,
+        createdBy: UUID,
+        description: String? = nil
+    ) async throws -> PlannerTask {
+        struct Insert: Encodable {
+            let workspace_id: UUID
+            let title: String
+            let type: String
+            let status: String
+            let description: String?
+            let created_by: UUID
+        }
+        struct Row: Decodable {
+            let id: UUID
+            let workspace_id: UUID
+            let title: String
+            let status: String
+            let due_date: String?
+            let owner_id: UUID?
+        }
+        let row: Row = try await client
+            .from("planner_items")
+            .insert(Insert(
+                workspace_id: workspaceId,
+                title: title,
+                type: "internal_task",
+                status: "idea",
+                description: description,
+                created_by: createdBy
+            ))
+            .select("id, workspace_id, title, status, due_date, owner_id")
+            .single()
+            .execute()
+            .value
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withFullDate]
+        return PlannerTask(
+            id: row.id,
+            workspaceId: row.workspace_id,
+            title: row.title,
+            status: row.status,
+            dueDate: row.due_date.flatMap { formatter.date(from: $0) },
+            assigneeId: row.owner_id
+        )
+    }
+
     func fetchTasks(workspaceId: UUID, limit: Int = 20) async throws -> [PlannerTask] {
         struct Row: Decodable {
             let id: UUID

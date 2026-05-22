@@ -54,6 +54,10 @@ final class ChatViewModel: ObservableObject {
     @Published var searchError: String?
     @Published var starredChannelIds: Set<UUID> = []
     @Published var membershipByChannel: [UUID: ChatChannelMember] = [:]
+    @Published var renameChannelTarget: ChatChannel?
+    @Published var linkTaskForMessage: ChatMessage?
+    @Published var createTaskFromMessage: ChatMessage?
+    @Published var lastCopiedFeedback: String?
     private var auth: AuthViewModel?
     private var globalSearchTask: Task<Void, Never>?
     var service: ChatService?
@@ -205,6 +209,7 @@ final class ChatViewModel: ObservableObject {
         defer { isLoading = false }
         service.localStore().setMeta("last_workspace_id", value: workspaceId.uuidString)
         starredChannelIds = ChatUserPreferences.loadStarredChannelIds(workspaceId: workspaceId)
+        reloadClickUpLocalState()
 
         let cached = service.cachedChannels(workspaceId: workspaceId)
         if !cached.isEmpty {
@@ -263,12 +268,13 @@ final class ChatViewModel: ObservableObject {
         }
     }
 
-    private func partitionChannels(_ all: [ChatChannel]) {
+    func partitionChannels(_ all: [ChatChannel]) {
         channels = all
             .filter { $0.kind == .channel }
             .sorted { $0.sidebarTitle.localizedCaseInsensitiveCompare($1.sidebarTitle) == .orderedAscending }
+        let closed = workspace.map { ChatUserPreferences.loadClosedDMIds(workspaceId: $0.id) } ?? []
         directMessages = all
-            .filter { $0.kind == .dm || $0.kind == .group }
+            .filter { ($0.kind == .dm || $0.kind == .group) && !closed.contains($0.id) }
             .sorted { $0.sidebarTitle.localizedCaseInsensitiveCompare($1.sidebarTitle) == .orderedAscending }
     }
 
@@ -288,6 +294,7 @@ final class ChatViewModel: ObservableObject {
         unreadThreadsByChannel[channel.id] = 0
         service?.localStore().setUnreadCount(channelId: channel.id, count: 0)
         refreshDockBadge()
+        persistChannelRead(channel)
         Task { await subscribeTyping(for: channel.id) }
         if let draft = service?.localStore().loadDraft(channelId: channel.id) {
             composerText = draft.body
@@ -668,6 +675,7 @@ final class ChatViewModel: ObservableObject {
                 notifyForIncomingMessage(message)
             }
         }
+        reopenClosedDMIfNeeded(channelId: message.channelId)
         updateChannelPreview(message)
         refreshDockBadge()
     }
@@ -699,6 +707,7 @@ final class ChatViewModel: ObservableObject {
     }
 
     private func notifyForIncomingMessage(_ message: ChatMessage) {
+        guard shouldNotifyForChannel(message.channelId) else { return }
         let channelName = (channels + directMessages).first { $0.id == message.channelId }?.displayTitle ?? "Chat"
         let author = displayName(for: message.userId)
         let body = message.body ?? ""
@@ -804,6 +813,7 @@ final class ChatViewModel: ObservableObject {
         unreadThreadsByChannel[channel.id] = 0
         service?.localStore().setUnreadCount(channelId: channel.id, count: 0)
         refreshDockBadge()
+        persistChannelRead(channel)
     }
 
     func openWorkspaceSearch(scope: ChatSearchScope = .workspace) {

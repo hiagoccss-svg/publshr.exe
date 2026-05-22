@@ -143,7 +143,11 @@ struct ChatConversationView: View {
             onThread: { Task { await chat.openThread(for: message) } },
             onPin: { Task { await chat.pinMessage(message) } },
             onEdit: { chat.editingMessageId = message.id; editText = message.body ?? "" },
-            onDelete: { Task { await chat.deleteMessage(message) } }
+            onDelete: { Task { await chat.deleteMessage(message) } },
+            onCreateTask: { chat.createTaskFromMessage = message },
+            onLinkTask: { chat.linkTaskForMessage = message },
+            onCopyLink: { chat.copyMessageLink(message) },
+            onCopyText: { chat.copyMessageText(message) }
         )
     }
 

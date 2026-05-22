@@ -20,6 +20,10 @@ struct ChatMessageBubbleView: View {
     var onPin: (() -> Void)?
     var onEdit: (() -> Void)?
     var onDelete: (() -> Void)?
+    var onCreateTask: (() -> Void)?
+    var onLinkTask: (() -> Void)?
+    var onCopyLink: (() -> Void)?
+    var onCopyText: (() -> Void)?
 
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
@@ -73,6 +77,14 @@ struct ChatMessageBubbleView: View {
                 ForEach(ChatQuickReaction.allCases, id: \.rawValue) { r in
                     Button(r.rawValue) { onReaction?(r.rawValue) }
                 }
+            }
+            if !message.isDeleted {
+                Button("Create task…") { onCreateTask?() }
+                Button("Link to task…") { onLinkTask?() }
+            }
+            Button("Copy link") { onCopyLink?() }
+            if let body = message.body, !body.isEmpty, !message.isDeleted {
+                Button("Copy text") { onCopyText?() }
             }
             Button("Pin") { onPin?() }
             if isOwn, let body = message.body, !body.isEmpty, !message.isDeleted {

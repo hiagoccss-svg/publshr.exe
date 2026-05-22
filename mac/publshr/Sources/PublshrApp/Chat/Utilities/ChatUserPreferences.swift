@@ -9,6 +9,30 @@ enum ChatUserPreferences {
     private static let sidebarFilterKey = "publshr.chat.sidebarFilter"
     private static let sidebarLayoutKey = "publshr.chat.sidebarLayout"
     private static let starredPrefix = "publshr.chat.starred."
+    private static let closedDMsPrefix = "publshr.chat.closedDMs."
+    private static let unfollowedPrefix = "publshr.chat.unfollowed."
+
+    static func loadClosedDMIds(workspaceId: UUID) -> Set<UUID> {
+        let key = closedDMsPrefix + workspaceId.uuidString
+        guard let raw = UserDefaults.standard.array(forKey: key) as? [String] else { return [] }
+        return Set(raw.compactMap(UUID.init(uuidString:)))
+    }
+
+    static func saveClosedDMIds(_ ids: Set<UUID>, workspaceId: UUID) {
+        let key = closedDMsPrefix + workspaceId.uuidString
+        UserDefaults.standard.set(ids.map(\.uuidString), forKey: key)
+    }
+
+    static func loadUnfollowedChannelIds(workspaceId: UUID) -> Set<UUID> {
+        let key = unfollowedPrefix + workspaceId.uuidString
+        guard let raw = UserDefaults.standard.array(forKey: key) as? [String] else { return [] }
+        return Set(raw.compactMap(UUID.init(uuidString:)))
+    }
+
+    static func saveUnfollowedChannelIds(_ ids: Set<UUID>, workspaceId: UUID) {
+        let key = unfollowedPrefix + workspaceId.uuidString
+        UserDefaults.standard.set(ids.map(\.uuidString), forKey: key)
+    }
 
     static func loadStarredChannelIds(workspaceId: UUID) -> Set<UUID> {
         let key = starredPrefix + workspaceId.uuidString

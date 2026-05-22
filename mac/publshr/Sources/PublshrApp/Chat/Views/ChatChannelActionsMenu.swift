@@ -25,9 +25,22 @@ struct ChatChannelActionsMenu: View {
                 chat.toggleStar(channel)
             } label: {
                 Label(
-                    chat.isStarred(channel) ? "Remove from favorites" : "Add to favorites",
-                    systemImage: chat.isStarred(channel) ? "star.fill" : "star"
+                    chat.isStarred(channel) ? "Remove from pinned" : "Pin to sidebar",
+                    systemImage: chat.isStarred(channel) ? "pin.fill" : "pin"
                 )
+            }
+            if chat.isFollowing(channel) {
+                Button {
+                    chat.toggleFollow(channel)
+                } label: {
+                    Label("Unfollow", systemImage: "bell.badge")
+                }
+            } else {
+                Button {
+                    chat.toggleFollow(channel)
+                } label: {
+                    Label("Follow", systemImage: "bell")
+                }
             }
             Button {
                 Task { await chat.setChannelMuted(channel, muted: !chat.isChannelMuted(channel)) }
@@ -43,7 +56,31 @@ struct ChatChannelActionsMenu: View {
             } label: {
                 Label("Mark as read", systemImage: "checkmark.message")
             }
+            Button {
+                chat.markChannelUnread(channel)
+            } label: {
+                Label("Mark as unread", systemImage: "envelope.badge")
+            }
+            if channel.kind == .channel {
+                Button {
+                    chat.beginRenameChannel(channel)
+                } label: {
+                    Label("Rename channel…", systemImage: "pencil")
+                }
+            }
+            if channel.kind == .dm || channel.kind == .group {
+                Button(role: .destructive) {
+                    chat.closeDirectMessage(channel)
+                } label: {
+                    Label("Close conversation", systemImage: "xmark.circle")
+                }
+            }
             Divider()
+            Button {
+                chat.copyChannelLink(channel)
+            } label: {
+                Label("Copy link", systemImage: "link")
+            }
             Button { chat.openWorkspaceSearch(scope: .channel) } label: {
                 Label("Search in channel", systemImage: "magnifyingglass")
             }

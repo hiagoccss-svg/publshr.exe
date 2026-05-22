@@ -17,6 +17,7 @@ What is **implemented** vs what still needs work for production-grade enterprise
 | Permissions UI | Persisted to `workspaces.settings.chat` via Supabase PATCH |
 | Threads, reactions, files, voice, AI, search | Phases 2–4 |
 | Starred channels, mute, mark read, search tabs/scope | Sidebar + `ChatSearchSheet` (2026-05-22) |
+| ClickUp Phase A/B (2026-05-22) | Pin section, follow/unfollow, mark unread, close DM, rename channel, copy links, create/link planner task from message |
 
 ## Pop-out window (Slack-style)
 

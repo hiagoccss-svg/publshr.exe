@@ -199,6 +199,43 @@ final class ChatService {
         return row
     }
 
+    func updateMemberLastReadAt(memberId: UUID, at: Date) async throws -> ChatChannelMember {
+        struct Patch: Encodable {
+            let last_read_at: Date
+        }
+        return try await client
+            .from("chat_channel_members")
+            .update(Patch(last_read_at: at))
+            .eq("id", value: memberId.uuidString)
+            .select()
+            .single()
+            .execute()
+            .value
+    }
+
+    func updateChannel(
+        channelId: UUID,
+        workspaceId: UUID,
+        name: String,
+        description: String?
+    ) async throws -> ChatChannel {
+        struct Patch: Encodable {
+            let name: String
+            let description: String?
+        }
+        let row: ChatChannel = try await client
+            .from("chat_channels")
+            .update(Patch(name: name, description: description))
+            .eq("id", value: channelId.uuidString)
+            .eq("workspace_id", value: workspaceId.uuidString)
+            .select()
+            .single()
+            .execute()
+            .value
+        store.cacheChannels([row])
+        return row
+    }
+
     // MARK: - Messages
 
     func fetchMessages(channelId: UUID, workspaceId: UUID, limit: Int = 100) async throws -> [ChatMessage] {

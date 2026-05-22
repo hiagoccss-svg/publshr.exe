@@ -72,6 +72,18 @@ struct ChatSidebarView: View {
             }
             .menuStyle(.borderlessButton)
             .menuIndicator(.hidden)
+            Button {
+                withAnimation(.easeInOut(duration: 0.15)) {
+                    tabStore.sidebarExpanded = false
+                }
+            } label: {
+                Image(systemName: "sidebar.left")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(LibraryGlassDesign.inkSecondary)
+                    .frame(width: 24, height: 24)
+            }
+            .buttonStyle(.plain)
+            .help("Hide chat sidebar (⌘\\)")
         }
         .padding(.horizontal, ChatClickUpDesign.horizontalPadding)
         .padding(.top, 12)
@@ -172,7 +184,7 @@ struct ChatSidebarView: View {
     private var organizedContent: some View {
         Group {
             if chat.sidebarFilter == .all, !chat.starredChannels.isEmpty {
-                sidebarSection("Favorites", items: chat.starredChannels, onAdd: nil)
+                sidebarSection("Pinned", items: chat.starredChannels, onAdd: nil)
                 LibraryUniversalSubmenu.sectionDivider()
             }
             if chat.sidebarFilter != .dms {
@@ -276,9 +288,14 @@ struct ChatSidebarView: View {
                         .foregroundStyle(selected ? LibraryGlassDesign.ink : LibraryGlassDesign.inkSecondary)
                         .lineLimit(1)
                     if chat.isStarred(channel) {
-                        Image(systemName: "star.fill")
+                        Image(systemName: "pin.fill")
                             .font(.system(size: 9))
-                            .foregroundStyle(.yellow)
+                            .foregroundStyle(LibraryGlassDesign.primaryCTA)
+                    }
+                    if !chat.isFollowing(channel) {
+                        Image(systemName: "bell.slash")
+                            .font(.system(size: 9))
+                            .foregroundStyle(LibraryGlassDesign.inkMuted)
                     }
                     if chat.isChannelMuted(channel) {
                         Image(systemName: "bell.slash.fill")

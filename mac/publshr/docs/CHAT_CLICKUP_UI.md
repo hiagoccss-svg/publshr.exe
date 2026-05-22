@@ -12,7 +12,7 @@ Publshr Chat follows the [ClickUp Chat Sidebar](https://help.clickup.com/hc/en-u
 ├─────────────────────────────┤
 │ [All][Unread][DMs][Channels]│  ClickUp filter pills
 ├─────────────────────────────┤
-│ FAVORITES                   │  Starred conversations (user-controlled)
+│ PINNED                      │  Starred / pinned conversations (user-controlled)
 │ CHANNELS              [+]   │
 │ DIRECT MESSAGES       [+]   │
 ├─────────────────────────────┤
@@ -44,12 +44,14 @@ Keys: `publshr.chat.sidebarFilter`, `publshr.chat.sidebarLayout`, `publshr.chat.
 
 - **Bold** row + numeric badge = unread messages
 - **Thread icon** = unread thread replies you follow
-- **Star** = favorite (not the old auto top-8 list)
-- **Bell slash** = muted (`notification_level` on Supabase)
+- **Pin** = pinned section (was “Favorites”)
+- **Bell slash** = muted (`notification_level`) or unfollowed (no push)
 
 ## Conversation column
 
 - Status bar: channel title, search, pin, ⋯ menu (no calls / AI)
+- Channel/DM menu: follow/unfollow, mark read/unread, rename (channels), close DM, copy link
+- Message menu: create task, link task, copy link/text, thread, react, pin, edit, delete
 - Composer: attach files + send (⌘↩) — no voice note recorder
 - Threads, reactions, pins, files remain
 
