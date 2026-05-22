@@ -9,6 +9,10 @@ OUT="${1:?output .icns path}"
 bash "${SCRIPT_DIR}/sync-app-icon.sh"
 SOURCE="${APP_DIR}/icon.png"
 
+if command -v python3 >/dev/null 2>&1 && python3 -c "import PIL" 2>/dev/null; then
+    python3 "${SCRIPT_DIR}/apply-premium-icon-background.py" 1024
+fi
+
 if [[ "$(uname -s)" != "Darwin" ]]; then
     echo "icon-build: skip on non-macOS (CI on macos-14 generates icons)" >&2
     exit 0
