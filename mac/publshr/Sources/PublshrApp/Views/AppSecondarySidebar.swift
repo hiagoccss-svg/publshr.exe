@@ -33,5 +33,7 @@ struct AppSecondarySidebar: View {
         }
         .frame(maxHeight: .infinity)
         .frame(width: columnWidth)
+        .fixedSize(horizontal: true, vertical: false)
+        .layoutPriority(2)
     }
 }

@@ -81,8 +81,10 @@ struct MainIDEView: View {
             return
         }
         storedModule = newModule.rawValue
-        if newModule != .chat { chat.chatFocusMode = false }
-        if newModule != .spaces { spaces.spacesFocusMode = false }
+        withAnimation(.easeInOut(duration: 0.15)) {
+            if newModule != .chat { chat.chatFocusMode = false }
+            if newModule != .spaces { spaces.spacesFocusMode = false }
+        }
         if newModule == .chat { chat.attach(auth: auth) }
         if newModule == .spaces { spaces.attach(auth: auth) }
         tabStore.openFromModule(newModule, activate: true)

@@ -393,7 +393,8 @@ extension ChatService {
     }
 
     func subscribeReactions(workspaceId: UUID, onChange: @escaping @Sendable () -> Void) {
-        Task {
+        reactionsRealtimeTask?.cancel()
+        reactionsRealtimeTask = Task {
             let channel = await client.channel("chat-reactions-\(workspaceId.uuidString)")
             let inserts = await channel.postgresChange(
                 InsertAction.self,
