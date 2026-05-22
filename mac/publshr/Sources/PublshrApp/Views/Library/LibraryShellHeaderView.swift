@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Unified window chrome — traffic lights, tabs, pane title, Ask AI, and pane actions share one bottom-aligned titlebar row.
+/// Unified window chrome — traffic lights, tabs, pane title, Ask AI, and pane actions share one titlebar row.
 struct LibraryShellHeaderView: View {
     @EnvironmentObject private var tabStore: WorkspaceTabStore
     @EnvironmentObject private var auth: AuthViewModel
@@ -15,8 +15,30 @@ struct LibraryShellHeaderView: View {
         AppWindowChromeMetrics.titlebarHeight(safeAreaTop: safeAreaTop)
     }
 
+    private var titlebarRowHeight: CGFloat {
+        AppWindowChromeMetrics.titlebarRowHeight(safeAreaTop: safeAreaTop)
+    }
+
     var body: some View {
-        HStack(alignment: .bottom, spacing: AppWindowChromeMetrics.rowSpacing) {
+        VStack(spacing: 0) {
+            titlebarRow
+            if titlebarHeight > titlebarRowHeight {
+                Spacer(minLength: 0)
+            }
+        }
+        .frame(height: titlebarHeight, alignment: .top)
+        .frame(maxWidth: .infinity)
+        .background { AppWindowChromeBackground() }
+        .overlay(alignment: .bottom) {
+            Rectangle()
+                .fill(LibraryGlassDesign.hairline)
+                .frame(height: 1)
+        }
+    }
+
+    /// Controls live in the top titlebar band (traffic-light row), not pinned to the bottom of a tall safe-area.
+    private var titlebarRow: some View {
+        HStack(alignment: .center, spacing: AppWindowChromeMetrics.rowSpacing) {
             Color.clear
                 .frame(width: AppWindowChromeMetrics.trafficLightLeadingInset)
 
@@ -61,15 +83,8 @@ struct LibraryShellHeaderView: View {
             trailingChromeCluster
         }
         .padding(.trailing, 12)
-        .padding(.bottom, AppWindowChromeMetrics.trafficLightBaselineInset)
-        .frame(height: titlebarHeight, alignment: .bottom)
+        .frame(height: titlebarRowHeight, alignment: .center)
         .frame(maxWidth: .infinity)
-        .background { AppWindowChromeBackground() }
-        .overlay(alignment: .bottom) {
-            Rectangle()
-                .fill(LibraryGlassDesign.hairline)
-                .frame(height: 1)
-        }
     }
 
     private var submenuFocusIcon: String {
@@ -104,7 +119,7 @@ struct LibraryShellHeaderView: View {
 
     private var tabStrip: some View {
         ScrollView(.horizontal, showsIndicators: false) {
-            HStack(alignment: .bottom, spacing: 6) {
+            HStack(alignment: .center, spacing: 6) {
                 ForEach(tabStore.tabs) { tab in
                     ChromeDocumentTab(
                         title: tab.title,
@@ -147,7 +162,7 @@ struct LibraryShellHeaderView: View {
         .help("New tab")
     }
 
-    // MARK: - Pane title (same baseline as Ask AI)
+    // MARK: - Pane title
 
     @ViewBuilder
     private var paneTitleCluster: some View {
@@ -189,10 +204,10 @@ struct LibraryShellHeaderView: View {
         .frame(height: AppWindowChromeMetrics.controlSize)
     }
 
-    // MARK: - Trailing (Ask AI + pane actions — bottom aligned with traffic-light close)
+    // MARK: - Trailing (Ask AI + pane actions)
 
     private var trailingChromeCluster: some View {
-        HStack(alignment: .bottom, spacing: AppWindowChromeMetrics.trailingClusterSpacing) {
+        HStack(alignment: .center, spacing: AppWindowChromeMetrics.trailingClusterSpacing) {
             AskAIChromeButton {
                 chat.showAISheet = true
             }
