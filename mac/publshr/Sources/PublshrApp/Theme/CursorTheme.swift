@@ -8,6 +8,8 @@ enum AppAppearance: String, CaseIterable {
 
 struct ThemePalette {
     let activityBar: Color
+    let activityBarForeground: Color
+    let activityBarForegroundDim: Color
     let navSidebar: Color
     let titleBar: Color
     let sideBar: Color
@@ -52,7 +54,9 @@ enum CursorTheme {
     // MARK: - Light Modern (Cursor Mac default light — VS Code Light Modern)
 
     static let light = ThemePalette(
-        activityBar: Color(hex: 0xE8E8E8),
+        activityBar: Color(hex: 0x3B3B3B),
+        activityBarForeground: Color(hex: 0xE8E8E8),
+        activityBarForegroundDim: Color(hex: 0x9D9D9D),
         navSidebar: Color(hex: 0xFFFFFF),
         titleBar: Color(hex: 0xFFFFFF),
         sideBar: Color(hex: 0xFFFFFF),
@@ -90,6 +94,8 @@ enum CursorTheme {
 
     static let dark = ThemePalette(
         activityBar: Color(hex: 0x2D2D2D),
+        activityBarForeground: Color(hex: 0xCCCCCC),
+        activityBarForegroundDim: Color(hex: 0x6E6E6E),
         navSidebar: Color(hex: 0x252526),
         titleBar: Color(hex: 0x1E1E1E),
         sideBar: Color(hex: 0x252526),
@@ -125,6 +131,8 @@ enum CursorTheme {
 
     // Convenience forwards (existing code uses CursorTheme.foreground etc.)
     static var activityBar: Color { palette.activityBar }
+    static var activityBarForeground: Color { palette.activityBarForeground }
+    static var activityBarForegroundDim: Color { palette.activityBarForegroundDim }
     static var navSidebar: Color { palette.navSidebar }
     static var titleBar: Color { palette.titleBar }
     static var sideBar: Color { palette.sideBar }
@@ -164,10 +172,10 @@ enum CursorTheme {
     static let sideBarWidth: CGFloat = 260
     static let chatPanelWidth: CGFloat = 520
     static let titleBarHeight: CGFloat = 38
-    static let chatToolbarHeight: CGFloat = 44
+    static let chatToolbarHeight: CGFloat = 36
+    static let statusBarHeight: CGFloat = 18
     static let chatRowSpacing: CGFloat = 16
     static let chatSidebarRowHeight: CGFloat = 30
-    static let statusBarHeight: CGFloat = 22
     static let tabBarHeight: CGFloat = 35
 }
 

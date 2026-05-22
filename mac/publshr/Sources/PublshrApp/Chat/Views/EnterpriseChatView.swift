@@ -1,23 +1,25 @@
 import SwiftUI
 
-/// Enterprise team chat — main content column only (nav + toolbar live in the shell).
+/// Enterprise team chat — borderless column wired to the shell sidebars.
 struct EnterpriseChatView: View {
     @EnvironmentObject private var auth: AuthViewModel
     @ObservedObject var chat: ChatViewModel
+    var topInset: CGFloat = 0
     @State private var showPlannerShare = false
 
     var body: some View {
-        ChatConversationView(chat: chat)
-            .background(CursorTheme.chatBackground)
-            .sheet(isPresented: $chat.showSearchSheet) { ChatSearchSheet(chat: chat) }
-            .sheet(isPresented: $chat.showAISheet) { ChatAISheet(chat: chat) }
-            .sheet(isPresented: $chat.showPermissionsSheet) { ChatPermissionsSheet(chat: chat) }
-            .sheet(isPresented: $showPlannerShare) { plannerShareSheet }
-            .onAppear {
-                if chat.currentUserId == nil {
-                    chat.attach(auth: auth)
-                }
+        ChatWorkspaceChrome(chat: chat, topInset: topInset) {
+            ChatConversationView(chat: chat)
+        }
+        .sheet(isPresented: $chat.showSearchSheet) { ChatSearchSheet(chat: chat) }
+        .sheet(isPresented: $chat.showAISheet) { ChatAISheet(chat: chat) }
+        .sheet(isPresented: $chat.showPermissionsSheet) { ChatPermissionsSheet(chat: chat) }
+        .sheet(isPresented: $showPlannerShare) { plannerShareSheet }
+        .onAppear {
+            if chat.currentUserId == nil {
+                chat.attach(auth: auth)
             }
+        }
     }
 
     private var plannerShareSheet: some View {

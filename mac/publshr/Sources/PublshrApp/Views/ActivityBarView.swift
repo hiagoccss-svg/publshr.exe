@@ -18,9 +18,6 @@ struct ActivityBarView: View {
         }
         .frame(maxHeight: .infinity)
         .background(CursorTheme.activityBar)
-        .overlay(alignment: .trailing) {
-            Rectangle().fill(CursorTheme.borderSubtle.opacity(0.65)).frame(width: 1)
-        }
     }
 
     private func moduleButton(_ item: AppModule) -> some View {
@@ -32,10 +29,10 @@ struct ActivityBarView: View {
                 .font(.system(size: item == .settings ? 17 : 19))
                 .symbolRenderingMode(.hierarchical)
                 .frame(width: CursorTheme.activityBarWidth, height: 44)
-                .foregroundStyle(selected ? CursorTheme.foreground : CursorTheme.foregroundDim)
+                .foregroundStyle(selected ? CursorTheme.activityBarForeground : CursorTheme.activityBarForegroundDim)
                 .background(
                     selected
-                        ? CursorTheme.navSidebar.opacity(CursorTheme.appearance == .light ? 0.9 : 0.35)
+                        ? Color.white.opacity(0.12)
                         : Color.clear
                 )
                 .overlay(alignment: .leading) {

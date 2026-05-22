@@ -31,11 +31,6 @@ struct ContentToolbarView: View {
         .padding(.trailing, 14)
         .frame(height: toolbarHeight)
         .background(CursorTheme.editorBackground)
-        .overlay(alignment: .bottom) {
-            if module != .chat {
-                Rectangle().fill(CursorTheme.borderSubtle).frame(height: 1)
-            }
-        }
     }
 
     @ViewBuilder

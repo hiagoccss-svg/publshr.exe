@@ -23,30 +23,11 @@ struct MainIDEView: View {
 
                 HStack(alignment: .top, spacing: 0) {
                     if !chatFocusLayout {
-                        ActivityBarView(module: $module, topInset: topInset)
-                            .frame(width: CursorTheme.activityBarWidth)
-
-                        AppSecondarySidebar(
-                            module: module,
-                            chat: chat,
-                            spaces: spaces,
-                            showNewChannel: $showNewChannel,
-                            showNewDM: $showNewDM,
-                            topInset: topInset
-                        )
+                        leftRail(topInset: topInset)
                     }
 
-                    VStack(spacing: 0) {
-                        ContentToolbarView(spaces: spaces, module: module)
-
-                        moduleMainContent
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-
-                        StatusBarView(module: module)
-                            .frame(height: CursorTheme.statusBarHeight)
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(CursorTheme.editorBackground)
+                    contentColumn(topInset: topInset)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
@@ -86,11 +67,49 @@ struct MainIDEView: View {
         .sheet(isPresented: $showNewDM) { newDMSheet }
     }
 
+    /// Activity + nav columns span full window height (status lives under content only).
+    private func leftRail(topInset: CGFloat) -> some View {
+        HStack(spacing: 0) {
+            ActivityBarView(module: $module, topInset: topInset)
+                .frame(width: CursorTheme.activityBarWidth)
+
+            AppSecondarySidebar(
+                module: module,
+                chat: chat,
+                spaces: spaces,
+                showNewChannel: $showNewChannel,
+                showNewDM: $showNewDM,
+                topInset: topInset
+            )
+        }
+        .frame(maxHeight: .infinity)
+    }
+
+    private func contentColumn(topInset: CGFloat) -> some View {
+        VStack(spacing: 0) {
+            if module != .chat {
+                VStack(spacing: 0) {
+                    Color.clear.frame(height: topInset)
+                    ContentToolbarView(spaces: spaces, module: module)
+                        .frame(height: CursorTheme.titleBarHeight)
+                }
+            }
+
+            moduleMainContent(topInset: topInset)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+            ContentStatusFooter(module: module)
+                .frame(height: CursorTheme.statusBarHeight)
+        }
+        .frame(maxHeight: .infinity)
+        .background(module == .chat ? CursorTheme.chatBackground : CursorTheme.editorBackground)
+    }
+
     @ViewBuilder
-    private var moduleMainContent: some View {
+    private func moduleMainContent(topInset: CGFloat) -> some View {
         switch module {
         case .chat:
-            EnterpriseChatView(chat: chat)
+            EnterpriseChatView(chat: chat, topInset: topInset)
                 .onAppear { chat.attach(auth: auth) }
         case .spaces:
             SpacesRootView(spaces: spaces)
