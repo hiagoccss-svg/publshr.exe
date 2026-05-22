@@ -19,6 +19,21 @@ enum CallScope: String, Codable, CaseIterable {
     }
 }
 
+/// Active call on a channel (for join badge).
+struct LiveCallSummary: Equatable, Identifiable {
+    var id: UUID { roomId }
+    let roomId: UUID
+    let channelId: UUID
+    let title: String
+    let kind: String
+    let scope: CallScope
+    let participantCount: Int
+    let createdBy: UUID
+    let livekitRoom: String?
+
+    var isVideo: Bool { kind == "video" }
+}
+
 struct IncomingCallInvite: Identifiable, Equatable {
     let id: UUID
     let room: CallSignalingService.CallRoomRecord

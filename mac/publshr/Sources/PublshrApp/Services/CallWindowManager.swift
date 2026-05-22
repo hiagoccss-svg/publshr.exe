@@ -24,7 +24,7 @@ final class CallWindowManager: ObservableObject {
         let hosting = NSHostingController(rootView: root)
         let window = NSWindow(contentViewController: hosting)
         window.title = calls.activeRoom?.title ?? "Call"
-        window.setContentSize(NSSize(width: 400, height: 540))
+        window.setContentSize(NSSize(width: 520, height: 620))
         window.center()
         GlassWindowConfigurator.applyCallWindow(window)
         window.isReleasedWhenClosed = false

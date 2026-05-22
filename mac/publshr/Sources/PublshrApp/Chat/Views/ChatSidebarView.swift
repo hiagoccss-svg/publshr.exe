@@ -132,15 +132,17 @@ struct ChatSidebarView: View {
                         .foregroundStyle(selected ? CursorTheme.foreground : CursorTheme.foregroundMuted)
                         .lineLimit(1)
                     Spacer(minLength: 0)
-                    if unread > 0 {
-                        Text("\(unread)")
-                            .font(.system(size: 10, weight: .bold))
-                            .foregroundStyle(.white)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(CursorTheme.accent)
-                            .clipShape(Capsule())
-                    }
+                if let live = calls.liveCall(for: channel.id), !calls.isInCall(on: channel.id) {
+                    LiveCallChannelBadge(summary: live)
+                } else if unread > 0 {
+                    Text("\(unread)")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(CursorTheme.accent)
+                        .clipShape(Capsule())
+                }
                 }
                 .frame(height: 28)
                 .padding(.horizontal, 10)
@@ -188,6 +190,14 @@ struct ChatSidebarView: View {
             ChatWindowManager.shared.openChannel(channel, chat: chat, auth: auth)
         } label: {
             Label("Open in new window", systemImage: "arrow.up.forward.square")
+        }
+        if let live = calls.liveCall(for: channel.id), !calls.isInCall(on: channel.id) {
+            Button {
+                Task { await calls.joinActiveCall(for: channel.id) }
+            } label: {
+                Label("Join live call (\(live.participantCount))", systemImage: "phone.badge.plus")
+            }
+            Divider()
         }
         if subscription.canUseCalls(workspace: auth.selectedWorkspace) {
             Divider()

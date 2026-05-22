@@ -1,16 +1,20 @@
 import SwiftUI
 
-/// In-call UI inside the glass call window.
+/// In-call UI inside the glass call window with LiveKit video tiles.
 struct CallRoomView: View {
     @EnvironmentObject private var calls: CallSignalingService
     @EnvironmentObject private var chat: ChatViewModel
     @EnvironmentObject private var auth: AuthViewModel
 
+    private let gridColumns = [
+        GridItem(.adaptive(minimum: 160, maximum: 220), spacing: 8),
+    ]
+
     var body: some View {
         VStack(spacing: 0) {
             header
             Divider().opacity(0.35)
-            participantGrid
+            videoGrid
             Divider().opacity(0.35)
             controls
         }
@@ -50,49 +54,60 @@ struct CallRoomView: View {
                     .font(.system(size: 10))
                     .foregroundStyle(CursorTheme.foregroundDim)
             }
-            if let hint = calls.localJoinHint {
-                Text(hint)
-                    .font(.system(size: 10))
-                    .foregroundStyle(CursorTheme.foregroundDim)
-                    .multilineTextAlignment(.center)
-            }
         }
         .padding(14)
     }
 
-    private var participantGrid: some View {
-        ScrollView {
-            LazyVStack(spacing: 8) {
-                ForEach(calls.participants.filter(\.isActive)) { p in
-                    HStack(spacing: 10) {
-                        ChatProfileAvatar(
-                            profile: chat.profile(for: p.userId),
-                            displayName: chat.displayName(for: p.userId),
-                            size: 40
-                        )
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(chat.displayName(for: p.userId))
-                                .font(.system(size: 13, weight: .medium))
-                            HStack(spacing: 8) {
-                                if p.isMuted {
-                                    Label("Muted", systemImage: "mic.slash").font(.system(size: 10))
-                                }
-                                if p.isVideoEnabled {
-                                    Label("Video", systemImage: "video").font(.system(size: 10))
-                                }
-                            }
-                            .foregroundStyle(CursorTheme.foregroundDim)
-                        }
-                        Spacer()
-                    }
-                    .padding(10)
-                    .background(Color.white.opacity(0.45))
-                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                }
+    @ViewBuilder
+    private var videoGrid: some View {
+        if calls.liveMedia.videoTiles.isEmpty {
+            ScrollView {
+                participantListFallback
             }
-            .padding(12)
+            .frame(maxHeight: 300)
+        } else {
+            ScrollView {
+                LazyVGrid(columns: gridColumns, spacing: 8) {
+                    ForEach(calls.liveMedia.videoTiles) { tile in
+                        CallParticipantVideoCell(
+                            tile: tile,
+                            resolvedName: resolvedDisplayName(for: tile)
+                        )
+                    }
+                }
+                .padding(12)
+            }
+            .frame(maxHeight: 340)
         }
-        .frame(maxHeight: 280)
+    }
+
+    private var participantListFallback: some View {
+        LazyVStack(spacing: 8) {
+            ForEach(calls.participants.filter(\.isActive)) { p in
+                HStack(spacing: 10) {
+                    ChatProfileAvatar(
+                        profile: chat.profile(for: p.userId),
+                        displayName: chat.displayName(for: p.userId),
+                        size: 40
+                    )
+                    Text(chat.displayName(for: p.userId))
+                        .font(.system(size: 13, weight: .medium))
+                    Spacer()
+                }
+                .padding(10)
+                .background(Color.white.opacity(0.45))
+                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+            }
+        }
+        .padding(12)
+    }
+
+    private func resolvedDisplayName(for tile: CallVideoTile) -> String {
+        if tile.isLocal { return "You" }
+        if let uid = tile.userId {
+            return chat.displayName(for: uid)
+        }
+        return tile.displayName
     }
 
     private var controls: some View {
