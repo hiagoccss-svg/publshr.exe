@@ -10,9 +10,10 @@
 # =============================================================================
 set -euo pipefail
 
-INSTALLER_VERSION="3"
+INSTALLER_VERSION="4"
 PUBLSHR_REPO="${PUBLSHR_REPO:-hiagoccss-svg/publshr.exe}"
 PUBLSHR_BRANCH="${PUBLSHR_BRANCH:-main}"
+PUBLSHR_INSTALLER_URL="https://raw.githubusercontent.com/${PUBLSHR_REPO}/${PUBLSHR_BRANCH}/install-publshr.sh"
 PUBLSHR_LIVE_TAG="${PUBLSHR_LIVE_TAG:-live}"
 PUBLSHR_MAC_APP="${PUBLSHR_MAC_APP:-/Applications/Publshr.app}"
 PUBLSHR_BIN_LINK="${PUBLSHR_BIN_LINK:-/usr/local/bin/publshr}"
@@ -132,22 +133,33 @@ _publshr_install_app() {
 
 _publshr_require_root() {
     [[ "$(id -u)" -eq 0 ]] && return 0
+
+    log ""
+    log "Administrator password required (installing to /Applications)."
     if [[ ! -t 0 ]]; then
-        log ""
-        log "Administrator password required (installing to /Applications)."
-        log "If nothing seems to happen, enter your Mac password — it may be waiting silently."
-        log ""
+        log "Enter your Mac password when prompted (Terminal may show no characters while typing)."
     else
         echo ""
         read -r -p "Press Enter to install Publshr to /Applications (Ctrl+C to cancel) ... "
     fi
-    exec sudo -E \
-        PUBLSHR_REPO="$PUBLSHR_REPO" \
-        PUBLSHR_BRANCH="$PUBLSHR_BRANCH" \
-        PUBLSHR_MAC_APP="$PUBLSHR_MAC_APP" \
-        PUBLSHR_BIN_LINK="$PUBLSHR_BIN_LINK" \
-        INSTALLER_VERSION="$INSTALLER_VERSION" \
-        bash "$0" "$@"
+    log ""
+
+    local sudo_env=(
+        "PUBLSHR_REPO=${PUBLSHR_REPO}"
+        "PUBLSHR_BRANCH=${PUBLSHR_BRANCH}"
+        "PUBLSHR_MAC_APP=${PUBLSHR_MAC_APP}"
+        "PUBLSHR_BIN_LINK=${PUBLSHR_BIN_LINK}"
+        "PUBLSHR_LIVE_TAG=${PUBLSHR_LIVE_TAG}"
+        "INSTALLER_VERSION=${INSTALLER_VERSION}"
+    )
+
+    # curl | bash: $0 is "bash" and BASH_SOURCE[0] is empty — re-fetch script for sudo.
+    if [[ -n "${BASH_SOURCE[0]:-}" && -f "${BASH_SOURCE[0]}" ]]; then
+        exec sudo -E env "${sudo_env[@]}" bash "${BASH_SOURCE[0]}" "$@"
+    fi
+
+    exec sudo -E env "${sudo_env[@]}" bash -c \
+        'curl -fsSL "$1" | bash -s -- "${@:2}"' _ "${PUBLSHR_INSTALLER_URL}" "$@"
 }
 
 publshr_install_main() {
@@ -177,7 +189,8 @@ publshr_install_main() {
     open "$PUBLSHR_MAC_APP" 2>/dev/null || true
 }
 
-if [[ "${BASH_SOURCE[0]:-}" == "${0}" ]]; then
+# curl | bash leaves BASH_SOURCE[0] empty — old [[ BASH_SOURCE == $0 ]] guard never ran.
+if ! (return 0 2>/dev/null); then
     log "Publshr native macOS desktop installer v${INSTALLER_VERSION}"
     log "Swift/SwiftUI app — not a browser or Electron web app."
     log ""
