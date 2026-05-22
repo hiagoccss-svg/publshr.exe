@@ -8,10 +8,10 @@ struct ChatEditorToolbarContent: View {
     var body: some View {
         TitlebarToolbarRow(leadingPadding: 0, trailingPadding: 0) {
             channelTitle
-            Spacer(minLength: 8)
+            Spacer(minLength: 12)
             trailingActions
         }
-        .frame(maxWidth: .infinity)
+        .frame(maxWidth: .infinity, alignment: .center)
     }
 
     @ViewBuilder
