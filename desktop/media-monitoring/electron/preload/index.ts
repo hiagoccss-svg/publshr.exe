@@ -17,6 +17,7 @@ export interface ResultFilterOptions {
   savedOnly?: boolean
   search?: string
   sort?: string
+  days?: number
 }
 
 const api = {
@@ -62,6 +63,11 @@ const api = {
   getSavedCoverage: () => ipcRenderer.invoke('db:get-saved-coverage'),
   getArticle: (id: string) => ipcRenderer.invoke('db:get-article', id),
   getStats: () => ipcRenderer.invoke('db:get-stats'),
+  getReportAnalytics: (options?: { days?: number; savedOnly?: boolean }) =>
+    ipcRenderer.invoke('db:get-report-analytics', options),
+  getWorkspaceClippings: (options?: ResultFilterOptions & { days?: number }) =>
+    ipcRenderer.invoke('db:get-workspace-clippings', options),
+  getActivity: (resultId: string) => ipcRenderer.invoke('db:get-activity', resultId),
   saveCoverage: (resultId: string, data?: { notes?: string; tags?: string[] }) =>
     ipcRenderer.invoke('db:save-coverage', resultId, data),
   updateSentiment: (resultId: string, sentiment: string) =>
