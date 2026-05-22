@@ -56,7 +56,8 @@ enum MainWindowChrome {
             window.styleMask = mask
         }
         if window.responds(to: #selector(setter: NSWindow.isMovableByWindowBackground)) {
-            window.isMovableByWindowBackground = true
+            // Dragging from glass sidebars made the shell feel like it was "moving by itself".
+            window.isMovableByWindowBackground = false
         }
         if let content = window.contentView {
             content.wantsLayer = true

@@ -3,7 +3,7 @@ import SwiftUI
 /// ClickUp-inspired layout tokens for Spaces (sidebar tree, breadcrumbs, views, board).
 enum SpacesClickUpDesign {
     // Sidebar
-    static let sidebarWidth: CGFloat = LibraryGlassDesign.sidebarWidthWide
+    static let sidebarWidth: CGFloat = LibraryGlassDesign.sidebarWidth
     static let sidebarSectionTop: CGFloat = 12
     static let sidebarSectionBottom: CGFloat = 6
     static let sidebarRowHeight: CGFloat = 30

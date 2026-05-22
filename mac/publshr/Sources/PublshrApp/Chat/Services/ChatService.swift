@@ -8,6 +8,8 @@ final class ChatService {
     let store: ChatLocalStore
     private var realtimeTask: Task<Void, Never>?
     private var messageUpdateTask: Task<Void, Never>?
+    var presenceRealtimeTask: Task<Void, Never>?
+    var reactionsRealtimeTask: Task<Void, Never>?
     private let jsonDecoder: JSONDecoder = {
         let d = JSONDecoder()
         d.dateDecodingStrategy = .iso8601
@@ -24,6 +26,10 @@ final class ChatService {
         realtimeTask = nil
         messageUpdateTask?.cancel()
         messageUpdateTask = nil
+        presenceRealtimeTask?.cancel()
+        presenceRealtimeTask = nil
+        reactionsRealtimeTask?.cancel()
+        reactionsRealtimeTask = nil
     }
 
     func updateWorkspaceSettings(workspaceId: UUID, settings: [String: JSONValue]) async throws {
@@ -362,7 +368,8 @@ final class ChatService {
         workspaceId: UUID,
         onChange: @escaping @Sendable (ChatPresence) -> Void
     ) {
-        Task {
+        presenceRealtimeTask?.cancel()
+        presenceRealtimeTask = Task {
             let channel = await client.channel("chat-presence-\(workspaceId.uuidString)")
             let inserts = await channel.postgresChange(
                 InsertAction.self,

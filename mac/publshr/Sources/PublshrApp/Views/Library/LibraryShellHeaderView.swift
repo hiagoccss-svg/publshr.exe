@@ -8,20 +8,30 @@ struct LibraryShellHeaderView: View {
     @Binding var module: AppModule
     var safeAreaTop: CGFloat
 
-    private var trafficBand: CGFloat {
-        safeAreaTop > 0 ? safeAreaTop : CursorTheme.windowChromeTopInset
+    /// Single toolbar row — icons sit to the right of macOS traffic lights (Pinterest / library reference).
+    private var toolbarHeight: CGFloat {
+        max(LibraryGlassDesign.headerHeight, CursorTheme.workspaceHeaderHeight)
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            Color.clear.frame(height: trafficBand)
-            HStack(spacing: 8) {
+        HStack(spacing: 8) {
                 ToolbarIconButton(
                     systemName: tabStore.sidebarExpanded ? "sidebar.left" : "sidebar.right",
-                    help: "Toggle channel list"
+                    help: "Toggle submenu"
                 ) {
                     withAnimation(.easeInOut(duration: 0.15)) {
                         tabStore.sidebarExpanded.toggle()
+                    }
+                }
+                if module == .chat || module == .spaces {
+                    ToolbarIconButton(
+                        systemName: submenuFocusIcon,
+                        help: "Toggle focus mode"
+                    ) {
+                        withAnimation(.easeInOut(duration: 0.15)) {
+                            if module == .chat { chat.chatFocusMode.toggle() }
+                            else { spaces.spacesFocusMode.toggle() }
+                        }
                     }
                 }
                 ToolbarIconButton(systemName: "chevron.left", enabled: canGoBack, help: "Back") {
@@ -59,10 +69,11 @@ struct LibraryShellHeaderView: View {
                 ToolbarIconButton(systemName: "gearshape", help: "Settings") {
                     NotificationCenter.default.post(name: .publshrOpenSettings, object: nil)
                 }
-            }
-            .padding(.horizontal, 12)
-            .frame(height: LibraryGlassDesign.headerHeight)
         }
+        .padding(.leading, CursorTheme.trafficLightLeadingPadding)
+        .padding(.trailing, 12)
+        .padding(.top, safeAreaTop > 0 ? 0 : 4)
+        .frame(height: toolbarHeight + (safeAreaTop > 0 ? safeAreaTop : 0))
         .frame(maxWidth: .infinity)
         .background {
             Rectangle()
@@ -93,6 +104,14 @@ struct LibraryShellHeaderView: View {
             RoundedRectangle(cornerRadius: 10, style: .continuous)
                 .fill(Color.white.opacity(0.55))
         )
+    }
+
+    private var submenuFocusIcon: String {
+        switch module {
+        case .chat: chat.chatFocusMode ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right"
+        case .spaces: spaces.spacesFocusMode ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right"
+        case .settings: "arrow.up.left.and.arrow.down.right"
+        }
     }
 
     private var canGoBack: Bool {

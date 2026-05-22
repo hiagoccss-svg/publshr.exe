@@ -11,6 +11,7 @@ struct EnterpriseChatView: View {
     var body: some View {
         ChatWorkspaceChrome(topInset: topInset, embedInPopOut: embedInPopOut) {
             VStack(spacing: 0) {
+                chatStatusBanner
                 if !embedInPopOut, chat.selectedChannel != nil {
                     ChatChannelStatusBar(chat: chat)
                 }
@@ -25,6 +26,18 @@ struct EnterpriseChatView: View {
             if chat.currentUserId == nil {
                 chat.attach(auth: auth)
             }
+        }
+    }
+
+    @ViewBuilder
+    private var chatStatusBanner: some View {
+        if chat.isOffline {
+            ModuleStatusBanner(
+                text: chat.errorMessage ?? "Offline — showing cached channels. Check network or Supabase.",
+                style: .warning
+            )
+        } else if let message = chat.errorMessage, !message.isEmpty {
+            ModuleStatusBanner(text: message, style: .error)
         }
     }
 
