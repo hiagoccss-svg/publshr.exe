@@ -2,7 +2,7 @@ import SwiftUI
 
 /// Shared secondary sidebar chrome (Areas / Recent Notes style from the library reference).
 enum LibraryUniversalSubmenu {
-    static let width: CGFloat = ChatClickUpDesign.sidebarWidth
+    static let width: CGFloat = LibraryGlassDesign.sidebarWidthWide
 
     static func sectionHeader(_ title: String, onAdd: (() -> Void)? = nil) -> some View {
         HStack(spacing: 4) {
@@ -54,15 +54,17 @@ struct LibraryUniversalSubmenuContainer<Content: View, Footer: View>: View {
     var body: some View {
         VStack(spacing: 0) {
             content()
-                .frame(maxHeight: .infinity)
+                .frame(minHeight: 0, maxHeight: .infinity)
 
             footer()
                 .padding(.horizontal, LibraryGlassDesign.sidebarRowHorizontal)
                 .padding(.top, 8)
                 .padding(.bottom, 14)
         }
-        .frame(maxHeight: .infinity)
         .frame(width: width)
+        .frame(minHeight: 0, maxHeight: .infinity)
+        .fixedSize(horizontal: true, vertical: false)
+        .layoutPriority(1)
         .glassSidebar()
     }
 }

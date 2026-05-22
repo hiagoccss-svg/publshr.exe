@@ -76,9 +76,9 @@ struct LibraryShellHeaderView: View {
 
     private var libraryTab: some View {
         HStack(spacing: 6) {
-            Image(systemName: module == .chat ? "books.vertical" : "square.grid.2x2")
+            Image(systemName: module == .chat ? "bubble.left.and.bubble.right" : "square.grid.2x2")
                 .font(.system(size: 11, weight: .medium))
-            Text(module == .chat ? "Library" : "Spaces")
+            Text(module == .chat ? "Chat" : "Spaces")
                 .font(.system(size: 12, weight: .semibold))
             Button {} label: {
                 Image(systemName: "xmark")

@@ -72,7 +72,21 @@ struct MainIDEView: View {
         tabStore.openFromModule(module, activate: true)
         tabStore.sidebarExpanded = true
         chat.attach(auth: auth)
+        chat.applyWorkspaceContext(
+            workspace: auth.selectedWorkspace,
+            permissions: auth.workspaceChatPermissions,
+            auth: auth
+        )
         spaces.attach(auth: auth)
+        Task {
+            await subscription.refresh(client: auth.client, workspace: auth.selectedWorkspace)
+            if chat.channels.isEmpty, chat.directMessages.isEmpty {
+                await chat.refreshAfterReconnect()
+            }
+            if spaces.spaces.isEmpty, auth.selectedWorkspace != nil {
+                await spaces.reload()
+            }
+        }
     }
 
     private func onModuleChange(_: AppModule, newModule: AppModule) {

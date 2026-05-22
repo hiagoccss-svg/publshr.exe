@@ -9,7 +9,7 @@ struct ChatSidebarView: View {
     @Binding var showNewDM: Bool
 
     var body: some View {
-        LibraryUniversalSubmenuContainer(width: ChatClickUpDesign.sidebarWidth) {
+        LibraryUniversalSubmenuContainer(width: LibraryUniversalSubmenu.width) {
             VStack(spacing: 0) {
                 sidebarSearch
                 filterBar
@@ -36,6 +36,15 @@ struct ChatSidebarView: View {
             layoutFooter
         }
         .preferredColorScheme(.light)
+        .onAppear { normalizeSidebarFilterIfNeeded() }
+    }
+
+    private func normalizeSidebarFilterIfNeeded() {
+        let hasData = !chat.channels.isEmpty || !chat.directMessages.isEmpty
+        let filteredEmpty = chat.filteredChannels.isEmpty && chat.filteredDMs.isEmpty
+        if hasData, filteredEmpty, chat.sidebarFilter != .all {
+            chat.setSidebarFilter(.all)
+        }
     }
 
     // MARK: - Search
