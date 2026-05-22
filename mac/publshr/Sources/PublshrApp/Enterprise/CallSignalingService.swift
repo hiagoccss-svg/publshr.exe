@@ -406,9 +406,10 @@ final class CallSignalingService: ObservableObject {
 
     private func startHubParticipantSync(roomId: UUID) {
         hubSyncTask?.cancel()
-        hubSyncTask = Task { [weak self] in
+        hubSyncTask = Task { @MainActor [weak self] in
             while !Task.isCancelled {
-                await self?.syncParticipantsFromHub(roomId: roomId)
+                guard let self else { return }
+                self.syncParticipantsFromHub(roomId: roomId)
                 try? await Task.sleep(nanoseconds: 400_000_000)
             }
         }
@@ -552,7 +553,8 @@ final class CallSignalingService: ObservableObject {
     private func subscribeParticipants(roomId: UUID) {
         guard let client, useCloudDiscovery else { return }
         realtimeTask?.cancel()
-        realtimeTask = Task {
+        realtimeTask = Task { @MainActor [weak self] in
+            guard let self, let client else { return }
             let channel = await client.channel("call-\(roomId.uuidString)")
             let stream = await channel.postgresChange(
                 InsertAction.self,
@@ -568,12 +570,12 @@ final class CallSignalingService: ObservableObject {
             )
             await channel.subscribe()
             await withTaskGroup(of: Void.self) { group in
-                group.addTask { [weak self] in
+                group.addTask { @MainActor [weak self] in
                     for await _ in stream {
                         await self?.reloadParticipants(roomId: roomId)
                     }
                 }
-                group.addTask { [weak self] in
+                group.addTask { @MainActor [weak self] in
                     for await _ in updates {
                         await self?.reloadParticipants(roomId: roomId)
                     }
@@ -608,17 +610,17 @@ final class CallSignalingService: ObservableObject {
             )
             await channel.subscribe()
             await withTaskGroup(of: Void.self) { group in
-                group.addTask { [weak self] in
+                group.addTask { @MainActor [weak self] in
                     for await _ in roomInserts {
                         await self?.refreshLiveCalls(workspaceId: workspaceId)
                     }
                 }
-                group.addTask { [weak self] in
+                group.addTask { @MainActor [weak self] in
                     for await _ in roomUpdates {
                         await self?.refreshLiveCalls(workspaceId: workspaceId)
                     }
                 }
-                group.addTask { [weak self] in
+                group.addTask { @MainActor [weak self] in
                     for await _ in participantChanges {
                         await self?.refreshLiveCalls(workspaceId: workspaceId)
                     }
