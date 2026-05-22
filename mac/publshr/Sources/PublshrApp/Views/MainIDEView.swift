@@ -23,27 +23,30 @@ struct MainIDEView: View {
     var body: some View {
         GeometryReader { geometry in
             let topSafe = geometry.safeAreaInsets.top
-            VStack(spacing: 0) {
-                WorkspaceHeaderView(
-                    spaces: spaces,
-                    module: $module,
-                    safeAreaTop: topSafe
-                )
+            ZStack {
+                WorkspaceDesktopBackdrop()
 
-                HStack(alignment: .top, spacing: 0) {
-                    if !sidebarHidden {
-                        leftRail
+                VStack(spacing: 0) {
+                    WorkspaceHeaderView(
+                        spaces: spaces,
+                        module: $module,
+                        safeAreaTop: topSafe
+                    )
+
+                    HStack(alignment: .top, spacing: 0) {
+                        if !sidebarHidden {
+                            leftRail
+                        }
+
+                        mainColumn
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
                     }
-
-                    mainColumn
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .frame(width: geometry.size.width, height: geometry.size.height)
             }
-            .frame(width: geometry.size.width, height: geometry.size.height)
         }
         .ignoresSafeArea(.container, edges: .top)
-        .glassWorkspace()
         .background(WindowChromeConfigurator())
         .onAppear {
             _ = AppShellIdentity.distributionTag
@@ -110,7 +113,11 @@ struct MainIDEView: View {
 
     private var leftRail: some View {
         HStack(spacing: 0) {
-            ActivityBarView(module: $module)
+            ActivityBarView(
+                module: $module,
+                showNewChannel: $showNewChannel,
+                showNewDM: $showNewDM
+            )
 
             AppSecondarySidebar(
                 module: module,
@@ -127,12 +134,18 @@ struct MainIDEView: View {
         VStack(spacing: 0) {
             moduleMainContent
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .libraryFloatingPanel()
+                .padding(.horizontal, LibraryGlassDesign.outerMargin)
+                .padding(.top, 10)
+                .padding(.bottom, 6)
 
             ContentStatusFooter(module: module)
-                .frame(height: CursorTheme.statusBarHeight)
+                .frame(height: LibraryGlassDesign.statusBarHeight)
+                .padding(.horizontal, LibraryGlassDesign.outerMargin)
+                .padding(.bottom, 8)
         }
         .frame(maxHeight: .infinity)
-        .background(module == .chat ? CursorTheme.chatBackground : CursorTheme.editorBackground)
+        .background(Color.clear)
     }
 
     @ViewBuilder

@@ -165,7 +165,7 @@ enum CursorTheme {
     static var success: Color { palette.success }
     static var biometricTint: Color { palette.biometricTint }
 
-    static let activityBarWidth: CGFloat = 48
+    static let activityBarWidth: CGFloat = LibraryGlassDesign.barMenuWidth
     static let activityBarIconSize: CGFloat = 15
     /// Settings / module nav column inside the main window.
     static let settingsSidebarWidth: CGFloat = 212

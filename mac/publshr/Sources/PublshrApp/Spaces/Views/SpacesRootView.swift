@@ -127,9 +127,9 @@ struct SpacesQuickAddBar: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
-        .background(CursorTheme.panelBackground)
+        .glassDisconnectedFooter()
         .overlay(alignment: .top) {
-            Rectangle().fill(CursorTheme.borderSubtle).frame(height: 1)
+            Rectangle().fill(LibraryGlassDesign.hairline).frame(height: 1)
         }
     }
 }

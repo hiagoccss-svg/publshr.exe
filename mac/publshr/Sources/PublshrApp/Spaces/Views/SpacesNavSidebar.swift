@@ -1,32 +1,34 @@
 import SwiftUI
 
-/// ClickUp-style Spaces sidebar: workspace spaces + folder/list/doc tree for selection.
+/// Universal submenu for Spaces — workspace list + hierarchy tree.
 struct SpacesNavSidebar: View {
     @EnvironmentObject private var tabStore: WorkspaceTabStore
     @ObservedObject var spaces: SpacesViewModel
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            spacesListSection
+        LibraryUniversalSubmenuContainer {
+            VStack(alignment: .leading, spacing: 0) {
+                spacesListSection
 
-            if spaces.selectedSpaceId != nil {
-                Divider()
-                    .padding(.horizontal, SpacesClickUpDesign.sidebarHorizontalPadding)
-                ScrollView {
-                    SpacesHierarchyTreeView(spaces: spaces)
+                if spaces.selectedSpaceId != nil {
+                    LibraryUniversalSubmenu.sectionDivider()
+                    ScrollView {
+                        SpacesHierarchyTreeView(spaces: spaces)
+                    }
+                    .frame(maxHeight: .infinity)
+                } else {
+                    Spacer(minLength: 0)
                 }
-                .frame(maxHeight: .infinity)
-            } else {
-                Spacer(minLength: 0)
             }
-
+        } footer: {
             createSpaceField
         }
     }
 
     private var spacesListSection: some View {
         VStack(alignment: .leading, spacing: 0) {
-            sectionHeader("Spaces")
+            LibraryUniversalSubmenu.sectionHeader("Spaces")
+
             ScrollView {
                 VStack(spacing: 2) {
                     let pinned = spaces.filteredSpaces.filter(\.isPinned)
@@ -46,7 +48,7 @@ struct SpacesNavSidebar: View {
                     if spaces.filteredSpaces.isEmpty && !spaces.searchQuery.isEmpty {
                         Text("No matches")
                             .font(.system(size: 11))
-                            .foregroundStyle(CursorTheme.foregroundDim)
+                            .foregroundStyle(LibraryGlassDesign.inkMuted)
                             .padding(.horizontal, 16)
                             .padding(.vertical, 8)
                     }
@@ -57,21 +59,11 @@ struct SpacesNavSidebar: View {
         }
     }
 
-    private func sectionHeader(_ title: String) -> some View {
-        Text(title.uppercased())
-            .font(SpacesClickUpDesign.sectionLabelFont)
-            .foregroundStyle(CursorTheme.foregroundDim)
-            .tracking(0.5)
-            .padding(.horizontal, SpacesClickUpDesign.sidebarHorizontalPadding + 6)
-            .padding(.top, SpacesClickUpDesign.sidebarSectionTop)
-            .padding(.bottom, SpacesClickUpDesign.sidebarSectionBottom)
-    }
-
     private func subsectionLabel(_ title: String) -> some View {
         Text(title.uppercased())
             .font(.system(size: 9, weight: .semibold))
-            .foregroundStyle(CursorTheme.foregroundDim.opacity(0.85))
-            .padding(.horizontal, SpacesClickUpDesign.sidebarHorizontalPadding + 6)
+            .foregroundStyle(LibraryGlassDesign.inkMuted.opacity(0.85))
+            .padding(.horizontal, LibraryGlassDesign.sidebarRowHorizontal + 2)
             .padding(.top, 8)
             .padding(.bottom, 2)
     }
@@ -87,21 +79,21 @@ struct SpacesNavSidebar: View {
                     .fill(SpaceColor.hex(space.color))
                     .frame(width: 7, height: 7)
                 Text(space.name)
-                    .font(selected ? SpacesClickUpDesign.treeRowSelectedFont : SpacesClickUpDesign.treeRowFont)
-                    .foregroundStyle(selected ? CursorTheme.foreground : CursorTheme.foregroundMuted)
+                    .font(.system(size: 13, weight: selected ? .semibold : .regular))
+                    .foregroundStyle(selected ? LibraryGlassDesign.ink : LibraryGlassDesign.inkSecondary)
                     .lineLimit(1)
                 Spacer(minLength: 0)
                 if space.isPinned {
                     Image(systemName: "pin.fill")
                         .font(.system(size: 9))
-                        .foregroundStyle(CursorTheme.foregroundDim)
+                        .foregroundStyle(LibraryGlassDesign.inkMuted)
                 }
             }
-            .frame(height: SpacesClickUpDesign.sidebarRowHeight)
-            .padding(.horizontal, 10)
+            .padding(.horizontal, LibraryGlassDesign.sidebarRowHorizontal)
+            .padding(.vertical, LibraryGlassDesign.sidebarRowVertical + 1)
             .background(
-                RoundedRectangle(cornerRadius: SpacesClickUpDesign.sidebarRowRadius, style: .continuous)
-                    .fill(selected ? CursorTheme.accent.opacity(0.08) : Color.clear)
+                RoundedRectangle(cornerRadius: LibraryGlassDesign.sidebarRowRadius, style: .continuous)
+                    .fill(selected ? LibraryGlassDesign.sidebarSelection : Color.clear)
             )
         }
         .buttonStyle(.plain)
@@ -115,7 +107,7 @@ struct SpacesNavSidebar: View {
                 .font(.system(size: 12))
                 .padding(.horizontal, 10)
                 .padding(.vertical, 8)
-                .background(CursorTheme.panelBackground)
+                .background(LibraryGlassDesign.cardGlassFill)
                 .clipShape(RoundedRectangle(cornerRadius: 8))
                 .onSubmit { Task { await spaces.createSpace() } }
 
@@ -126,7 +118,6 @@ struct SpacesNavSidebar: View {
             }
             .buttonStyle(LibraryPrimaryPillButtonStyle())
         }
-        .padding(12)
     }
 }
 

@@ -119,6 +119,7 @@ struct ChatMessageBubbleView: View {
                 .padding(.top, showAvatar ? 0 : 2)
         } else if !message.attachments.isEmpty, voiceAttachment == nil {
             attachmentContent
+                .libraryCard(glass: true, padding: 10)
         }
     }
 

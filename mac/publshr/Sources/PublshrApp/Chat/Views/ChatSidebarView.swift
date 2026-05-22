@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// ClickUp-style chat sidebar: search, filters (All / Unread / DMs / Channels), Organized vs Recents.
+/// Universal submenu for chat — search, filters, channels/DMs/recents (ClickUp) in library glass chrome.
 struct ChatSidebarView: View {
     @EnvironmentObject private var tabStore: WorkspaceTabStore
     @EnvironmentObject private var calls: CallSignalingService
@@ -9,66 +9,31 @@ struct ChatSidebarView: View {
     @Binding var showNewDM: Bool
 
     var body: some View {
-        VStack(spacing: 0) {
-            sidebarHeader
-            sidebarSearch
-            filterBar
-            Divider().overlay(LibraryGlassDesign.hairline)
+        LibraryUniversalSubmenuContainer(width: ChatClickUpDesign.sidebarWidth) {
+            VStack(spacing: 0) {
+                sidebarSearch
+                filterBar
+                LibraryUniversalSubmenu.sectionDivider()
 
-            ScrollView {
-                LazyVStack(alignment: .leading, spacing: 0) {
-                    if chat.sidebarLayout == .recents {
-                        recentsContent
-                    } else {
-                        organizedContent
+                ScrollView {
+                    LazyVStack(alignment: .leading, spacing: 0) {
+                        if chat.sidebarLayout == .recents {
+                            recentsContent
+                        } else {
+                            organizedContent
+                        }
+                        if !chat.filteredProjects.isEmpty || chat.sidebarSearchQuery.isEmpty {
+                            plannerSection
+                        }
                     }
-                    if !chat.filteredProjects.isEmpty || chat.sidebarSearchQuery.isEmpty {
-                        plannerSection
-                    }
+                    .padding(.vertical, 6)
+                    .padding(.horizontal, 4)
                 }
-                .padding(.vertical, 6)
-                .padding(.horizontal, 4)
             }
-
-            Divider().overlay(LibraryGlassDesign.hairline)
+        } footer: {
             layoutFooter
         }
-        .frame(maxHeight: .infinity)
         .preferredColorScheme(.light)
-    }
-
-    // MARK: - Header
-
-    private var sidebarHeader: some View {
-        HStack(spacing: 8) {
-            Image(systemName: "bubble.left.and.bubble.right.fill")
-                .font(.system(size: 14, weight: .medium))
-                .foregroundStyle(LibraryGlassDesign.primaryCTA)
-            Text("Chat")
-                .font(ChatClickUpDesign.sidebarTitleFont)
-                .foregroundStyle(CursorTheme.foreground)
-            Spacer()
-            Menu {
-                Button {
-                    showNewChannel = true
-                } label: {
-                    Label("New channel", systemImage: "number")
-                }
-                Button {
-                    showNewDM = true
-                } label: {
-                    Label("New message", systemImage: "person.badge.plus")
-                }
-            } label: {
-                Image(systemName: "plus.circle.fill")
-                    .font(.system(size: 18))
-                    .foregroundStyle(LibraryGlassDesign.primaryCTA)
-            }
-            .menuStyle(.borderlessButton)
-            .menuIndicator(.hidden)
-        }
-        .padding(.horizontal, ChatClickUpDesign.horizontalPadding)
-        .frame(height: ChatClickUpDesign.headerHeight)
     }
 
     // MARK: - Search
@@ -77,7 +42,7 @@ struct ChatSidebarView: View {
         HStack(spacing: 6) {
             Image(systemName: "magnifyingglass")
                 .font(.system(size: 11, weight: .medium))
-                .foregroundStyle(CursorTheme.foregroundDim)
+                .foregroundStyle(LibraryGlassDesign.inkMuted)
             TextField("Search channels and people", text: $chat.sidebarSearchQuery)
                 .textFieldStyle(.plain)
                 .font(ChatClickUpDesign.searchFont)
@@ -88,7 +53,7 @@ struct ChatSidebarView: View {
                 } label: {
                     Image(systemName: "xmark.circle.fill")
                         .font(.system(size: 12))
-                        .foregroundStyle(CursorTheme.foregroundDim)
+                        .foregroundStyle(LibraryGlassDesign.inkMuted)
                 }
                 .buttonStyle(.plain)
             }
@@ -97,13 +62,15 @@ struct ChatSidebarView: View {
         .frame(height: ChatClickUpDesign.searchHeight)
         .background(
             RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .fill(LibraryGlassDesign.cardGlassFill)
+                .fill(LibraryGlassDesign.cardGlassFill.opacity(0.65))
+                .background(.ultraThinMaterial)
         )
         .overlay(
             RoundedRectangle(cornerRadius: 8, style: .continuous)
                 .strokeBorder(LibraryGlassDesign.hairline, lineWidth: 1)
         )
         .padding(.horizontal, ChatClickUpDesign.horizontalPadding)
+        .padding(.top, 10)
         .padding(.bottom, 8)
     }
 
@@ -133,12 +100,12 @@ struct ChatSidebarView: View {
         } label: {
             Text(filter.label)
                 .font(ChatClickUpDesign.filterFont)
-                .foregroundStyle(selected ? Color.white : CursorTheme.foregroundMuted)
+                .foregroundStyle(selected ? Color.white : LibraryGlassDesign.inkSecondary)
                 .padding(.horizontal, ChatClickUpDesign.filterPillHPadding)
                 .frame(height: ChatClickUpDesign.filterPillHeight)
                 .background(
                     Capsule(style: .continuous)
-                        .fill(selected ? LibraryGlassDesign.primaryCTA : LibraryGlassDesign.cardGlassFill)
+                        .fill(selected ? LibraryGlassDesign.primaryCTA : LibraryGlassDesign.sidebarGlassFill)
                 )
                 .overlay(
                     Capsule(style: .continuous)
@@ -154,7 +121,7 @@ struct ChatSidebarView: View {
         Group {
             if chat.sidebarFilter != .dms {
                 sidebarSection("Channels", items: chat.filteredChannels, onAdd: { showNewChannel = true })
-                NavSidebarDivider()
+                LibraryUniversalSubmenu.sectionDivider()
             }
             if chat.sidebarFilter != .channels {
                 sidebarSection("Direct Messages", items: chat.filteredDMs, onAdd: { showNewDM = true })
@@ -163,8 +130,8 @@ struct ChatSidebarView: View {
     }
 
     private var recentsContent: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            sectionHeader("Recent", onAdd: nil)
+        VStack(alignment: .leading, spacing: 0) {
+            LibraryUniversalSubmenu.sectionHeader("Recent")
             if chat.sidebarRecentsList.isEmpty {
                 emptyHint
             } else {
@@ -177,13 +144,13 @@ struct ChatSidebarView: View {
 
     private var plannerSection: some View {
         Group {
-            NavSidebarDivider()
-            VStack(alignment: .leading, spacing: 2) {
-                sectionHeader("Planner", onAdd: nil)
+            LibraryUniversalSubmenu.sectionDivider()
+            VStack(alignment: .leading, spacing: 0) {
+                LibraryUniversalSubmenu.sectionHeader("Planner")
                 if chat.filteredProjects.isEmpty {
                     Text("No planner tasks")
                         .font(.system(size: 11))
-                        .foregroundStyle(CursorTheme.foregroundDim)
+                        .foregroundStyle(LibraryGlassDesign.inkMuted)
                         .padding(.horizontal, 16)
                         .padding(.vertical, 6)
                 } else {
@@ -194,16 +161,16 @@ struct ChatSidebarView: View {
                             HStack(spacing: 8) {
                                 Image(systemName: "checklist")
                                     .font(.system(size: 11, weight: .medium))
-                                    .foregroundStyle(CursorTheme.foregroundMuted)
+                                    .foregroundStyle(LibraryGlassDesign.inkSecondary)
                                     .frame(width: ChatClickUpDesign.rowIconSize)
                                 VStack(alignment: .leading, spacing: 1) {
                                     Text(task.title)
-                                        .font(SpacesClickUpDesign.treeRowFont)
-                                        .foregroundStyle(CursorTheme.foregroundMuted)
+                                        .font(.system(size: 12))
+                                        .foregroundStyle(LibraryGlassDesign.inkSecondary)
                                         .lineLimit(1)
                                     Text(task.status)
                                         .font(.system(size: 10))
-                                        .foregroundStyle(CursorTheme.foregroundDim)
+                                        .foregroundStyle(LibraryGlassDesign.inkMuted)
                                 }
                                 Spacer(minLength: 0)
                             }
@@ -221,25 +188,32 @@ struct ChatSidebarView: View {
     private var emptyHint: some View {
         Text("No conversations match this filter")
             .font(.system(size: 11))
-            .foregroundStyle(CursorTheme.foregroundDim)
+            .foregroundStyle(LibraryGlassDesign.inkMuted)
             .padding(.horizontal, 16)
             .padding(.vertical, 8)
     }
 
-    // MARK: - Layout footer (Organized / Recents)
-
+    /// Disconnected footer — organized/recents toggles (not a full-width bar).
     private var layoutFooter: some View {
         HStack(spacing: 0) {
             layoutToggle(.organized, icon: "list.bullet.rectangle")
             layoutToggle(.recents, icon: "clock")
             Spacer()
-            Text(chat.sidebarLayout.label)
-                .font(ChatClickUpDesign.footerFont)
-                .foregroundStyle(CursorTheme.foregroundDim)
+            Menu {
+                Button { showNewChannel = true } label: {
+                    Label("New channel", systemImage: "number")
+                }
+                Button { showNewDM = true } label: {
+                    Label("New message", systemImage: "person.badge.plus")
+                }
+            } label: {
+                Image(systemName: "plus")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(LibraryGlassDesign.inkSecondary)
+            }
+            .menuStyle(.borderlessButton)
+            .menuIndicator(.hidden)
         }
-        .padding(.horizontal, ChatClickUpDesign.horizontalPadding)
-        .frame(height: ChatClickUpDesign.footerHeight)
-        .background(LibraryGlassDesign.cardGlassFill.opacity(0.5))
     }
 
     private func layoutToggle(_ layout: ChatSidebarLayout, icon: String) -> some View {
@@ -249,11 +223,11 @@ struct ChatSidebarView: View {
         } label: {
             Image(systemName: icon)
                 .font(.system(size: 13, weight: .medium))
-                .foregroundStyle(selected ? LibraryGlassDesign.primaryCTA : CursorTheme.foregroundDim)
+                .foregroundStyle(selected ? LibraryGlassDesign.ink : LibraryGlassDesign.inkMuted)
                 .frame(width: 36, height: 28)
                 .background(
                     RoundedRectangle(cornerRadius: 6, style: .continuous)
-                        .fill(selected ? LibraryGlassDesign.primaryCTA.opacity(0.1) : Color.clear)
+                        .fill(selected ? LibraryGlassDesign.sidebarSelection : Color.clear)
                 )
         }
         .buttonStyle(.plain)
@@ -267,12 +241,12 @@ struct ChatSidebarView: View {
         items: [ChatChannel],
         onAdd: (() -> Void)?
     ) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            sectionHeader(title, onAdd: onAdd)
+        VStack(alignment: .leading, spacing: 0) {
+            LibraryUniversalSubmenu.sectionHeader(title, onAdd: onAdd)
             if items.isEmpty {
                 Text("None yet")
                     .font(.system(size: 11))
-                    .foregroundStyle(CursorTheme.foregroundDim)
+                    .foregroundStyle(LibraryGlassDesign.inkMuted)
                     .padding(.horizontal, 16)
                     .padding(.vertical, 6)
             } else {
@@ -283,33 +257,12 @@ struct ChatSidebarView: View {
         }
     }
 
-    private func sectionHeader(_ title: String, onAdd: (() -> Void)?) -> some View {
-        HStack {
-            Text(title.uppercased())
-                .font(SpacesClickUpDesign.sectionLabelFont)
-                .foregroundStyle(CursorTheme.foregroundDim)
-                .tracking(0.5)
-            Spacer()
-            if let onAdd {
-                Button(action: onAdd) {
-                    Image(systemName: "plus")
-                        .font(.system(size: 10, weight: .medium))
-                        .foregroundStyle(CursorTheme.foregroundMuted)
-                        .frame(width: 20, height: 20)
-                }
-                .buttonStyle(.plain)
-            }
-        }
-        .padding(.horizontal, SpacesClickUpDesign.sidebarHorizontalPadding + 2)
-        .padding(.top, ChatClickUpDesign.sectionTop)
-        .padding(.bottom, ChatClickUpDesign.sectionBottom)
-    }
-
     private func channelRow(_ channel: ChatChannel) -> some View {
         let selected = chat.selectedChannel?.id == channel.id
         let unread = chat.unreadCount(for: channel.id)
         let bold = chat.isSidebarRowBold(channel)
         let threadUnread = chat.hasUnreadThreadReplies(for: channel.id)
+        let trailing = LibraryRelativeTime.string(since: channel.lastMessageAt)
 
         return HStack(spacing: 0) {
             Button {
@@ -319,8 +272,8 @@ struct ChatSidebarView: View {
                 HStack(spacing: 8) {
                     ChatChannelIconView(channel: channel, size: ChatClickUpDesign.rowIconSize)
                     Text(channel.sidebarTitle)
-                        .font(bold || selected ? SpacesClickUpDesign.treeRowSelectedFont : SpacesClickUpDesign.treeRowFont)
-                        .foregroundStyle(selected ? CursorTheme.foreground : CursorTheme.foregroundMuted)
+                        .font(.system(size: 13, weight: bold || selected ? .semibold : .regular))
+                        .foregroundStyle(selected ? LibraryGlassDesign.ink : LibraryGlassDesign.inkSecondary)
                         .lineLimit(1)
                     Spacer(minLength: 0)
                     HStack(spacing: 4) {
@@ -328,7 +281,6 @@ struct ChatSidebarView: View {
                             Image(systemName: "bubble.left.and.bubble.right.fill")
                                 .font(.system(size: 10))
                                 .foregroundStyle(LibraryGlassDesign.primaryCTA)
-                                .help("Unread thread replies")
                         }
                         if let live = calls.liveCall(for: channel.id), !calls.isInCall(on: channel.id) {
                             LiveCallChannelBadge(summary: live)
@@ -340,6 +292,10 @@ struct ChatSidebarView: View {
                                 .padding(.vertical, 2)
                                 .background(LibraryGlassDesign.primaryCTA)
                                 .clipShape(Capsule())
+                        } else if let trailing {
+                            Text(trailing)
+                                .font(.system(size: 11))
+                                .foregroundStyle(LibraryGlassDesign.inkMuted)
                         }
                     }
                 }
@@ -347,7 +303,7 @@ struct ChatSidebarView: View {
                 .padding(.horizontal, 10)
                 .background(
                     RoundedRectangle(cornerRadius: ChatClickUpDesign.rowRadius, style: .continuous)
-                        .fill(selected ? LibraryGlassDesign.primaryCTA.opacity(0.08) : Color.clear)
+                        .fill(selected ? LibraryGlassDesign.sidebarSelection : Color.clear)
                 )
             }
             .buttonStyle(.plain)
@@ -370,7 +326,7 @@ struct ChatSidebarView: View {
         } label: {
             Image(systemName: "ellipsis")
                 .font(.system(size: 11))
-                .foregroundStyle(CursorTheme.foregroundDim)
+                .foregroundStyle(LibraryGlassDesign.inkMuted)
                 .frame(width: 24, height: ChatClickUpDesign.rowHeight)
         }
         .menuStyle(.borderlessButton)

@@ -54,8 +54,9 @@ struct WorkspaceHeaderView: View {
         .background {
             Rectangle()
                 .fill(.ultraThinMaterial)
-                .background(Color.white.opacity(0.78))
+                .background(LibraryGlassDesign.headerGlass)
         }
+        .background(Color.clear)
         .overlay(alignment: .bottom) {
             Rectangle()
                 .fill(LibraryGlassDesign.hairline)
@@ -430,8 +431,9 @@ struct WorkspaceHeaderView: View {
         .padding(.horizontal, 8)
         .padding(.vertical, 4)
         .background(
-            RoundedRectangle(cornerRadius: 5, style: .continuous)
-                .fill(CursorTheme.editorBackground)
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .fill(Color.white.opacity(0.45))
+                .background(.ultraThinMaterial)
         )
         .overlay(
             RoundedRectangle(cornerRadius: 5, style: .continuous)
