@@ -16,58 +16,42 @@ Install (canonical):
 curl -fsSL "https://raw.githubusercontent.com/hiagoccss-svg/publshr.exe/refs/heads/main/install-macos.sh" | bash
 ```
 
-## Shell layers
+## Shell layers (library glass reference)
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│  Auth → Workspace picker → MainIDEView                     │
-│  Desktop wallpaper → glass shell → floating library cards  │
-├──────────┬──────────────┬────────────────────────────────┤
-│ Bar menu │  Universal   │  Glass main content (Chat /     │
-│ (compact │  submenu     │  Spaces) + disconnected footer  │
-│ or wide) │  (module nav)│  actions at column bottom       │
-├──────────┴──────────────┴────────────────────────────────┤
-│  Unified header (tabs) · thin status line (main column)  │
-└─────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────┐
+│  Desktop wallpaper (behindWindow vibrancy)                    │
+│  ┌────────┬──────────────┬─────────────────────────────────┐ │
+│  │ Bar    │  Universal   │  Floating glass panel (20px     │ │
+│  │ menu   │  submenu     │  radius) — Chat / Spaces        │ │
+│  │ 200px  │  260px       │  + outer margin 20px            │ │
+│  └────────┴──────────────┴─────────────────────────────────┘ │
+│  Unified header (frosted) · disconnected status line          │
+└──────────────────────────────────────────────────────────────┘
 ```
-
-Bar menu: `ActivityBarView` — toggle **compact** (48px icons) vs **expanded** labels (`publshr.barMenuExpanded`). Universal submenu: `LibraryUniversalSubmenu` + `AppSecondarySidebar`. Glass: `WorkspaceDesktopBackdrop`, `glassMainContent()`, `.libraryCard(glass:)`.
 
 | Layer | Files |
 |-------|--------|
 | Flow | `ContentView.swift`, `AuthViewModel`, `AuthView`, `WorkspacePickerView` |
-| Shell | `MainIDEView.swift`, `ActivityBarView`, sidebars |
-| Subscription gate | `SubscriptionService`, `EnterpriseModuleGate` |
-| Updates | `AppUpdateService`, `AppUpdateViewModel` (silent sync; Settings for errors) |
-| Security | `BiometricAuthService`, `AuthKeychain`, Settings → Security |
+| Shell | `MainIDEView.swift`, `ActivityBarView` (200px bar menu), `AppSecondarySidebar` |
+| Glass | `WorkspaceDesktopBackdrop`, `LibraryFloatingPanel`, `LibraryGlassDesign` |
+| Submenu | `LibraryUniversalSubmenu`, `ChatSidebarView`, `SpacesNavSidebar` |
+| Marker | `AppShellIdentity.distributionTag` = `PublshrEnterpriseShell-5` |
 
 ## Adding a new module (same pattern as Chat)
 
 1. **Supabase** — tables, RLS, optional RPCs; plan flags on `subscription_plans` (`includes_*`).
 2. **Service + ViewModel** — e.g. `ChatService`, `ChatViewModel`.
 3. **UI** — root view + **integrated chrome** (do not add a second global toolbar in `MainIDEView`).
-4. **`AppModule`** — case in enum, activity bar icon, `MainIDEView.moduleMainContent` switch.
+4. **`AppModule`** — case in enum, bar menu row in `ActivityBarView`, `MainIDEView.moduleMainContent` switch.
 5. **Gate** — `subscription.canUse*(workspace:)` before showing content; else `EnterpriseModuleGate`.
 6. **Attach on sign-in** — `ContentView.syncEnterpriseData()` / `PublshrApp.syncEnterpriseServices()`.
-
-## Workspace setup
-
-- After sign-in, user picks or **creates** a workspace (`create_workspace` RPC in `20260522000000_enterprise_foundation.sql`).
-- Selection is stored in `UserDefaults` (`com.publshr.app.lastWorkspaceId`).
-- Must apply Supabase migrations or workspace create/list will fail with a clear in-app message.
-
-## Biometrics (Touch ID / Face ID)
-
-1. Sign in with email/password (session stays in Supabase client storage).
-2. Enable **Quick unlock** in Settings → Security (or accept the one-time sheet after first sign-in).
-3. Session tokens are copied to Keychain; each launch prompts for biometrics before the IDE opens.
-4. **Sign out** keeps Keychain when quick unlock is on so the sign-in screen can offer **Unlock with Touch ID**.
 
 ## Live updates
 
 - App checks GitHub tag **`live`** using `releases/download/...` URLs (avoids API 403).
 - Downloads install in place to `~/Applications/Publshr.app` when possible.
-- Old builds cannot self-update until replaced once via the installer above.
+- Shell marker **`PublshrEnterpriseShell-5`** must be present in the binary for CI verification.
 
 ## CI
 

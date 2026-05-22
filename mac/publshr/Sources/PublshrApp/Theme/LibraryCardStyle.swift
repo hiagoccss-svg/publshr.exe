@@ -32,30 +32,12 @@ struct GlassSidebarBackground: ViewModifier {
             .background {
                 Rectangle()
                     .fill(.ultraThinMaterial)
-                    .background(LibraryGlassDesign.cardGlassFill)
+                    .background(LibraryGlassDesign.sidebarGlassFill)
             }
             .overlay(alignment: .trailing) {
                 Rectangle()
                     .fill(LibraryGlassDesign.hairline)
                     .frame(width: 1)
-            }
-    }
-}
-
-struct GlassWorkspaceBackground: ViewModifier {
-    /// When false, shell is fully transparent so `WorkspaceDesktopBackdrop` shows through.
-    var tintShell: Bool = false
-
-    func body(content: Content) -> some View {
-        content
-            .background {
-                if tintShell {
-                    Rectangle()
-                        .fill(LibraryGlassDesign.shellBackground.opacity(0.35))
-                }
-                Rectangle()
-                    .fill(LibraryGlassDesign.workspaceGlass)
-                    .background(.thinMaterial)
             }
     }
 }
@@ -66,12 +48,13 @@ struct LibraryPrimaryPillButtonStyle: ButtonStyle {
             .font(.system(size: 13, weight: .semibold))
             .foregroundStyle(.white)
             .padding(.horizontal, LibraryGlassDesign.ctaPillHorizontal)
+            .frame(maxWidth: .infinity)
             .frame(height: LibraryGlassDesign.ctaPillHeight)
             .background(
                 Capsule(style: .continuous)
                     .fill(configuration.isPressed ? LibraryGlassDesign.primaryCTAHover : LibraryGlassDesign.primaryCTA)
             )
-            .shadow(color: Color.black.opacity(configuration.isPressed ? 0.06 : 0.12), radius: 8, y: 2)
+            .shadow(color: Color.black.opacity(configuration.isPressed ? 0.08 : 0.16), radius: 10, y: 3)
             .scaleEffect(configuration.isPressed ? 0.98 : 1)
             .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
     }
@@ -84,9 +67,5 @@ extension View {
 
     func glassSidebar() -> some View {
         modifier(GlassSidebarBackground())
-    }
-
-    func glassWorkspace(tintShell: Bool = false) -> some View {
-        modifier(GlassWorkspaceBackground(tintShell: tintShell))
     }
 }

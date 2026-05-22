@@ -12,16 +12,6 @@ struct ChatSidebarView: View {
     var body: some View {
         LibraryUniversalSubmenuContainer {
             VStack(spacing: 0) {
-                Button {
-                    showNewChannel = true
-                } label: {
-                    Label("New message", systemImage: "plus")
-                }
-                .buttonStyle(LibraryPrimaryPillButtonStyle())
-                .padding(.horizontal, LibraryGlassDesign.sidebarRowHorizontal)
-                .padding(.top, 12)
-                .padding(.bottom, 8)
-
                 ScrollView {
                     VStack(alignment: .leading, spacing: 0) {
                         sidebarSection("Favorites", items: chat.favoriteChannels, onAdd: nil)
@@ -32,7 +22,8 @@ struct ChatSidebarView: View {
                         LibraryUniversalSubmenu.sectionDivider()
                         projectsSection
                     }
-                    .padding(.vertical, 4)
+                    .padding(.vertical, 8)
+                    .padding(.top, 4)
                 }
             }
         } footer: {

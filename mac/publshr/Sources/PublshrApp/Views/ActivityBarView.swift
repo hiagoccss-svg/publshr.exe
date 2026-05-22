@@ -1,128 +1,156 @@
 import SwiftUI
 
-/// Primary bar menu — compact icons or expanded labels; disconnected bottom actions.
+/// Primary bar menu — reference layout: ~200px labeled column (date, CTA, nav, disconnected bottom).
 struct ActivityBarView: View {
     @EnvironmentObject private var tabStore: WorkspaceTabStore
     @EnvironmentObject private var auth: AuthViewModel
     @EnvironmentObject private var chat: ChatViewModel
+    @EnvironmentObject private var spaces: SpacesViewModel
     @Binding var module: AppModule
-    @AppStorage("publshr.barMenuExpanded") private var barMenuExpanded = false
-
-    private var barWidth: CGFloat {
-        barMenuExpanded
-            ? LibraryGlassDesign.activityBarExpandedWidth
-            : LibraryGlassDesign.activityBarWidth
-    }
+    @Binding var showNewChannel: Bool
+    @Binding var showNewDM: Bool
 
     var body: some View {
         VStack(spacing: 0) {
             dateWeatherWidget
-                .padding(.horizontal, barMenuExpanded ? 10 : 6)
-                .padding(.top, 10)
+                .padding(.horizontal, 14)
+                .padding(.top, 12)
+                .padding(.bottom, 10)
+
+            primaryCTA
+                .padding(.horizontal, 14)
+                .padding(.bottom, 12)
+
+            Rectangle()
+                .fill(LibraryGlassDesign.hairline)
+                .frame(height: 1)
+                .padding(.horizontal, 14)
                 .padding(.bottom, 8)
 
-            VStack(spacing: barMenuExpanded ? 4 : 2) {
+            VStack(spacing: 4) {
                 ForEach(AppModule.mainStrip) { item in
                     moduleButton(item)
                 }
+                if module == .chat {
+                    barQuickRow(
+                        title: "Inbox",
+                        icon: "tray",
+                        badge: min(chat.totalUnread, 99),
+                        selected: false
+                    ) {
+                        openFirstUnreadChannel()
+                    }
+                    barQuickRow(
+                        title: "Saved",
+                        icon: "bookmark",
+                        badge: chat.favoriteChannels.count,
+                        selected: false
+                    ) {
+                        if let first = chat.favoriteChannels.first {
+                            tabStore.openFromChannel(first)
+                            chat.selectChannel(first)
+                        }
+                    }
+                }
             }
-            .padding(.horizontal, barMenuExpanded ? 8 : 4)
-            .padding(.bottom, 6)
+            .padding(.horizontal, 10)
 
             Spacer(minLength: 0)
 
             disconnectedBottomActions
-                .padding(.horizontal, barMenuExpanded ? 10 : 8)
-                .padding(.bottom, 14)
+                .padding(.horizontal, 14)
+                .padding(.bottom, 16)
         }
         .frame(maxHeight: .infinity)
-        .frame(width: barWidth)
+        .frame(width: LibraryGlassDesign.barMenuWidth)
         .glassSidebar()
+    }
+
+    @ViewBuilder
+    private var primaryCTA: some View {
+        switch module {
+        case .chat:
+            Button {
+                showNewChannel = true
+            } label: {
+                Label("New message", systemImage: "plus")
+            }
+            .buttonStyle(LibraryPrimaryPillButtonStyle())
+        case .spaces:
+            Button {
+                spaces.showNewSpaceSheet = true
+            } label: {
+                Label("New space", systemImage: "plus")
+            }
+            .buttonStyle(LibraryPrimaryPillButtonStyle())
+        case .settings:
+            EmptyView()
+        }
     }
 
     private var dateWeatherWidget: some View {
         let now = Date()
-        return VStack(alignment: barMenuExpanded ? .leading : .center, spacing: 3) {
-            if barMenuExpanded {
-                Text(now.formatted(.dateTime.weekday(.wide)))
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(LibraryGlassDesign.ink)
-                Text(now.formatted(.dateTime.month(.abbreviated).day().year()))
-                    .font(.system(size: 10))
-                    .foregroundStyle(LibraryGlassDesign.inkMuted)
-            } else {
-                Text(now.formatted(.dateTime.day()))
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(LibraryGlassDesign.ink)
-                Text(now.formatted(.dateTime.month(.abbreviated)))
-                    .font(.system(size: 9))
-                    .foregroundStyle(LibraryGlassDesign.inkMuted)
-            }
-            HStack(spacing: 4) {
+        return VStack(alignment: .leading, spacing: 4) {
+            Text(now.formatted(.dateTime.weekday(.wide)))
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(LibraryGlassDesign.ink)
+            Text(now.formatted(.dateTime.month(.abbreviated).day().year()))
+                .font(.system(size: 11))
+                .foregroundStyle(LibraryGlassDesign.inkMuted)
+            HStack(spacing: 5) {
                 Image(systemName: "cloud.sun")
-                    .font(.system(size: barMenuExpanded ? 11 : 10))
+                    .font(.system(size: 12))
                     .foregroundStyle(LibraryGlassDesign.inkSecondary)
-                if barMenuExpanded {
-                    Text("—")
-                        .font(.system(size: 10))
-                        .foregroundStyle(LibraryGlassDesign.inkMuted)
-                }
-            }
-
-            Button {
-                withAnimation(.easeInOut(duration: 0.18)) {
-                    barMenuExpanded.toggle()
-                }
-            } label: {
-                Image(systemName: barMenuExpanded ? "rectangle.compress.vertical" : "rectangle.expand.vertical")
-                    .font(.system(size: 9, weight: .semibold))
+                Text("—")
+                    .font(.system(size: 11))
                     .foregroundStyle(LibraryGlassDesign.inkMuted)
             }
-            .buttonStyle(.plain)
-            .padding(.top, 4)
-            .help(barMenuExpanded ? "Compact bar menu" : "Expand bar menu")
         }
-        .frame(maxWidth: .infinity, alignment: barMenuExpanded ? .leading : .center)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private func moduleButton(_ item: AppModule) -> some View {
-        let selected = module == item
-        let unread = item == .chat ? min(chat.totalUnread, 99) : 0
-        return Button {
+        barQuickRow(
+            title: item.label,
+            icon: item.systemImage,
+            badge: 0,
+            selected: module == item
+        ) {
             module = item
             tabStore.openFromModule(item, activate: true)
-        } label: {
-            HStack(spacing: 8) {
-                Image(systemName: item.systemImage)
-                    .font(.system(size: 14, weight: .regular))
-                    .symbolRenderingMode(.monochrome)
-                    .frame(width: 18, alignment: .center)
-                    .foregroundStyle(selected ? LibraryGlassDesign.ink : LibraryGlassDesign.inkMuted)
+        }
+    }
 
-                if barMenuExpanded {
-                    Text(item.label)
-                        .font(.system(size: 12, weight: selected ? .semibold : .regular))
-                        .foregroundStyle(selected ? LibraryGlassDesign.ink : LibraryGlassDesign.inkSecondary)
-                        .lineLimit(1)
-                    Spacer(minLength: 0)
-                    if unread > 0 {
-                        Text("\(unread)")
-                            .font(.system(size: 9, weight: .bold))
-                            .foregroundStyle(.white)
-                            .padding(.horizontal, 5)
-                            .padding(.vertical, 2)
-                            .background(LibraryGlassDesign.primaryCTA)
-                            .clipShape(Capsule())
-                    }
+    private func barQuickRow(
+        title: String,
+        icon: String,
+        badge: Int,
+        selected: Bool,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            HStack(spacing: 10) {
+                Image(systemName: icon)
+                    .font(.system(size: 14, weight: .regular))
+                    .frame(width: 18, alignment: .center)
+                    .foregroundStyle(selected ? LibraryGlassDesign.ink : LibraryGlassDesign.inkSecondary)
+                Text(title)
+                    .font(.system(size: 13, weight: selected ? .semibold : .regular))
+                    .foregroundStyle(selected ? LibraryGlassDesign.ink : LibraryGlassDesign.inkSecondary)
+                    .lineLimit(1)
+                Spacer(minLength: 0)
+                if badge > 0 {
+                    Text("\(badge)")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(LibraryGlassDesign.primaryCTA)
+                        .clipShape(Capsule())
                 }
             }
-            .padding(.horizontal, barMenuExpanded ? LibraryGlassDesign.sidebarRowHorizontal : 0)
-            .frame(
-                width: barMenuExpanded ? nil : barWidth,
-                height: barMenuExpanded ? LibraryGlassDesign.ctaPillHeight - 4 : 28,
-                alignment: barMenuExpanded ? .leading : .center
-            )
-            .frame(maxWidth: barMenuExpanded ? .infinity : nil)
+            .padding(.horizontal, LibraryGlassDesign.sidebarRowHorizontal)
+            .frame(height: LibraryGlassDesign.barMenuRowHeight)
             .background(
                 RoundedRectangle(cornerRadius: LibraryGlassDesign.sidebarRowRadius, style: .continuous)
                     .fill(selected ? LibraryGlassDesign.sidebarSelection : Color.clear)
@@ -130,32 +158,45 @@ struct ActivityBarView: View {
             .contentShape(RoundedRectangle(cornerRadius: LibraryGlassDesign.sidebarRowRadius, style: .continuous))
         }
         .buttonStyle(.plain)
-        .help(item.label)
     }
 
-    /// Bottom icons sit in the column but are not joined by a footer bar (reference layout).
+    private func openFirstUnreadChannel() {
+        let channels = chat.filteredChannels + chat.filteredDMs
+        if let unread = channels.first(where: { (chat.unreadByChannel[$0.id] ?? 0) > 0 }) {
+            tabStore.openFromChannel(unread)
+            chat.selectChannel(unread)
+            return
+        }
+        if let first = channels.first {
+            tabStore.openFromChannel(first)
+            chat.selectChannel(first)
+        } else {
+            showNewDM = true
+        }
+    }
+
     private var disconnectedBottomActions: some View {
         HStack(spacing: 0) {
             Button {
                 NotificationCenter.default.post(name: .publshrOpenSettings, object: nil)
             } label: {
                 Image(systemName: "square.grid.2x2")
-                    .font(.system(size: 13, weight: .medium))
+                    .font(.system(size: 14, weight: .medium))
                     .foregroundStyle(LibraryGlassDesign.inkSecondary)
-                    .frame(width: 28, height: 28)
+                    .frame(width: 32, height: 32)
             }
             .buttonStyle(.plain)
-            .help("Modules & settings")
+            .help("Settings")
 
-            Spacer(minLength: barMenuExpanded ? 8 : 0)
+            Spacer(minLength: 0)
 
             Button {
                 Task { await auth.signOut() }
             } label: {
                 Image(systemName: "rectangle.portrait.and.arrow.right")
-                    .font(.system(size: 13, weight: .medium))
+                    .font(.system(size: 14, weight: .medium))
                     .foregroundStyle(LibraryGlassDesign.inkMuted)
-                    .frame(width: 28, height: 28)
+                    .frame(width: 32, height: 32)
             }
             .buttonStyle(.plain)
             .help("Sign out")

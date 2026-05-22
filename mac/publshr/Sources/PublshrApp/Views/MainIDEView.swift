@@ -47,7 +47,6 @@ struct MainIDEView: View {
             }
         }
         .ignoresSafeArea(.container, edges: .top)
-        .glassWorkspace()
         .background(WindowChromeConfigurator())
         .onAppear {
             _ = AppShellIdentity.distributionTag
@@ -114,7 +113,11 @@ struct MainIDEView: View {
 
     private var leftRail: some View {
         HStack(spacing: 0) {
-            ActivityBarView(module: $module)
+            ActivityBarView(
+                module: $module,
+                showNewChannel: $showNewChannel,
+                showNewDM: $showNewDM
+            )
 
             AppSecondarySidebar(
                 module: module,
@@ -131,16 +134,18 @@ struct MainIDEView: View {
         VStack(spacing: 0) {
             moduleMainContent
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .libraryFloatingPanel()
                 .padding(.horizontal, LibraryGlassDesign.outerMargin)
-                .padding(.top, 8)
-                .padding(.bottom, 4)
-                .glassMainContent()
+                .padding(.top, 10)
+                .padding(.bottom, 6)
 
             ContentStatusFooter(module: module)
-                .frame(height: CursorTheme.statusBarHeight)
-                .glassDisconnectedFooter()
+                .frame(height: LibraryGlassDesign.statusBarHeight)
+                .padding(.horizontal, LibraryGlassDesign.outerMargin)
+                .padding(.bottom, 8)
         }
         .frame(maxHeight: .infinity)
+        .background(Color.clear)
     }
 
     @ViewBuilder

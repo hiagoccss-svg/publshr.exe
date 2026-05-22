@@ -98,9 +98,9 @@ struct ChatChannelStatusBar: View {
                 }
             }
             .padding(.horizontal, 16)
-            .padding(.vertical, 8)
+            .padding(.vertical, 10)
         }
-        .glassDisconnectedFooter()
+        .background(Color.clear)
         .overlay(alignment: .bottom) {
             Rectangle().fill(LibraryGlassDesign.hairline).frame(height: 1)
         }
