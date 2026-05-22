@@ -89,7 +89,7 @@ struct MainIDEView: View {
         }
     }
 
-    private func onModuleChange(_: AppModule, newModule: AppModule) {
+    private func onModuleChange(_ newModule: AppModule) {
         guard newModule != .settings else {
             module = .chat
             return

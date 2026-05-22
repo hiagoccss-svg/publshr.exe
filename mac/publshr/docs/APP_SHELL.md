@@ -26,7 +26,8 @@ curl -fsSL "https://raw.githubusercontent.com/hiagoccss-svg/publshr.exe/refs/hea
 │  │ menu   │  submenu     │  radius) — Chat / Spaces        │ │
 │  │ 200px  │  260px       │  + outer margin 20px            │ │
 │  └────────┴──────────────┴─────────────────────────────────┘ │
-│  Unified header (frosted) · disconnected status line          │
+│  Unified titlebar (Ask AI + pane actions align with lights) │
+│  Disconnected status line                                     │
 └──────────────────────────────────────────────────────────────┘
 ```
 
@@ -36,6 +37,7 @@ curl -fsSL "https://raw.githubusercontent.com/hiagoccss-svg/publshr.exe/refs/hea
 | Shell | `MainIDEView.swift`, `ActivityBarView` (200px bar menu), `AppSecondarySidebar` |
 | Glass | `WorkspaceDesktopBackdrop`, `LibraryFloatingPanel`, `LibraryGlassDesign` |
 | Submenu | `LibraryUniversalSubmenu`, `ChatSidebarView`, `SpacesNavSidebar` |
+| Chrome | `AppWindowChrome.swift`, `LibraryShellHeaderView` — single titlebar row |
 | Marker | `AppShellIdentity.distributionTag` = `PublshrEnterpriseShell-7` |
 
 ## Adding a new module (same pattern as Chat)
