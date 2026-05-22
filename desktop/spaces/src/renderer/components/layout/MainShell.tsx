@@ -4,6 +4,7 @@ import { WorkspaceArea } from './WorkspaceArea'
 import { ContextPanel } from './ContextPanel'
 import { CommandPalette } from '../command/CommandPalette'
 import { NewSpaceModal } from '../spaces/NewSpaceModal'
+import { SpaceSettingsModal } from '../spaces/SpaceSettingsModal'
 import { useSpacesStore } from '../../stores/spaces-store'
 
 export function MainShell(): React.ReactElement {
@@ -20,6 +21,7 @@ export function MainShell(): React.ReactElement {
       </div>
       <CommandPalette />
       <NewSpaceModal />
+      <SpaceSettingsModal />
     </div>
   )
 }

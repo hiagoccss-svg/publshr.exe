@@ -32,6 +32,7 @@ export function TaskDetailForm({
   const [status, setStatus] = useState(task.status)
   const [priority, setPriority] = useState(task.priority)
   const [assigneeId, setAssigneeId] = useState<string | null>(task.assigneeId)
+  const [startDate, setStartDate] = useState(task.startDate?.slice(0, 10) ?? '')
   const [dueDate, setDueDate] = useState(task.dueDate?.slice(0, 10) ?? '')
   const [tagsText, setTagsText] = useState(task.tags.join(', '))
   const [checklist, setChecklist] = useState<ChecklistItem[]>(task.checklist)
@@ -43,6 +44,7 @@ export function TaskDetailForm({
     setStatus(task.status)
     setPriority(task.priority)
     setAssigneeId(task.assigneeId)
+    setStartDate(task.startDate?.slice(0, 10) ?? '')
     setDueDate(task.dueDate?.slice(0, 10) ?? '')
     setTagsText(task.tags.join(', '))
     setChecklist(task.checklist)
@@ -121,6 +123,18 @@ export function TaskDetailForm({
           </option>
         ))}
       </select>
+
+      <label className="mb-1 text-[10px] font-semibold uppercase text-ink-muted">Start date</label>
+      <input
+        type="date"
+        value={startDate}
+        onChange={(e) => {
+          const next = e.target.value || null
+          setStartDate(e.target.value)
+          void save({ startDate: next })
+        }}
+        className="mb-2 w-full rounded-lg border border-surface-border bg-surface px-2 py-1.5 text-xs text-ink"
+      />
 
       <label className="mb-1 text-[10px] font-semibold uppercase text-ink-muted">Due date</label>
       <input

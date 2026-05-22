@@ -10,7 +10,9 @@ export function TitleBar() {
       className="glass-toolbar-dark flex shrink-0 items-center gap-3 border-b px-3 app-drag"
       style={{ height: shell.titleBarHeight }}
     >
-      <div className="w-[70px] shrink-0 app-no-drag" />
+      <div className="w-[70px] shrink-0 app-no-drag flex items-center">
+        <span className="text-[12px] font-semibold text-content tracking-tight">Reports</span>
+      </div>
       <div className="dt-content-input flex-1 flex items-center gap-2 max-w-2xl mx-auto rounded-sm px-2.5 py-1 app-no-drag">
         <Search size={12} style={{ color: shell.foregroundMuted }} />
         <input

@@ -27,7 +27,7 @@ final class ChatViewModel: ObservableObject {
     @Published private(set) var pinnedSidebarChannelIds: Set<UUID> = []
     @Published var permissions = ChatWorkspacePermissions.default
     @Published var isOffline = false
-    @Published private(set) var inAppNotifications: [ChatInAppNotification] = []
+    @Published var inAppNotifications: [ChatInAppNotification] = []
 
     // Phase 2
     @Published var reactions: [UUID: [ChatReactionSummary]] = [:]
@@ -67,6 +67,17 @@ final class ChatViewModel: ObservableObject {
     @Published var summaryPeriodEnd = Date()
     @Published var summaryPeriodError: String?
 
+    // ClickUp parity hubs & composer
+    @Published var sidebarHub: ChatSidebarHub = .channels
+    @Published var draftSummaries: [ChatDraftSummary] = []
+    @Published var sentSummaries: [ChatSentMessageSummary] = []
+    @Published var scheduledMessages: [ChatScheduledMessage] = []
+    @Published var showMentionPicker = false
+    @Published var showScheduleSendSheet = false
+    @Published var showDMInspector = true
+    @Published var scheduleSendAt = Date().addingTimeInterval(3600)
+    @Published var mentionPickerQuery = ""
+
     private var auth: AuthViewModel?
     var service: ChatService?
     private var draftSaveTask: Task<Void, Never>?
@@ -81,6 +92,7 @@ final class ChatViewModel: ObservableObject {
     private var notificationLevelByChannel: [UUID: String] = [:]
     private var deliveredMacNotificationMessageIds = Set<UUID>()
     private let maxInAppNotifications = 80
+    var scheduledDispatchTask: Task<Void, Never>?
 
     var currentUserId: UUID? { auth?.profile?.id ?? auth?.session?.user.id }
     var attachedClient: SupabaseClient? { auth?.client }
@@ -126,6 +138,8 @@ final class ChatViewModel: ObservableObject {
 
     func detach() {
         presenceHeartbeat?.cancel()
+        scheduledDispatchTask?.cancel()
+        scheduledDispatchTask = nil
         draftSaveTask?.cancel()
         composerTypingTask?.cancel()
         typingListenTask?.cancel()
@@ -261,6 +275,7 @@ final class ChatViewModel: ObservableObject {
             errorMessage = nil
             selectFirstChannelIfNeeded()
             await loadPlannerTasks()
+            await reloadScheduledMessages()
             if filteredChannels.isEmpty, filteredDMs.isEmpty,
                sidebarFilter != .all, !channels.isEmpty || !directMessages.isEmpty {
                 setSidebarFilter(.all)
@@ -584,6 +599,7 @@ final class ChatViewModel: ObservableObject {
             attachments: [],
             isEdited: false,
             isDeleted: false,
+            assignedTo: nil,
             createdAt: Date(),
             updatedAt: Date()
         )
@@ -653,6 +669,9 @@ final class ChatViewModel: ObservableObject {
                 body: composerText,
                 updatedAt: Date()
             ))
+            if sidebarHub == .drafts {
+                reloadDraftSummaries()
+            }
         }
     }
 
@@ -969,7 +988,7 @@ final class ChatViewModel: ObservableObject {
         }
     }
 
-    private func messageMentionsCurrentUser(_ message: ChatMessage) -> Bool {
+    func messageMentionsCurrentUser(_ message: ChatMessage) -> Bool {
         let body = message.body ?? ""
         let mentions = ChatMentionParser.parse(body, profiles: profiles)
         return mentions.contains { token in
@@ -1139,37 +1158,6 @@ final class ChatViewModel: ObservableObject {
         return "Attachment"
     }
 
-    func mentionCandidates(matching query: String) -> [Profile] {
-        let q = query.lowercased()
-        let list = Array(profiles.values)
-            .filter { $0.id != currentUserId }
-            .sorted { ($0.displayName ?? $0.email) < ($1.displayName ?? $0.email) }
-        if q.isEmpty {
-            return list
-        }
-        if "here".hasPrefix(q) || "channel".hasPrefix(q) {
-            // keep list; specials shown in picker UI
-        }
-        return list.filter {
-            let name = ($0.displayName ?? $0.email).lowercased()
-            let handle = mentionHandle(for: $0).lowercased()
-            return name.contains(q) || handle.contains(q) || $0.email.lowercased().contains(q)
-        }
-    }
-
-    func mentionHandle(for profile: Profile) -> String {
-        let raw = profile.displayName ?? profile.email.components(separatedBy: "@").first ?? "user"
-        return raw.lowercased().replacingOccurrences(of: " ", with: ".")
-    }
-
-    func insertMention(handle: String) {
-        guard let at = composerText.range(of: "@", options: .backwards) else {
-            composerText += composerText.isEmpty ? "@\(handle) " : " @\(handle) "
-            return
-        }
-        composerText.replaceSubrange(at.lowerBound..<composerText.endIndex, with: "@\(handle) ")
-    }
-
     func seenByLabel(for messageId: UUID) -> String? {
         guard permissions.readReceiptsEnabled,
               let receipts = receiptsByMessageId[messageId],
@@ -1318,6 +1306,8 @@ final class ChatViewModel: ObservableObject {
             result = result.filter { $0.kind == .dm || $0.kind == .group }
         case .channels:
             result = result.filter { $0.kind == .channel }
+        case .mentions:
+            result = result.filter { hasUnreadMention(in: $0.id) || unreadCount(for: $0.id) > 0 && channelHasCachedMention($0.id) }
         }
         if sidebarLayout == .recents {
             result.sort {

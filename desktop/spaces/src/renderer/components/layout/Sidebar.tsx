@@ -48,7 +48,10 @@ export function Sidebar({ collapsed }: SidebarProps): React.ReactElement {
   const setActiveSpace = useSpacesStore((s) => s.setActiveSpace)
   const setSidebarCollapsed = useSpacesStore((s) => s.setSidebarCollapsed)
   const setNewSpaceModalOpen = useSpacesStore((s) => s.setNewSpaceModalOpen)
+  const setSpacesHomeOpen = useSpacesStore((s) => s.setSpacesHomeOpen)
+  const openSpaceSettings = useSpacesStore((s) => s.openSpaceSettings)
   const activeSpaceId = useSpacesStore((s) => s.activeSpaceId)
+  const spacesHomeOpen = useSpacesStore((s) => s.spacesHomeOpen)
 
   const pinned = spaces.filter((s) => s.isPinned)
   const recent = spaces.filter((s) => !s.isPinned && !s.isArchived).slice(0, 8)
@@ -103,12 +106,26 @@ export function Sidebar({ collapsed }: SidebarProps): React.ReactElement {
 
         {activeSection === 'spaces' && !collapsed && (
           <div className="mt-4 space-y-3 border-t border-surface-border pt-3">
+            <button
+              type="button"
+              onClick={() => setSpacesHomeOpen(true)}
+              className={clsx(
+                'flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-xs',
+                spacesHomeOpen && !activeSpaceId
+                  ? 'bg-accent-soft font-medium text-accent'
+                  : 'text-ink-secondary hover:bg-surface-muted/60'
+              )}
+            >
+              <LayoutDashboard className="h-3.5 w-3.5" />
+              Spaces Home
+            </button>
             <SpaceGroup
               title="Pinned"
               icon={Pin}
               items={pinned}
               activeSpaceId={activeSpaceId}
               onSelect={(id) => void setActiveSpace(id)}
+              onSettings={openSpaceSettings}
             />
             <SpaceGroup
               title="Recent"
@@ -116,6 +133,7 @@ export function Sidebar({ collapsed }: SidebarProps): React.ReactElement {
               items={recent}
               activeSpaceId={activeSpaceId}
               onSelect={(id) => void setActiveSpace(id)}
+              onSettings={openSpaceSettings}
             />
             <button
               type="button"
@@ -148,13 +166,15 @@ function SpaceGroup({
   icon: Icon,
   items,
   activeSpaceId,
-  onSelect
+  onSelect,
+  onSettings
 }: {
   title: string
   icon: React.ComponentType<{ className?: string }>
   items: { id: string; name: string; color: string }[]
   activeSpaceId: string | null
   onSelect: (id: string) => void
+  onSettings: (id: string) => void
 }): React.ReactElement | null {
   if (items.length === 0) return null
   return (
@@ -164,18 +184,27 @@ function SpaceGroup({
         {title}
       </p>
       {items.map((s) => (
-        <button
-          key={s.id}
-          type="button"
-          onClick={() => onSelect(s.id)}
-          className={clsx(
-            'flex w-full items-center gap-2 rounded-lg px-2 py-1 text-left text-xs',
-            activeSpaceId === s.id ? 'bg-surface-muted font-medium text-ink' : 'text-ink-secondary hover:bg-surface-muted/60'
-          )}
-        >
-          <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: s.color }} />
-          <span className="truncate">{s.name}</span>
-        </button>
+        <div key={s.id} className="group flex items-center gap-0.5">
+          <button
+            type="button"
+            onClick={() => onSelect(s.id)}
+            className={clsx(
+              'flex min-w-0 flex-1 items-center gap-2 rounded-lg px-2 py-1 text-left text-xs',
+              activeSpaceId === s.id ? 'bg-surface-muted font-medium text-ink' : 'text-ink-secondary hover:bg-surface-muted/60'
+            )}
+          >
+            <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: s.color }} />
+            <span className="truncate">{s.name}</span>
+          </button>
+          <button
+            type="button"
+            title="Space settings"
+            onClick={() => onSettings(s.id)}
+            className="rounded p-0.5 text-ink-muted opacity-0 hover:bg-surface-muted group-hover:opacity-100"
+          >
+            <Settings className="h-3 w-3" />
+          </button>
+        </div>
       ))}
     </div>
   )
