@@ -56,7 +56,7 @@ final class AppUpdateViewModel: ObservableObject {
         checkTask = Task {
             await checkForUpdates(silent: true)
             while !Task.isCancelled {
-                try? await Task.sleep(nanoseconds: 30 * 60 * 1_000_000_000)
+                try? await Task.sleep(nanoseconds: 10 * 60 * 1_000_000_000)
                 await checkForUpdates(silent: true)
             }
         }

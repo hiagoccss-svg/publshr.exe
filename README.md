@@ -21,6 +21,8 @@ Or from a clone:
 open /Applications/Publshr.app
 ```
 
+**Push to `main` → live app updates.** The same install URL always works; GitHub Actions publishes the `live` release and the installed app applies it automatically ([docs](mac/publshr/docs/AUTO_UPDATE.md)).
+
 ### Features (mac/publshr)
 
 - **Cursor-matched UI** — activity bar, sidebar, editor tabs, enterprise chat panel, status bar

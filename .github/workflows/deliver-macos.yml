@@ -1,21 +1,17 @@
-# Build and publish a macOS Publshr.app release on every push to main.
-# The installed app checks GitHub Releases and applies updates automatically.
-name: Deliver macOS app
+# Publish the macOS Publshr.app "live" channel on every push to main.
+# Installed apps and install-publshr.sh always use the same asset URLs.
+name: Deliver macOS live app
 
 on:
   push:
     branches: [main]
-    paths:
-      - "mac/publshr/**"
-      - ".github/workflows/deliver-macos.yml"
-      - "install-publshr.sh"
   workflow_dispatch:
 
 permissions:
   contents: write
 
 jobs:
-  build-macos:
+  build-and-publish-live:
     runs-on: macos-14
     steps:
       - uses: actions/checkout@v4
@@ -34,7 +30,7 @@ jobs:
       - name: Select Xcode
         run: sudo xcode-select -s /Applications/Xcode.app
 
-      - name: Package macOS release
+      - name: Build release tarball
         working-directory: mac/publshr
         env:
           PUBLSHR_BUILD_NUMBER: ${{ steps.ver.outputs.build }}
@@ -42,31 +38,61 @@ jobs:
           chmod +x scripts/package-release.sh scripts/build-macos-app.sh scripts/apply-macos-update.sh
           bash scripts/package-release.sh "${{ steps.ver.outputs.full }}"
 
-      - name: Upload release asset
+      - name: Verify Publshr.app in tarball
+        run: |
+          FULL="${{ steps.ver.outputs.full }}"
+          ASSET="mac/publshr/dist/publshr-${FULL}-macos-aarch64.tar.gz"
+          test -f "$ASSET"
+          tar -tzf "$ASSET" | grep -q 'Publshr.app/Contents/MacOS/PublshrApp'
+          SIZE="$(wc -c < "$ASSET" | tr -d ' ')"
+          echo "Asset size: $SIZE bytes"
+          if [[ "$SIZE" -lt 5000000 ]]; then
+            echo "ERROR: tarball too small — expected full IDE app" >&2
+            exit 1
+          fi
+
+      - name: Prepare stable live asset names
+        run: |
+          FULL="${{ steps.ver.outputs.full }}"
+          SRC="mac/publshr/dist/publshr-${FULL}-macos-aarch64.tar.gz"
+          cp "$SRC" "mac/publshr/dist/Publshr-macos-aarch64.tar.gz"
+          echo "${FULL}" > mac/publshr/dist/VERSION.txt
+          echo "${{ steps.ver.outputs.build }}" >> mac/publshr/dist/VERSION.txt
+
+      - name: Publish versioned + live releases
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          TAG="${{ steps.ver.outputs.tag }}"
           FULL="${{ steps.ver.outputs.full }}"
-          ASSET="mac/publshr/dist/publshr-${FULL}-macos-aarch64.tar.gz"
-          if [[ ! -f "$ASSET" ]]; then
-            echo "Expected asset missing: $ASSET" >&2
-            ls -la mac/publshr/dist/ >&2 || true
-            exit 1
-          fi
-          if gh release view "$TAG" --repo "${{ github.repository }}" >/dev/null 2>&1; then
-            gh release upload "$TAG" "$ASSET" --repo "${{ github.repository }}" --clobber
+          TAG="${{ steps.ver.outputs.tag }}"
+          BUILD="${{ steps.ver.outputs.build }}"
+          REPO="${{ github.repository }}"
+          VERSIONED="mac/publshr/dist/publshr-${FULL}-macos-aarch64.tar.gz"
+          LIVE="mac/publshr/dist/Publshr-macos-aarch64.tar.gz"
+          NOTES="build_number: ${BUILD}
+          version: ${FULL}
+          commit: ${{ github.sha }}
+
+          **Install (same command every time):**
+          \`\`\`bash
+          curl -fsSL https://raw.githubusercontent.com/${REPO}/main/install-publshr.sh | bash
+          \`\`\`
+
+          Installed Publshr.app auto-updates from the \`live\` release when you push to \`main\`."
+
+          # Versioned release (history)
+          if gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
+            gh release upload "$TAG" "$VERSIONED" --repo "$REPO" --clobber
           else
-            gh release create "$TAG" \
-              --repo "${{ github.repository }}" \
-              --title "Publshr ${FULL}" \
-              --notes "Automatic build from \`${{ github.sha }}\` on \`${{ github.ref_name }}\`.
-
-Install once:
-\`\`\`bash
-curl -fsSL https://raw.githubusercontent.com/${{ github.repository }}/main/install-publshr.sh | bash
-\`\`\`
-
-After that, **Publshr updates itself** when you push to \`main\` — no Terminal reinstall." \
-              "$ASSET"
+            gh release create "$TAG" --repo "$REPO" --title "Publshr ${FULL}" --notes "$NOTES" "$VERSIONED"
           fi
+
+          # Live channel (fixed URL — installer + auto-updater)
+          if gh release view "live" --repo "$REPO" >/dev/null 2>&1; then
+            gh release edit "live" --repo "$REPO" --title "Publshr live (${FULL})" --notes "$NOTES"
+            gh release upload "live" "$LIVE" --repo "$REPO" --clobber
+          else
+            gh release create "live" --repo "$REPO" --title "Publshr live (${FULL})" --notes "$NOTES" "$LIVE"
+          fi
+
+          echo "Published ${TAG} and live → Publshr-macos-aarch64.tar.gz"
