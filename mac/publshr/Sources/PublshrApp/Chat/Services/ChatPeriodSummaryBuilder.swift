@@ -46,10 +46,9 @@ enum ChatPeriodSummaryBuilder {
             )
         }
 
-        let participants = participantNames(in: inRange, profiles: profiles)
+        let participants = participantNames(inRange, profiles: profiles)
         let mainCount = inRange.filter { $0.threadParentId == nil }.count
         let threadCount = inRange.filter { $0.threadParentId != nil }.count
-        let threadParents = Set(inRange.compactMap(\.threadParentId))
 
         var script = """
         # Chat script recap — \(channelTitle)
@@ -88,7 +87,7 @@ enum ChatPeriodSummaryBuilder {
         }
 
         let actions = ChatAIService.extractActionItems(from: joined)
-        let deadlines = ChatAIService.extractDeadlines(from: joined)
+        let deadlines = extractDeadlines(from: joined)
 
         if !actions.isEmpty {
             script += "\n\n---\n\n## Follow-ups mentioned\n"
