@@ -33,6 +33,8 @@ enum ChatClickUpDesign {
 enum ChatSidebarFilter: String, CaseIterable, Identifiable {
     case all
     case unread
+    case starred
+    case muted
     case dms
     case channels
 
@@ -42,8 +44,42 @@ enum ChatSidebarFilter: String, CaseIterable, Identifiable {
         switch self {
         case .all: "All"
         case .unread: "Unread"
+        case .starred: "Starred"
+        case .muted: "Muted"
         case .dms: "DMs"
         case .channels: "Channels"
+        }
+    }
+}
+
+enum ChatSearchScope: String, CaseIterable {
+    case workspace
+    case channel
+
+    var label: String {
+        switch self {
+        case .workspace: "Workspace"
+        case .channel: "This channel"
+        }
+    }
+}
+
+enum ChatSearchTab: String, CaseIterable, Identifiable {
+    case all
+    case messages
+    case channels
+    case people
+    case tasks
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .all: "All"
+        case .messages: "Messages"
+        case .channels: "Channels"
+        case .people: "People"
+        case .tasks: "Tasks"
         }
     }
 }

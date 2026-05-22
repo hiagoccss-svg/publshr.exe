@@ -43,10 +43,10 @@ struct ActivityBarView: View {
                     barQuickRow(
                         title: "Saved",
                         icon: "bookmark",
-                        badge: chat.favoriteChannels.count,
+                        badge: chat.starredChannels.count,
                         selected: false
                     ) {
-                        if let first = chat.favoriteChannels.first {
+                        if let first = chat.starredChannels.first {
                             tabStore.openFromChannel(first)
                             chat.selectChannel(first)
                         }

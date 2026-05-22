@@ -320,11 +320,25 @@ extension ChatViewModel {
 
     func runGlobalSearch() async {
         let q = globalSearchQuery.trimmingCharacters(in: .whitespaces)
-        guard !q.isEmpty else { searchResults = []; return }
+        guard !q.isEmpty else {
+            searchResults = []
+            searchError = nil
+            isSearchLoading = false
+            return
+        }
+
+        isSearchLoading = true
+        searchError = nil
+        defer { isSearchLoading = false }
+
         var hits: [ChatSearchHit] = []
+        let scopeChannelId = searchScope == .channel ? selectedChannel?.id : nil
+
         if let service, let workspace, !isOffline {
-            if let remote = try? await service.searchWorkspace(workspaceId: workspace.id, query: q) {
+            do {
+                let remote = try await service.searchWorkspace(workspaceId: workspace.id, query: q)
                 for m in remote.messages {
+                    if let scopeChannelId, m.channel_id != scopeChannelId { continue }
                     hits.append(ChatSearchHit(
                         id: "msg-\(m.id.uuidString)",
                         kind: .message,
@@ -336,6 +350,7 @@ extension ChatViewModel {
                     ))
                 }
                 for t in remote.tasks {
+                    if scopeChannelId != nil { continue }
                     hits.append(ChatSearchHit(
                         id: "task-\(t.id.uuidString)",
                         kind: .task,
@@ -346,21 +361,93 @@ extension ChatViewModel {
                         createdAt: nil
                     ))
                 }
+            } catch {
+                searchError = "Cloud search unavailable — showing local results."
             }
         }
+
         let local = service?.localStore().searchMessages(query: q) ?? []
         for row in local {
+            if let scopeChannelId, row.channelId != scopeChannelId { continue }
+            let messageId = row.messageId
+            if hits.contains(where: { $0.messageId?.uuidString == messageId }) { continue }
             hits.append(ChatSearchHit(
-                id: "local-\(row.messageId)",
+                id: "local-\(messageId)",
                 kind: .message,
                 title: row.snippet,
                 subtitle: row.channelName,
                 channelId: row.channelId,
-                messageId: UUID(uuidString: row.messageId),
+                messageId: UUID(uuidString: messageId),
                 createdAt: nil
             ))
         }
-        searchResults = hits
+
+        let channelPool = channels + directMessages
+        for ch in channelPool {
+            if scopeChannelId != nil, ch.id != scopeChannelId { continue }
+            let hay = "\(ch.name) \(ch.description ?? "") \(ch.sidebarTitle)".lowercased()
+            if hay.contains(q.lowercased()) {
+                hits.append(ChatSearchHit(
+                    id: "ch-\(ch.id.uuidString)",
+                    kind: .channel,
+                    title: ch.sidebarTitle,
+                    subtitle: ch.kind == .channel ? "Channel" : "Direct message",
+                    channelId: ch.id,
+                    messageId: nil,
+                    createdAt: ch.lastMessageAt
+                ))
+            }
+        }
+
+        if scopeChannelId == nil {
+            for profile in profiles.values {
+                let display = profile.displayName ?? profile.email ?? "User"
+                let name = "\(display) \(profile.email ?? "")".lowercased()
+                if name.contains(q.lowercased()) {
+                    hits.append(ChatSearchHit(
+                        id: "user-\(profile.id.uuidString)",
+                        kind: .user,
+                        title: display,
+                        subtitle: profile.email ?? "Team member",
+                        channelId: nil,
+                        messageId: nil,
+                        createdAt: nil
+                    ))
+                }
+            }
+        }
+
+        searchResults = applySearchTabFilter(hits)
+    }
+
+    private func applySearchTabFilter(_ hits: [ChatSearchHit]) -> [ChatSearchHit] {
+        switch searchTab {
+        case .all:
+            return hits
+        case .messages:
+            return hits.filter { $0.kind == .message || $0.kind == .file || $0.kind == .voice }
+        case .channels:
+            return hits.filter { $0.kind == .channel }
+        case .people:
+            return hits.filter { $0.kind == .user }
+        case .tasks:
+            return hits.filter { $0.kind == .task }
+        }
+    }
+
+    func activateSearchHit(_ hit: ChatSearchHit) {
+        switch hit.kind {
+        case .user:
+            if let profileId = UUID(uuidString: hit.id.replacingOccurrences(of: "user-", with: "")),
+               let profile = profiles[profileId] {
+                Task { await openDM(with: profile) }
+            }
+        case .channel, .message, .file, .voice, .task:
+            if let channelId = hit.channelId,
+               let ch = (channels + directMessages).first(where: { $0.id == channelId }) {
+                selectChannel(ch)
+            }
+        }
     }
 
     // MARK: - AI

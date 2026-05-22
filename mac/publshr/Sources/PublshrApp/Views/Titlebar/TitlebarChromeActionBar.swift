@@ -149,7 +149,7 @@ struct TitlebarChromeActionBar: View {
                 help: TitlebarShortcutHint.tooltip("Search", shortcut: TitlebarShortcutHint.search),
                 isEnabled: module == .chat
             ) {
-                if module == .chat { chat.showSearchSheet = true }
+                if module == .chat { chat.openWorkspaceSearch(scope: .workspace) }
             }
 
             TitlebarChromeIconButton(
@@ -177,7 +177,7 @@ struct TitlebarChromeActionBar: View {
         case .chat:
             HStack(spacing: 2) {
                 TitlebarChromeIconButton(systemName: "line.3.horizontal.decrease", help: "Filter channels") {
-                    chat.showSearchSheet = true
+                    chat.openWorkspaceSearch(scope: .workspace)
                 }
                 if chat.isLoading {
                     TitlebarChromeIconButton(

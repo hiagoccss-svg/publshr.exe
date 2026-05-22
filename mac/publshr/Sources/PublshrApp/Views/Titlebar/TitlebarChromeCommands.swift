@@ -55,7 +55,7 @@ enum TitlebarChromeCommands {
                 shortcut: TitlebarShortcutHint.search,
                 isEnabled: module.wrappedValue == .chat
             ) {
-                chat.showSearchSheet = true
+                chat.openWorkspaceSearch(scope: .workspace)
             },
             TitlebarCommandPaletteItem(
                 id: "ai",

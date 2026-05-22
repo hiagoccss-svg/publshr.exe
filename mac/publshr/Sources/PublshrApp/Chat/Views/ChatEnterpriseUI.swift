@@ -147,7 +147,7 @@ struct ChatChannelStatusBar: View {
             }
 
             Button {
-                chat.showSearchSheet = true
+                chat.openWorkspaceSearch(scope: .channel)
             } label: {
                 Image(systemName: "magnifyingglass")
                     .font(.system(size: 12))

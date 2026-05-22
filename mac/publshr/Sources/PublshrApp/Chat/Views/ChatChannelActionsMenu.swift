@@ -53,8 +53,33 @@ struct ChatChannelActionsMenu: View {
                 }
                 Divider()
             }
-            Button { chat.showSearchSheet = true } label: {
+            Button {
+                chat.toggleStar(channel)
+            } label: {
+                Label(
+                    chat.isStarred(channel) ? "Unstar" : "Star conversation",
+                    systemImage: chat.isStarred(channel) ? "star.fill" : "star"
+                )
+            }
+            Button {
+                Task { await chat.setChannelMuted(channel, muted: !chat.isChannelMuted(channel)) }
+            } label: {
+                Label(
+                    chat.isChannelMuted(channel) ? "Unmute notifications" : "Mute notifications",
+                    systemImage: chat.isChannelMuted(channel) ? "bell" : "bell.slash"
+                )
+            }
+            .disabled(chat.membershipByChannel[channel.id] == nil)
+            Button {
+                chat.markChannelRead(channel)
+            } label: {
+                Label("Mark as read", systemImage: "checkmark.message")
+            }
+            Button { chat.openWorkspaceSearch(scope: .channel) } label: {
                 Label("Search in channel", systemImage: "magnifyingglass")
+            }
+            Button { chat.openWorkspaceSearch(scope: .workspace) } label: {
+                Label("Search workspace", systemImage: "text.magnifyingglass")
             }
             Button {
                 chat.showPinnedPanel.toggle()

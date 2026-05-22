@@ -54,7 +54,7 @@ struct ChatSidebarView: View {
             Image(systemName: "magnifyingglass")
                 .font(.system(size: 11, weight: .medium))
                 .foregroundStyle(LibraryGlassDesign.inkMuted)
-            TextField("Search channels and people", text: $chat.sidebarSearchQuery)
+            TextField("Filter conversations…", text: $chat.sidebarSearchQuery)
                 .textFieldStyle(.plain)
                 .font(ChatClickUpDesign.searchFont)
                 .foregroundStyle(CursorTheme.foreground)
@@ -130,8 +130,8 @@ struct ChatSidebarView: View {
 
     private var organizedContent: some View {
         Group {
-            if chat.sidebarFilter == .all, !chat.favoriteChannels.isEmpty {
-                sidebarSection("Favorites", items: chat.favoriteChannels, onAdd: nil)
+            if chat.sidebarFilter == .all, !chat.starredChannels.isEmpty {
+                sidebarSection("Starred", items: chat.starredChannels, onAdd: nil)
                 LibraryUniversalSubmenu.sectionDivider()
             }
             if chat.sidebarFilter != .dms {
@@ -290,6 +290,16 @@ struct ChatSidebarView: View {
                         .font(.system(size: 13, weight: bold || selected ? .semibold : .regular))
                         .foregroundStyle(selected ? LibraryGlassDesign.ink : LibraryGlassDesign.inkSecondary)
                         .lineLimit(1)
+                    if chat.isStarred(channel) {
+                        Image(systemName: "star.fill")
+                            .font(.system(size: 9))
+                            .foregroundStyle(.yellow)
+                    }
+                    if chat.isChannelMuted(channel) {
+                        Image(systemName: "bell.slash.fill")
+                            .font(.system(size: 9))
+                            .foregroundStyle(LibraryGlassDesign.inkMuted)
+                    }
                     Spacer(minLength: 0)
                     HStack(spacing: 4) {
                         if threadUnread {

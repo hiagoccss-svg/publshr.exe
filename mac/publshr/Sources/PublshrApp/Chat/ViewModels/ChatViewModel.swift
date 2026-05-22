@@ -49,10 +49,17 @@ final class ChatViewModel: ObservableObject {
     @Published var showAISheet = false
     @Published var globalSearchQuery = ""
     @Published var searchResults: [ChatSearchHit] = []
+    @Published var searchScope: ChatSearchScope = .workspace
+    @Published var searchTab: ChatSearchTab = .all
+    @Published var isSearchLoading = false
+    @Published var searchError: String?
+    @Published var starredChannelIds: Set<UUID> = []
+    @Published var membershipByChannel: [UUID: ChatChannelMember] = [:]
     @Published var aiResult: ChatAIResult?
     @Published var isAILoading = false
 
     private var auth: AuthViewModel?
+    private var globalSearchTask: Task<Void, Never>?
     var service: ChatService?
     private var draftSaveTask: Task<Void, Never>?
     private var presenceHeartbeat: Task<Void, Never>?
@@ -201,6 +208,7 @@ final class ChatViewModel: ObservableObject {
         isLoading = true
         defer { isLoading = false }
         service.localStore().setMeta("last_workspace_id", value: workspaceId.uuidString)
+        starredChannelIds = ChatUserPreferences.loadStarredChannelIds(workspaceId: workspaceId)
 
         let cached = service.cachedChannels(workspaceId: workspaceId)
         if !cached.isEmpty {
@@ -228,6 +236,9 @@ final class ChatViewModel: ObservableObject {
             presence = Dictionary(uniqueKeysWithValues: pres.map { ($0.userId, $0) })
             isOffline = false
             errorMessage = nil
+            if let memberships = try? await service.fetchMyChannelMemberships(workspaceId: workspaceId, userId: userId) {
+                membershipByChannel = Dictionary(uniqueKeysWithValues: memberships.map { ($0.channelId, $0) })
+            }
             selectFirstChannelIfNeeded()
             await loadPlannerTasks()
             if filteredChannels.isEmpty, filteredDMs.isEmpty,
@@ -749,15 +760,68 @@ final class ChatViewModel: ObservableObject {
         return sidebarChannelsList(sorted)
     }
 
-    /// Recently active — stable name order for Favorites (avoids row jumping on new messages).
-    var favoriteChannels: [ChatChannel] {
+    /// User-starred conversations (Slack-style); persisted per workspace.
+    var starredChannels: [ChatChannel] {
         let combined = channels + directMessages
-        let byActivity = combined.sorted {
-            ($0.lastMessageAt ?? .distantPast) > ($1.lastMessageAt ?? .distantPast)
+        return combined
+            .filter { starredChannelIds.contains($0.id) }
+            .sorted {
+                $0.sidebarTitle.localizedCaseInsensitiveCompare($1.sidebarTitle) == .orderedAscending
+            }
+    }
+
+    func isStarred(_ channel: ChatChannel) -> Bool {
+        starredChannelIds.contains(channel.id)
+    }
+
+    func toggleStar(_ channel: ChatChannel) {
+        guard let workspace else { return }
+        if starredChannelIds.contains(channel.id) {
+            starredChannelIds.remove(channel.id)
+        } else {
+            starredChannelIds.insert(channel.id)
         }
-        let top = Array(byActivity.prefix(8))
-        return top.sorted {
-            $0.sidebarTitle.localizedCaseInsensitiveCompare($1.sidebarTitle) == .orderedAscending
+        ChatUserPreferences.saveStarredChannelIds(starredChannelIds, workspaceId: workspace.id)
+    }
+
+    func notificationLevel(for channelId: UUID) -> String {
+        membershipByChannel[channelId]?.notificationLevel ?? "all"
+    }
+
+    func isChannelMuted(_ channel: ChatChannel) -> Bool {
+        notificationLevel(for: channel.id) == "muted"
+    }
+
+    func setChannelMuted(_ channel: ChatChannel, muted: Bool) async {
+        guard let service, let member = membershipByChannel[channel.id] else { return }
+        let level = muted ? "muted" : "all"
+        do {
+            let updated = try await service.updateChannelNotificationLevel(memberId: member.id, level: level)
+            membershipByChannel[channel.id] = updated
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func markChannelRead(_ channel: ChatChannel) {
+        unreadByChannel[channel.id] = 0
+        unreadThreadsByChannel[channel.id] = 0
+        service?.localStore().setUnreadCount(channelId: channel.id, count: 0)
+        refreshDockBadge()
+    }
+
+    func openWorkspaceSearch(scope: ChatSearchScope = .workspace) {
+        searchScope = scope
+        showSearchSheet = true
+        Task { await runGlobalSearch() }
+    }
+
+    func scheduleGlobalSearch() {
+        globalSearchTask?.cancel()
+        globalSearchTask = Task {
+            try? await Task.sleep(nanoseconds: 280_000_000)
+            guard !Task.isCancelled else { return }
+            await runGlobalSearch()
         }
     }
 
@@ -798,6 +862,10 @@ final class ChatViewModel: ObservableObject {
             result = result.filter {
                 unreadCount(for: $0.id) > 0 || hasUnreadThreadReplies(for: $0.id)
             }
+        case .starred:
+            result = result.filter { starredChannelIds.contains($0.id) }
+        case .muted:
+            result = result.filter { notificationLevel(for: $0.id) == "muted" }
         case .dms:
             result = result.filter { $0.kind == .dm || $0.kind == .group }
         case .channels:

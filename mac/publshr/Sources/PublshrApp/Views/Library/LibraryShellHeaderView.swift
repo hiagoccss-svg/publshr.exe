@@ -125,7 +125,7 @@ struct LibraryShellHeaderView: View {
         case .chat:
             if let channel = chat.selectedChannel {
                 Menu {
-                    Button("Search in channel") { chat.showSearchSheet = true }
+                    Button("Search in channel") { chat.openWorkspaceSearch(scope: .channel) }
                     if subscription.canUseCalls(workspace: auth.selectedWorkspace) {
                         Divider()
                         Button("Start call") {

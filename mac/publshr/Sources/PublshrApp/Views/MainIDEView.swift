@@ -91,7 +91,7 @@ struct MainIDEView: View {
             titlebar.showCommandPalette = true
         }
         .onReceive(NotificationCenter.default.publisher(for: .publshrTitlebarSearch)) { _ in
-            if module == .chat { chat.showSearchSheet = true }
+            if module == .chat { chat.openWorkspaceSearch(scope: .workspace) }
         }
         .onReceive(NotificationCenter.default.publisher(for: .publshrTitlebarNotifications)) { _ in
             titlebar.showNotificationsPanel = true

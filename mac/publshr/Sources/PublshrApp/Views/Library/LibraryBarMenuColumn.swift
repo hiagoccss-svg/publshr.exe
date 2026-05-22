@@ -42,10 +42,10 @@ struct LibraryBarMenuColumn: View {
                     navRow(
                         "Saved",
                         icon: "bookmark",
-                        badge: chat.favoriteChannels.count,
+                        badge: chat.starredChannels.count,
                         selected: false
                     ) {
-                        if let fav = chat.favoriteChannels.first {
+                        if let fav = chat.starredChannels.first {
                             tabStore.openFromChannel(fav)
                             chat.selectChannel(fav)
                         }
