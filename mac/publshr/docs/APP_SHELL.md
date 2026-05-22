@@ -37,8 +37,8 @@ curl -fsSL "https://raw.githubusercontent.com/hiagoccss-svg/publshr.exe/refs/hea
 | Shell | `MainIDEView.swift`, `LibraryBarMenuColumn` (200px bar menu), `AppSecondarySidebar` |
 | Glass | `WorkspaceDesktopBackdrop`, `LibraryFloatingPanel`, `LibraryGlassDesign` |
 | Submenu | `LibraryUniversalSubmenu`, `ChatSidebarView`, `SpacesNavSidebar` |
-| Chrome | `AppWindowChrome.swift`, `LibraryShellHeaderView`, `TitlebarChromeActionBar` — unified titlebar actions |
-| Marker | `AppShellIdentity.distributionTag` = `PublshrEnterpriseShell-10` |
+| Chrome | `TitlebarChromeBridge` (native titlebar accessory), `LibraryShellHeaderView`, `TitlebarChromeActionBar` |
+| Marker | `AppShellIdentity.distributionTag` = `PublshrEnterpriseShell-11` |
 
 ## Adding a new module (same pattern as Chat)
 
@@ -53,7 +53,7 @@ curl -fsSL "https://raw.githubusercontent.com/hiagoccss-svg/publshr.exe/refs/hea
 
 - App checks GitHub tag **`live`** using `releases/download/...` URLs (avoids API 403).
 - Downloads install in place to `~/Applications/Publshr.app` when possible.
-- Shell marker **`PublshrEnterpriseShell-10`** must be present in the binary for CI verification.
+- Shell marker **`PublshrEnterpriseShell-11`** must be present in the binary for CI verification.
 
 ## CI
 
