@@ -529,11 +529,4 @@ final class AppUpdateService: @unchecked Sendable {
         )
     }
 
-    func recordAppliedLiveManifest(_ update: AvailableUpdate) {
-        UserDefaults.standard.set(update.version, forKey: "publshr.appliedLiveVersion")
-        UserDefaults.standard.set(update.build, forKey: "publshr.appliedLiveBuild")
-        if let digest = update.packageDigest, !digest.isEmpty {
-            UserDefaults.standard.set(digest, forKey: "publshr.appliedLiveDigest")
-        }
-    }
 }
