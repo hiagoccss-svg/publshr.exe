@@ -3,6 +3,7 @@ import SwiftUI
 /// Universal submenu column (channels, spaces tree) beside the bar menu.
 /// Width is owned by `LibraryUniversalSubmenuContainer` inside each module sidebar.
 struct AppSecondarySidebar: View {
+    var submenuWidth: CGFloat
     var module: AppModule
     @ObservedObject var chat: ChatViewModel
     @ObservedObject var spaces: SpacesViewModel
@@ -16,16 +17,18 @@ struct AppSecondarySidebar: View {
                 ChatSidebarView(
                     chat: chat,
                     showNewChannel: $showNewChannel,
-                    showNewDM: $showNewDM
+                    showNewDM: $showNewDM,
+                    submenuWidth: submenuWidth
                 )
             case .spaces:
-                SpacesNavSidebar(spaces: spaces)
+                SpacesNavSidebar(spaces: spaces, submenuWidth: submenuWidth)
             case .mediaMonitoring, .planner:
                 EmptyView()
             case .settings:
                 EmptyView()
             }
         }
+        .frame(width: submenuWidth, alignment: .leading)
         .frame(minHeight: 0, maxHeight: .infinity)
     }
 }
