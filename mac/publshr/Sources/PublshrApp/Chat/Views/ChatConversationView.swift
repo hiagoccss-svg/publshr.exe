@@ -47,6 +47,17 @@ struct ChatConversationView: View {
                     Text(chat.workspace?.name ?? "Chat")
                         .font(.system(size: 16, weight: .semibold))
                         .foregroundStyle(CursorTheme.foreground)
+                    if let err = chat.errorMessage, !err.isEmpty {
+                        Text(err)
+                            .font(.system(size: 12))
+                            .foregroundStyle(CursorTheme.error)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 24)
+                        Button("Retry sync") {
+                            Task { await chat.refreshAfterReconnect() }
+                        }
+                        .buttonStyle(.bordered)
+                    }
                     Text("Select a channel or direct message.")
                         .font(.system(size: 13))
                         .foregroundStyle(CursorTheme.foregroundMuted)

@@ -119,6 +119,10 @@ struct ChatSidebarView: View {
 
     private var organizedContent: some View {
         Group {
+            if !chat.favoriteChannels.isEmpty, chat.sidebarFilter == .all {
+                sidebarSection("Favorites", items: chat.favoriteChannels, onAdd: nil)
+                LibraryUniversalSubmenu.sectionDivider()
+            }
             if chat.sidebarFilter != .dms {
                 sidebarSection("Channels", items: chat.filteredChannels, onAdd: { showNewChannel = true })
                 LibraryUniversalSubmenu.sectionDivider()
@@ -281,6 +285,7 @@ struct ChatSidebarView: View {
                             Image(systemName: "bubble.left.and.bubble.right.fill")
                                 .font(.system(size: 10))
                                 .foregroundStyle(LibraryGlassDesign.primaryCTA)
+                                .help("Unread thread replies")
                         }
                         if let live = calls.liveCall(for: channel.id), !calls.isInCall(on: channel.id) {
                             LiveCallChannelBadge(summary: live)
@@ -298,6 +303,7 @@ struct ChatSidebarView: View {
                                 .foregroundStyle(LibraryGlassDesign.inkMuted)
                         }
                     }
+                    .frame(minWidth: 44, alignment: .trailing)
                 }
                 .frame(height: ChatClickUpDesign.rowHeight)
                 .padding(.horizontal, 10)
@@ -309,6 +315,7 @@ struct ChatSidebarView: View {
             .buttonStyle(.plain)
 
             channelRowMenu(channel)
+                .frame(width: 28)
         }
         .padding(.horizontal, 6)
         .contextMenu {

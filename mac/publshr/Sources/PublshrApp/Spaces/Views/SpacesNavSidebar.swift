@@ -101,7 +101,14 @@ struct SpacesNavSidebar: View {
     }
 
     private var createSpaceField: some View {
-        HStack(spacing: 8) {
+        VStack(alignment: .leading, spacing: 6) {
+            if let err = spaces.errorMessage, !err.isEmpty {
+                Text(err)
+                    .font(.system(size: 11))
+                    .foregroundStyle(CursorTheme.error)
+                    .lineLimit(3)
+            }
+            HStack(spacing: 8) {
             TextField("New space", text: $spaces.newSpaceName)
                 .textFieldStyle(.plain)
                 .font(.system(size: 12))
@@ -117,6 +124,7 @@ struct SpacesNavSidebar: View {
                 Label("New", systemImage: "plus")
             }
             .buttonStyle(LibraryPrimaryPillButtonStyle())
+            }
         }
     }
 }

@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""Bake a premium dark metallic background into icon.png (mark-only or full icon)."""
+"""Bake a premium dark metallic background into icon.png (mark-only or full icon).
+
+WARNING: Overwrites icon.png on disk and can change how the mark looks when flattened.
+Prefer leaving icon.png as your original mark and using icon-build.sh (white holder default).
+"""
 
 from __future__ import annotations
 

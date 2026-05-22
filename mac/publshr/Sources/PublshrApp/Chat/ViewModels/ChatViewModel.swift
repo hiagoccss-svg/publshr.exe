@@ -87,7 +87,7 @@ final class ChatViewModel: ObservableObject {
             return
         }
         let sameWorkspace = self.workspace?.id == workspace.id
-        if sameWorkspace, !channels.isEmpty || !directMessages.isEmpty {
+        if sameWorkspace, (!channels.isEmpty || !directMessages.isEmpty), errorMessage == nil {
             return
         }
         Task {
@@ -252,8 +252,13 @@ final class ChatViewModel: ObservableObject {
     }
 
     private func partitionChannels(_ all: [ChatChannel]) {
-        channels = all.filter { $0.kind == .channel }.sorted { ($0.lastMessageAt ?? .distantPast) > ($1.lastMessageAt ?? .distantPast) }
-        directMessages = all.filter { $0.kind == .dm || $0.kind == .group }.sorted { ($0.lastMessageAt ?? .distantPast) > ($1.lastMessageAt ?? .distantPast) }
+        // Stable sidebar order (avoids rows jumping on every new message).
+        channels = all.filter { $0.kind == .channel }.sorted {
+            $0.sidebarTitle.localizedCaseInsensitiveCompare($1.sidebarTitle) == .orderedAscending
+        }
+        directMessages = all.filter { $0.kind == .dm || $0.kind == .group }.sorted {
+            $0.sidebarTitle.localizedCaseInsensitiveCompare($1.sidebarTitle) == .orderedAscending
+        }
     }
 
     // MARK: - Channel selection
@@ -631,13 +636,12 @@ final class ChatViewModel: ObservableObject {
             }
             Task { await loadChannelExtras() }
         } else {
+            let count = (unreadByChannel[message.channelId] ?? 0) + 1
+            unreadByChannel[message.channelId] = count
+            service?.localStore().setUnreadCount(channelId: message.channelId, count: count)
             if message.threadParentId != nil {
                 let t = (unreadThreadsByChannel[message.channelId] ?? 0) + 1
                 unreadThreadsByChannel[message.channelId] = t
-            } else {
-                let count = (unreadByChannel[message.channelId] ?? 0) + 1
-                unreadByChannel[message.channelId] = count
-                service?.localStore().setUnreadCount(channelId: message.channelId, count: count)
             }
             if message.userId != currentUserId {
                 notifyForIncomingMessage(message)
@@ -728,9 +732,16 @@ final class ChatViewModel: ObservableObject {
         return sidebarChannelsList(sorted)
     }
 
-    /// Legacy alias — header search still uses `searchQuery`; sidebar uses `sidebarSearchQuery`.
+    /// Favorites: recent activity picks, stable name order (rows do not jump).
     var favoriteChannels: [ChatChannel] {
-        Array(sidebarRecentsList.prefix(8))
+        let combined = channels + directMessages
+        let byActivity = combined.sorted {
+            ($0.lastMessageAt ?? .distantPast) > ($1.lastMessageAt ?? .distantPast)
+        }
+        let top = Array(byActivity.prefix(8))
+        return top.sorted {
+            $0.sidebarTitle.localizedCaseInsensitiveCompare($1.sidebarTitle) == .orderedAscending
+        }
     }
 
     var filteredProjects: [PlannerTask] {
@@ -778,6 +789,10 @@ final class ChatViewModel: ObservableObject {
         if sidebarLayout == .recents {
             result.sort {
                 ($0.lastMessageAt ?? .distantPast) > ($1.lastMessageAt ?? .distantPast)
+            }
+        } else {
+            result.sort {
+                $0.sidebarTitle.localizedCaseInsensitiveCompare($1.sidebarTitle) == .orderedAscending
             }
         }
         return result

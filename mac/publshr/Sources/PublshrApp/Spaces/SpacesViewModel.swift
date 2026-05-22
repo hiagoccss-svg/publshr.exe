@@ -434,9 +434,23 @@ final class SpacesViewModel: ObservableObject {
     // MARK: - Spaces CRUD
 
     func createSpace() async {
-        guard let service, let workspaceId, let userId else { return }
+        guard let service else {
+            errorMessage = "Sign in to create a space."
+            return
+        }
+        guard let workspaceId else {
+            errorMessage = "Select a workspace first (header workspace menu)."
+            return
+        }
+        guard let userId else {
+            errorMessage = "Your session expired. Sign in again."
+            return
+        }
         let name = newSpaceName.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !name.isEmpty else { return }
+        guard !name.isEmpty else {
+            errorMessage = "Enter a space name."
+            return
+        }
         isLoading = true
         defer { isLoading = false }
         do {

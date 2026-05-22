@@ -78,6 +78,13 @@ struct ChatComposerView: View {
         return "Message…"
     }
 
+    private var composerPlaceholder: String {
+        if let channel = chat.selectedChannel {
+            return "Message \(channel.sidebarTitle)…"
+        }
+        return "Message…"
+    }
+
     private func replyBanner(_ message: ChatMessage) -> some View {
         HStack(spacing: 8) {
             Rectangle()
