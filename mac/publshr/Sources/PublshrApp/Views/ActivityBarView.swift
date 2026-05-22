@@ -1,24 +1,18 @@
 import SwiftUI
 
-/// Primary bar menu — reference layout: ~200px labeled column (date, CTA, nav, disconnected bottom).
+/// Primary bar menu — reference layout: ~200px labeled column (CTA, nav, disconnected bottom).
 struct ActivityBarView: View {
     @EnvironmentObject private var tabStore: WorkspaceTabStore
     @EnvironmentObject private var auth: AuthViewModel
-    @EnvironmentObject private var chat: ChatViewModel
     @EnvironmentObject private var spaces: SpacesViewModel
     @Binding var module: AppModule
     @Binding var showNewChannel: Bool
-    @Binding var showNewDM: Bool
 
     var body: some View {
         VStack(spacing: 0) {
-            dateWeatherWidget
-                .padding(.horizontal, 14)
-                .padding(.top, 12)
-                .padding(.bottom, 10)
-
             primaryCTA
                 .padding(.horizontal, 14)
+                .padding(.top, 12)
                 .padding(.bottom, 12)
 
             Rectangle()
@@ -30,27 +24,6 @@ struct ActivityBarView: View {
             VStack(spacing: 4) {
                 ForEach(AppModule.mainStrip) { item in
                     moduleButton(item)
-                }
-                if module == .chat {
-                    barQuickRow(
-                        title: "Inbox",
-                        icon: "tray",
-                        badge: min(chat.totalUnread, 99),
-                        selected: false
-                    ) {
-                        openFirstUnreadChannel()
-                    }
-                    barQuickRow(
-                        title: "Saved",
-                        icon: "bookmark",
-                        badge: chat.starredChannels.count,
-                        selected: false
-                    ) {
-                        if let first = chat.starredChannels.first {
-                            tabStore.openFromChannel(first)
-                            chat.selectChannel(first)
-                        }
-                    }
                 }
             }
             .padding(.horizontal, 10)
@@ -86,27 +59,6 @@ struct ActivityBarView: View {
         case .settings:
             EmptyView()
         }
-    }
-
-    private var dateWeatherWidget: some View {
-        let now = Date()
-        return VStack(alignment: .leading, spacing: 4) {
-            Text(now.formatted(.dateTime.weekday(.wide)))
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(LibraryGlassDesign.ink)
-            Text(now.formatted(.dateTime.month(.abbreviated).day().year()))
-                .font(.system(size: 11))
-                .foregroundStyle(LibraryGlassDesign.inkMuted)
-            HStack(spacing: 5) {
-                Image(systemName: "cloud.sun")
-                    .font(.system(size: 12))
-                    .foregroundStyle(LibraryGlassDesign.inkSecondary)
-                Text("—")
-                    .font(.system(size: 11))
-                    .foregroundStyle(LibraryGlassDesign.inkMuted)
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private func moduleButton(_ item: AppModule) -> some View {
@@ -158,21 +110,6 @@ struct ActivityBarView: View {
             .contentShape(RoundedRectangle(cornerRadius: LibraryGlassDesign.sidebarRowRadius, style: .continuous))
         }
         .buttonStyle(.plain)
-    }
-
-    private func openFirstUnreadChannel() {
-        let channels = chat.filteredChannels + chat.filteredDMs
-        if let unread = channels.first(where: { chat.unreadCount(for: $0.id) > 0 }) {
-            tabStore.openFromChannel(unread)
-            chat.selectChannel(unread)
-            return
-        }
-        if let first = channels.first {
-            tabStore.openFromChannel(first)
-            chat.selectChannel(first)
-        } else {
-            showNewDM = true
-        }
     }
 
     private var disconnectedBottomActions: some View {

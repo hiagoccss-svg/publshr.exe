@@ -73,8 +73,7 @@ struct LibraryShellView: View {
             HStack(alignment: .top, spacing: 0) {
                 LibraryBarMenuColumn(
                     module: $module,
-                    showNewChannel: $showNewChannel,
-                    showNewDM: $showNewDM
+                    showNewChannel: $showNewChannel
                 )
                 .cursorColumnDividerTrailing()
 

@@ -1,24 +1,18 @@
 import SwiftUI
 
-/// Reference primary column (~200px): date, black CTA pill, labeled nav, disconnected bottom icons.
+/// Reference primary column (~200px): CTA pill, module nav, disconnected bottom icons.
 struct LibraryBarMenuColumn: View {
     @EnvironmentObject private var tabStore: WorkspaceTabStore
     @EnvironmentObject private var auth: AuthViewModel
-    @EnvironmentObject private var chat: ChatViewModel
     @EnvironmentObject private var spaces: SpacesViewModel
     @Binding var module: AppModule
     @Binding var showNewChannel: Bool
-    @Binding var showNewDM: Bool
 
     var body: some View {
         VStack(spacing: 0) {
-            dateBlock
-                .padding(.horizontal, 16)
-                .padding(.top, 14)
-                .padding(.bottom, 12)
-
             primaryCTA
                 .padding(.horizontal, 16)
+                .padding(.top, 14)
                 .padding(.bottom, 14)
 
             navDivider
@@ -29,34 +23,6 @@ struct LibraryBarMenuColumn: View {
                 }
                 navRow("Spaces", icon: "square.grid.2x2", selected: module == .spaces) {
                     switchModule(.spaces)
-                }
-                if module == .chat {
-                    navRow(
-                        "Inbox",
-                        icon: "tray",
-                        badge: min(chat.totalUnread, 99),
-                        selected: false
-                    ) {
-                        openFirstUnread()
-                    }
-                    navRow(
-                        "Saved",
-                        icon: "bookmark",
-                        badge: chat.starredChannels.count,
-                        selected: false
-                    ) {
-                        if let fav = chat.starredChannels.first {
-                            tabStore.openFromChannel(fav)
-                            chat.selectChannel(fav)
-                        }
-                    }
-                    navRow("Notes", icon: "note.text", selected: false) {
-                        chat.setSidebarLayout(.organized)
-                    }
-                    navRow("Tasks", icon: "checklist", selected: false) {
-                        module = .spaces
-                        tabStore.openFromModule(.spaces, activate: true)
-                    }
                 }
             }
             .padding(.horizontal, 12)
@@ -73,27 +39,6 @@ struct LibraryBarMenuColumn: View {
         .fixedSize(horizontal: true, vertical: false)
         .layoutPriority(2)
         .glassSidebar()
-    }
-
-    private var dateBlock: some View {
-        let now = Date()
-        return VStack(alignment: .leading, spacing: 4) {
-            Text(now.formatted(.dateTime.weekday(.wide)))
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(LibraryGlassDesign.ink)
-            Text(now.formatted(.dateTime.month(.wide).day().year()))
-                .font(.system(size: 12))
-                .foregroundStyle(LibraryGlassDesign.inkMuted)
-            HStack(spacing: 6) {
-                Image(systemName: "cloud.sun.fill")
-                    .font(.system(size: 13))
-                    .foregroundStyle(LibraryGlassDesign.inkSecondary)
-                Text("Snow Flurries")
-                    .font(.system(size: 11))
-                    .foregroundStyle(LibraryGlassDesign.inkMuted)
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     @ViewBuilder
@@ -184,24 +129,5 @@ struct LibraryBarMenuColumn: View {
     private func switchModule(_ item: AppModule) {
         module = item
         tabStore.openFromModule(item, activate: true)
-    }
-
-    private func openFirstUnread() {
-        tabStore.sidebarExpanded = true
-        chat.setSidebarFilter(.unread)
-        let all = chat.channels + chat.directMessages
-        if let ch = all.first(where: {
-            chat.unreadCount(for: $0.id) > 0 || chat.hasUnreadThreadReplies(for: $0.id)
-        }) {
-            tabStore.openFromChannel(ch)
-            chat.selectChannel(ch)
-        } else if let first = all.first {
-            chat.setSidebarFilter(.all)
-            tabStore.openFromChannel(first)
-            chat.selectChannel(first)
-        } else {
-            chat.setSidebarFilter(.all)
-            showNewDM = true
-        }
     }
 }
