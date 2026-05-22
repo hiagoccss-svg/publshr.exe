@@ -56,16 +56,15 @@ struct ContentView: View {
 
     private var bootstrappingView: some View {
         ZStack {
-            CursorTheme.authBackground.ignoresSafeArea()
-            VStack(spacing: 12) {
+            CursorTheme.activityBar.ignoresSafeArea()
+            VStack(spacing: 10) {
                 ProgressView()
                     .controlSize(.regular)
-                Text("Loading Publshr…")
+                Text("Restoring your session…")
                     .font(.system(size: 13))
                     .foregroundStyle(CursorTheme.foregroundMuted)
             }
         }
-        .preferredColorScheme(.light)
     }
 
     private func applyAppearance() {

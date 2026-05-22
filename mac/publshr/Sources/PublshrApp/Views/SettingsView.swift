@@ -9,6 +9,11 @@ struct SettingsView: View {
         VStack(spacing: 0) {
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
+                    header("Supabase")
+                    supabaseSection
+
+                    divider
+
                     header("Account")
                     accountSection
 
@@ -54,8 +59,42 @@ struct SettingsView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(CursorTheme.editorBackground)
         .onAppear {
-            Task { await updates.performLiveSync() }
+            Task {
+                await auth.loadProfile()
+                await auth.refreshSupabaseConnection()
+                await updates.performLiveSync()
+            }
         }
+    }
+
+    private var supabaseSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            labeledRow("Status", auth.supabaseStatusLine)
+            labeledRow("Project", SupabaseConfig.displayHost)
+            labeledRow("API key", SupabaseConfig.publishableKeySuffix)
+            if let uid = auth.session?.user.id {
+                labeledRow("User ID", uid.uuidString)
+            }
+            if auth.session != nil {
+                labeledRow("Session", "Active")
+            }
+            Button {
+                Task { await auth.refreshSupabaseConnection() }
+            } label: {
+                HStack(spacing: 6) {
+                    if auth.isRefreshingConnection {
+                        ProgressView().controlSize(.small)
+                    }
+                    Text("Refresh connection")
+                }
+            }
+            .buttonStyle(.plain)
+            .font(.system(size: 12))
+            .foregroundStyle(CursorTheme.accent)
+            .disabled(auth.isRefreshingConnection)
+        }
+        .padding(.horizontal, 20)
+        .padding(.bottom, 8)
     }
 
     // MARK: - Pinned live update footer
@@ -175,22 +214,22 @@ struct SettingsView: View {
 
     private var securitySection: some View {
         VStack(alignment: .leading, spacing: 8) {
+            Text("You stay signed in automatically. Touch ID is optional quick unlock — not required each launch.")
+                .font(.system(size: 11))
+                .foregroundStyle(CursorTheme.foregroundDim)
+                .fixedSize(horizontal: false, vertical: true)
+
             if BiometricAuthService.isAvailable {
-                Text("Use \(BiometricAuthService.biometricLabel) to unlock without your password.")
-                    .font(.system(size: 12))
-                    .foregroundStyle(CursorTheme.foregroundMuted)
-                if auth.prefersBiometricUnlock {
-                    Label("\(BiometricAuthService.biometricLabel) enabled", systemImage: "checkmark.circle.fill")
+                Toggle(isOn: Binding(
+                    get: { auth.biometricUnlockEnabled },
+                    set: { auth.setBiometricUnlockEnabled($0) }
+                )) {
+                    Text("Quick unlock with \(BiometricAuthService.biometricLabel)")
                         .font(.system(size: 12))
-                        .foregroundStyle(CursorTheme.success)
-                } else {
-                    Button("Enable \(BiometricAuthService.biometricLabel)") {
-                        auth.persistSessionToKeychain()
-                    }
-                    .buttonStyle(.bordered)
                 }
+                .toggleStyle(.switch)
             } else {
-                Text("Biometric unlock is available on Macs with Touch ID.")
+                Text("\(BiometricAuthService.biometricLabel) is not available on this Mac.")
                     .font(.system(size: 12))
                     .foregroundStyle(CursorTheme.foregroundMuted)
             }

@@ -1,5 +1,6 @@
 import Foundation
 import Supabase
+import SwiftUI
 
 enum AuthScreen: Equatable {
     case signIn
@@ -25,16 +26,28 @@ final class AuthViewModel: ObservableObject {
     @Published var selectedMembership: WorkspaceMembership?
     @Published var newWorkspaceName = ""
     @Published var isCreatingWorkspace = false
-    @Published var biometricUnlockRequired = false
-    @Published var prefersBiometricUnlock = false
+    @Published var supabaseStatusLine = "Connecting…"
+    @Published var isRefreshingConnection = false
+
+    /// Optional quick unlock — never required to use the app.
+    @AppStorage("publshr.useBiometricUnlock") var biometricUnlockEnabled = false
 
     let client: SupabaseClient
     private static let lastWorkspaceKey = "com.publshr.app.lastWorkspaceId"
+    private static let lastEmailKey = "com.publshr.app.lastEmail"
 
     var selectedWorkspace: Workspace? { selectedMembership?.workspace }
 
     var workspaceChatPermissions: ChatWorkspacePermissions {
         selectedMembership?.chatPermissions() ?? .default
+    }
+
+    var prefersBiometricUnlock: Bool {
+        biometricUnlockEnabled && BiometricAuthService.isAvailable && AuthKeychain.load() != nil
+    }
+
+    var canOfferBiometricUnlock: Bool {
+        biometricUnlockEnabled && BiometricAuthService.isAvailable && AuthKeychain.load() != nil
     }
 
     init() {
@@ -44,26 +57,41 @@ final class AuthViewModel: ObservableObject {
             options: SupabaseClientOptions(
                 auth: .init(
                     redirectToURL: SupabaseConfig.authRedirect,
+                    autoRefreshToken: true,
                     emitLocalSessionAsInitialSession: true
                 )
             )
         )
+        if let saved = UserDefaults.standard.string(forKey: Self.lastEmailKey), !saved.isEmpty {
+            email = saved
+        }
         Task { await bootstrap() }
 
         Task {
-            for await (_, newSession) in client.auth.authStateChanges {
-                session = newSession
-                if newSession != nil {
-                    await loadProfile()
-                    await loadWorkspaces()
-                    restoreLastWorkspaceSelection()
-                } else {
+            for await (event, newSession) in client.auth.authStateChanges {
+                switch event {
+                case .signedOut:
+                    session = nil
                     profile = nil
                     workspaceMemberships = []
                     selectedMembership = nil
                     flowState = .signedOut
+                    supabaseStatusLine = "Signed out"
+                case .initialSession, .signedIn, .tokenRefreshed, .userUpdated:
+                    session = newSession
+                    if newSession != nil {
+                        await loadProfile()
+                        await loadWorkspaces()
+                        restoreLastWorkspaceSelection()
+                        updateSupabaseStatus(connected: true)
+                    }
+                    resolveFlowStateAfterSession()
+                default:
+                    if let newSession {
+                        session = newSession
+                        resolveFlowStateAfterSession()
+                    }
                 }
-                resolveFlowStateAfterSession()
             }
         }
     }
@@ -76,41 +104,55 @@ final class AuthViewModel: ObservableObject {
 
     func completeBootstrap() async {
         flowState = .bootstrapping
-        prefersBiometricUnlock = BiometricAuthService.isAvailable && AuthKeychain.load() != nil
+        updateSupabaseStatus(connected: false)
 
-        if prefersBiometricUnlock {
-            biometricUnlockRequired = true
-            let ok = await BiometricAuthService.authenticate(reason: "Unlock Publshr")
-            biometricUnlockRequired = false
-            if !ok {
-                session = nil
-                try? await client.auth.signOut()
-                flowState = .signedOut
-                return
-            }
-            if let restored = await restoreSessionFromKeychain() {
-                session = restored
-            }
-        }
-
-        if session == nil {
-            do {
-                session = try await client.auth.session
-            } catch {
-                session = nil
-            }
-        }
-
-        if session != nil {
+        // 1) Restore persisted Supabase session (stay signed in — no login form).
+        if let existing = await loadPersistedSession() {
+            session = existing
             await loadProfile()
             await loadWorkspaces()
             restoreLastWorkspaceSelection()
+            resolveFlowStateAfterSession()
+            return
         }
-        resolveFlowStateAfterSession()
+
+        // 2) Optional Touch ID only when user enabled it in Settings.
+        if prefersBiometricUnlock, let restored = await unlockWithBiometricsInternal() {
+            session = restored
+            await loadProfile()
+            await loadWorkspaces()
+            restoreLastWorkspaceSelection()
+            resolveFlowStateAfterSession()
+            return
+        }
+
+        flowState = .signedOut
+        supabaseStatusLine = "Not signed in"
+    }
+
+    private func loadPersistedSession() async -> Session? {
+        do {
+            let current = try await client.auth.session
+            if current.isExpired {
+                let refreshed = try await client.auth.refreshSession()
+                updateSupabaseStatus(connected: true)
+                return refreshed
+            }
+            updateSupabaseStatus(connected: true)
+            return current
+        } catch {
+            return nil
+        }
     }
 
     func transitionAfterSignIn() async {
-        persistSessionToKeychain()
+        if let mail = session?.user.email ?? email.nonEmptyOrNil {
+            UserDefaults.standard.set(mail, forKey: Self.lastEmailKey)
+            email = mail
+        }
+        if biometricUnlockEnabled {
+            persistSessionToKeychain()
+        }
         await loadProfile()
         await loadWorkspaces()
         restoreLastWorkspaceSelection()
@@ -169,6 +211,7 @@ final class AuthViewModel: ObservableObject {
         } catch {
             errorMessage = error.localizedDescription
             workspaceMemberships = []
+            supabaseStatusLine = "Workspace sync failed"
         }
     }
 
@@ -211,14 +254,33 @@ final class AuthViewModel: ObservableObject {
     }
 
     func unlockWithBiometrics() async -> Bool {
-        guard BiometricAuthService.isAvailable else { return false }
+        guard canOfferBiometricUnlock else { return false }
+        guard let restored = await unlockWithBiometricsInternal() else { return false }
+        session = restored
+        await loadProfile()
+        await loadWorkspaces()
+        restoreLastWorkspaceSelection()
+        resolveFlowStateAfterSession()
+        return true
+    }
+
+    private func unlockWithBiometricsInternal() async -> Session? {
         let ok = await BiometricAuthService.authenticate(reason: "Unlock Publshr")
-        if ok { await completeBootstrap() }
-        return ok
+        guard ok else { return nil }
+        return await restoreSessionFromKeychain()
+    }
+
+    func setBiometricUnlockEnabled(_ enabled: Bool) {
+        biometricUnlockEnabled = enabled
+        if enabled, session != nil {
+            persistSessionToKeychain()
+        } else {
+            AuthKeychain.delete()
+        }
     }
 
     func persistSessionToKeychain() {
-        guard let session else { return }
+        guard biometricUnlockEnabled, let session else { return }
         guard BiometricAuthService.isAvailable else { return }
         let stored = AuthKeychain.StoredSession(
             email: session.user.email ?? email,
@@ -227,19 +289,47 @@ final class AuthViewModel: ObservableObject {
             userId: session.user.id
         )
         _ = AuthKeychain.save(stored)
-        prefersBiometricUnlock = true
     }
 
-    /// Restores Supabase session from Keychain tokens after biometric unlock (no localStorage).
     private func restoreSessionFromKeychain() async -> Session? {
         guard let stored = AuthKeychain.load() else { return nil }
         do {
             try await client.auth.setSession(accessToken: stored.accessToken, refreshToken: stored.refreshToken)
             let current = try await client.auth.session
-            persistSessionToKeychain()
+            updateSupabaseStatus(connected: true)
             return current
         } catch {
             return nil
+        }
+    }
+
+    func refreshSupabaseConnection() async {
+        isRefreshingConnection = true
+        defer { isRefreshingConnection = false }
+        do {
+            if let current = try? await client.auth.session, current.isExpired {
+                _ = try await client.auth.refreshSession()
+            } else {
+                _ = try await client.auth.session
+            }
+            session = try await client.auth.session
+            await loadProfile()
+            await loadWorkspaces()
+            restoreLastWorkspaceSelection()
+            updateSupabaseStatus(connected: true)
+            resolveFlowStateAfterSession()
+        } catch {
+            supabaseStatusLine = "Connection error"
+            errorMessage = friendlyAuthError(error)
+        }
+    }
+
+    private func updateSupabaseStatus(connected: Bool) {
+        if connected, session != nil {
+            let host = SupabaseConfig.displayHost
+            supabaseStatusLine = "Connected · \(host)"
+        } else {
+            supabaseStatusLine = "Not connected"
         }
     }
 
@@ -264,6 +354,7 @@ final class AuthViewModel: ObservableObject {
         do {
             try await client.auth.signIn(email: email.trimmingCharacters(in: .whitespaces), password: password)
             session = try await client.auth.session
+            password = ""
             await transitionAfterSignIn()
             errorMessage = nil
         } catch {
@@ -344,6 +435,7 @@ final class AuthViewModel: ObservableObject {
             screen = .signIn
             flowState = .signedOut
             AuthKeychain.delete()
+            supabaseStatusLine = "Signed out"
         } catch {
             errorMessage = friendlyAuthError(error)
         }
@@ -362,11 +454,12 @@ final class AuthViewModel: ObservableObject {
     }
 
     func loadProfile() async {
-        guard session != nil else { return }
+        guard let userId = session?.user.id else { return }
         do {
             let rows: [Profile] = try await client
                 .from("profiles")
                 .select()
+                .eq("id", value: userId.uuidString)
                 .limit(1)
                 .execute()
                 .value
@@ -418,5 +511,12 @@ final class AuthViewModel: ObservableObject {
             return "An account with this email already exists. Sign in instead."
         }
         return error.localizedDescription
+    }
+}
+
+private extension String {
+    var nonEmptyOrNil: String? {
+        let t = trimmingCharacters(in: .whitespacesAndNewlines)
+        return t.isEmpty ? nil : t
     }
 }
