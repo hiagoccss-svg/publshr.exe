@@ -28,7 +28,6 @@ final class SpacesService {
             .select()
             .eq("workspace_id", value: workspaceId.uuidString)
             .eq("is_archived", value: false)
-            .order("sort_order", ascending: true)
             .order("name")
             .execute()
             .value

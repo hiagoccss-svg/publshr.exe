@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Spaces content wrapper — tabs and toolbar live in `WorkspaceHeaderView`.
+/// Spaces workspace chrome: breadcrumbs + views bar (ClickUp location header + views).
 struct SpacesWorkspaceChrome<Content: View>: View {
     @ObservedObject var spaces: SpacesViewModel
     var topInset: CGFloat = 0
@@ -13,7 +13,8 @@ struct SpacesWorkspaceChrome<Content: View>: View {
                 Color.clear.frame(height: topInset)
             }
             if spaces.selectedSpaceId != nil, !embedInPopOut {
-                SpacesHierarchyBar(spaces: spaces)
+                SpacesBreadcrumbBar(spaces: spaces)
+                SpacesViewsBar(spaces: spaces)
             }
             content()
         }

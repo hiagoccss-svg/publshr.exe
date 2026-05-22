@@ -16,17 +16,42 @@ struct SpacesDocumentEditorSheet: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("Document")
-                .font(.title2.weight(.semibold))
-                .padding(.bottom, 12)
-
-            Form {
-                TextField("Title", text: $title)
-                TextEditor(text: $content)
-                    .font(.system(size: 13))
-                    .frame(minHeight: 280)
+            HStack(spacing: 10) {
+                Image(systemName: "doc.text.fill")
+                    .font(.system(size: 18))
+                    .foregroundStyle(CursorTheme.accent)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Document")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(CursorTheme.foregroundDim)
+                    Text(spaces.selectedSpace?.name ?? "Space")
+                        .font(.system(size: 12))
+                        .foregroundStyle(CursorTheme.foregroundMuted)
+                }
+                Spacer()
             }
-            .formStyle(.grouped)
+            .padding(.bottom, 16)
+
+            TextField("Title", text: $title)
+                .textFieldStyle(.roundedBorder)
+                .font(.system(size: 14, weight: .semibold))
+                .padding(.bottom, 10)
+
+            Text("Content")
+                .font(SpacesClickUpDesign.sectionLabelFont)
+                .foregroundStyle(CursorTheme.foregroundDim)
+                .padding(.bottom, 6)
+
+            TextEditor(text: $content)
+                .font(.system(size: 13))
+                .frame(minHeight: 300)
+                .padding(10)
+                .background(CursorTheme.panelBackground)
+                .clipShape(RoundedRectangle(cornerRadius: SpacesClickUpDesign.docRowRadius))
+                .overlay(
+                    RoundedRectangle(cornerRadius: SpacesClickUpDesign.docRowRadius)
+                        .strokeBorder(CursorTheme.borderSubtle, lineWidth: 1)
+                )
 
             HStack {
                 Spacer()
@@ -41,10 +66,11 @@ struct SpacesDocumentEditorSheet: View {
                     }
                 }
                 .keyboardShortcut(.defaultAction)
+                .buttonStyle(.borderedProminent)
             }
-            .padding(.top, 16)
+            .padding(.top, 20)
         }
         .padding(24)
-        .frame(width: 520, height: 480)
+        .frame(width: 560, height: 520)
     }
 }

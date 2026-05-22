@@ -252,12 +252,14 @@ struct WorkspaceHeaderView: View {
     }
 
     private var spacesTrailingActions: some View {
-        HStack(spacing: 6) {
+        HStack(spacing: 8) {
             compactSearchField(
                 placeholder: "Search spaces",
                 text: $spaces.searchQuery
             )
-            .frame(maxWidth: 200)
+            .frame(maxWidth: 180)
+
+            HeaderActionDivider()
 
             if spaces.selectedSpace != nil {
                 viewModePicker
@@ -284,6 +286,8 @@ struct WorkspaceHeaderView: View {
                 }
             }
 
+            HeaderActionDivider()
+
             workspaceMenuChip
         }
     }
@@ -296,10 +300,6 @@ struct WorkspaceHeaderView: View {
                         .font(.system(size: 11))
                         .foregroundStyle(spaces.taskView == mode ? CursorTheme.accent : CursorTheme.foregroundMuted)
                         .frame(width: 26, height: 26)
-                        .background(
-                            RoundedRectangle(cornerRadius: 6)
-                                .fill(spaces.taskView == mode ? CursorTheme.accent.opacity(0.1) : Color.clear)
-                        )
                 }
                 .buttonStyle(.plain)
             }

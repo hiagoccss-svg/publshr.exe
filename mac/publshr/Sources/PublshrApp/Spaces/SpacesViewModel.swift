@@ -34,6 +34,7 @@ final class SpacesViewModel: ObservableObject {
     @Published var newListName = ""
     @Published var newTaskTitle = ""
     @Published var newDocumentTitle = ""
+    @Published var expandedFolderIds: Set<UUID> = []
 
     enum TaskViewMode: String, CaseIterable, Identifiable {
         case overview, list, board, calendar
@@ -64,6 +65,7 @@ final class SpacesViewModel: ObservableObject {
     private var navigationBackStack: [UUID] = []
     private var navigationForwardStack: [UUID] = []
     private var realtimeAttached = false
+    private let localStore = SpacesLocalStore()
 
     func attach(auth: AuthViewModel) {
         let newWorkspaceId = auth.selectedWorkspace?.id
@@ -126,6 +128,8 @@ final class SpacesViewModel: ObservableObject {
                 realtimeAttached = true
             }
 
+            persistToCache(workspaceId: workspaceId)
+
             if let selected = selectedSpaceId, loaded.contains(where: { $0.id == selected }) {
                 await loadSpaceContext(selected)
             } else if let first = loaded.first {
@@ -139,6 +143,25 @@ final class SpacesViewModel: ObservableObject {
         } catch {
             isOffline = isNetworkError(error)
             errorMessage = friendlySpacesError(error)
+            if isOffline {
+                loadFromLocalCache(workspaceId: workspaceId)
+            }
+        }
+    }
+
+    private func loadFromLocalCache(workspaceId: UUID) {
+        let cached = localStore.loadSpaces(workspaceId: workspaceId)
+        guard !cached.isEmpty else { return }
+        spaces = cached
+        if let selected = selectedSpaceId ?? cached.first?.id {
+            tasks = localStore.loadTasks(spaceId: selected)
+        }
+    }
+
+    private func persistToCache(workspaceId: UUID) {
+        localStore.saveSpaces(spaces, workspaceId: workspaceId)
+        if let spaceId = selectedSpaceId {
+            localStore.saveTasks(tasks, spaceId: spaceId)
         }
     }
 
@@ -182,12 +205,24 @@ final class SpacesViewModel: ObservableObject {
         do {
             folders = try await service.fetchFolders(spaceId: spaceId)
             lists = try await service.fetchLists(spaceId: spaceId)
-            if selectedListId == nil, let first = lists.first {
-                selectedListId = first.id
+            for folder in folders where !expandedFolderIds.contains(folder.id) {
+                expandedFolderIds.insert(folder.id)
             }
+            await ensureDefaultList(spaceId: spaceId)
         } catch {
             folders = []
             lists = []
+        }
+    }
+
+    private func ensureDefaultList(spaceId: UUID) async {
+        guard let service, lists.isEmpty else { return }
+        do {
+            let list = try await service.createList(spaceId: spaceId, folderId: nil, name: "List")
+            lists = [list]
+            selectedListId = list.id
+        } catch {
+            errorMessage = error.localizedDescription
         }
     }
 
@@ -195,15 +230,128 @@ final class SpacesViewModel: ObservableObject {
         guard let service else { return }
         do {
             tasks = try await service.fetchTasks(spaceId: spaceId, listId: selectedListId)
+            if let workspaceId {
+                localStore.saveTasks(tasks, spaceId: spaceId)
+            }
         } catch {
             errorMessage = error.localizedDescription
+            tasks = localStore.loadTasks(spaceId: spaceId)
         }
     }
 
     func selectList(_ listId: UUID?) async {
         selectedListId = listId
+        if let listId, let list = lists.first(where: { $0.id == listId }) {
+            selectedFolderId = list.folderId
+        }
         guard let spaceId = selectedSpaceId else { return }
         await loadTasks(for: spaceId)
+    }
+
+    func selectFolder(_ folderId: UUID?) async {
+        selectedFolderId = folderId
+        if let folderId {
+            expandedFolderIds.insert(folderId)
+            if let first = lists(in: folderId).first {
+                await selectList(first.id)
+            } else {
+                await selectList(nil)
+            }
+        }
+    }
+
+    func toggleFolderExpanded(_ folderId: UUID) {
+        if expandedFolderIds.contains(folderId) {
+            expandedFolderIds.remove(folderId)
+        } else {
+            expandedFolderIds.insert(folderId)
+        }
+    }
+
+    func isFolderExpanded(_ folderId: UUID) -> Bool {
+        expandedFolderIds.contains(folderId)
+    }
+
+    var standaloneLists: [SpaceListRecord] {
+        lists.filter { $0.folderId == nil }.sorted { $0.sortOrder < $1.sortOrder }
+    }
+
+    func lists(in folderId: UUID) -> [SpaceListRecord] {
+        lists.filter { $0.folderId == folderId }.sorted { $0.sortOrder < $1.sortOrder }
+    }
+
+    var breadcrumbItems: [SpacesBreadcrumbItem] {
+        guard let space = selectedSpace else { return [] }
+        var items: [SpacesBreadcrumbItem] = []
+        items.append(
+            SpacesBreadcrumbItem(
+                kind: .space,
+                title: space.name,
+                spaceId: space.id,
+                folderId: nil,
+                listId: nil,
+                isLast: false
+            )
+        )
+        let activeFolderId = selectedFolderId
+            ?? lists.first(where: { $0.id == selectedListId })?.folderId
+        if let folderId = activeFolderId,
+           let folder = folders.first(where: { $0.id == folderId }) {
+            items.append(
+                SpacesBreadcrumbItem(
+                    kind: .folder,
+                    title: folder.name,
+                    spaceId: space.id,
+                    folderId: folderId,
+                    listId: nil,
+                    isLast: false
+                )
+            )
+        }
+        if let listId = selectedListId,
+           let list = lists.first(where: { $0.id == listId }) {
+            items.append(
+                SpacesBreadcrumbItem(
+                    kind: .list,
+                    title: list.name,
+                    spaceId: space.id,
+                    folderId: list.folderId,
+                    listId: listId,
+                    isLast: false
+                )
+            )
+        }
+        guard !items.isEmpty else { return items }
+        let last = items.count - 1
+        let tail = items[last]
+        items[last] = SpacesBreadcrumbItem(
+            kind: tail.kind,
+            title: tail.title,
+            spaceId: tail.spaceId,
+            folderId: tail.folderId,
+            listId: tail.listId,
+            isLast: true
+        )
+        return items
+    }
+
+    func navigateBreadcrumb(_ item: SpacesBreadcrumbItem) async {
+        switch item.kind {
+        case .space:
+            if let spaceId = item.spaceId {
+                selectedFolderId = nil
+                await selectList(nil)
+                await selectSpace(spaceId, recordHistory: false)
+            }
+        case .folder:
+            if let folderId = item.folderId {
+                await selectFolder(folderId)
+            }
+        case .list:
+            if let listId = item.listId {
+                await selectList(listId)
+            }
+        }
     }
 
     func createFolder() async {
@@ -214,6 +362,10 @@ final class SpacesViewModel: ObservableObject {
             let folder = try await service.createFolder(spaceId: spaceId, name: name)
             newFolderName = ""
             folders.append(folder)
+            expandedFolderIds.insert(folder.id)
+            let list = try await service.createList(spaceId: spaceId, folderId: folder.id, name: "List")
+            lists.append(list)
+            await selectList(list.id)
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -448,7 +600,7 @@ final class SpacesViewModel: ObservableObject {
         }
     }
 
-    func createDocument() async {
+    func createDocument(openEditor: Bool = false) async {
         guard let service, let spaceId = selectedSpaceId else { return }
         let title = newDocumentTitle.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !title.isEmpty else { return }
@@ -456,6 +608,9 @@ final class SpacesViewModel: ObservableObject {
             let doc = try await service.createDocument(spaceId: spaceId, title: title)
             newDocumentTitle = ""
             documents.insert(doc, at: 0)
+            if openEditor {
+                editingDocument = doc
+            }
             if let userId {
                 try? await service.logActivity(
                     spaceId: spaceId,
