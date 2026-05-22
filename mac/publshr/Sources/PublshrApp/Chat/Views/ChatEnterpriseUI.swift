@@ -106,7 +106,7 @@ struct ChatChannelStatusBar: View {
                 }
             }
             .padding(.horizontal, 16)
-            .padding(.vertical, 10)
+            .padding(.vertical, 8)
         }
         .background(Color.clear)
         .overlay(alignment: .bottom) {

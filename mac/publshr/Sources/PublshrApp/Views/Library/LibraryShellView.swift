@@ -5,7 +5,6 @@ struct LibraryShellView: View {
     @EnvironmentObject private var auth: AuthViewModel
     @EnvironmentObject private var chat: ChatViewModel
     @EnvironmentObject private var spaces: SpacesViewModel
-    @EnvironmentObject private var updates: AppUpdateViewModel
     @EnvironmentObject private var subscription: SubscriptionService
     @EnvironmentObject private var tabStore: WorkspaceTabStore
     @Binding var module: AppModule
@@ -55,8 +54,6 @@ struct LibraryShellView: View {
                     }
                     .frame(maxWidth: .infinity, minHeight: 0, maxHeight: .infinity)
                     .animation(.easeInOut(duration: 0.15), value: submenuHidden)
-
-                    shellStatusLine
                 }
             }
             .frame(width: geometry.size.width, height: geometry.size.height)
@@ -85,7 +82,8 @@ struct LibraryShellView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .libraryFloatingPanel()
             .padding(.horizontal, LibraryGlassDesign.outerMargin)
-            .padding(.vertical, 12)
+            .padding(.top, 8)
+            .padding(.bottom, LibraryGlassDesign.outerMargin)
             .background(Color.clear)
     }
 
@@ -107,29 +105,6 @@ struct LibraryShellView: View {
         case .settings:
             EnterpriseModuleGate(moduleName: "Settings", planName: subscription.features.planName)
         }
-    }
-
-    private var shellStatusLine: some View {
-        HStack(spacing: 10) {
-            Text(updates.statusLine)
-                .font(.system(size: 10))
-                .foregroundStyle(LibraryGlassDesign.inkMuted)
-            Text("·")
-                .foregroundStyle(LibraryGlassDesign.inkMuted.opacity(0.5))
-            Text(AppShellIdentity.distributionTag)
-                .font(.system(size: 10, weight: .medium))
-                .foregroundStyle(LibraryGlassDesign.inkSecondary)
-            Spacer()
-            if let email = auth.profile?.email {
-                Text(email)
-                    .font(.system(size: 10))
-                    .foregroundStyle(LibraryGlassDesign.inkMuted)
-                    .lineLimit(1)
-            }
-        }
-        .padding(.horizontal, LibraryGlassDesign.outerMargin + 4)
-        .padding(.vertical, 6)
-        .background(Color.clear)
     }
 
     private func syncModulesIfNeeded() {

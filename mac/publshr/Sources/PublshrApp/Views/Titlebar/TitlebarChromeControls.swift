@@ -90,15 +90,17 @@ struct TitlebarChromeDivider: View {
 /// Workspace / profile menus — same chrome metrics as icon buttons.
 struct TitlebarChromeMenuLabel: View {
     let title: String
-    let systemImage: String
+    var systemImage: String? = nil
     var isActive: Bool = false
 
     @State private var isHovered = false
 
     var body: some View {
         HStack(spacing: 5) {
-            Image(systemName: systemImage)
-                .font(.system(size: 10, weight: .medium))
+            if let systemImage {
+                Image(systemName: systemImage)
+                    .font(.system(size: 10, weight: .medium))
+            }
             Text(title)
                 .font(.system(size: 11, weight: .semibold))
                 .lineLimit(1)

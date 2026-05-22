@@ -5,8 +5,6 @@ struct LibraryShellHeaderView: View {
     @EnvironmentObject private var tabStore: WorkspaceTabStore
     @EnvironmentObject private var auth: AuthViewModel
     @EnvironmentObject private var chat: ChatViewModel
-    @EnvironmentObject private var subscription: SubscriptionService
-    @EnvironmentObject private var calls: CallSignalingService
     @ObservedObject var spaces: SpacesViewModel
     @Binding var module: AppModule
     @Binding var showNewChannel: Bool
@@ -51,8 +49,6 @@ struct LibraryShellHeaderView: View {
 
             tabStrip
 
-            paneTitleCluster
-
             Spacer(minLength: 8)
 
             TitlebarChromeActionBar(
@@ -64,8 +60,6 @@ struct LibraryShellHeaderView: View {
                 showNotificationsPanel: $showNotificationsPanel,
                 placement: .trailing
             )
-
-            trailingPaneCluster
         }
         .padding(.trailing, 12)
     }
@@ -78,7 +72,6 @@ struct LibraryShellHeaderView: View {
                 ForEach(tabStore.tabs) { tab in
                     ChromeDocumentTab(
                         title: tab.title,
-                        iconSystemName: tab.iconSystemName,
                         isSelected: tabStore.selectedTabId == tab.id,
                         canClose: tabStore.tabs.count > 1,
                         onSelect: { selectTab(tab) },
@@ -117,77 +110,6 @@ struct LibraryShellHeaderView: View {
         .help("New tab")
     }
 
-    // MARK: - Pane title
-
-    @ViewBuilder
-    private var paneTitleCluster: some View {
-        switch module {
-        case .chat:
-            if let channel = chat.selectedChannel {
-                Menu {
-                    Button("Search in channel") { chat.showSearchSheet = true }
-                    if subscription.canUseCalls(workspace: auth.selectedWorkspace) {
-                        Divider()
-                        Button("Start call") {
-                            startCall(video: false, scope: .meeting)
-                        }
-                    }
-                } label: {
-                    paneTitleLabel(channel.displayTitle)
-                }
-                .menuStyle(.borderlessButton)
-            } else {
-                paneTitleLabel("New AI Chat")
-            }
-        case .spaces:
-            paneTitleLabel(spaces.selectedSpace?.name ?? "Spaces")
-        case .settings:
-            EmptyView()
-        }
-    }
-
-    private func paneTitleLabel(_ title: String) -> some View {
-        HStack(spacing: 4) {
-            Text(title)
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(LibraryGlassDesign.ink)
-                .lineLimit(1)
-            Image(systemName: "chevron.down")
-                .font(.system(size: 9, weight: .semibold))
-                .foregroundStyle(LibraryGlassDesign.inkMuted)
-        }
-        .frame(height: AppWindowChromeMetrics.controlSize)
-    }
-
-    // MARK: - Trailing pane actions (Ask AI + tab chrome)
-
-    private var trailingPaneCluster: some View {
-        HStack(alignment: .center, spacing: AppWindowChromeMetrics.trailingClusterSpacing) {
-            AskAIChromeButton {
-                chat.showAISheet = true
-            }
-
-            if module == .chat, let tab = tabStore.selectedTab, tab.kind.isChatChannelOrDM {
-                ChromeSquareButton(systemName: "pencil", help: "Channel options") {
-                    chat.showPermissionsSheet = true
-                }
-                ChromeSquareButton(systemName: "arrow.up.forward.square", help: "Open in new window") {
-                    detachTab(tab)
-                }
-                ChromeSquareButton(systemName: "xmark", help: "Close tab") {
-                    closeTab(tab)
-                }
-            } else if module == .spaces, let tab = tabStore.selectedTab, tab.kind.isSpaceTab {
-                ChromeSquareButton(systemName: "arrow.up.forward.square", help: "Open in new window") {
-                    detachTab(tab)
-                }
-                ChromeSquareButton(systemName: "xmark", help: "Close tab") {
-                    closeTab(tab)
-                }
-            }
-        }
-    }
-
     // MARK: - Tab actions
 
     private func selectTab(_ tab: WorkspaceTab) {
@@ -200,31 +122,6 @@ struct LibraryShellHeaderView: View {
         tabStore.applySelection(module: &module, chat: chat, spaces: spaces)
     }
 
-    private func detachTab(_ tab: WorkspaceTab) {
-        tabStore.detachTab(
-            tab,
-            chat: chat,
-            spaces: spaces,
-            auth: auth,
-            subscription: subscription
-        )
-    }
-
-    private func startCall(video: Bool, scope: CallScope) {
-        guard let ws = auth.selectedWorkspace?.id,
-              let channel = chat.selectedChannel else { return }
-        Task {
-            await calls.startChannelCall(
-                workspaceId: ws,
-                channelId: channel.id,
-                title: channel.displayTitle,
-                video: video,
-                scope: scope,
-                workspaceSettings: auth.selectedWorkspace?.settings,
-                userDisplayName: auth.profile?.displayName ?? auth.displayName
-            )
-        }
-    }
 }
 
 // MARK: - Tab kind helpers

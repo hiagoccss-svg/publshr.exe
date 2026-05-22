@@ -115,7 +115,8 @@ struct ChatConversationView: View {
                             }
                         }
                         .padding(.horizontal, 20)
-                        .padding(.vertical, 16)
+                        .padding(.top, 8)
+                        .padding(.bottom, 12)
                     }
                     .onChange(of: chat.mainChannelMessages.count) { _, _ in
                         if let last = chat.mainChannelMessages.last {

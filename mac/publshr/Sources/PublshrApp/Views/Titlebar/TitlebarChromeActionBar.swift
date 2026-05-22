@@ -76,7 +76,7 @@ struct TitlebarChromeActionBar: View {
                 Button("New channel…") { showNewChannel = true }
                 Button("New message…") { showNewDM = true }
             } label: {
-                TitlebarChromeMenuLabel(title: "New", systemImage: "square.and.pencil")
+                TitlebarChromeMenuLabel(title: "New")
             }
             .menuStyle(.borderlessButton)
             .help(TitlebarShortcutHint.tooltip("New chat", shortcut: TitlebarShortcutHint.newChat))
@@ -121,7 +121,6 @@ struct TitlebarChromeActionBar: View {
         } label: {
             TitlebarChromeMenuLabel(
                 title: auth.selectedWorkspace?.name ?? "Workspace",
-                systemImage: "building.2",
                 isActive: auth.selectedWorkspace != nil
             )
         }
@@ -229,11 +228,7 @@ struct TitlebarChromeActionBar: View {
                 Task { await auth.signOut() }
             }
         } label: {
-            TitlebarChromeMenuLabel(
-                title: profileShortTitle,
-                systemImage: "person.crop.circle",
-                isActive: false
-            )
+            TitlebarChromeMenuLabel(title: profileShortTitle)
         }
         .menuStyle(.borderlessButton)
         .help("Account")

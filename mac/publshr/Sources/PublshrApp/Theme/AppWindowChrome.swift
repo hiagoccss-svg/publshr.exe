@@ -110,7 +110,6 @@ struct ChromeSquareButton: View {
 /// Browser-style tab chip for the unified titlebar.
 struct ChromeDocumentTab: View {
     let title: String
-    let iconSystemName: String
     var isSelected: Bool
     var canClose: Bool
     var onSelect: () -> Void
@@ -118,9 +117,6 @@ struct ChromeDocumentTab: View {
 
     var body: some View {
         HStack(spacing: 6) {
-            Image(systemName: iconSystemName)
-                .font(.system(size: 10, weight: .medium))
-                .foregroundStyle(isSelected ? LibraryGlassDesign.ink : LibraryGlassDesign.inkMuted)
             Text(title)
                 .font(.system(size: 11, weight: isSelected ? .semibold : .regular))
                 .foregroundStyle(isSelected ? LibraryGlassDesign.ink : LibraryGlassDesign.inkSecondary)
