@@ -27,22 +27,16 @@ On macOS the tarball includes `Publshr.app`, `bin/PublshrApp`, and `bin/publshr`
 
 Keys are in `Sources/PublshrApp/Services/SupabaseConfig.swift` (publishable key only — safe for clients).
 
-## Layout (Cursor parity)
+## Layout (Cursor-style shell, Publshr modules)
 
-| Region | Width | Color |
-|--------|-------|-------|
-| Activity bar | 48px | `#181818` |
-| Sidebar | 260px | `#252526` |
-| Editor | flex | `#1e1e1e` |
-| Chat panel | 380px | `#181818` / `#1e1e1e` |
-| Status bar | 22px | `#007acc` |
+| Region | Role |
+|--------|------|
+| Activity bar (48px) | **Chat**, **Spaces**, **Settings** |
+| Main workspace | Full-width module (no fake Explorer / Welcome / code editor) |
+| Status bar | App updates, chat connectivity, account |
 
-## ClickUp-style App Space (separate build)
+**Chat** — enterprise team chat (Supabase realtime, channels, DMs, threads, files).  
+**Spaces** — ClickUp-style spaces and kanban board (`spaces` + `tasks` tables).  
+**Settings** — download/install updates, account, workspace, Touch ID, chat permissions.
 
-The **App Space** project-management UI (workspaces, spaces, lists, board/list/calendar views) lives in [`native/publshr`](../../native/publshr). Install with:
-
-```bash
-./install-mac-app.sh   # from repo root
-```
-
-That build is not yet merged into this package’s `PublshrApp` target — see repo root README.
+The legacy Electron **Spaces** app under `desktop/spaces/` remains for advanced workflows; the mac app embeds the core Spaces experience natively.

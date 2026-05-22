@@ -44,7 +44,7 @@ struct ChatConversationView: View {
                 conversation(channel)
             } else {
                 VStack(spacing: 12) {
-                    Text("Team Chat")
+                    Text(chat.workspace?.name ?? "Chat")
                         .font(.system(size: 16, weight: .semibold))
                         .foregroundStyle(CursorTheme.foreground)
                     Text("Select a channel or direct message.")

@@ -4,6 +4,7 @@ struct StatusBarView: View {
     @EnvironmentObject private var auth: AuthViewModel
     @EnvironmentObject private var chat: ChatViewModel
     @EnvironmentObject private var updates: AppUpdateViewModel
+    var module: AppModule
 
     var body: some View {
         HStack(spacing: 16) {
@@ -17,19 +18,21 @@ struct StatusBarView: View {
             .buttonStyle(.plain)
             .help("Check for updates from GitHub")
 
-            HStack(spacing: 6) {
-                Image(systemName: chat.isOffline ? "wifi.slash" : "checkmark.circle.fill")
-                    .font(.system(size: 10))
-                Text(chat.isOffline ? "Chat offline (cached)" : "Realtime chat")
-                    .font(.system(size: 11))
-            }
-
-            if chat.totalUnread > 0 {
-                HStack(spacing: 4) {
-                    Image(systemName: "bubble.left.and.bubble.right.fill")
+            if module == .chat {
+                HStack(spacing: 6) {
+                    Image(systemName: chat.isOffline ? "wifi.slash" : "checkmark.circle.fill")
                         .font(.system(size: 10))
-                    Text("\(chat.totalUnread) unread")
+                    Text(chat.isOffline ? "Chat offline (cached)" : "Realtime chat")
                         .font(.system(size: 11))
+                }
+
+                if chat.totalUnread > 0 {
+                    HStack(spacing: 4) {
+                        Image(systemName: "bubble.left.and.bubble.right.fill")
+                            .font(.system(size: 10))
+                        Text("\(chat.totalUnread) unread")
+                            .font(.system(size: 11))
+                    }
                 }
             }
 
@@ -50,12 +53,9 @@ struct StatusBarView: View {
                 .foregroundStyle(CursorTheme.accent)
             }
 
-            Text("UTF-8")
+            Text(module.label)
                 .font(.system(size: 11))
-            Text("Swift")
-                .font(.system(size: 11))
-            Text("Ln 1, Col 1")
-                .font(.system(size: 11))
+                .foregroundStyle(CursorTheme.statusBarForeground.opacity(0.85))
         }
         .padding(.horizontal, 12)
         .foregroundStyle(CursorTheme.statusBarForeground.opacity(0.95))

@@ -2,24 +2,21 @@ import SwiftUI
 
 struct TitleBarView: View {
     @EnvironmentObject private var auth: AuthViewModel
+    var module: AppModule
 
     var body: some View {
         HStack(spacing: 12) {
-            // Traffic-light spacer (macOS draws native controls in hidden title bar)
             Color.clear.frame(width: 70, height: 1)
 
-            Image(systemName: "magnifyingglass")
-                .font(.system(size: 12))
-                .foregroundStyle(CursorTheme.foregroundMuted)
+            Text("Publshr")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(CursorTheme.foreground)
 
-            Text("Search files, commands, and more")
+            Text(module.label)
                 .font(.system(size: 12))
                 .foregroundStyle(CursorTheme.foregroundDim)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 5)
-                .background(CursorTheme.inputBackground.opacity(0.6))
-                .clipShape(RoundedRectangle(cornerRadius: 4))
+
+            Spacer()
 
             if !auth.workspaceMemberships.isEmpty {
                 Menu {
@@ -41,6 +38,7 @@ struct TitleBarView: View {
                 }
                 .menuStyle(.borderlessButton)
             }
+
             if let profile = auth.profile {
                 Text(profile.displayName ?? profile.email)
                     .font(.system(size: 11))

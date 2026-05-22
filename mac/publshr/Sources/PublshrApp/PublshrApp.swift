@@ -4,6 +4,7 @@ import SwiftUI
 struct PublshrApp: App {
     @StateObject private var auth = AuthViewModel()
     @StateObject private var chat = ChatViewModel()
+    @StateObject private var spaces = SpacesViewModel()
     @StateObject private var updates = AppUpdateViewModel()
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
@@ -16,6 +17,7 @@ struct PublshrApp: App {
             ContentView()
                 .environmentObject(auth)
                 .environmentObject(chat)
+                .environmentObject(spaces)
                 .environmentObject(updates)
                 .preferredColorScheme(.dark)
                 .onOpenURL { url in
