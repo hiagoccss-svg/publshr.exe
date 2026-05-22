@@ -9,14 +9,17 @@ struct ChatSidebarView: View {
     var body: some View {
         VStack(spacing: 0) {
             ScrollView {
-                VStack(alignment: .leading, spacing: 6) {
+                VStack(alignment: .leading, spacing: 0) {
                     sidebarSection("Favorites", items: chat.favoriteChannels, onAdd: nil)
+                    NavSidebarDivider()
                     sidebarSection("Channels", items: chat.filteredChannels, onAdd: { showNewChannel = true })
+                    NavSidebarDivider()
                     sidebarSection("Direct Messages", items: chat.filteredDMs, onAdd: { showNewDM = true })
+                    NavSidebarDivider()
                     projectsSection
                 }
-                .padding(.vertical, 6)
-                .padding(.horizontal, 2)
+                .padding(.vertical, 8)
+                .padding(.horizontal, 4)
             }
         }
         .frame(maxHeight: .infinity)
@@ -137,9 +140,17 @@ struct ChatSidebarView: View {
             .frame(height: 28)
             .padding(.horizontal, 10)
             .background(
-                RoundedRectangle(cornerRadius: 5, style: .continuous)
-                    .fill(selected ? CursorTheme.accent.opacity(0.08) : Color.clear)
+                selected
+                    ? CursorTheme.accent.opacity(0.08)
+                    : Color.clear
             )
+            .overlay(alignment: .leading) {
+                if selected {
+                    Rectangle()
+                        .fill(CursorTheme.accent)
+                        .frame(width: 2)
+                }
+            }
         }
         .buttonStyle(.plain)
         .padding(.horizontal, 6)
