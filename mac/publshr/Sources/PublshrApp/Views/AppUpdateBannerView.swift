@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Only surfaces update failures — successful live installs happen silently.
+/// Only surfaces rare install failures — successful live installs happen silently.
 struct AppUpdateBannerView: View {
     @ObservedObject var updates: AppUpdateViewModel
 
