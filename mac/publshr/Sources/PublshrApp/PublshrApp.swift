@@ -6,6 +6,9 @@ struct PublshrApp: App {
     @StateObject private var chat = ChatViewModel()
     @StateObject private var spaces = SpacesViewModel()
     @StateObject private var updates = AppUpdateViewModel()
+    @StateObject private var subscription = SubscriptionService()
+    @StateObject private var enterprise = EnterpriseWorkspaceService()
+    @StateObject private var calls = CallSignalingService()
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
     init() {
@@ -19,6 +22,9 @@ struct PublshrApp: App {
                 .environmentObject(chat)
                 .environmentObject(spaces)
                 .environmentObject(updates)
+                .environmentObject(subscription)
+                .environmentObject(enterprise)
+                .environmentObject(calls)
                 .onOpenURL { url in
                     auth.handleIncomingURL(url)
                 }
@@ -28,8 +34,16 @@ struct PublshrApp: App {
                 }
                 .onChange(of: auth.flowState) { _, state in
                     if state == .signedIn {
-                        Task { await updates.performLiveSync() }
+                        Task {
+                            await updates.performLiveSync()
+                            await syncEnterpriseServices()
+                        }
+                    } else {
+                        calls.detach()
                     }
+                }
+                .onChange(of: auth.selectedMembership?.workspace.id) { _, _ in
+                    Task { await syncEnterpriseServices() }
                 }
                 .onReceive(NotificationCenter.default.publisher(for: .publshrPerformLiveSync)) { _ in
                     Task { await updates.performLiveSync() }
@@ -43,6 +57,28 @@ struct PublshrApp: App {
                 Button("Download and Install Latest") {
                     Task { await updates.installLiveUpdateNow() }
                 }
+            }
+            CommandMenu("Spaces") {
+                Button("New Space…") {
+                    spaces.showNewSpaceSheet = true
+                }
+                .keyboardShortcut("n", modifiers: [.command, .shift])
+                Button("New Task") {
+                    if spaces.newTaskTitle.isEmpty { spaces.newTaskTitle = "New task" }
+                    Task { await spaces.createTask() }
+                }
+                .keyboardShortcut("t", modifiers: [.command, .shift])
+                Divider()
+                Button("Board") { spaces.taskView = .board }
+                Button("List") { spaces.taskView = .list }
+                Button("Overview") { spaces.taskView = .overview }
+                Divider()
+                Button("Refresh") { Task { await spaces.reload() } }
+                .keyboardShortcut("r", modifiers: [.command, .shift])
+                Button(spaces.spacesFocusMode ? "Exit Focus" : "Focus on Space") {
+                    spaces.spacesFocusMode.toggle()
+                }
+                .keyboardShortcut("l", modifiers: [.command, .shift])
             }
             CommandMenu("Chat") {
                 Button("Search…") {
@@ -59,6 +95,21 @@ struct PublshrApp: App {
                 }
                 .keyboardShortcut("o", modifiers: [.command, .shift])
             }
+        }
+    }
+
+    @MainActor
+    private func syncEnterpriseServices() async {
+        guard auth.flowState == .signedIn else { return }
+        await subscription.refresh(client: auth.client, workspace: auth.selectedWorkspace)
+        if let uid = auth.profile?.id {
+            calls.attach(client: auth.client, userId: uid)
+            await DeviceIdentityService.register(
+                client: auth.client,
+                userId: uid,
+                workspaceId: auth.selectedWorkspace?.id
+            )
+            await enterprise.loadDevices(client: auth.client, userId: uid)
         }
     }
 

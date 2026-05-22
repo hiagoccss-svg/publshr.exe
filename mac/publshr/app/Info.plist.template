@@ -37,7 +37,9 @@
 	<key>NSHighResolutionCapable</key>
 	<true/>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>Publshr uses the microphone to record voice notes in team chat.</string>
+	<string>Publshr uses the microphone for voice notes and voice calls in team chat.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Publshr uses the camera for video calls in team chat.</string>
 	<key>NSFaceIDUsageDescription</key>
 	<string>Use Face ID or Touch ID to unlock Publshr quickly.</string>
 	<key>CFBundleURLTypes</key>

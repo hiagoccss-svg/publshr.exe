@@ -1,186 +1,200 @@
 import SwiftUI
 
+/// Borderless macOS sign-in — no card chrome; session persists via Supabase.
 struct AuthView: View {
     @EnvironmentObject private var auth: AuthViewModel
+    @FocusState private var focusedField: Field?
+
+    private enum Field: Hashable {
+        case email, password, name, otp
+    }
 
     var body: some View {
         ZStack {
             CursorTheme.activityBar.ignoresSafeArea()
 
             VStack(spacing: 0) {
-                Spacer(minLength: 80)
+                Spacer(minLength: 48)
 
-                VStack(spacing: 24) {
+                VStack(alignment: .leading, spacing: 28) {
                     brandHeader
-                    authCard
-                }
-                .frame(maxWidth: 420)
 
-                Spacer(minLength: 80)
+                    if auth.screen != .confirmEmail {
+                        modePicker
+                    }
+
+                    formContent
+
+                    messages
+
+                    primaryAction
+                }
+                .frame(maxWidth: 380, alignment: .leading)
+
+                Spacer(minLength: 48)
+
+                footerHint
             }
-            .padding(.horizontal, 32)
+            .padding(.horizontal, 48)
         }
     }
 
     private var brandHeader: some View {
-        VStack(spacing: 8) {
-            Image(systemName: "chevron.left.forwardslash.chevron.right")
-                .font(.system(size: 36, weight: .medium))
-                .foregroundStyle(CursorTheme.foreground)
-            Text("Publshr")
-                .font(.system(size: 22, weight: .semibold))
-                .foregroundStyle(CursorTheme.foreground)
-            Text("Sign in to continue")
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 10) {
+                Image(systemName: "chevron.left.forwardslash.chevron.right")
+                    .font(.system(size: 22, weight: .medium))
+                    .foregroundStyle(CursorTheme.foreground)
+                Text("Publshr")
+                    .font(.system(size: 26, weight: .semibold))
+                    .foregroundStyle(CursorTheme.foreground)
+            }
+            Text(auth.screen == .confirmEmail ? "Confirm your email" : "Enterprise workspace for your team")
                 .font(.system(size: 13))
                 .foregroundStyle(CursorTheme.foregroundMuted)
         }
     }
 
-    private var authCard: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            if auth.screen != .confirmEmail {
-                tabSwitcher
-            }
-
-            switch auth.screen {
-            case .signIn:
-                signInForm
-            case .signUp:
-                signUpForm
-            case .confirmEmail:
-                confirmForm
-            }
-
-            if let error = auth.errorMessage {
-                Text(error)
-                    .font(.system(size: 12))
-                    .foregroundStyle(CursorTheme.error)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-
-            if let info = auth.infoMessage {
-                Text(info)
-                    .font(.system(size: 12))
-                    .foregroundStyle(CursorTheme.success)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
+    private var modePicker: some View {
+        HStack(spacing: 20) {
+            modeLink("Sign in", screen: .signIn)
+            modeLink("Create account", screen: .signUp)
         }
-        .padding(20)
-        .background(
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .fill(CursorTheme.authCard)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .stroke(CursorTheme.border, lineWidth: 1)
-                )
-        )
     }
 
-    private var tabSwitcher: some View {
-        HStack(spacing: 0) {
-            authTab("Sign in", screen: .signIn)
-            authTab("Create account", screen: .signUp)
-        }
-        .background(CursorTheme.editorBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 6))
-        .overlay(
-            RoundedRectangle(cornerRadius: 6)
-                .stroke(CursorTheme.border, lineWidth: 1)
-        )
-    }
-
-    private func authTab(_ title: String, screen: AuthScreen) -> some View {
+    private func modeLink(_ title: String, screen: AuthScreen) -> some View {
         Button {
             auth.screen = screen
             auth.errorMessage = nil
             auth.infoMessage = nil
         } label: {
             Text(title)
-                .font(.system(size: 13, weight: .medium))
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 8)
-                .foregroundStyle(auth.screen == screen ? CursorTheme.foreground : CursorTheme.foregroundMuted)
-                .background(auth.screen == screen ? CursorTheme.sideBar : Color.clear)
+                .font(.system(size: 13, weight: auth.screen == screen ? .semibold : .regular))
+                .foregroundStyle(auth.screen == screen ? CursorTheme.foreground : CursorTheme.foregroundDim)
+                .overlay(alignment: .bottom) {
+                    if auth.screen == screen {
+                        Rectangle()
+                            .fill(CursorTheme.accent)
+                            .frame(height: 2)
+                            .offset(y: 6)
+                    }
+                }
+                .padding(.bottom, 8)
         }
         .buttonStyle(.plain)
     }
 
-    private var signInForm: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            if BiometricAuthService.isAvailable {
-                biometricUnlockButton
+    @ViewBuilder
+    private var formContent: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            switch auth.screen {
+            case .signIn:
+                if auth.canOfferBiometricUnlock {
+                    biometricRow
+                }
+                authField("Email", text: $auth.email, field: .email, contentType: authEmailContentType)
+                authSecureField("Password", text: $auth.password, field: .password)
+            case .signUp:
+                authField("Name", text: $auth.displayName, field: .name)
+                authField("Email", text: $auth.email, field: .email, contentType: authEmailContentType)
+                authSecureField("Password", text: $auth.password, field: .password)
+                Text("At least 8 characters")
+                    .font(.system(size: 11))
+                    .foregroundStyle(CursorTheme.foregroundDim)
+            case .confirmEmail:
+                Text("Enter the 6-digit code sent to \(auth.email)")
+                    .font(.system(size: 12))
+                    .foregroundStyle(CursorTheme.foregroundMuted)
+                    .fixedSize(horizontal: false, vertical: true)
+                authField("Code", text: $auth.otpCode, field: .otp, contentType: authOTPContentType)
+                HStack(spacing: 16) {
+                    Button("Resend code") { Task { await auth.resendConfirmation() } }
+                        .buttonStyle(.plain)
+                        .font(.system(size: 12))
+                        .foregroundStyle(CursorTheme.accent)
+                    Button("Back to sign in") {
+                        auth.screen = .signIn
+                        auth.otpCode = ""
+                    }
+                    .buttonStyle(.plain)
+                    .font(.system(size: 12))
+                    .foregroundStyle(CursorTheme.foregroundDim)
+                }
             }
-            authField("Email", text: $auth.email, contentType: authEmailContentType)
-            authSecureField("Password", text: $auth.password)
-            primaryButton("Sign in", action: { Task { await auth.signIn() } })
         }
     }
 
-    private var biometricUnlockButton: some View {
+    private var biometricRow: some View {
         Button {
             Task { await auth.unlockWithBiometrics() }
         } label: {
             HStack(spacing: 8) {
                 Image(systemName: "touchid")
-                    .font(.system(size: 16))
+                    .font(.system(size: 15))
                 Text("Unlock with \(BiometricAuthService.biometricLabel)")
                     .font(.system(size: 13, weight: .medium))
             }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 9)
             .foregroundStyle(CursorTheme.accent)
-            .background(CursorTheme.accent.opacity(0.08))
-            .clipShape(RoundedRectangle(cornerRadius: 4))
-            .overlay(
-                RoundedRectangle(cornerRadius: 4)
-                    .stroke(CursorTheme.accent.opacity(0.35), lineWidth: 1)
-            )
         }
         .buttonStyle(.plain)
         .disabled(auth.isLoading)
     }
 
-    private var signUpForm: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            authField("Name", text: $auth.displayName)
-            authField("Email", text: $auth.email, contentType: authEmailContentType)
-            authSecureField("Password", text: $auth.password)
-            Text("At least 8 characters")
-                .font(.system(size: 11))
-                .foregroundStyle(CursorTheme.foregroundDim)
-            primaryButton("Create account", action: { Task { await auth.signUp() } })
+    @ViewBuilder
+    private var messages: some View {
+        if let error = auth.errorMessage {
+            Text(error)
+                .font(.system(size: 12))
+                .foregroundStyle(CursorTheme.error)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        if let info = auth.infoMessage {
+            Text(info)
+                .font(.system(size: 12))
+                .foregroundStyle(CursorTheme.success)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 
-    private var confirmForm: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Confirm your email")
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundStyle(CursorTheme.foreground)
-            Text("Enter the 6-digit code sent to \(auth.email)")
-                .font(.system(size: 12))
-                .foregroundStyle(CursorTheme.foregroundMuted)
-                .fixedSize(horizontal: false, vertical: true)
-
-            authField("Code", text: $auth.otpCode, contentType: authOTPContentType)
-
-            primaryButton("Verify email", action: { Task { await auth.confirmEmailOTP() } })
-
-            HStack {
-                Button("Resend code") { Task { await auth.resendConfirmation() } }
-                    .buttonStyle(.plain)
-                    .font(.system(size: 12))
-                    .foregroundStyle(CursorTheme.accent)
-                Spacer()
-                Button("Back to sign in") {
-                    auth.screen = .signIn
-                    auth.otpCode = ""
+    private var primaryAction: some View {
+        Button {
+            Task {
+                switch auth.screen {
+                case .signIn: await auth.signIn()
+                case .signUp: await auth.signUp()
+                case .confirmEmail: await auth.confirmEmailOTP()
                 }
-                .buttonStyle(.plain)
-                .font(.system(size: 12))
-                .foregroundStyle(CursorTheme.foregroundMuted)
             }
+        } label: {
+            HStack(spacing: 8) {
+                if auth.isLoading {
+                    ProgressView().controlSize(.small)
+                }
+                Text(primaryTitle)
+                    .font(.system(size: 14, weight: .semibold))
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.vertical, 4)
+            .foregroundStyle(CursorTheme.accent)
         }
+        .buttonStyle(.plain)
+        .disabled(auth.isLoading)
+        .keyboardShortcut(.return, modifiers: .command)
+    }
+
+    private var primaryTitle: String {
+        switch auth.screen {
+        case .signIn: return "Sign in"
+        case .signUp: return "Create account"
+        case .confirmEmail: return "Verify email"
+        }
+    }
+
+    private var footerHint: some View {
+        Text("Signed-in sessions stay active on this Mac. Enable Touch ID in Settings for optional quick unlock.")
+            .font(.system(size: 11))
+            .foregroundStyle(CursorTheme.foregroundDim)
+            .frame(maxWidth: 380, alignment: .leading)
     }
 
     private var authEmailContentType: NSTextContentType? {
@@ -193,67 +207,49 @@ struct AuthView: View {
         return nil
     }
 
-    private func authField(_ label: String, text: Binding<String>, contentType: NSTextContentType? = nil) -> some View {
+    private func authField(
+        _ label: String,
+        text: Binding<String>,
+        field: Field,
+        contentType: NSTextContentType? = nil
+    ) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(label)
-                .font(.system(size: 12))
-                .foregroundStyle(CursorTheme.foregroundMuted)
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(CursorTheme.foregroundDim)
             TextField("", text: text)
                 .textFieldStyle(.plain)
-                .font(.system(size: 13))
+                .font(.system(size: 15))
                 .foregroundStyle(CursorTheme.foreground)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 8)
-                .background(CursorTheme.inputBackground)
-                .clipShape(RoundedRectangle(cornerRadius: 4))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 4)
-                        .stroke(CursorTheme.inputBorder, lineWidth: 1)
-                )
+                .focused($focusedField, equals: field)
+                .padding(.vertical, 6)
+                .overlay(alignment: .bottom) {
+                    Rectangle()
+                        .fill(focusedField == field ? CursorTheme.accent : CursorTheme.border.opacity(0.6))
+                        .frame(height: 1)
+                }
                 #if os(macOS)
                 .textContentType(contentType)
                 #endif
         }
     }
 
-    private func authSecureField(_ label: String, text: Binding<String>) -> some View {
+    private func authSecureField(_ label: String, text: Binding<String>, field: Field) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(label)
-                .font(.system(size: 12))
-                .foregroundStyle(CursorTheme.foregroundMuted)
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(CursorTheme.foregroundDim)
             SecureField("", text: text)
                 .textFieldStyle(.plain)
-                .font(.system(size: 13))
+                .font(.system(size: 15))
                 .foregroundStyle(CursorTheme.foreground)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 8)
-                .background(CursorTheme.inputBackground)
-                .clipShape(RoundedRectangle(cornerRadius: 4))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 4)
-                        .stroke(CursorTheme.inputBorder, lineWidth: 1)
-                )
-        }
-    }
-
-    private func primaryButton(_ title: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            HStack {
-                if auth.isLoading {
-                    ProgressView()
-                        .controlSize(.small)
-                        .tint(.white)
+                .focused($focusedField, equals: field)
+                .padding(.vertical, 6)
+                .overlay(alignment: .bottom) {
+                    Rectangle()
+                        .fill(focusedField == field ? CursorTheme.accent : CursorTheme.border.opacity(0.6))
+                        .frame(height: 1)
                 }
-                Text(title)
-                    .font(.system(size: 13, weight: .medium))
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 9)
-            .foregroundStyle(.white)
-            .background(auth.isLoading ? CursorTheme.buttonBackground.opacity(0.7) : CursorTheme.buttonBackground)
-            .clipShape(RoundedRectangle(cornerRadius: 4))
         }
-        .buttonStyle(.plain)
-        .disabled(auth.isLoading)
     }
 }
