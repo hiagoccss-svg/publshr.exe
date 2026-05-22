@@ -53,7 +53,7 @@ struct TitlebarNotificationsPanelView: View {
                                 .padding(.vertical, 8)
                                 .background(
                                     RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                        .fill(Color.white.opacity(0.5))
+                                        .fill(MacSystemChrome.fieldHoverFill)
                                 )
                             }
                             .buttonStyle(.plain)
@@ -63,7 +63,8 @@ struct TitlebarNotificationsPanelView: View {
                 .frame(maxHeight: 280)
             }
         }
-        .padding(20)
+        .padding(MacSystemChrome.sheetPadding)
         .frame(width: 360)
+        .macNativeSheetPresentation()
     }
 }

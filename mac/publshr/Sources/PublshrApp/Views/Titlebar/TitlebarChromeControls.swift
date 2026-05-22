@@ -75,13 +75,13 @@ struct TitlebarChromeIconButton: View {
     }
 
     private var backgroundFill: Color {
-        if isActive { return CursorTheme.tabActiveBackground }
-        if isHovered && isEnabled { return CursorTheme.tabInactiveBackground.opacity(0.9) }
+        if isActive { return MacSystemChrome.toolbarPressedFill }
+        if isHovered && isEnabled { return MacSystemChrome.toolbarHoverFill }
         return Color.clear
     }
 
     private var strokeColor: Color {
-        isActive ? CursorMacShellDesign.border : Color.clear
+        Color.clear
     }
 }
 

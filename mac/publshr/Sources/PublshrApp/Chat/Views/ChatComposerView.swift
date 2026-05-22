@@ -32,20 +32,13 @@ struct ChatComposerView: View {
 
                 TextField(composerPlaceholder, text: $chat.composerText, axis: .vertical)
                     .textFieldStyle(.plain)
-                    .font(.system(size: 13))
-                    .foregroundStyle(CursorTheme.foreground)
+                    .font(.system(size: MacSystemChrome.fieldFontSize))
+                    .foregroundStyle(LibraryGlassDesign.ink)
                     .lineLimit(1...6)
                     .disabled(!chat.canPostInSelectedChannel)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 10)
-                    .background(
-                        RoundedRectangle(cornerRadius: 14, style: .continuous)
-                            .fill(Color.white.opacity(0.55))
-                            .background(.ultraThinMaterial)
-                    )
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 14, style: .continuous)
-                            .strokeBorder(LibraryGlassDesign.hairline, lineWidth: 1)
+                    .macInlineTextField(
+                        background: CursorMacShellDesign.editorColumnBackground,
+                        cornerRadius: 10
                     )
                     .onChange(of: chat.composerText) { _, _ in
                         chat.composerActivityChanged()
@@ -76,7 +69,7 @@ struct ChatComposerView: View {
         }
         .padding(.horizontal, 12)
         .padding(.bottom, 12)
-        .background(Color.clear)
+        .background(CursorMacShellDesign.editorColumnBackground)
     }
 
     private var announcementBanner: some View {

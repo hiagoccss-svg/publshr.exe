@@ -7,11 +7,11 @@ struct ChatSidebarTitlebarChrome: View {
     var body: some View {
         HStack(spacing: 8) {
             Image(systemName: "magnifyingglass")
-                .font(.system(size: 12, weight: .medium))
+                .font(.system(size: AppWindowChromeMetrics.controlIconSize, weight: .medium))
                 .foregroundStyle(LibraryGlassDesign.inkMuted)
             TextField("Search channels and people", text: $chat.sidebarSearchQuery)
                 .textFieldStyle(.plain)
-                .font(ChatClickUpDesign.searchFont)
+                .font(.system(size: MacSystemChrome.fieldFontSize))
                 .foregroundStyle(LibraryGlassDesign.ink)
             if !chat.sidebarSearchQuery.isEmpty {
                 Button {
@@ -24,6 +24,10 @@ struct ChatSidebarTitlebarChrome: View {
                 .buttonStyle(.plain)
             }
         }
+        .macInlineTextField(
+            background: MacSystemChrome.submenuFieldBackground(),
+            cornerRadius: MacSystemChrome.fieldCornerRadius
+        )
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 }

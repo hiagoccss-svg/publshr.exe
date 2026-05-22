@@ -64,24 +64,24 @@ enum MainWindowChrome {
         alignTrafficLights(in: window)
     }
 
-    /// Vertically center system traffic lights on the unified toolbar row (Cursor Mac parity).
+    /// Align system traffic lights with the SwiftUI toolbar row (measured from content view).
     @MainActor
     private static func alignTrafficLights(in window: NSWindow) {
-        guard let close = window.standardWindowButton(.closeButton) else { return }
         let buttons = [
             window.standardWindowButton(.closeButton),
             window.standardWindowButton(.miniaturizeButton),
             window.standardWindowButton(.zoomButton),
         ].compactMap { $0 }
+        guard !buttons.isEmpty else { return }
 
         let rowHeight = AppWindowChromeMetrics.trafficLightRowHeight
-        let targetMidY = rowHeight * 0.5 + AppWindowChromeMetrics.trafficLightVerticalAlignPadding
+        let metrics = TrafficLightLayoutMetrics.measure(in: window)
+        let targetMidY = rowHeight * 0.5 + metrics.iconOffsetY
         for button in buttons {
             var frame = button.frame
             frame.origin.y = targetMidY - frame.height * 0.5
             button.setFrameOrigin(frame.origin)
         }
-        _ = close // anchor availability check
     }
 
     /// Pull SwiftUI content up into the real titlebar band (same row as traffic lights).

@@ -41,13 +41,8 @@ struct LibraryShellHeaderView: View {
     @ViewBuilder
     private var rowContent: some View {
         switch kind {
-        case .trafficLeading(let module):
-            TitlebarToolbarRow(trailingPadding: 8) {
-                Color.clear
-                    .frame(width: AppWindowChromeMetrics.trafficLightLeadingInset)
-                ShellTrafficLeadingActions(module: module)
-                Spacer(minLength: 0)
-            }
+        case .trafficLeading:
+            PrimaryBarTrafficHeader()
 
         case .secondaryChrome:
             TitlebarToolbarRow {
@@ -64,9 +59,10 @@ struct LibraryShellHeaderView: View {
         case .editorTrailing(let module, let showCommandPalette, let showNotificationsPanel):
             Group {
                 if module.wrappedValue == .chat {
-                    ChatEditorHeaderBar(showCommandPalette: showCommandPalette)
+                    ChatEditorHeaderBar(module: module, showCommandPalette: showCommandPalette)
                 } else {
-                    TitlebarToolbarRow(trailingPadding: 14) {
+                    TitlebarToolbarRow(leadingPadding: 14, trailingPadding: 14) {
+                        ShellTrafficLeadingActions(module: module)
                         Spacer(minLength: 0)
                         TitlebarChromeActionBar(
                             module: module,

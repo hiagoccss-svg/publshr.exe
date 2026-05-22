@@ -5,6 +5,7 @@ import UniformTypeIdentifiers
 struct ChatEditorHeaderBar: View {
     @EnvironmentObject private var auth: AuthViewModel
     @EnvironmentObject private var chat: ChatViewModel
+    @Binding var module: AppModule
     @Binding var showCommandPalette: Bool
 
     @State private var showAvatarPicker = false
@@ -15,6 +16,7 @@ struct ChatEditorHeaderBar: View {
             leadingPadding: CursorMacShellDesign.editorHorizontalPadding,
             trailingPadding: 14
         ) {
+            ShellTrafficLeadingActions(module: $module)
             channelTitle
             Spacer(minLength: 8)
             TitlebarChromeIconButton(systemName: "magnifyingglass", help: "Search in channel") {

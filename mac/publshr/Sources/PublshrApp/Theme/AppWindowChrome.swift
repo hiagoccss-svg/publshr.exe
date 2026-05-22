@@ -12,8 +12,8 @@ enum AppWindowChromeMetrics {
     static let trafficLightLeadingInset: CGFloat = 78
     /// Fallback when SwiftUI reports zero safe-area (pre-layout).
     static let fallbackTitlebarHeight: CGFloat = 28
-    /// Height of the unified titlebar row (matches Cursor Mac traffic-light band).
-    static let trafficLightRowHeight: CGFloat = 40
+    /// Height of the unified titlebar row (aligned with system traffic-light band).
+    static let trafficLightRowHeight: CGFloat = 38
     /// Optical nudge so custom controls share the traffic-light vertical center.
     static let trafficLightVerticalAlignPadding: CGFloat = 2
     /// Square chrome control — Cursor Mac titlebar hit target.

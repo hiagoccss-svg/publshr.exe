@@ -33,6 +33,7 @@ struct ChatChannelSettingsSheet: View {
             footer
         }
         .frame(width: 440, height: 520)
+        .macNativeSheetPresentation()
         .onAppear(perform: syncFromChannel)
         .onChange(of: chat.selectedChannel?.id) { _, _ in syncFromChannel() }
     }

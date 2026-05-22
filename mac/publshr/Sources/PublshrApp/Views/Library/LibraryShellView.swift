@@ -56,13 +56,7 @@ struct LibraryShellView: View {
                 headerKind: .trafficLeading(module: $module),
                 appliesPrimaryBarGlass: true
             ) {
-                Group {
-                    if tabStore.barMenuExpanded {
-                        LibraryBarMenuColumn(module: $module)
-                    } else {
-                        LibraryBarMenuIconRail(module: $module)
-                    }
-                }
+                LibraryBarMenuIconRail(module: $module)
             }
             .fixedSize(horizontal: true, vertical: false)
             .layoutPriority(2)
