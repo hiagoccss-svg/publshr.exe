@@ -29,12 +29,8 @@ struct LibraryCardStyle: ViewModifier {
 struct GlassSidebarBackground: ViewModifier {
     func body(content: Content) -> some View {
         content
-            .background(CursorMacShellDesign.sidebarBackground)
-            .overlay(alignment: .trailing) {
-                Rectangle()
-                    .fill(CursorMacShellDesign.border)
-                    .frame(width: 1)
-            }
+            .background(CursorMacShellDesign.columnChromeBackground)
+            .cursorColumnDividerTrailing()
     }
 }
 

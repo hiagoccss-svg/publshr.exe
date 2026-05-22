@@ -7,7 +7,7 @@ enum AppWindowChromeMetrics {
     /// Fallback when SwiftUI reports zero safe-area (pre-layout).
     static let fallbackTitlebarHeight: CGFloat = 28
     /// Height of the system titlebar row where traffic lights are drawn (fixed — do not use safe-area height for layout).
-    static let trafficLightRowHeight: CGFloat = CursorMacShellDesign.titleBarHeight
+    static let trafficLightRowHeight: CGFloat = 38
     /// Optical nudge so controls line up with the system close button (macOS centers lights ~12pt from window top).
     static let trafficLightVerticalAlignPadding: CGFloat = 1
     /// Square chrome control (edit, pop-out, close tab) — matches close-button visual size.
@@ -22,7 +22,7 @@ enum AppWindowChromeMetrics {
     static let askAITextSize: CGFloat = 11
     /// Browser-style document tab chip in the titlebar.
     static let documentTabHeight: CGFloat = 28
-    static let documentTabCornerRadius: CGFloat = CursorMacShellDesign.tabCornerRadius
+    static let documentTabCornerRadius: CGFloat = 8
     static let documentTabHorizontalPadding: CGFloat = 10
     static let rowSpacing: CGFloat = 8
     static let titlebarActionSpacing: CGFloat = 4

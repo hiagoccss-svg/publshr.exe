@@ -107,7 +107,7 @@ struct ChatChannelStatusBar: View {
             .padding(.horizontal, CursorMacShellDesign.editorHorizontalPadding)
             .frame(height: CursorMacShellDesign.chatToolbarHeight)
         }
-        .background(CursorMacShellDesign.editorSurface)
+        .background(CursorMacShellDesign.editorBoxBackground)
         .overlay(alignment: .bottom) {
             Rectangle().fill(CursorMacShellDesign.borderSubtle).frame(height: 1)
         }

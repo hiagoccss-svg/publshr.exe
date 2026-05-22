@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Cursor Mac–style workspace shell — flat sidebars, white editor column, no status footer.
+/// Cursor Mac 3-column shell — grey side columns, white boxed editor column, minimal titlebar.
 struct LibraryShellView: View {
     @EnvironmentObject private var auth: AuthViewModel
     @EnvironmentObject private var chat: ChatViewModel
@@ -31,7 +31,7 @@ struct LibraryShellView: View {
             .frame(width: geometry.size.width, height: geometry.size.height)
         }
         .ignoresSafeArea(.container, edges: .top)
-        .background(Color.clear)
+        .background(CursorMacShellDesign.columnChromeBackground)
         .onAppear {
             tabStore.sidebarExpanded = true
             syncModulesIfNeeded()
@@ -76,6 +76,7 @@ struct LibraryShellView: View {
                     showNewChannel: $showNewChannel,
                     showNewDM: $showNewDM
                 )
+                .cursorColumnDividerTrailing()
 
                 if !submenuHidden {
                     AppSecondarySidebar(
@@ -85,6 +86,7 @@ struct LibraryShellView: View {
                         showNewChannel: $showNewChannel,
                         showNewDM: $showNewDM
                     )
+                    .cursorColumnDividerTrailing()
                     .transition(.move(edge: .leading).combined(with: .opacity))
                 }
 
@@ -100,12 +102,10 @@ struct LibraryShellView: View {
     private var mainStage: some View {
         moduleContent
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(CursorMacShellDesign.editorSurface)
-            .overlay(alignment: .leading) {
-                Rectangle()
-                    .fill(CursorMacShellDesign.border)
-                    .frame(width: 1)
-            }
+            .cursorEditorColumnBox()
+            .padding(CursorMacShellDesign.editorBoxPadding)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(CursorMacShellDesign.workspaceBackground)
     }
 
     @ViewBuilder
@@ -138,7 +138,7 @@ struct LibraryShellView: View {
         )
         spaces.attach(auth: auth)
         Task {
-            await subscription.refresh(client: auth.client, workspace: auth.selectedWorkspace)
+            await subscription.refresh(client: auth.selectedWorkspace)
             if chat.channels.isEmpty, chat.directMessages.isEmpty {
                 await chat.refreshAfterReconnect()
             }

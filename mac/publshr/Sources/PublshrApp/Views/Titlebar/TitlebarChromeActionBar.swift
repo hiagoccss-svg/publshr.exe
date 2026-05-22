@@ -1,15 +1,10 @@
 import SwiftUI
 
-/// Leading + trailing interactive actions for the unified native titlebar.
+/// Cursor-style titlebar actions — search, command palette, and profile only.
 struct TitlebarChromeActionBar: View {
-    @EnvironmentObject private var tabStore: WorkspaceTabStore
     @EnvironmentObject private var auth: AuthViewModel
     @EnvironmentObject private var chat: ChatViewModel
-    @EnvironmentObject private var subscription: SubscriptionService
-    @ObservedObject var spaces: SpacesViewModel
     @Binding var module: AppModule
-    @Binding var showNewChannel: Bool
-    @Binding var showNewDM: Bool
     @Binding var showCommandPalette: Bool
     @Binding var showNotificationsPanel: Bool
 
@@ -23,127 +18,71 @@ struct TitlebarChromeActionBar: View {
     var body: some View {
         switch placement {
         case .leading:
-            leadingCluster
-        case .trailing:
             EmptyView()
+        case .trailing:
+            trailingCluster
         }
     }
 
-    // MARK: - Leading
-
-    private var leadingCluster: some View {
-        HStack(alignment: .center, spacing: AppWindowChromeMetrics.titlebarActionSpacing) {
+    private var trailingCluster: some View {
+        HStack(alignment: .center, spacing: CursorMacShellDesign.titlebarActionSpacing) {
             TitlebarChromeIconButton(
-                systemName: tabStore.sidebarExpanded ? "sidebar.left" : "sidebar.right",
-                help: TitlebarShortcutHint.tooltip("Toggle submenu", shortcut: TitlebarShortcutHint.toggleSidebar),
-                isActive: tabStore.sidebarExpanded
+                systemName: "magnifyingglass",
+                help: TitlebarShortcutHint.tooltip("Search", shortcut: TitlebarShortcutHint.search),
+                isEnabled: module == .chat
             ) {
-                withAnimation(.easeInOut(duration: 0.15)) {
-                    tabStore.sidebarExpanded.toggle()
-                }
-            }
-
-            newChatControl
-
-            TitlebarChromeIconButton(
-                systemName: "chevron.left",
-                help: TitlebarShortcutHint.tooltip("Back", shortcut: TitlebarShortcutHint.navigateBack),
-                isEnabled: canGoBack
-            ) {
-                navigateBack()
+                if module == .chat { chat.showSearchSheet = true }
             }
 
             TitlebarChromeIconButton(
-                systemName: "chevron.right",
-                help: TitlebarShortcutHint.tooltip("Forward", shortcut: TitlebarShortcutHint.navigateForward),
-                isEnabled: canGoForward
+                systemName: "command",
+                help: TitlebarShortcutHint.tooltip("Command palette", shortcut: TitlebarShortcutHint.commandPalette)
             ) {
-                navigateForward()
+                showCommandPalette = true
             }
 
-            workspaceSwitcher
+            profileMenu
         }
     }
 
-    @ViewBuilder
-    private var newChatControl: some View {
-        if module == .chat {
-            Menu {
-                Button("New AI chat") {
-                    chat.selectedChannel = nil
-                    tabStore.openFromModule(.chat, activate: true)
-                }
-                Button("New channel…") { showNewChannel = true }
-                Button("New message…") { showNewDM = true }
-            } label: {
-                TitlebarChromeMenuLabel(title: "New")
-            }
-            .menuStyle(.borderlessButton)
-            .help(TitlebarShortcutHint.tooltip("New chat", shortcut: TitlebarShortcutHint.newChat))
-        } else {
-            Button {
-                module = .chat
-                tabStore.openFromModule(.chat, activate: true)
-                chat.selectedChannel = nil
-            } label: {
-                TitlebarChromeMenuLabel(title: "New")
-            }
-            .buttonStyle(.plain)
-            .disabled(module == .settings)
-        }
-    }
-
-    private var workspaceSwitcher: some View {
+    private var profileMenu: some View {
         Menu {
-            if auth.workspaceMemberships.isEmpty {
-                Text("No workspaces")
-            } else {
-                ForEach(auth.workspaceMemberships) { membership in
-                    Button {
-                        auth.switchWorkspace(membership)
-                    } label: {
-                        HStack {
-                            Text(membership.workspace.name)
-                            if auth.selectedMembership?.id == membership.id {
-                                Image(systemName: "checkmark")
-                            }
-                        }
-                    }
-                }
+            if let name = auth.profile?.displayName?.nonEmptyOrNil {
+                Text(name)
+                    .font(.headline)
+            }
+            if let email = auth.profile?.email {
+                Text(email)
             }
             Divider()
-            Button("Manage workspaces…") {
-                Task {
-                    await auth.loadWorkspaces()
-                    auth.flowState = .selectWorkspace
-                }
+            Button("Account & profile") {
+                NotificationCenter.default.post(name: .publshrOpenSettings, object: SettingsSection.account.rawValue)
+            }
+            Button("Workspace settings") {
+                NotificationCenter.default.post(name: .publshrOpenSettings, object: SettingsSection.workspace.rawValue)
+            }
+            Divider()
+            Button("Sign out", role: .destructive) {
+                Task { await auth.signOut() }
             }
         } label: {
-            TitlebarChromeMenuLabel(
-                title: auth.selectedWorkspace?.name ?? "Workspace",
-                isActive: auth.selectedWorkspace != nil
-            )
+            TitlebarChromeMenuLabel(title: profileShortTitle)
         }
         .menuStyle(.borderlessButton)
-        .help("Switch workspace")
+        .help("Account")
     }
 
-    private var canGoBack: Bool {
-        module == .chat ? chat.canNavigateBack : spaces.canNavigateBack
-    }
-
-    private var canGoForward: Bool {
-        module == .chat ? chat.canNavigateForward : spaces.canNavigateForward
-    }
-
-    private func navigateBack() {
-        if module == .chat { chat.navigateBack() }
-        else { Task { await spaces.navigateBack() } }
-    }
-
-    private func navigateForward() {
-        if module == .chat { chat.navigateForward() }
-        else { Task { await spaces.navigateForward() } }
+    private var profileShortTitle: String {
+        if let name = auth.profile?.displayName?.trimmingCharacters(in: .whitespacesAndNewlines), !name.isEmpty {
+            let parts = name.split(separator: " ")
+            if let first = parts.first {
+                return String(first)
+            }
+        }
+        if let email = auth.profile?.email.split(separator: "@").first {
+            return String(email)
+        }
+        return "Account"
     }
 }
 

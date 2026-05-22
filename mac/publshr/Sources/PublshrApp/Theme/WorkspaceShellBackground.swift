@@ -10,7 +10,7 @@ enum WorkspaceShellBackground {
 /// Full-window desktop vibrancy (user wallpaper shows through the app).
 struct WorkspaceDesktopBackdrop: View {
     var body: some View {
-        CursorMacShellDesign.workspaceBackground
+        CursorMacShellDesign.columnChromeBackground
             .ignoresSafeArea()
     }
 }
