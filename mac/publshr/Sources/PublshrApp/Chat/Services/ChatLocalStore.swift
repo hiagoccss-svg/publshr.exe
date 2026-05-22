@@ -96,9 +96,22 @@ final class ChatLocalStore {
         )
     }
 
-    func searchMessages(query searchQuery: String) -> [LocalSearchRow] {
+    func searchMessages(query searchQuery: String, channelId: UUID? = nil) -> [LocalSearchRow] {
         let q = "%\(searchQuery.lowercased())%"
-        return fetchRows("SELECT message_id, channel_id, channel_name, snippet FROM search_index WHERE LOWER(snippet) LIKE ? LIMIT 50;", q)
+        let rows: [[String: String]]
+        if let channelId {
+            rows = fetchRows(
+                "SELECT message_id, channel_id, channel_name, snippet FROM search_index WHERE channel_id = ? AND LOWER(snippet) LIKE ? LIMIT 50;",
+                channelId.uuidString,
+                q
+            )
+        } else {
+            rows = fetchRows(
+                "SELECT message_id, channel_id, channel_name, snippet FROM search_index WHERE LOWER(snippet) LIKE ? LIMIT 50;",
+                q
+            )
+        }
+        return rows
             .compactMap { row -> LocalSearchRow? in
                 guard let mid = row["message_id"],
                       let cid = row["channel_id"], let uuid = UUID(uuidString: cid),

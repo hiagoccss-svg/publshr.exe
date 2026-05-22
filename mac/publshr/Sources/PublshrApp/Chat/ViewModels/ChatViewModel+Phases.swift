@@ -321,10 +321,12 @@ extension ChatViewModel {
     func runGlobalSearch() async {
         let q = globalSearchQuery.trimmingCharacters(in: .whitespaces)
         guard !q.isEmpty else { searchResults = []; return }
+        let scopeId = searchScopeChannelId
         var hits: [ChatSearchHit] = []
         if let service, let workspace, !isOffline {
             if let remote = try? await service.searchWorkspace(workspaceId: workspace.id, query: q) {
                 for m in remote.messages {
+                    if let scopeId, m.channel_id != scopeId { continue }
                     hits.append(ChatSearchHit(
                         id: "msg-\(m.id.uuidString)",
                         kind: .message,
@@ -335,20 +337,22 @@ extension ChatViewModel {
                         createdAt: nil
                     ))
                 }
-                for t in remote.tasks {
-                    hits.append(ChatSearchHit(
-                        id: "task-\(t.id.uuidString)",
-                        kind: .task,
-                        title: t.title,
-                        subtitle: t.status ?? "task",
-                        channelId: nil,
-                        messageId: nil,
-                        createdAt: nil
-                    ))
+                if scopeId == nil {
+                    for t in remote.tasks {
+                        hits.append(ChatSearchHit(
+                            id: "task-\(t.id.uuidString)",
+                            kind: .task,
+                            title: t.title,
+                            subtitle: t.status ?? "task",
+                            channelId: nil,
+                            messageId: nil,
+                            createdAt: nil
+                        ))
+                    }
                 }
             }
         }
-        let local = service?.localStore().searchMessages(query: q) ?? []
+        let local = service?.localStore().searchMessages(query: q, channelId: scopeId) ?? []
         for row in local {
             hits.append(ChatSearchHit(
                 id: "local-\(row.messageId)",
@@ -360,7 +364,51 @@ extension ChatViewModel {
                 createdAt: nil
             ))
         }
+        if scopeId != nil {
+            let inMemory = mainChannelMessages.filter {
+                ($0.body ?? "").localizedCaseInsensitiveContains(q)
+            }
+            for msg in inMemory {
+                let hitId = "mem-\(msg.id.uuidString)"
+                guard !hits.contains(where: { $0.id == hitId }) else { continue }
+                hits.append(ChatSearchHit(
+                    id: hitId,
+                    kind: .message,
+                    title: msg.body ?? "",
+                    subtitle: selectedChannel?.sidebarTitle ?? "Channel",
+                    channelId: msg.channelId,
+                    messageId: msg.id,
+                    createdAt: msg.createdAt
+                ))
+            }
+        }
         searchResults = hits
+    }
+
+    func refreshReadReceipts() async {
+        guard permissions.readReceiptsEnabled,
+              let service, let userId = currentUserId else { return }
+        var map = receiptsByMessageId
+        for msg in messages where msg.userId == userId && msg.threadParentId == nil {
+            if let rows = try? await service.fetchReceipts(messageId: msg.id) {
+                map[msg.id] = rows
+            }
+        }
+        receiptsByMessageId = map
+    }
+
+    func createPlannerTaskFromFollowUp(_ title: String) async {
+        guard let service, let workspace, let userId = currentUserId else { return }
+        do {
+            let task = try await service.createPlannerTask(
+                workspaceId: workspace.id,
+                title: title,
+                createdBy: userId
+            )
+            plannerTasks.insert(task, at: 0)
+        } catch {
+            errorMessage = error.localizedDescription
+        }
     }
 
     // MARK: - AI

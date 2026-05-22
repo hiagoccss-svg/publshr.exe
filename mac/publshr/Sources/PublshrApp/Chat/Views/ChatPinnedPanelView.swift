@@ -18,14 +18,24 @@ struct ChatPinnedPanelView: View {
                     .padding(.horizontal, 12)
             } else {
                 ForEach(chat.pinnedItems) { item in
-                    HStack {
+                    HStack(alignment: .top, spacing: 8) {
                         Image(systemName: "pin.fill")
                             .font(.system(size: 10))
                             .foregroundStyle(CursorTheme.foregroundDim)
-                        Text(item.note ?? "Pinned message")
-                            .font(.system(size: 11))
-                            .lineLimit(2)
-                        Spacer()
+                            .padding(.top, 2)
+                        Button {
+                            if let mid = item.messageId {
+                                chat.jumpToMessage(mid)
+                            }
+                        } label: {
+                            Text(chat.pinnedPreview(for: item))
+                                .font(.system(size: 11))
+                                .foregroundStyle(CursorTheme.foreground)
+                                .lineLimit(2)
+                                .multilineTextAlignment(.leading)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                        .buttonStyle(.plain)
                         Button {
                             Task { await chat.unpinItem(item) }
                         } label: {

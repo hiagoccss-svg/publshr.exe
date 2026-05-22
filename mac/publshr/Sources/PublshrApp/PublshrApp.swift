@@ -179,6 +179,13 @@ struct PublshrApp: App {
                 ChatWindowManager.shared.openChannel(channel, chat: chat, auth: auth)
             }
         }
+        ChatNotificationService.shared.onNotificationQuickReply = { channelId, text in
+            guard auth.isAuthenticated else { return }
+            NSApp.activate(ignoringOtherApps: true)
+            Task {
+                await chat.sendQuickReply(channelId: channelId, text: text)
+            }
+        }
         ChatWindowManager.shared.onSelectChannelInIDE = { channelId in
             chat.selectChannelById(channelId)
         }

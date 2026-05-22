@@ -204,16 +204,38 @@ extension ChatViewModel {
     }
 
     func insertMention(for profile: Profile) {
-        let handle = mentionHandle(for: profile)
-        if composerText.isEmpty {
+        insertMention(handle: mentionHandle(for: profile))
+        showMentionPicker = false
+    }
+
+    /// Replaces an active `@query` fragment in the composer, or appends a mention token.
+    func insertMention(handle: String) {
+        if let at = composerText.range(of: "@", options: .backwards),
+           ChatMentionParser.activeMentionQuery(in: composerText) != nil {
+            composerText.replaceSubrange(at.lowerBound..<composerText.endIndex, with: "@\(handle) ")
+        } else if composerText.isEmpty {
             composerText = "@\(handle) "
         } else if composerText.hasSuffix(" ") {
             composerText += "@\(handle) "
         } else {
             composerText += " @\(handle) "
         }
-        showMentionPicker = false
         scheduleDraftSave()
+    }
+
+    func mentionCandidates(matching query: String) -> [Profile] {
+        let q = query.trimmingCharacters(in: .whitespaces).lowercased()
+        var list = Array(profiles.values)
+        if let me = currentUserId {
+            list = list.filter { $0.id != me }
+        }
+        list.sort { ($0.displayName ?? $0.email) < ($1.displayName ?? $1.email) }
+        guard !q.isEmpty else { return list }
+        return list.filter {
+            ($0.displayName?.lowercased().contains(q) ?? false)
+                || $0.email.lowercased().contains(q)
+                || mentionHandle(for: $0).lowercased().contains(q)
+        }
     }
 
     func mentionHandle(for profile: Profile) -> String {
