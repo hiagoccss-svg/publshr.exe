@@ -7,44 +7,37 @@ struct ChatComposerView: View {
     var onVoiceNote: (() -> Void)?
 
     var body: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: 6) {
             if !chat.typingUsers.isEmpty {
                 Text(typingLabel)
                     .font(.system(size: 11))
                     .foregroundStyle(CursorTheme.foregroundMuted)
                     .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 4)
             }
 
-            HStack(alignment: .bottom, spacing: 8) {
-                if chat.permissions.canUploadFiles {
-                    Button(action: { onAttachFile?() }) {
-                        Image(systemName: "paperclip")
-                            .font(.system(size: 15))
-                            .foregroundStyle(CursorTheme.foregroundDim)
+            HStack(alignment: .bottom, spacing: 10) {
+                HStack(spacing: 4) {
+                    if chat.permissions.canUploadFiles {
+                        composerIcon("paperclip") { onAttachFile?() }
                     }
-                    .buttonStyle(.plain)
-                }
-
-                if canSendVoiceNotes {
-                    Button(action: { onVoiceNote?() }) {
-                        Image(systemName: "mic")
-                            .font(.system(size: 15))
-                            .foregroundStyle(CursorTheme.foregroundDim)
+                    if canSendVoiceNotes {
+                        composerIcon("mic") { onVoiceNote?() }
                     }
-                    .buttonStyle(.plain)
                 }
 
                 TextField("Message… @mention", text: $chat.composerText, axis: .vertical)
                     .textFieldStyle(.plain)
-                    .font(.system(size: 13))
+                    .font(.system(size: 14))
                     .foregroundStyle(CursorTheme.foreground)
                     .lineLimit(1...8)
-                    .padding(10)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 10)
                     .background(CursorTheme.inputBackground)
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
                     .overlay(
-                        RoundedRectangle(cornerRadius: 8)
-                            .stroke(CursorTheme.borderSubtle, lineWidth: 1)
+                        RoundedRectangle(cornerRadius: 10)
+                            .stroke(CursorTheme.borderSubtle, lineWidth: 0.5)
                     )
                     .onChange(of: chat.composerText) { _, _ in
                         chat.scheduleDraftSave()
@@ -54,10 +47,10 @@ struct ChatComposerView: View {
                     Task { await chat.sendMessage() }
                 } label: {
                     Image(systemName: "arrow.up.circle.fill")
-                        .font(.system(size: 24))
+                        .font(.system(size: 28))
                         .foregroundStyle(
                             chat.composerText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                                ? CursorTheme.foregroundDim
+                                ? CursorTheme.foregroundDim.opacity(0.5)
                                 : CursorTheme.accent
                         )
                 }
@@ -66,11 +59,19 @@ struct ChatComposerView: View {
                 .keyboardShortcut(.return, modifiers: .command)
             }
         }
-        .padding(12)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
         .background(CursorTheme.panelBackground)
-        .overlay(alignment: .top) {
-            Rectangle().fill(CursorTheme.border).frame(height: 1)
+    }
+
+    private func composerIcon(_ systemName: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: systemName)
+                .font(.system(size: 15))
+                .foregroundStyle(CursorTheme.foregroundMuted)
+                .frame(width: 32, height: 32)
         }
+        .buttonStyle(.plain)
     }
 
     private var typingLabel: String {

@@ -26,14 +26,18 @@ struct ChatThreadPanelView: View {
                         ChatMessageBubbleView(
                             message: parent,
                             authorName: chat.displayName(for: parent.userId),
+                            authorProfile: chat.profile(for: parent.userId),
+                            presence: chat.presence(for: parent.userId),
                             isOwn: parent.userId == chat.currentUserId,
                             showAvatar: true
                         )
-                        Rectangle().fill(CursorTheme.border).frame(height: 1)
+                        Divider().opacity(0.35)
                         ForEach(chat.threadMessages) { msg in
                             ChatMessageBubbleView(
                                 message: msg,
                                 authorName: chat.displayName(for: msg.userId),
+                                authorProfile: chat.profile(for: msg.userId),
+                                presence: chat.presence(for: msg.userId),
                                 isOwn: msg.userId == chat.currentUserId,
                                 showAvatar: true
                             )
@@ -62,7 +66,7 @@ struct ChatThreadPanelView: View {
         .frame(width: 280)
         .background(CursorTheme.chatBackground)
         .overlay(alignment: .leading) {
-            Rectangle().fill(CursorTheme.border).frame(width: 1)
+            Rectangle().fill(CursorTheme.borderSubtle.opacity(0.8)).frame(width: 1)
         }
     }
 }

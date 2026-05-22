@@ -30,6 +30,7 @@ final class ChatViewModel: ObservableObject {
     @Published var threadComposerText = ""
     @Published var showThreadPanel = false
     @Published var showPinnedPanel = false
+    @Published var chatFocusMode = false
     @Published var uploadProgress: Double?
     @Published var editingMessageId: UUID?
 
@@ -51,6 +52,8 @@ final class ChatViewModel: ObservableObject {
     private var draftSaveTask: Task<Void, Never>?
     private var presenceHeartbeat: Task<Void, Never>?
     private var didAttach = false
+    private var navigationBackStack: [UUID] = []
+    private var navigationForwardStack: [UUID] = []
 
     var currentUserId: UUID? { auth?.profile?.id }
 
@@ -211,7 +214,14 @@ final class ChatViewModel: ObservableObject {
 
     // MARK: - Channel selection
 
-    func selectChannel(_ channel: ChatChannel) {
+    func selectChannel(_ channel: ChatChannel, recordHistory: Bool = true) {
+        if recordHistory, let previousId = selectedChannel?.id, previousId != channel.id {
+            navigationBackStack.append(previousId)
+            if navigationBackStack.count > 32 {
+                navigationBackStack.removeFirst()
+            }
+            navigationForwardStack.removeAll()
+        }
         selectedChannel = channel
         unreadByChannel[channel.id] = 0
         service?.localStore().setUnreadCount(channelId: channel.id, count: 0)
@@ -223,10 +233,40 @@ final class ChatViewModel: ObservableObject {
         Task { await loadMessages(for: channel) }
     }
 
-    func selectChannelById(_ channelId: UUID) {
+    var canNavigateBack: Bool { !navigationBackStack.isEmpty }
+    var canNavigateForward: Bool { !navigationForwardStack.isEmpty }
+
+    func navigateBack() {
+        guard let currentId = selectedChannel?.id,
+              let previousId = navigationBackStack.popLast() else { return }
+        navigationForwardStack.append(currentId)
+        selectChannelById(previousId, recordHistory: false)
+    }
+
+    func navigateForward() {
+        guard let currentId = selectedChannel?.id,
+              let nextId = navigationForwardStack.popLast() else { return }
+        navigationBackStack.append(currentId)
+        selectChannelById(nextId, recordHistory: false)
+    }
+
+    func profile(for userId: UUID) -> Profile? {
+        profiles[userId]
+    }
+
+    func channelMemberCount(for channel: ChatChannel) -> Int {
+        switch channel.kind {
+        case .dm:
+            return 2
+        case .group, .channel:
+            return max(profiles.count, 1)
+        }
+    }
+
+    func selectChannelById(_ channelId: UUID, recordHistory: Bool = true) {
         let all = channels + directMessages
         guard let channel = all.first(where: { $0.id == channelId }) else { return }
-        selectChannel(channel)
+        selectChannel(channel, recordHistory: recordHistory)
     }
 
     func refreshAfterReconnect() async {

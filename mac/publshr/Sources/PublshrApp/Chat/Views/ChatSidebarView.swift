@@ -8,13 +8,13 @@ struct ChatSidebarView: View {
     var body: some View {
         VStack(spacing: 0) {
             ScrollView {
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: 6) {
                     sidebarSection("Favorites", items: chat.favoriteChannels, onAdd: nil)
                     sidebarSection("Channels", items: chat.filteredChannels, onAdd: { showNewChannel = true })
                     sidebarSection("Direct Messages", items: chat.filteredDMs, onAdd: { showNewDM = true })
                     projectsSection
                 }
-                .padding(.vertical, 6)
+                .padding(.vertical, 8)
             }
         }
         .frame(maxHeight: .infinity)
@@ -22,33 +22,25 @@ struct ChatSidebarView: View {
 
     private var projectsSection: some View {
         VStack(alignment: .leading, spacing: 2) {
-            HStack {
-                Text("Projects".uppercased())
-                    .font(.system(size: 10, weight: .semibold))
-                    .foregroundStyle(CursorTheme.foregroundDim)
-                    .tracking(0.6)
-                Spacer()
-            }
-            .padding(.horizontal, 14)
-            .padding(.top, 10)
+            sectionHeader("Projects", onAdd: nil)
 
             if chat.filteredProjects.isEmpty {
                 Text("No planner tasks")
                     .font(.system(size: 11))
                     .foregroundStyle(CursorTheme.foregroundDim)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 4)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 6)
             } else {
                 ForEach(chat.filteredProjects) { task in
                     Button {
                         Task { await chat.sharePlannerTask(task) }
                     } label: {
-                        HStack(spacing: 8) {
+                        HStack(spacing: 10) {
                             Image(systemName: "folder")
                                 .font(.system(size: 12))
                                 .foregroundStyle(CursorTheme.foregroundMuted)
-                                .frame(width: 16)
-                            VStack(alignment: .leading, spacing: 1) {
+                                .frame(width: 18)
+                            VStack(alignment: .leading, spacing: 2) {
                                 Text(task.title)
                                     .font(.system(size: 12))
                                     .foregroundStyle(CursorTheme.foregroundMuted)
@@ -59,11 +51,11 @@ struct ChatSidebarView: View {
                             }
                             Spacer(minLength: 0)
                         }
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 5)
+                        .frame(height: CursorTheme.chatSidebarRowHeight)
+                        .padding(.horizontal, 12)
                     }
                     .buttonStyle(.plain)
-                    .padding(.horizontal, 6)
+                    .padding(.horizontal, 8)
                 }
             }
         }
@@ -75,30 +67,14 @@ struct ChatSidebarView: View {
         onAdd: (() -> Void)?
     ) -> some View {
         VStack(alignment: .leading, spacing: 2) {
-            HStack {
-                Text(title.uppercased())
-                    .font(.system(size: 10, weight: .semibold))
-                    .foregroundStyle(CursorTheme.foregroundDim)
-                    .tracking(0.6)
-                Spacer()
-                if let onAdd {
-                    Button(action: onAdd) {
-                        Image(systemName: "plus")
-                            .font(.system(size: 11))
-                            .foregroundStyle(CursorTheme.foregroundMuted)
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-            .padding(.horizontal, 14)
-            .padding(.top, 8)
+            sectionHeader(title, onAdd: onAdd)
 
             if items.isEmpty {
                 Text("None yet")
                     .font(.system(size: 11))
                     .foregroundStyle(CursorTheme.foregroundDim)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 4)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 6)
             } else {
                 ForEach(items) { channel in
                     channelRow(channel)
@@ -107,19 +83,41 @@ struct ChatSidebarView: View {
         }
     }
 
+    private func sectionHeader(_ title: String, onAdd: (() -> Void)?) -> some View {
+        HStack {
+            Text(title.uppercased())
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundStyle(CursorTheme.foregroundDim)
+                .tracking(0.5)
+            Spacer()
+            if let onAdd {
+                Button(action: onAdd) {
+                    Image(systemName: "plus")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(CursorTheme.foregroundMuted)
+                        .frame(width: 22, height: 22)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.top, 12)
+        .padding(.bottom, 4)
+    }
+
     private func channelRow(_ channel: ChatChannel) -> some View {
         let selected = chat.selectedChannel?.id == channel.id
         let unread = chat.unreadByChannel[channel.id] ?? 0
         return Button {
             chat.selectChannel(channel)
         } label: {
-            HStack(spacing: 8) {
+            HStack(spacing: 10) {
                 Image(systemName: channel.sidebarIcon)
                     .font(.system(size: 12))
                     .foregroundStyle(selected ? CursorTheme.accent : CursorTheme.foregroundMuted)
-                    .frame(width: 16)
+                    .frame(width: 18)
                 Text(dmTitle(channel))
-                    .font(.system(size: 12, weight: unread > 0 ? .semibold : .regular))
+                    .font(.system(size: 13, weight: unread > 0 ? .semibold : .regular))
                     .foregroundStyle(selected ? CursorTheme.foreground : CursorTheme.foregroundMuted)
                     .lineLimit(1)
                 Spacer(minLength: 0)
@@ -133,10 +131,12 @@ struct ChatSidebarView: View {
                         .clipShape(Capsule())
                 }
             }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 6)
-            .background(selected ? CursorTheme.editorLineHighlight.opacity(0.65) : Color.clear)
-            .clipShape(RoundedRectangle(cornerRadius: 4))
+            .frame(height: CursorTheme.chatSidebarRowHeight)
+            .padding(.horizontal, 12)
+            .background(
+                RoundedRectangle(cornerRadius: 6)
+                    .fill(selected ? CursorTheme.accent.opacity(0.08) : Color.clear)
+            )
         }
         .buttonStyle(.plain)
         .padding(.horizontal, 8)

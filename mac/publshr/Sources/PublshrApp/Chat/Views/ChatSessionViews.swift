@@ -63,6 +63,7 @@ struct SessionConversationView: View {
         ChatMessageBubbleView(
             message: message,
             authorName: session.displayName(for: message.userId),
+            authorProfile: session.profiles[message.userId],
             isOwn: message.userId == session.currentUserId,
             showAvatar: true,
             reactions: session.reactions[message.id] ?? [],
@@ -122,6 +123,7 @@ struct SessionThreadPanel: View {
                     ChatMessageBubbleView(
                         message: msg,
                         authorName: session.displayName(for: msg.userId),
+                        authorProfile: session.profiles[msg.userId],
                         isOwn: msg.userId == session.currentUserId,
                         showAvatar: true
                     )
