@@ -24,7 +24,7 @@ struct AppUpdateBannerView: View {
                 .lineLimit(3)
             Spacer()
             Button("Retry") {
-                Task { await updates.performLiveSync() }
+                Task { await updates.installLiveUpdateNow() }
             }
             .buttonStyle(.bordered)
             .controlSize(.small)

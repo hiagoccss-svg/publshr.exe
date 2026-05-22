@@ -6,109 +6,113 @@ struct SpacesRootView: View {
 
     var body: some View {
         HStack(spacing: 0) {
-            workspaceColumn
+            VStack(spacing: 0) {
+                workspaceContent
+                if spaces.selectedSpaceId != nil {
+                    SpacesQuickAddBar(spaces: spaces)
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(CursorTheme.editorBackground)
+
             if spaces.showTaskPanel, spaces.selectedTask != nil {
-                Divider()
+                Rectangle()
+                    .fill(CursorTheme.borderSubtle.opacity(0.5))
+                    .frame(width: 1)
                 SpacesTaskDetailPanel(spaces: spaces)
-                    .frame(width: SpacesNativeDesign.inspectorWidth)
+                    .frame(width: 320)
             }
         }
-        .background(SpacesNativeDesign.workspaceBackground)
+        .background(CursorTheme.editorBackground)
         .onAppear { spaces.attach(auth: auth) }
         .onChange(of: auth.selectedMembership?.workspace.id) { _, _ in
             spaces.attach(auth: auth)
         }
-        .sheet(isPresented: $spaces.showNewSpaceSheet) {
-            SpacesNewSpaceSheet(spaces: spaces)
-        }
-        .sheet(item: $spaces.editingDocument) { doc in
-            SpacesDocumentEditorSheet(spaces: spaces, document: doc)
-        }
-    }
-
-    private var workspaceColumn: some View {
-        VStack(spacing: 0) {
-            if let error = spaces.errorMessage, !spaces.spaces.isEmpty {
-                HStack(spacing: 8) {
-                    Image(systemName: spaces.isOffline ? "wifi.slash" : "exclamationmark.triangle")
-                    Text(error)
-                        .font(.system(size: 11))
-                        .lineLimit(2)
-                    Spacer()
-                    Button("Retry") { Task { await spaces.reload() } }
-                        .controlSize(.small)
-                }
-                .padding(.horizontal, 14)
-                .padding(.vertical, 8)
-                .background(Color.orange.opacity(0.08))
-            }
-
-            workspaceBody
-            if spaces.selectedSpaceId != nil {
-                SpacesQuickAddBar(spaces: spaces)
-            }
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     @ViewBuilder
-    private var workspaceBody: some View {
+    private var workspaceContent: some View {
         if spaces.isLoading && spaces.spaces.isEmpty {
-            ProgressView("Loading spaces…")
+            ProgressView()
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else if let error = spaces.errorMessage, spaces.spaces.isEmpty {
+            emptyError(error)
         } else if spaces.spaces.isEmpty {
-            emptyState
+            emptyNoSpaces
         } else if spaces.selectedSpace == nil {
-            Text("Select a space from the sidebar")
-                .foregroundStyle(.secondary)
+            Text("Select a space")
+                .font(.system(size: 13))
+                .foregroundStyle(CursorTheme.foregroundMuted)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else {
             switch spaces.taskView {
-            case .board: SpacesBoardView(spaces: spaces)
-            case .list: SpacesListView(spaces: spaces)
-            case .overview: SpacesOverviewView(spaces: spaces)
+            case .board:
+                SpacesBoardView(spaces: spaces)
+            case .list:
+                SpacesListView(spaces: spaces)
+            case .overview:
+                SpacesOverviewView(spaces: spaces)
             }
         }
     }
 
-    private var emptyState: some View {
-        VStack(spacing: 14) {
-            Image(systemName: "square.grid.2x2.fill")
-                .font(.system(size: 36))
-                .foregroundStyle(.secondary)
-            Text("Create your first Space")
-                .font(.title3.weight(.semibold))
-            Text("Organize clients, campaigns, launches, and editorial work in one operational hub — synced live with Supabase.")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
+    private func emptyError(_ error: String) -> some View {
+        VStack(spacing: 10) {
+            Text("Could not load spaces")
+                .font(.system(size: 14, weight: .medium))
+            Text(error)
+                .font(.system(size: 12))
+                .foregroundStyle(CursorTheme.foregroundMuted)
                 .multilineTextAlignment(.center)
-                .frame(maxWidth: 380)
-            Button("New Space") { spaces.showNewSpaceSheet = true }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.large)
+            Button("Retry") { Task { await spaces.reload() } }
+                .buttonStyle(.bordered)
+        }
+        .padding(24)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private var emptyNoSpaces: some View {
+        VStack(spacing: 12) {
+            Image(systemName: "square.grid.2x2")
+                .font(.system(size: 32))
+                .foregroundStyle(CursorTheme.foregroundDim)
+            Text("No spaces yet")
+                .font(.system(size: 15, weight: .medium))
+            Text("Create a space for clients, campaigns, launches, and editorial work — like ClickUp Spaces.")
+                .font(.system(size: 12))
+                .foregroundStyle(CursorTheme.foregroundMuted)
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: 360)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 
+/// Inline quick-add for tasks (toolbar holds navigation; composer lives here).
 struct SpacesQuickAddBar: View {
     @ObservedObject var spaces: SpacesViewModel
-    @FocusState private var focused: Bool
 
     var body: some View {
         HStack(spacing: 10) {
-            TextField("New task title", text: $spaces.newTaskTitle)
-                .textFieldStyle(.roundedBorder)
-                .focused($focused)
+            Image(systemName: "plus.circle")
+                .font(.system(size: 14))
+                .foregroundStyle(CursorTheme.foregroundDim)
+            TextField("Add task…", text: $spaces.newTaskTitle)
+                .textFieldStyle(.plain)
+                .font(.system(size: 13))
                 .onSubmit { Task { await spaces.createTask() } }
-            Button("Add Task") {
+            Button {
                 Task { await spaces.createTask() }
+            } label: {
+                Text("Add task")
+                    .font(.system(size: 12, weight: .medium))
             }
-            .keyboardShortcut(.return, modifiers: .command)
+            .buttonStyle(.borderedProminent)
+            .controlSize(.small)
             .disabled(spaces.newTaskTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(CursorTheme.panelBackground)
     }
 }

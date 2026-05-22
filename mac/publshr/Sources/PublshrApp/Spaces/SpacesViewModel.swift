@@ -7,12 +7,8 @@ final class SpacesViewModel: ObservableObject {
     @Published private(set) var tasks: [SpaceTaskRecord] = []
     @Published private(set) var activity: [SpaceActivityRecord] = []
     @Published private(set) var documents: [SpaceDocumentRecord] = []
-    @Published private(set) var approvals: [SpaceApprovalRecord] = []
-    @Published private(set) var files: [SpaceFileRecord] = []
     @Published private(set) var comments: [SpaceCommentRecord] = []
     @Published var profiles: [UUID: Profile] = [:]
-    @Published private(set) var isOffline = false
-    @Published private(set) var lastSyncedAt: Date?
 
     @Published var selectedSpaceId: UUID?
     @Published var selectedTaskId: UUID?
@@ -27,10 +23,6 @@ final class SpacesViewModel: ObservableObject {
     @Published var newSpaceName = ""
     @Published var newTaskTitle = ""
     @Published var newDocumentTitle = ""
-    @Published var showNewSpaceSheet = false
-    @Published var editingDocument: SpaceDocumentRecord?
-    @Published var newSpaceType: SpaceTypeOption = .general
-    @Published var newSpaceDescription = ""
 
     enum TaskViewMode: String, CaseIterable, Identifiable {
         case overview, list, board
@@ -82,8 +74,6 @@ final class SpacesViewModel: ObservableObject {
         activity = []
         documents = []
         comments = []
-        approvals = []
-        files = []
         profiles = [:]
         selectedSpaceId = nil
         selectedTaskId = nil
@@ -104,32 +94,21 @@ final class SpacesViewModel: ObservableObject {
         do {
             let loaded = try await service.fetchSpaces(workspaceId: workspaceId)
             spaces = loaded
-            isOffline = false
-            lastSyncedAt = Date()
             let profs = try await service.fetchWorkspaceProfiles(workspaceId: workspaceId)
             profiles = Dictionary(uniqueKeysWithValues: profs.map { ($0.id, $0) })
 
             if !realtimeAttached {
-                service.subscribeWorkspace(
-                    workspaceId: workspaceId,
-                    spaceIds: { [weak self] in self?.spaces.map(\.id) ?? [] },
-                    selectedSpaceId: { [weak self] in self?.selectedSpaceId },
-                    onTaskChange: { [weak self] spaceId in
-                        Task { @MainActor in
-                            guard let self, spaceId == self.selectedSpaceId || spaceId == nil else { return }
-                            await self.refreshTasksFromRealtime()
-                        }
-                    },
-                    onSpaceChange: { [weak self] in
-                        Task { @MainActor in await self?.reloadSpacesOnly() }
-                    },
-                    onCommentChange: { [weak self] taskId in
-                        Task { @MainActor in
-                            guard let self, taskId == self.selectedTaskId else { return }
-                            await self.loadComments(for: taskId)
-                        }
+                service.subscribeWorkspace(workspaceId: workspaceId) { [weak self] in
+                    Task { @MainActor [weak self] in
+                        guard let self else { return }
+                        await self.refreshTasksFromRealtime()
                     }
-                )
+                } onSpaceChange: { [weak self] in
+                    Task { @MainActor [weak self] in
+                        guard let self else { return }
+                        await self.reloadSpacesOnly()
+                    }
+                }
                 realtimeAttached = true
             }
 
@@ -144,12 +123,7 @@ final class SpacesViewModel: ObservableObject {
                 documents = []
             }
         } catch {
-            isOffline = true
             errorMessage = friendlySpacesError(error)
-            spaces = service.cachedSpaces(workspaceId: workspaceId)
-            if let sid = selectedSpaceId {
-                tasks = service.cachedTasks(spaceId: sid)
-            }
         }
     }
 
@@ -183,40 +157,14 @@ final class SpacesViewModel: ObservableObject {
         await loadTasks(for: spaceId)
         await loadActivity(for: spaceId)
         await loadDocuments(for: spaceId)
-        await loadApprovals(for: spaceId)
-        await loadFiles(for: spaceId)
     }
 
     func loadTasks(for spaceId: UUID) async {
         guard let service else { return }
         do {
             tasks = try await service.fetchTasks(spaceId: spaceId)
-            isOffline = false
-            lastSyncedAt = Date()
         } catch {
-            isOffline = true
-            tasks = service.cachedTasks(spaceId: spaceId)
-            if tasks.isEmpty {
-                errorMessage = error.localizedDescription
-            }
-        }
-    }
-
-    func loadApprovals(for spaceId: UUID) async {
-        guard let service else { return }
-        do {
-            approvals = try await service.fetchApprovals(spaceId: spaceId)
-        } catch {
-            approvals = []
-        }
-    }
-
-    func loadFiles(for spaceId: UUID) async {
-        guard let service else { return }
-        do {
-            files = try await service.fetchFiles(spaceId: spaceId)
-        } catch {
-            files = []
+            errorMessage = error.localizedDescription
         }
     }
 
@@ -275,33 +223,10 @@ final class SpacesViewModel: ObservableObject {
         isLoading = true
         defer { isLoading = false }
         do {
-            let space = try await service.createSpace(
-                workspaceId: workspaceId,
-                ownerId: userId,
-                name: name,
-                type: newSpaceType.rawValue,
-                description: newSpaceDescription.trimmingCharacters(in: .whitespacesAndNewlines)
-            )
+            let space = try await service.createSpace(workspaceId: workspaceId, ownerId: userId, name: name)
             newSpaceName = ""
-            newSpaceDescription = ""
-            newSpaceType = .general
-            showNewSpaceSheet = false
             spaces.append(space)
-            service.store.saveSpaces(spaces, workspaceId: workspaceId)
             await selectSpace(space.id)
-        } catch {
-            errorMessage = error.localizedDescription
-        }
-    }
-
-    func saveDocument(_ document: SpaceDocumentRecord, title: String, content: String) async {
-        guard let service else { return }
-        do {
-            let updated = try await service.updateDocument(id: document.id, title: title, content: content)
-            if let idx = documents.firstIndex(where: { $0.id == document.id }) {
-                documents[idx] = updated
-            }
-            editingDocument = nil
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -550,7 +475,7 @@ final class SpacesViewModel: ObservableObject {
     private func friendlySpacesError(_ error: Error) -> String {
         let text = error.localizedDescription.lowercased()
         if text.contains("does not exist") || text.contains("42p01") || text.contains("relation") {
-            return "Spaces tables are missing in Supabase. Apply mac/publshr/supabase/migrations/001_spaces_schema.sql to your project."
+            return "Spaces tables are missing in Supabase. Apply desktop/spaces/supabase/migrations/001_spaces_schema.sql to your project."
         }
         return error.localizedDescription
     }

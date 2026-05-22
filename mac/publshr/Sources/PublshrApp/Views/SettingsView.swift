@@ -6,49 +6,104 @@ struct SettingsView: View {
     @EnvironmentObject private var chat: ChatViewModel
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 0) {
-                header("App updates")
-                updatesSection
+        VStack(spacing: 0) {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 0) {
+                    header("Account")
+                    accountSection
 
-                divider
+                    divider
 
-                header("Account")
-                accountSection
+                    header("Workspace")
+                    workspaceSection
 
-                divider
+                    divider
 
-                header("Workspace")
-                workspaceSection
+                    header("Security")
+                    securitySection
 
-                divider
+                    divider
 
-                header("Security")
-                securitySection
+                    header("Chat")
+                    chatSection
 
-                divider
+                    divider
 
-                header("Chat")
-                chatSection
+                    header("About")
+                    aboutSection
 
-                divider
+                    divider
 
-                Button(role: .destructive) {
-                    Task { await auth.signOut() }
-                } label: {
-                    Text("Sign out")
-                        .font(.system(size: 13))
+                    Button(role: .destructive) {
+                        Task { await auth.signOut() }
+                    } label: {
+                        Text("Sign out")
+                            .font(.system(size: 13))
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(CursorTheme.error)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 16)
                 }
-                .buttonStyle(.plain)
-                .foregroundStyle(CursorTheme.error)
-                .padding(.horizontal, 20)
-                .padding(.vertical, 16)
+                .frame(maxWidth: 560, alignment: .leading)
+                .padding(.vertical, 8)
             }
-            .frame(maxWidth: 560, alignment: .leading)
-            .padding(.vertical, 8)
+
+            liveUpdateFooter
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(CursorTheme.editorBackground)
+        .onAppear {
+            Task { await updates.performLiveSync() }
+        }
+    }
+
+    // MARK: - Pinned live update footer
+
+    private var liveUpdateFooter: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 8) {
+                if updates.isActivelyUpdating {
+                    ProgressView()
+                        .controlSize(.small)
+                }
+                Text(updates.statusLine)
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(CursorTheme.foreground)
+                    .lineLimit(2)
+            }
+
+            if let err = updates.errorMessage {
+                Text(err)
+                    .font(.system(size: 11))
+                    .foregroundStyle(CursorTheme.error)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Text("Installed: \(AppReleaseConfig.installedLabel) · Live checks every minute (icon, UI, features — any push to main).")
+                .font(.system(size: 10))
+                .foregroundStyle(CursorTheme.foregroundDim)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Button {
+                Task { await updates.installLiveUpdateNow() }
+            } label: {
+                Text(updates.settingsActionTitle)
+                    .font(.system(size: 13, weight: .semibold))
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.large)
+            .disabled(updateActionBusy)
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 14)
+        .background(CursorTheme.panelBackground)
+        .overlay(alignment: .top) {
+            Rectangle()
+                .fill(CursorTheme.border)
+                .frame(height: 1)
+        }
     }
 
     private func header(_ title: String) -> some View {
@@ -68,49 +123,16 @@ struct SettingsView: View {
             .padding(.horizontal, 20)
     }
 
-    private var updatesSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text(updates.statusLine)
-                .font(.system(size: 13))
-                .foregroundStyle(CursorTheme.foreground)
-
-            Text(AppShellIdentity.distributionTag)
-                .font(.system(size: 10, design: .monospaced))
-                .foregroundStyle(CursorTheme.foregroundDim)
-
-            if let err = updates.errorMessage {
-                Text(err)
-                    .font(.system(size: 11))
-                    .foregroundStyle(CursorTheme.error)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-
+    private var aboutSection: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            labeledRow("Shell", AppShellIdentity.distributionTag)
+            labeledRow("Bundle", Bundle.main.bundleURL.lastPathComponent)
             if Bundle.main.object(forInfoDictionaryKey: "PublshrShellVersion") as? String != "enterprise-4" {
-                Text("Your app is an older build (fake Explorer UI). Use Download and install to get Chat and Spaces.")
+                Text("This build is outdated. Use the button below to install the latest live release.")
                     .font(.system(size: 11))
                     .foregroundStyle(CursorTheme.foregroundMuted)
                     .fixedSize(horizontal: false, vertical: true)
             }
-
-            Text("Every push to GitHub `main` publishes to the live channel. This app checks every 3 minutes, downloads newer builds, installs, and restarts automatically — no reinstall or status-bar clicks.")
-                .font(.system(size: 11))
-                .foregroundStyle(CursorTheme.foregroundMuted)
-                .fixedSize(horizontal: false, vertical: true)
-
-            Toggle("Live channel auto-sync", isOn: $updates.autoCheckEnabled)
-                .font(.system(size: 12))
-                .onChange(of: updates.autoCheckEnabled) { _, enabled in
-                    if enabled { updates.startAutomaticChecks() }
-                }
-
-            Toggle("Install updates automatically", isOn: $updates.autoInstallEnabled)
-                .font(.system(size: 12))
-
-            Button("Sync live channel now") {
-                Task { await updates.performLiveSync() }
-            }
-            .buttonStyle(.bordered)
-            .disabled(updateActionBusy)
         }
         .padding(.horizontal, 20)
         .padding(.bottom, 8)

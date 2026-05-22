@@ -20,12 +20,12 @@ struct GitHubRelease: Decodable, Sendable {
 
 struct GitHubAsset: Decodable, Sendable {
     let name: String
-    let browserDownloadURL: String
+    let browserDownloadUrl: String
     let size: Int
 
     enum CodingKeys: String, CodingKey {
         case name
-        case browserDownloadURL = "browser_download_url"
+        case browserDownloadUrl = "browser_download_url"
         case size
     }
 }
@@ -46,6 +46,7 @@ enum AppUpdateError: LocalizedError {
     case downloadFailed(String)
     case extractFailed
     case applyScriptMissing
+    case notInstalledInApplications
 
     var errorDescription: String? {
         switch self {
@@ -55,6 +56,8 @@ enum AppUpdateError: LocalizedError {
         case .downloadFailed(let detail): return "Download failed: \(detail)"
         case .extractFailed: return "Could not extract the update package."
         case .applyScriptMissing: return "Update helper script is missing from the app bundle."
+        case .notInstalledInApplications:
+            return "Install Publshr to /Applications/Publshr.app to enable automatic updates."
         }
     }
 }
@@ -65,32 +68,24 @@ final class AppUpdateService: @unchecked Sendable {
 
     private let session: URLSession
     private let fileManager = FileManager.default
+    private let decoder = JSONDecoder()
 
     init(session: URLSession = .shared) {
         self.session = session
     }
 
     func checkForUpdate() async throws -> AvailableUpdate? {
-        guard let url = AppReleaseConfig.releasesURL() else {
-            throw AppUpdateError.invalidRepo
+        guard let live = try await fetchLiveRelease() else {
+            throw AppUpdateError.noReleases
         }
 
-        var request = URLRequest(url: url)
-        request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
-        request.setValue("Publshr/1.0", forHTTPHeaderField: "User-Agent")
-
-        let (data, response) = try await session.data(for: request)
-        guard let http = response as? HTTPURLResponse, (200 ... 299).contains(http.statusCode) else {
-            throw AppUpdateError.downloadFailed("GitHub API HTTP \((response as? HTTPURLResponse)?.statusCode ?? -1)")
+        if let update = try await parseLiveRelease(live) {
+            return update
         }
 
-        let releases = try JSONDecoder().decode([GitHubRelease].self, from: data)
+        // Fallback: newest versioned tag (e.g. v0.2.0.51) when live metadata is stale.
         let localBuild = AppReleaseConfig.buildNumber
-
-        if let live = parseLiveRelease(releases, localBuild: localBuild) {
-            return live
-        }
-
+        let releases = try await fetchRecentReleases()
         var best: AvailableUpdate?
         for release in releases where release.tagName != AppReleaseConfig.liveTag {
             guard let candidate = parseVersionedRelease(release) else { continue }
@@ -111,10 +106,14 @@ final class AppUpdateService: @unchecked Sendable {
         let updatesRoot = supportUpdatesDirectory()
         try fileManager.createDirectory(at: updatesRoot, withIntermediateDirectories: true)
 
-        let archiveURL = updatesRoot.appendingPathComponent(update.assetName)
+        try? fileManager.removeItem(at: updatesRoot.appendingPathComponent("staging-\(update.version)", isDirectory: true))
+        let archiveURL = updatesRoot.appendingPathComponent("\(update.build)-\(update.assetName)")
         try? fileManager.removeItem(at: archiveURL)
 
-        let (tempURL, response) = try await session.download(from: update.downloadURL)
+        var request = URLRequest(url: update.downloadURL)
+        request.setValue("Publshr/1.0", forHTTPHeaderField: "User-Agent")
+
+        let (tempURL, response) = try await session.download(for: request)
         guard let http = response as? HTTPURLResponse, (200 ... 299).contains(http.statusCode) else {
             throw AppUpdateError.downloadFailed("HTTP \((response as? HTTPURLResponse)?.statusCode ?? -1)")
         }
@@ -176,6 +175,13 @@ final class AppUpdateService: @unchecked Sendable {
             throw AppUpdateError.applyScriptMissing
         }
 
+        let installed = URL(fileURLWithPath: "/Applications/Publshr.app")
+        let bundlePath = Bundle.main.bundleURL.standardizedFileURL
+        if bundlePath != installed.standardizedFileURL && !bundlePath.path.hasPrefix(installed.path) {
+            // Allow dev builds but warn in logs; still attempt install to /Applications.
+            appendSyncLog("WARN: running from \(bundlePath.path); update target is /Applications/Publshr.app")
+        }
+
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/bin/bash")
         process.arguments = [script.path, treeURL.path, String(parentPID)]
@@ -189,30 +195,107 @@ final class AppUpdateService: @unchecked Sendable {
         return base.appendingPathComponent("Publshr/updates", isDirectory: true)
     }
 
-    private func parseLiveRelease(_ releases: [GitHubRelease], localBuild: Int) -> AvailableUpdate? {
-        guard let live = releases.first(where: { $0.tagName == AppReleaseConfig.liveTag }) else {
-            return nil
+    private func appendSyncLog(_ line: String) {
+        let log = supportUpdatesDirectory().appendingPathComponent("last-sync.log")
+        try? fileManager.createDirectory(at: log.deletingLastPathComponent(), withIntermediateDirectories: true)
+        let stamp = ISO8601DateFormatter().string(from: Date())
+        let msg = "[\(stamp)] \(line)\n"
+        if fileManager.fileExists(atPath: log.path),
+           let handle = try? FileHandle(forWritingTo: log) {
+            handle.seekToEndOfFile()
+            handle.write(Data(msg.utf8))
+            try? handle.close()
+        } else {
+            try? Data(msg.utf8).write(to: log)
         }
+    }
+
+    private func githubRequest(url: URL) -> URLRequest {
+        var request = URLRequest(url: url)
+        request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
+        request.setValue("Publshr/1.0", forHTTPHeaderField: "User-Agent")
+        request.cachePolicy = .reloadIgnoringLocalCacheData
+        return request
+    }
+
+    private func fetchLiveRelease() async throws -> GitHubRelease? {
+        guard let url = AppReleaseConfig.liveReleaseURL() else {
+            throw AppUpdateError.invalidRepo
+        }
+        let (data, response) = try await session.data(for: githubRequest(url: url))
+        guard let http = response as? HTTPURLResponse else {
+            throw AppUpdateError.downloadFailed("No HTTP response")
+        }
+        if http.statusCode == 404 { return nil }
+        guard (200 ... 299).contains(http.statusCode) else {
+            throw AppUpdateError.downloadFailed("GitHub live release HTTP \(http.statusCode)")
+        }
+        return try decoder.decode(GitHubRelease.self, from: data)
+    }
+
+    private func fetchRecentReleases() async throws -> [GitHubRelease] {
+        guard let url = AppReleaseConfig.releasesURL() else {
+            throw AppUpdateError.invalidRepo
+        }
+        let (data, response) = try await session.data(for: githubRequest(url: url))
+        guard let http = response as? HTTPURLResponse, (200 ... 299).contains(http.statusCode) else {
+            throw AppUpdateError.downloadFailed("GitHub releases HTTP \((response as? HTTPURLResponse)?.statusCode ?? -1)")
+        }
+        return try decoder.decode([GitHubRelease].self, from: data)
+    }
+
+    private func parseLiveRelease(_ live: GitHubRelease) async throws -> AvailableUpdate? {
         let assetName = AppReleaseConfig.liveAssetName()
         guard let asset = live.assets.first(where: { $0.name == assetName }),
               asset.size >= AppReleaseConfig.minAppAssetBytes,
-              let downloadURL = URL(string: asset.browserDownloadURL),
+              let downloadURL = URL(string: asset.browserDownloadUrl),
               let pageURL = URL(string: live.htmlURL) else {
+            throw AppUpdateError.noCompatibleAsset
+        }
+
+        let manifest = await fetchLiveManifest(in: live.assets)
+            ?? manifestFromReleaseNotes(live)
+
+        guard let manifest else {
+            appendSyncLog("live check: could not parse VERSION.txt or release notes")
             return nil
         }
-        let build = parseBuildNumber(from: live)
-            ?? parseBuildNumberFromVersionAsset(in: live.assets)
-            ?? 0
-        guard build > localBuild else { return nil }
-        let version = parseVersionLabel(from: live) ?? "live.\(build)"
+
+        appendSyncLog(
+            "live check: local=\(AppReleaseConfig.installedLabel) "
+                + "remote=\(manifest.fullVersion) build=\(manifest.build) "
+                + "commit=\(manifest.commit.prefix(7)) asset=\(asset.size)"
+        )
+
+        guard manifest.isNewerThanInstalled() else { return nil }
+
         return AvailableUpdate(
-            version: version,
-            build: build,
+            version: manifest.fullVersion,
+            build: manifest.build,
             tag: AppReleaseConfig.liveTag,
             downloadURL: downloadURL,
             releasePage: pageURL,
             assetName: assetName
         )
+    }
+
+    private func manifestFromReleaseNotes(_ live: GitHubRelease) -> LiveChannelManifest? {
+        guard let build = parseBuildNumber(from: live) else { return nil }
+        let version = parseVersionLabel(from: live) ?? "\(AppReleaseConfig.shortVersion).\(build)"
+        let commit = parseCommitSha(from: live) ?? ""
+        return LiveChannelManifest(fullVersion: version, build: build, commit: commit, packageDigest: nil)
+    }
+
+    private func parseCommitSha(from release: GitHubRelease) -> String? {
+        let text = release.body ?? ""
+        for line in text.split(separator: "\n") {
+            let s = String(line)
+            guard s.contains("commit:") else { continue }
+            let value = s.split(separator: ":", maxSplits: 1).last?
+                .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            if !value.isEmpty { return value }
+        }
+        return nil
     }
 
     private func parseBuildNumber(from release: GitHubRelease) -> Int? {
@@ -227,19 +310,26 @@ final class AppUpdateService: @unchecked Sendable {
         return nil
     }
 
-    /// Reads `VERSION.txt` from the live release (line 2 = CI build number).
-    private func parseBuildNumberFromVersionAsset(in assets: [GitHubAsset]) -> Int? {
+    /// Reads `VERSION.txt` from the live release (version, build, commit, package digest).
+    private func fetchLiveManifest(in assets: [GitHubAsset]) async -> LiveChannelManifest? {
         guard let asset = assets.first(where: { $0.name == "VERSION.txt" }),
-              let url = URL(string: asset.browserDownloadURL) else {
+              let url = URL(string: asset.browserDownloadUrl) else {
             return nil
         }
-        guard let data = try? Data(contentsOf: url),
-              let text = String(data: data, encoding: .utf8) else {
+        do {
+            let (data, response) = try await session.data(for: githubRequest(url: url))
+            guard let http = response as? HTTPURLResponse, (200 ... 299).contains(http.statusCode) else {
+                return nil
+            }
+            guard let text = String(data: data, encoding: .utf8),
+                  let manifest = LiveChannelManifest.parse(text) else {
+                return nil
+            }
+            return manifest
+        } catch {
+            appendSyncLog("VERSION.txt fetch failed: \(error.localizedDescription)")
             return nil
         }
-        let lines = text.split(separator: "\n", omittingEmptySubsequences: false)
-        guard lines.count >= 2 else { return nil }
-        return Int(lines[1].trimmingCharacters(in: .whitespacesAndNewlines))
     }
 
     private func parseVersionLabel(from release: GitHubRelease) -> String? {
@@ -248,7 +338,8 @@ final class AppUpdateService: @unchecked Sendable {
             let value = line.split(separator: ":").last.map { $0.trimmingCharacters(in: .whitespaces) }
             if let value, !value.isEmpty { return value }
         }
-        return release.name?.replacingOccurrences(of: "Publshr live (", with: "")
+        return release.name?
+            .replacingOccurrences(of: "Publshr live (", with: "")
             .replacingOccurrences(of: ")", with: "")
             .trimmingCharacters(in: .whitespaces)
     }
@@ -263,7 +354,7 @@ final class AppUpdateService: @unchecked Sendable {
         let assetName = AppReleaseConfig.platformAssetName(version: version)
         guard let asset = release.assets.first(where: { $0.name == assetName }),
               asset.size >= AppReleaseConfig.minAppAssetBytes,
-              let downloadURL = URL(string: asset.browserDownloadURL),
+              let downloadURL = URL(string: asset.browserDownloadUrl),
               let pageURL = URL(string: release.htmlURL) else {
             return nil
         }

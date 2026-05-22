@@ -163,55 +163,6 @@ struct SpaceCommentRecord: Codable, Identifiable, Equatable {
     }
 }
 
-enum SpaceTypeOption: String, CaseIterable, Identifiable {
-    case general, client, campaign, launch, editorial, department, initiative, event, retainer, publication, operation
-
-    var id: String { rawValue }
-
-    var label: String {
-        rawValue.replacingOccurrences(of: "_", with: " ").capitalized
-    }
-}
-
-struct SpaceApprovalRecord: Codable, Identifiable, Equatable {
-    let id: UUID
-    let spaceId: UUID
-    let taskId: UUID?
-    let title: String
-    let status: String
-    let updatedAt: Date
-
-    enum CodingKeys: String, CodingKey {
-        case id
-        case spaceId = "space_id"
-        case taskId = "task_id"
-        case title, status
-        case updatedAt = "updated_at"
-    }
-
-    var statusLabel: String {
-        status.replacingOccurrences(of: "_", with: " ").capitalized
-    }
-}
-
-struct SpaceFileRecord: Codable, Identifiable, Equatable {
-    let id: UUID
-    let spaceId: UUID
-    let fileName: String
-    let fileUrl: String
-    let mimeType: String
-    let updatedAt: Date
-
-    enum CodingKeys: String, CodingKey {
-        case id
-        case spaceId = "space_id"
-        case fileName = "file_name"
-        case fileUrl = "file_url"
-        case mimeType = "mime_type"
-        case updatedAt = "updated_at"
-    }
-}
-
 struct SpaceDocumentRecord: Codable, Identifiable, Equatable {
     let id: UUID
     let spaceId: UUID

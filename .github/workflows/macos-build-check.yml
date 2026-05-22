@@ -1,0 +1,26 @@
+# Compile-check mac/publshr before live publish — any repo change can affect the shipped app.
+name: macOS compile check
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  compile-publshr-app:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Sync app icon from repo root
+        run: bash mac/publshr/scripts/sync-app-icon.sh
+
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode.app
+
+      - name: Build PublshrApp (release)
+        working-directory: mac/publshr
+        env:
+          PUBLSHR_BUILD_NUMBER: "0"
+          PUBLSHR_COMMIT_SHA: ${{ github.sha }}
+        run: swift build -c release --product PublshrApp

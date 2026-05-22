@@ -54,8 +54,8 @@ struct PublshrApp: App {
         .commands {
             CommandGroup(replacing: .newItem) {}
             CommandGroup(after: .appInfo) {
-                Button("Check Live Channel Now") {
-                    Task { await updates.performLiveSync() }
+                Button("Download and Install Latest") {
+                    Task { await updates.installLiveUpdateNow() }
                 }
             }
             CommandMenu("Spaces") {

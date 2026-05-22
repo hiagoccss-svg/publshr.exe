@@ -9,12 +9,8 @@ DIST="$SCRIPT_DIR/../dist"
 STAGE="$DIST/installer-macos-stage"
 ZIP="$DIST/Publshr-Install-macos.zip"
 INSTALL_SH_SRC="$REPO_ROOT/install-macos.sh"
+bash "${SCRIPT_DIR}/sync-app-icon.sh"
 ICON_SRC="${SCRIPT_DIR}/../app/icon.png"
-
-# Keep repo-root icon.png in sync when present (user uploads to project root).
-if [[ -f "$REPO_ROOT/icon.png" && ! -f "$ICON_SRC" ]] || [[ -f "$REPO_ROOT/icon.png" && "$REPO_ROOT/icon.png" -nt "$ICON_SRC" ]]; then
-    cp "$REPO_ROOT/icon.png" "$ICON_SRC"
-fi
 
 if [[ ! -f "$INSTALL_SH_SRC" ]]; then
     echo "ERROR: install-macos.sh not found at $INSTALL_SH_SRC" >&2

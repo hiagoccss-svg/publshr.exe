@@ -142,7 +142,7 @@ struct ChatConversationView: View {
                 .foregroundStyle(CursorTheme.foregroundDim)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 4)
-                .background(CursorTheme.panelBackground)
+                .background(CursorTheme.editorLineHighlight.opacity(0.5))
                 .clipShape(Capsule())
             Spacer()
         }

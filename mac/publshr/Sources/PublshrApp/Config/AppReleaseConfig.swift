@@ -19,14 +19,33 @@ enum AppReleaseConfig {
         return Int(raw) ?? 0
     }
 
+    /// Full live label baked at build time (e.g. 0.2.0.57).
+    static var liveFullVersion: String {
+        let embedded = Bundle.main.object(forInfoDictionaryKey: "PublshrLiveVersion") as? String
+        if let embedded, !embedded.isEmpty { return embedded }
+        return "\(shortVersion).\(buildNumber)"
+    }
+
+    /// Git commit embedded at CI build time.
+    static var liveCommit: String {
+        Bundle.main.object(forInfoDictionaryKey: "PublshrLiveCommit") as? String ?? ""
+    }
+
     static var installedLabel: String {
-        "\(shortVersion) (\(buildNumber))"
+        "\(liveFullVersion) · build \(buildNumber)"
     }
 
     static func releasesURL() -> URL? {
         let parts = githubRepo.split(separator: "/", omittingEmptySubsequences: true)
         guard parts.count == 2 else { return nil }
         return URL(string: "https://api.github.com/repos/\(parts[0])/\(parts[1])/releases?per_page=30")
+    }
+
+    /// Single-release endpoint — reliable for the `live` channel (not paginated).
+    static func liveReleaseURL() -> URL? {
+        let parts = githubRepo.split(separator: "/", omittingEmptySubsequences: true)
+        guard parts.count == 2 else { return nil }
+        return URL(string: "https://api.github.com/repos/\(parts[0])/\(parts[1])/releases/tags/live")
     }
 
     static func liveAssetName() -> String {

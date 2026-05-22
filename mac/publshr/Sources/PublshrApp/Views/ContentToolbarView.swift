@@ -204,7 +204,7 @@ struct ContentToolbarView: View {
 
     private var spacesActions: some View {
         HStack(spacing: 6) {
-            SpacesViewModePicker(selection: $spaces.taskView)
+            viewModePicker
 
             if spaces.selectedSpace != nil {
                 toolbarIcon(
@@ -252,6 +252,27 @@ struct ContentToolbarView: View {
             }
             .buttonStyle(.plain)
             .help("Refresh")
+        }
+    }
+
+    private var viewModePicker: some View {
+        HStack(spacing: 2) {
+            ForEach(SpacesViewModel.TaskViewMode.allCases) { mode in
+                Button {
+                    spaces.taskView = mode
+                } label: {
+                    Image(systemName: mode.icon)
+                        .font(.system(size: 12))
+                        .foregroundStyle(spaces.taskView == mode ? CursorTheme.accent : CursorTheme.foregroundMuted)
+                        .frame(width: 28, height: 28)
+                        .background(
+                            RoundedRectangle(cornerRadius: 6)
+                                .fill(spaces.taskView == mode ? CursorTheme.accent.opacity(0.1) : CursorTheme.panelBackground)
+                        )
+                }
+                .buttonStyle(.plain)
+                .help(mode.label)
+            }
         }
     }
 

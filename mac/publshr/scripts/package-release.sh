@@ -47,6 +47,9 @@ esac
 echo "Building publshr $VERSION ($os-$arch) ..." >&2
 
 if [[ "$os" == "macos" ]]; then
+    bash "$SCRIPT_DIR/scripts/sync-app-icon.sh"
+    export PUBLSHR_LIVE_VERSION="${VERSION}"
+    export PUBLSHR_COMMIT_SHA="${PUBLSHR_COMMIT_SHA:-${GITHUB_SHA:-local}}"
     # Build each product separately — combined --product flags may only link the last one on some SwiftPM versions.
     swift build -c release --product PublshrApp
     swift build -c release --product PublshrInstaller

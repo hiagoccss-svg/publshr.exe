@@ -11,139 +11,248 @@ struct SpacesTaskDetailPanel: View {
     @State private var suppressFieldSync = false
 
     var body: some View {
-        VStack(spacing: 0) {
-            inspectorHeader
+        VStack(alignment: .leading, spacing: 0) {
+            panelHeader
+
             if let task = spaces.selectedTask {
-                Form {
-                    Section("Task") {
-                        TextField("Title", text: $editTitle)
-                            .onSubmit { Task { await spaces.updateTaskTitle(task.id, title: editTitle) } }
-                        TextEditor(text: $editDescription)
-                            .frame(minHeight: 80)
-                            .onChange(of: editDescription) { _, new in
-                                guard !suppressFieldSync else { return }
-                                Task { await spaces.updateTaskDescription(task.id, description: new) }
-                            }
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 16) {
+                        titleSection(task)
+                        descriptionSection(task)
+                        statusSection(task)
+                        prioritySection(task)
+                        assigneeSection(task)
+                        dueDateSection(task)
+                        tagsSection(task)
+                        checklistSection(task)
+                        commentsSection
                     }
-                    Section("Workflow") {
-                        Picker("Status", selection: statusBinding(task)) {
-                            ForEach(SpaceTaskStatus.boardColumns + [.blocked], id: \.self) { s in
-                                Text(s.label).tag(s)
-                            }
-                        }
-                        Picker("Priority", selection: priorityBinding(task)) {
-                            ForEach(SpaceTaskPriority.allCases) { p in
-                                Text(p.label).tag(p)
-                            }
-                        }
-                        assigneeRow(task)
-                        Toggle("Due date", isOn: $dueDateEnabled)
-                            .onChange(of: dueDateEnabled) { _, on in
-                                Task {
-                                    await spaces.updateTaskDueDate(task.id, dueDate: on ? Self.isoDate(dueDate) : nil)
-                                }
-                            }
-                        if dueDateEnabled {
-                            DatePicker("Due", selection: $dueDate, displayedComponents: .date)
-                                .onChange(of: dueDate) { _, d in
-                                    Task { await spaces.updateTaskDueDate(task.id, dueDate: Self.isoDate(d)) }
-                                }
-                        }
-                    }
-                    Section("Tags") {
-                        TextField("comma, separated", text: $editTags)
-                            .onSubmit { saveTags(task) }
-                    }
-                    Section("Checklist") {
-                        ForEach(task.checklist) { item in
-                            Toggle(item.title, isOn: checklistBinding(task, item: item))
-                        }
-                        HStack {
-                            TextField("New item", text: $newChecklistItem)
-                            Button("Add") { addChecklistItem(task) }
-                                .disabled(newChecklistItem.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                        }
-                    }
-                    Section("Comments") {
-                        ForEach(spaces.comments) { comment in
-                            HStack(alignment: .top, spacing: 8) {
-                                ChatProfileAvatar(
-                                    profile: spaces.profile(for: comment.userId),
-                                    displayName: spaces.displayName(for: comment.userId),
-                                    size: 24
-                                )
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(spaces.displayName(for: comment.userId))
-                                        .font(.caption.weight(.semibold))
-                                    Text(comment.body)
-                                        .font(.system(size: 12))
-                                }
-                            }
-                        }
-                        HStack {
-                            TextField("Comment…", text: $spaces.newCommentText, axis: .vertical)
-                                .lineLimit(1...3)
-                            Button {
-                                Task { await spaces.postComment() }
-                            } label: {
-                                Image(systemName: "arrow.up.circle.fill")
-                            }
-                            .buttonStyle(.plain)
-                        }
-                    }
+                    .padding(14)
                 }
-                .formStyle(.grouped)
-                .scrollContentBackground(.hidden)
                 .onAppear { syncFromTask(task) }
                 .onChange(of: spaces.selectedTaskId) { _, _ in
                     if let t = spaces.selectedTask { syncFromTask(t) }
                 }
             }
         }
-        .background(Color(nsColor: .underPageBackgroundColor))
+        .background(CursorTheme.panelBackground)
     }
 
-    private var inspectorHeader: some View {
+    private var panelHeader: some View {
         HStack {
-            Text("Inspector")
-                .font(.headline)
+            Text("Task details")
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(CursorTheme.foregroundDim)
             Spacer()
-            Button("Archive", role: .destructive) {
+            Button {
                 Task { await spaces.archiveSelectedTask() }
+            } label: {
+                Image(systemName: "archivebox")
+                    .font(.system(size: 11))
             }
-            .controlSize(.small)
+            .buttonStyle(.plain)
+            .help("Archive task")
             Button {
                 Task { await spaces.selectTask(nil) }
             } label: {
-                Image(systemName: "sidebar.right")
+                Image(systemName: "xmark")
+                    .font(.system(size: 11))
             }
-            .help("Close inspector")
+            .buttonStyle(.plain)
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
     }
 
-    private func assigneeRow(_ task: SpaceTaskRecord) -> some View {
-        Menu {
-            Button("Unassigned") { Task { await spaces.updateTaskAssignee(task.id, assigneeId: nil) } }
-            ForEach(Array(spaces.profiles.values).sorted(by: { ($0.displayName ?? $0.email) < ($1.displayName ?? $1.email) })) { profile in
-                Button(profile.displayName ?? profile.email) {
-                    Task { await spaces.updateTaskAssignee(task.id, assigneeId: profile.id) }
+    private func titleSection(_ task: SpaceTaskRecord) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            fieldLabel("Title")
+            TextField("Task title", text: $editTitle)
+                .textFieldStyle(.plain)
+                .font(.system(size: 14, weight: .semibold))
+                .padding(8)
+                .background(CursorTheme.inputBackground)
+                .clipShape(RoundedRectangle(cornerRadius: 6))
+                .onSubmit { Task { await spaces.updateTaskTitle(task.id, title: editTitle) } }
+        }
+    }
+
+    private func descriptionSection(_ task: SpaceTaskRecord) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            fieldLabel("Description")
+            TextEditor(text: $editDescription)
+                .font(.system(size: 12))
+                .frame(minHeight: 72)
+                .padding(6)
+                .background(CursorTheme.inputBackground)
+                .clipShape(RoundedRectangle(cornerRadius: 6))
+                .onChange(of: editDescription) { _, new in
+                    guard !suppressFieldSync, new != task.description else { return }
+                    Task { await spaces.updateTaskDescription(task.id, description: new) }
+                }
+        }
+    }
+
+    private func statusSection(_ task: SpaceTaskRecord) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            fieldLabel("Status")
+            Picker("Status", selection: statusBinding(task)) {
+                ForEach(SpaceTaskStatus.boardColumns + [.blocked], id: \.self) { s in
+                    Text(s.label).tag(s)
                 }
             }
-        } label: {
-            HStack {
-                Text("Assignee")
-                Spacer()
-                if let id = task.assigneeId {
-                    Text(spaces.displayName(for: id))
-                        .foregroundStyle(.secondary)
-                } else {
-                    Text("None")
-                        .foregroundStyle(.secondary)
+            .labelsHidden()
+        }
+    }
+
+    private func prioritySection(_ task: SpaceTaskRecord) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            fieldLabel("Priority")
+            Picker("Priority", selection: priorityBinding(task)) {
+                ForEach(SpaceTaskPriority.allCases) { p in
+                    Text(p.label).tag(p)
                 }
+            }
+            .labelsHidden()
+        }
+    }
+
+    private func assigneeSection(_ task: SpaceTaskRecord) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            fieldLabel("Assignee")
+            Menu {
+                Button("Unassigned") {
+                    Task { await spaces.updateTaskAssignee(task.id, assigneeId: nil) }
+                }
+                ForEach(Array(spaces.profiles.values).sorted(by: { ($0.displayName ?? $0.email) < ($1.displayName ?? $1.email) })) { profile in
+                    Button {
+                        Task { await spaces.updateTaskAssignee(task.id, assigneeId: profile.id) }
+                    } label: {
+                        Text(profile.displayName ?? profile.email)
+                    }
+                }
+            } label: {
+                HStack(spacing: 8) {
+                    if let assigneeId = task.assigneeId {
+                        ChatProfileAvatar(
+                            profile: spaces.profile(for: assigneeId),
+                            displayName: spaces.displayName(for: assigneeId),
+                            size: 24
+                        )
+                        Text(spaces.displayName(for: assigneeId))
+                    } else {
+                        Text("Unassigned")
+                    }
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 9))
+                }
+                .font(.system(size: 12))
             }
         }
+    }
+
+    private func dueDateSection(_ task: SpaceTaskRecord) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Toggle("Due date", isOn: $dueDateEnabled)
+                .font(.system(size: 12))
+                .onChange(of: dueDateEnabled) { _, enabled in
+                    Task {
+                        if enabled {
+                            await spaces.updateTaskDueDate(task.id, dueDate: Self.isoDate(dueDate))
+                        } else {
+                            await spaces.updateTaskDueDate(task.id, dueDate: nil)
+                        }
+                    }
+                }
+            if dueDateEnabled {
+                DatePicker("", selection: $dueDate, displayedComponents: .date)
+                    .labelsHidden()
+                    .onChange(of: dueDate) { _, new in
+                        Task { await spaces.updateTaskDueDate(task.id, dueDate: Self.isoDate(new)) }
+                    }
+            }
+        }
+    }
+
+    private func tagsSection(_ task: SpaceTaskRecord) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            fieldLabel("Tags")
+            TextField("comma, separated", text: $editTags)
+                .textFieldStyle(.plain)
+                .font(.system(size: 12))
+                .padding(8)
+                .background(CursorTheme.inputBackground)
+                .clipShape(RoundedRectangle(cornerRadius: 6))
+                .onSubmit { saveTags(task) }
+                .onChange(of: editTags) { _, _ in saveTags(task) }
+        }
+    }
+
+    private func checklistSection(_ task: SpaceTaskRecord) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            fieldLabel("Checklist")
+            ForEach(task.checklist) { item in
+                Toggle(isOn: checklistBinding(task, item: item)) {
+                    Text(item.title)
+                        .font(.system(size: 12))
+                }
+            }
+            HStack {
+                TextField("Add item", text: $newChecklistItem)
+                    .textFieldStyle(.plain)
+                    .font(.system(size: 12))
+                Button("Add") {
+                    addChecklistItem(task)
+                }
+                .controlSize(.small)
+                .disabled(newChecklistItem.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            }
+        }
+    }
+
+    private var commentsSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            fieldLabel("Comments")
+            ForEach(spaces.comments) { comment in
+                HStack(alignment: .top, spacing: 8) {
+                    ChatProfileAvatar(
+                        profile: spaces.profile(for: comment.userId),
+                        displayName: spaces.displayName(for: comment.userId),
+                        size: 24
+                    )
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(spaces.displayName(for: comment.userId))
+                            .font(.system(size: 11, weight: .semibold))
+                        Text(comment.body)
+                            .font(.system(size: 12))
+                            .foregroundStyle(CursorTheme.foreground)
+                        Text(comment.createdAt, style: .relative)
+                            .font(.system(size: 10))
+                            .foregroundStyle(CursorTheme.foregroundDim)
+                    }
+                }
+            }
+            HStack(alignment: .bottom) {
+                TextField("Write a comment…", text: $spaces.newCommentText, axis: .vertical)
+                    .textFieldStyle(.plain)
+                    .font(.system(size: 12))
+                    .lineLimit(1...4)
+                Button {
+                    Task { await spaces.postComment() }
+                } label: {
+                    Image(systemName: "arrow.up.circle.fill")
+                        .font(.system(size: 22))
+                        .foregroundStyle(CursorTheme.accent)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+
+    private func fieldLabel(_ text: String) -> some View {
+        Text(text.uppercased())
+            .font(.system(size: 10, weight: .semibold))
+            .foregroundStyle(CursorTheme.foregroundDim)
     }
 
     private func syncFromTask(_ task: SpaceTaskRecord) {
@@ -157,12 +266,19 @@ struct SpacesTaskDetailPanel: View {
         } else {
             dueDateEnabled = false
         }
-        Task { @MainActor in suppressFieldSync = false }
+        Task { @MainActor in
+            suppressFieldSync = false
+        }
     }
 
     private func saveTags(_ task: SpaceTaskRecord) {
-        let tags = editTags.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
-        if tags != task.tags { Task { await spaces.updateTaskTags(task.id, tags: tags) } }
+        let tags = editTags
+            .split(separator: ",")
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.isEmpty }
+        if tags != task.tags {
+            Task { await spaces.updateTaskTags(task.id, tags: tags) }
+        }
     }
 
     private func addChecklistItem(_ task: SpaceTaskRecord) {
