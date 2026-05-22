@@ -570,8 +570,14 @@ final class SpacesViewModel: ObservableObject {
 
     private func friendlySpacesError(_ error: Error) -> String {
         let text = error.localizedDescription.lowercased()
+        if text.contains("is_pinned") || text.contains("pgrst") && text.contains("400") {
+            return "Spaces database needs an upgrade. Your admin must apply migration 20260522100000_spaces_legacy_schema_upgrade.sql in Supabase."
+        }
         if text.contains("does not exist") || text.contains("42p01") || text.contains("relation") {
             return "Spaces tables are missing in Supabase. Apply supabase/migrations/20260522010000_spaces_clickup_enterprise.sql to your project."
+        }
+        if text.contains("row-level security") || text.contains("permission denied") || text.contains("access denied") {
+            return "You do not have access to Spaces in this workspace. Ask an admin to add you as a member."
         }
         return error.localizedDescription
     }

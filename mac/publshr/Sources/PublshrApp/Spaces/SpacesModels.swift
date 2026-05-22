@@ -122,6 +122,32 @@ struct SpaceRecord: Codable, Identifiable, Equatable {
         case isPinned = "is_pinned"
         case isArchived = "is_archived"
     }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(UUID.self, forKey: .id)
+        workspaceId = try c.decode(UUID.self, forKey: .workspaceId)
+        name = try c.decode(String.self, forKey: .name)
+        description = try c.decodeIfPresent(String.self, forKey: .description) ?? ""
+        type = try c.decodeIfPresent(String.self, forKey: .type) ?? "general"
+        status = try c.decodeIfPresent(String.self, forKey: .status) ?? "active"
+        color = try c.decodeIfPresent(String.self, forKey: .color) ?? "#3d5a80"
+        isPinned = try c.decodeIfPresent(Bool.self, forKey: .isPinned) ?? false
+        isArchived = try c.decodeIfPresent(Bool.self, forKey: .isArchived) ?? false
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+        try c.encode(workspaceId, forKey: .workspaceId)
+        try c.encode(name, forKey: .name)
+        try c.encode(description, forKey: .description)
+        try c.encode(type, forKey: .type)
+        try c.encode(status, forKey: .status)
+        try c.encode(color, forKey: .color)
+        try c.encode(isPinned, forKey: .isPinned)
+        try c.encode(isArchived, forKey: .isArchived)
+    }
 }
 
 struct SpaceTaskRecord: Codable, Identifiable, Equatable {
