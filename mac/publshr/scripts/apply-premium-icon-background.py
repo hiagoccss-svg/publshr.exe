@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Bake a premium dark metallic background into icon.png (mark-only or full icon)."""
+"""Bake a white background into icon.png so black transparent logos stay visible on macOS."""
 
 from __future__ import annotations
 
@@ -16,46 +16,9 @@ def _lerp(a: float, b: float, t: np.ndarray) -> np.ndarray:
 
 
 def premium_background(size: int) -> Image.Image:
-    """Obsidian base with soft spotlight and subtle warm rim."""
-    n = size
-    y, x = np.mgrid[0:n, 0:n].astype(np.float32)
-    nx = x / (n - 1)
-    ny = y / (n - 1)
-
-    # Vertical depth: lighter top, deep bottom
-    vertical = ny
-    base_r = _lerp(42.0, 14.0, vertical)
-    base_g = _lerp(44.0, 15.0, vertical)
-    base_b = _lerp(50.0, 18.0, vertical)
-
-    # Radial spotlight (upper-center)
-    cx, cy = 0.5, 0.34
-    dist = np.sqrt((nx - cx) ** 2 + (ny - cy) ** 2)
-    spot = np.clip(1.0 - dist / 0.72, 0.0, 1.0) ** 1.8
-    base_r += spot * 38.0
-    base_g += spot * 40.0
-    base_b += spot * 46.0
-
-    # Warm bronze vignette at corners
-    corner = np.maximum(np.abs(nx - 0.5), np.abs(ny - 0.5)) * 2.0
-    vignette = np.clip((corner - 0.55) / 0.45, 0.0, 1.0) ** 1.2
-    base_r += vignette * 18.0
-    base_g += vignette * 10.0
-    base_b += vignette * 4.0
-
-    # Subtle horizontal sheen (brushed metal)
-    sheen = np.exp(-((ny - 0.22) ** 2) / 0.018) * 0.35
-    base_r += sheen * 22.0
-    base_g += sheen * 24.0
-    base_b += sheen * 28.0
-
-    # Fine grain
-    rng = np.random.default_rng(42)
-    grain = (rng.random((n, n), dtype=np.float32) - 0.5) * 6.0
-
-    rgb = np.stack([base_r, base_g, base_b], axis=-1) + grain[..., None]
-    rgb = np.clip(rgb, 0, 255).astype(np.uint8)
-    alpha = np.full((n, n), 255, dtype=np.uint8)
+    """Solid white — black mark-only logos must read in Dock and Finder."""
+    rgb = np.full((size, size, 3), 255, dtype=np.uint8)
+    alpha = np.full((size, size), 255, dtype=np.uint8)
     return Image.fromarray(np.dstack([rgb, alpha]), mode="RGBA")
 
 

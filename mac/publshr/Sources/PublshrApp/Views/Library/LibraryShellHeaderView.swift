@@ -27,7 +27,8 @@ struct LibraryShellHeaderView: View {
     var body: some View {
         rowContent
             .frame(height: rowHeight, alignment: .center)
-            .frame(maxWidth: .infinity)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.top, AppWindowChromeMetrics.trafficLightVerticalAlignPadding)
             .background { headerBackground }
     }
 
@@ -47,13 +48,14 @@ struct LibraryShellHeaderView: View {
     private var rowContent: some View {
         switch kind {
         case .trafficLeading(let module):
-            HStack(alignment: .center, spacing: 10) {
+            HStack(alignment: .center, spacing: CursorMacShellDesign.titlebarActionSpacing) {
                 Color.clear
                     .frame(width: AppWindowChromeMetrics.trafficLightLeadingInset)
                 ShellTrafficLeadingActions(module: module)
                 Spacer(minLength: 0)
             }
             .padding(.trailing, 8)
+            .frame(maxHeight: .infinity, alignment: .center)
 
         case .secondaryChrome:
             Color.clear
@@ -61,7 +63,7 @@ struct LibraryShellHeaderView: View {
 
         case .chatSubmenu:
             ChatSidebarTitlebarChrome(chat: chat)
-                .frame(maxWidth: .infinity)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
 
         case .editorTrailing(let module, let showCommandPalette, let showNotificationsPanel):
             HStack(alignment: .center, spacing: 0) {
@@ -74,6 +76,7 @@ struct LibraryShellHeaderView: View {
                 )
             }
             .padding(.trailing, 14)
+            .frame(maxHeight: .infinity, alignment: .center)
         }
     }
 }

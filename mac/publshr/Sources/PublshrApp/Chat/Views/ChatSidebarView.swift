@@ -10,9 +10,6 @@ struct ChatSidebarView: View {
     var body: some View {
         LibraryUniversalSubmenuContainer(width: LibraryUniversalSubmenu.width) {
             VStack(spacing: 0) {
-                filterBar
-                submenuSoftRule
-
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 0) {
                         if chat.sidebarLayout == .recents {
@@ -49,44 +46,6 @@ struct ChatSidebarView: View {
         if hasData, filteredEmpty, chat.sidebarFilter != .all {
             chat.setSidebarFilter(.all)
         }
-    }
-
-    // MARK: - Filters (ClickUp: tap again to clear; flat on chrome)
-
-    private var filterBar: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 14) {
-                ForEach(ChatSidebarFilter.allCases) { filter in
-                    filterPill(filter)
-                }
-            }
-            .padding(.horizontal, 12)
-        }
-        .frame(height: ChatClickUpDesign.filterBarHeight)
-    }
-
-    private func filterPill(_ filter: ChatSidebarFilter) -> some View {
-        let selected = chat.sidebarFilter == filter
-        return Button {
-            if selected, filter != .all {
-                chat.setSidebarFilter(.all)
-            } else {
-                chat.setSidebarFilter(filter)
-            }
-        } label: {
-            Text(filter.label)
-                .font(.system(size: 11, weight: selected ? .semibold : .medium))
-                .foregroundStyle(selected ? LibraryGlassDesign.ink : LibraryGlassDesign.inkMuted)
-                .overlay(alignment: .bottom) {
-                    if selected {
-                        Rectangle()
-                            .fill(LibraryGlassDesign.ink.opacity(0.35))
-                            .frame(height: 1)
-                            .offset(y: 5)
-                    }
-                }
-        }
-        .buttonStyle(.plain)
     }
 
     // MARK: - Content

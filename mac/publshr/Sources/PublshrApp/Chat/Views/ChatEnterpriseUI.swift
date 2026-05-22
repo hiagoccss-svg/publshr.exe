@@ -55,14 +55,10 @@ struct ChatChannelStatusBar: View {
                     Button {
                         chat.showChannelSettings = true
                     } label: {
-                        VStack(alignment: .leading, spacing: 1) {
-                            Text(channel.displayTitle)
-                                .font(.system(size: 13, weight: .semibold))
-                                .foregroundStyle(CursorTheme.foreground)
-                            Text(memberLine(channel))
-                                .font(.system(size: 11))
-                                .foregroundStyle(CursorTheme.foregroundDim)
-                        }
+                        Text("\(channel.displayTitle) · \(memberLine(channel))")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(CursorTheme.foreground)
+                            .lineLimit(1)
                     }
                     .buttonStyle(.plain)
                     .help("Channel settings & members")

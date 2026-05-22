@@ -9,7 +9,7 @@ enum AppWindowChromeMetrics {
     /// Height of the system titlebar row where traffic lights are drawn (fixed — do not use safe-area height for layout).
     static let trafficLightRowHeight: CGFloat = 38
     /// Optical nudge so controls line up with the system close button (macOS centers lights ~12pt from window top).
-    static let trafficLightVerticalAlignPadding: CGFloat = 1
+    static let trafficLightVerticalAlignPadding: CGFloat = 2
     /// Square chrome control (edit, pop-out, close tab) — matches close-button visual size.
     static let controlSize: CGFloat = 24
     static let controlIconSize: CGFloat = 11
