@@ -7,10 +7,10 @@ export default {
         surface: {
           title: '#181818',
           sidebar: '#252526',
-          editor: '#1E1E1E',
+          workspace: '#1E1E1E',
           panel: '#181818',
           highlight: '#2A2D2E',
-          tabInactive: '#2D2D2D',
+          tile: '#2D2D2D',
           input: '#3C3C3C'
         },
         border: {

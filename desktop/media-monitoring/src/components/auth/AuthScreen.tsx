@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { Code2, Loader2 } from 'lucide-react'
-import { cursor } from '@/theme/cursor'
+import { Loader2, Radar } from 'lucide-react'
+import { shell } from '@/theme/shellTheme'
 
 type Screen = 'signIn' | 'signUp' | 'confirmEmail'
 
@@ -91,23 +91,23 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: () => void })
   return (
     <div
       className="h-full flex flex-col items-center justify-center px-8"
-      style={{ backgroundColor: cursor.activityBar }}
+      style={{ backgroundColor: shell.activityBar }}
     >
       <div className="w-full max-w-[420px] space-y-6">
         <header className="text-center space-y-2">
-          <Code2 size={36} className="mx-auto text-content" strokeWidth={1.5} />
+          <Radar size={36} className="mx-auto text-content" strokeWidth={1.5} />
           <h1 className="text-[22px] font-semibold text-content">Publshr</h1>
           <p className="text-[13px] text-content-muted">Media Monitoring — sign in to continue</p>
         </header>
 
         <div
           className="rounded-lg p-5 space-y-4 border"
-          style={{ backgroundColor: cursor.authCard, borderColor: cursor.border }}
+          style={{ backgroundColor: shell.authCard, borderColor: shell.border }}
         >
           {screen !== 'confirmEmail' && (
             <div
               className="flex rounded-md overflow-hidden border"
-              style={{ backgroundColor: cursor.editor, borderColor: cursor.border }}
+              style={{ backgroundColor: shell.workspace, borderColor: shell.border }}
             >
               <Tab active={screen === 'signIn'} onClick={() => { setScreen('signIn'); clearMessages() }}>
                 Sign in
@@ -173,8 +173,8 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: () => void })
             </form>
           )}
 
-          {error && <p className="text-xs" style={{ color: cursor.error }}>{error}</p>}
-          {info && <p className="text-xs" style={{ color: cursor.success }}>{info}</p>}
+          {error && <p className="text-xs" style={{ color: shell.error }}>{error}</p>}
+          {info && <p className="text-xs" style={{ color: shell.success }}>{info}</p>}
         </div>
       </div>
     </div>
@@ -196,8 +196,8 @@ function Tab({
       onClick={onClick}
       className="flex-1 py-2 text-[13px] font-medium transition-colors"
       style={{
-        color: active ? cursor.foreground : cursor.foregroundMuted,
-        backgroundColor: active ? cursor.sideBar : 'transparent'
+        color: active ? shell.foreground : shell.foregroundMuted,
+        backgroundColor: active ? shell.sideBar : 'transparent'
       }}
     >
       {children}
@@ -224,7 +224,7 @@ function Field({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         className="mt-1.5 w-full text-[13px] text-content px-2.5 py-2 rounded border outline-none focus:border-accent/60"
-        style={{ backgroundColor: cursor.input, borderColor: cursor.borderSubtle }}
+        style={{ backgroundColor: shell.input, borderColor: shell.borderSubtle }}
       />
     </label>
   )
@@ -242,7 +242,7 @@ function PrimaryButton({
       type="submit"
       disabled={loading}
       className="w-full flex items-center justify-center gap-2 py-2 rounded text-[13px] font-medium text-white disabled:opacity-70"
-      style={{ backgroundColor: cursor.button }}
+      style={{ backgroundColor: shell.button }}
     >
       {loading && <Loader2 size={14} className="animate-spin" />}
       {children}

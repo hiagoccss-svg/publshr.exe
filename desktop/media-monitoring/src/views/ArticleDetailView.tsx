@@ -38,7 +38,7 @@ export function ArticleDetailView() {
   const keywords = parseKeywordMatches(article.keyword_matches)
 
   return (
-    <div className="h-full flex flex-col bg-surface-editor overflow-hidden">
+    <div className="h-full flex flex-col bg-surface-workspace overflow-hidden">
       <header className="flex items-center gap-3 px-4 py-3 border-b border-border shrink-0">
         <button type="button" className="btn-ghost p-1" onClick={() => navigate(-1)}>
           <ArrowLeft size={16} />

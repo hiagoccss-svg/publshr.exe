@@ -3,7 +3,7 @@ import clsx from 'clsx'
 import { useMonitoringStore } from '@/store/monitoringStore'
 import { useActiveMonitor } from '@/hooks/useMonitoring'
 import type { Sentiment } from '@/types'
-import { cursor } from '@/theme/cursor'
+import { shell } from '@/theme/shellTheme'
 
 const SENTIMENTS: { value: Sentiment | ''; label: string }[] = [
   { value: '', label: 'All sentiment' },
@@ -28,7 +28,7 @@ export function FilterBar() {
   return (
     <div
       className="flex flex-wrap items-center gap-2 px-3 py-1.5 border-b shrink-0"
-      style={{ backgroundColor: cursor.editor, borderColor: cursor.border }}
+      style={{ backgroundColor: shell.workspace, borderColor: shell.border }}
     >
       <button
         type="button"

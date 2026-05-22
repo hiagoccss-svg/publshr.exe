@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Fingerprint } from 'lucide-react'
-import { cursor } from '@/theme/cursor'
+import { shell } from '@/theme/shellTheme'
 
 export function SettingsPanel() {
   const [bio, setBio] = useState<{ available: boolean; enabled: boolean; platform: string } | null>(null)
@@ -16,7 +16,7 @@ export function SettingsPanel() {
 
       <section
         className="rounded-lg border p-4 space-y-3"
-        style={{ borderColor: cursor.border, backgroundColor: cursor.editor }}
+        style={{ borderColor: shell.border, backgroundColor: shell.workspace }}
       >
         <div className="flex items-center gap-2">
           <Fingerprint size={18} className="text-accent" />
@@ -48,7 +48,7 @@ export function SettingsPanel() {
               <button
                 type="button"
                 className="text-xs px-3 py-1.5 rounded text-white"
-                style={{ backgroundColor: cursor.button }}
+                style={{ backgroundColor: shell.button }}
                 onClick={async () => {
                   try {
                     await window.publshr.biometricEnable()

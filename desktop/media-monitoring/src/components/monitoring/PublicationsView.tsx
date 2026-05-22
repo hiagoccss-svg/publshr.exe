@@ -29,9 +29,9 @@ export function PublicationsView() {
         {publications.map((pub) => (
           <div
             key={pub.id}
-            className="flex items-center gap-3 p-3 rounded-lg border border-border/80 bg-surface-editor hover:bg-surface-highlight/40 transition-colors"
+            className="flex items-center gap-3 p-3 rounded-lg border border-border/80 bg-surface-workspace hover:bg-surface-highlight/40 transition-colors"
           >
-            <div className="w-9 h-9 rounded bg-surface-tabInactive flex items-center justify-center text-xs font-semibold text-content-muted">
+            <div className="w-9 h-9 rounded bg-surface-tile flex items-center justify-center text-xs font-semibold text-content-muted">
               {publicationInitials(pub.name)}
             </div>
             <div className="flex-1 min-w-0">

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { HashRouter, Routes, Route } from 'react-router-dom'
 import { AuthScreen } from '@/components/auth/AuthScreen'
 import { BiometricUnlock } from '@/components/auth/BiometricUnlock'
-import { CursorShell } from '@/components/layout/CursorShell'
+import { AppShell } from '@/components/layout/AppShell'
 import { ArticleDetailView } from '@/views/ArticleDetailView'
 import { useMonitoringStore } from '@/store/monitoringStore'
 import { Loader2 } from 'lucide-react'
@@ -88,7 +88,7 @@ export default function App() {
   return (
     <HashRouter>
       <Routes>
-        <Route path="/" element={<CursorShell />} />
+        <Route path="/" element={<AppShell />} />
         <Route path="/article/:id" element={<ArticleDetailView />} />
       </Routes>
     </HashRouter>
