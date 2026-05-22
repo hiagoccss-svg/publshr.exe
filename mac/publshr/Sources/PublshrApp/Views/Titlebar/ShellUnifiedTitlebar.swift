@@ -74,7 +74,7 @@ struct ShellUnifiedTitlebar: View {
             )
         }
         .frame(height: layout.rowHeight)
-        .background { GlassPrimaryBarChrome() }
+        .background(CursorMacShellDesign.columnChromeBackground)
     }
 
     // MARK: - Column 2 (search — flat, no boxed field)

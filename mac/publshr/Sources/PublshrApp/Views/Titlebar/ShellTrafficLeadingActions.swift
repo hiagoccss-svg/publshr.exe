@@ -11,7 +11,7 @@ struct ShellTrafficLeadingActions: View {
     var body: some View {
         HStack(alignment: .center, spacing: AppWindowChromeMetrics.toolbarItemSpacing) {
             TitlebarChromeIconButton(
-                systemName: tabStore.barMenuExpanded ? "sidebar.left" : "sidebar.right",
+                systemName: tabStore.barMenuExpanded ? "rectangle.leadinghalf.filled" : "rectangle.leadinghalf.inset.filled",
                 help: tabStore.barMenuExpanded
                     ? "Collapse main menu to icon bar"
                     : "Expand main menu",

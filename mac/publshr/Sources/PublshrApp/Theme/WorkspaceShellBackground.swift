@@ -21,17 +21,10 @@ struct WorkspaceDesktopBackdrop: View {
     }
 }
 
-/// First column shell — frosted glass with a hint of desktop color (not a solid grey block).
+/// First column shell — flat Cursor Mac rail (#F3F3F3), not a second glass panel.
 struct GlassPrimaryBarChrome: View {
     var body: some View {
-        ZStack {
-            VisualEffectBlur(
-                material: .sidebar,
-                blendingMode: .behindWindow
-            )
-            LibraryGlassDesign.primaryBarGlassFill
-            CursorMacShellDesign.columnChromeBackground.opacity(0.02)
-        }
+        CursorMacShellDesign.columnChromeBackground
     }
 }
 

@@ -67,8 +67,9 @@ struct ChatSidebarView: View {
                     filterPill(filter)
                 }
             }
-            .padding(.horizontal, 12)
+            .padding(.horizontal, LibraryGlassDesign.sidebarRowHorizontal)
         }
+        .padding(.top, 2)
         .frame(height: ChatClickUpDesign.filterBarHeight)
         .clipped()
     }
@@ -235,18 +236,6 @@ struct ChatSidebarView: View {
                 sidebarSettingsMenu
             }
 
-            if chat.permissions.canCreateChannels {
-                Button { showNewChannel = true } label: {
-                    Label("Create channel", systemImage: "number")
-                }
-                .buttonStyle(LibrarySubmenuTextButtonStyle())
-            }
-            if chat.permissions.canDM {
-                Button { showNewDM = true } label: {
-                    Label("New message", systemImage: "person.badge.plus")
-                }
-                .buttonStyle(LibrarySubmenuTextButtonStyle())
-            }
         }
     }
 
@@ -384,7 +373,7 @@ struct ChatSidebarView: View {
                     .frame(minWidth: 40, alignment: .trailing)
                 }
                 .frame(height: ChatClickUpDesign.rowHeight)
-                .padding(.horizontal, 10)
+                .padding(.horizontal, LibraryGlassDesign.sidebarRowHorizontal - 2)
                 .background(
                     selected
                         ? LibraryGlassDesign.sidebarSelection.opacity(0.55)

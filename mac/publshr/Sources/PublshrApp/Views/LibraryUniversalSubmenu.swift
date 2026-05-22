@@ -51,9 +51,13 @@ struct LibraryUniversalSubmenuContainer<Content: View, Footer: View>: View {
         self.footer = footer
     }
 
+    /// Breathing room below the unified titlebar search row (Cursor Mac submenu).
+    static let contentTopInset: CGFloat = 6
+
     var body: some View {
         VStack(spacing: 0) {
             content()
+                .padding(.top, Self.contentTopInset)
                 .frame(minHeight: 0, maxHeight: .infinity)
 
             footer()

@@ -39,7 +39,7 @@ struct ChatSidebarHubStrip: View {
                 }
             }
             .frame(height: ChatClickUpDesign.rowHeight)
-            .padding(.horizontal, 10)
+            .padding(.horizontal, LibraryGlassDesign.sidebarRowHorizontal - 2)
             .background(
                 selected ? LibraryGlassDesign.sidebarSelection.opacity(0.55) : Color.clear
             )
