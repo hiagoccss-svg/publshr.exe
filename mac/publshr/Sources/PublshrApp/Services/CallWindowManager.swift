@@ -39,8 +39,8 @@ final class CallWindowManager {
             forName: NSWindow.willCloseNotification,
             object: window,
             queue: .main
-        ) { [weak self] _ in
-            Task { @MainActor in
+        ) { _ in
+            Task { @MainActor [weak self] in
                 await calls.leaveCall()
                 self?.window = nil
             }
