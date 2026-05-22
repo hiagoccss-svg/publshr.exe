@@ -26,6 +26,11 @@ struct LibraryShellView: View {
             ZStack(alignment: .top) {
                 WorkspaceDesktopBackdrop()
                 shellBody
+                    .frame(
+                        width: geometry.size.width,
+                        height: geometry.size.height,
+                        alignment: .top
+                    )
             }
             .frame(width: geometry.size.width, height: geometry.size.height)
         }
