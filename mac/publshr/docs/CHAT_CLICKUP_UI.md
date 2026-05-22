@@ -39,9 +39,19 @@ Settings opens in a **separate sheet/window** (not in the activity strip), match
 |--------|----------|
 | **All** | Channels + DMs (organized) or full recents list |
 | **Unread** | Rows with message unread count or thread unread |
+| **@** | Channels/DMs with unread @you / @here / @channel |
 | **Pinned** | User-pinned channels/DMs only |
 | **DMs** | Direct + group messages only |
 | **Channels** | Workspace channels only |
+
+### Hubs (above channel list)
+
+| Hub | Behavior |
+|-----|----------|
+| **Channels** | Default organized/recents lists |
+| **Activity** | In-app notification feed (mentions + messages) |
+| **Drafts** | Unsent composer drafts (SQLite) |
+| **Sent** | Your recent messages + pending scheduled sends |
 
 ### Layouts (bottom-left, ClickUp)
 
@@ -66,7 +76,8 @@ Active layout label appears next to the toggles. Preference keys: `publshr.chat.
 ## Conversation column
 
 - **Status bar** — back/forward, channel icon, title (opens settings), typing, pop-out, focus, AI, search, pinned, **⋯** submenu.
-- **Composer toolbar** — @mention, emoji, attach, voice, schedule (placeholder), channel label.
+- **Composer toolbar** — @mention picker, emoji, attach, voice, schedule send, channel label.
+- **DM inspector** — right panel for DM/group members, notifications, copy link.
 - **Composer** — `Message {channel}…`, send (⌘↩).
 - **Unread** — bold sidebar row; numeric badge; thread icon for unread thread replies.
 

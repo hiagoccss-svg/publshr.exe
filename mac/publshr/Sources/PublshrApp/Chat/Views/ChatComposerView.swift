@@ -80,7 +80,7 @@ struct ChatComposerView: View {
     private var composerToolbar: some View {
         HStack(spacing: 4) {
             composerIcon("at") {
-                chat.composerText += chat.composerText.isEmpty ? "@" : " @"
+                chat.openMentionPicker()
             }
             .help("Mention someone")
 
@@ -106,17 +106,11 @@ struct ChatComposerView: View {
                     .help("Voice note")
             }
 
-            Menu {
-                Button {} label: {
-                    Label("Schedule message", systemImage: "clock.badge")
-                }
-                .disabled(true)
-            } label: {
-                composerIconLabel("clock")
+            composerIcon("clock") {
+                chat.scheduleSendAt = Date().addingTimeInterval(3600)
+                chat.showScheduleSendSheet = true
             }
-            .menuStyle(.borderlessButton)
-            .menuIndicator(.hidden)
-            .help("Schedule send (coming soon)")
+            .help("Schedule send")
 
             Spacer(minLength: 0)
 

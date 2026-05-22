@@ -73,6 +73,18 @@ struct ChatChannelStatusBar: View {
                 ChatTypingIndicatorView(label: chat.typingSummary)
             }
             if let channel = chat.selectedChannel {
+                if channel.kind == .dm || channel.kind == .group {
+                    Button {
+                        chat.showDMInspector.toggle()
+                    } label: {
+                        Image(systemName: "info.circle")
+                            .font(.system(size: 12))
+                            .foregroundStyle(chat.showDMInspector ? CursorTheme.accent : CursorTheme.foregroundMuted)
+                            .frame(width: 28, height: 28)
+                    }
+                    .buttonStyle(.plain)
+                    .help("Conversation details")
+                }
                 channelQuickActions(channel)
             }
         }

@@ -68,6 +68,16 @@ final class ChatLocalStore {
             channel_name TEXT NOT NULL,
             snippet TEXT NOT NULL
         );
+        CREATE TABLE IF NOT EXISTS scheduled_local (
+            id TEXT PRIMARY KEY,
+            workspace_id TEXT NOT NULL,
+            channel_id TEXT NOT NULL,
+            user_id TEXT NOT NULL,
+            body TEXT NOT NULL,
+            thread_parent_id TEXT,
+            send_at REAL NOT NULL,
+            status TEXT NOT NULL DEFAULT 'pending'
+        );
         """)
     }
 
@@ -173,6 +183,79 @@ final class ChatLocalStore {
               let body = row["body"],
               let ts = Double(row["updated_at"] ?? "") else { return nil }
         return ChatDraft(channelId: channelId, body: body, updatedAt: Date(timeIntervalSince1970: ts))
+    }
+
+    func loadAllDrafts() -> [ChatDraft] {
+        fetchRows("SELECT channel_id, body, updated_at FROM drafts WHERE TRIM(body) != '' ORDER BY updated_at DESC;")
+            .compactMap { row -> ChatDraft? in
+                guard let cid = row["channel_id"], let uuid = UUID(uuidString: cid),
+                      let body = row["body"],
+                      let ts = Double(row["updated_at"] ?? "") else { return nil }
+                return ChatDraft(channelId: uuid, body: body, updatedAt: Date(timeIntervalSince1970: ts))
+            }
+    }
+
+    func saveLocalScheduled(_ item: ChatScheduledMessage) {
+        exec(
+            """
+            INSERT OR REPLACE INTO scheduled_local
+            (id, workspace_id, channel_id, user_id, body, thread_parent_id, send_at, status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+            """,
+            item.id.uuidString,
+            item.workspaceId.uuidString,
+            item.channelId.uuidString,
+            item.userId.uuidString,
+            item.body,
+            item.threadParentId?.uuidString ?? "",
+            String(item.sendAt.timeIntervalSince1970),
+            item.status
+        )
+    }
+
+    func loadPendingLocalScheduled(workspaceId: UUID, userId: UUID) -> [ChatScheduledMessage] {
+        fetchRows(
+            """
+            SELECT id, workspace_id, channel_id, user_id, body, thread_parent_id, send_at, status
+            FROM scheduled_local
+            WHERE workspace_id = ? AND user_id = ? AND status = 'pending'
+            ORDER BY send_at ASC;
+            """,
+            workspaceId.uuidString,
+            userId.uuidString
+        ).compactMap { row -> ChatScheduledMessage? in
+            guard let id = row["id"], let uuid = UUID(uuidString: id),
+                  let ws = row["workspace_id"], let wsId = UUID(uuidString: ws),
+                  let cid = row["channel_id"], let chId = UUID(uuidString: cid),
+                  let uid = row["user_id"], let userUuid = UUID(uuidString: uid),
+                  let body = row["body"],
+                  let sendTs = Double(row["send_at"] ?? ""),
+                  let status = row["status"] else { return nil }
+            let parent: UUID? = {
+                guard let raw = row["thread_parent_id"], !raw.isEmpty else { return nil }
+                return UUID(uuidString: raw)
+            }()
+            return ChatScheduledMessage(
+                id: uuid,
+                workspaceId: wsId,
+                channelId: chId,
+                userId: userUuid,
+                body: body,
+                threadParentId: parent,
+                sendAt: Date(timeIntervalSince1970: sendTs),
+                status: status,
+                createdAt: Date(timeIntervalSince1970: sendTs),
+                updatedAt: Date(timeIntervalSince1970: sendTs)
+            )
+        }
+    }
+
+    func updateLocalScheduledStatus(id: UUID, status: String) {
+        exec("UPDATE scheduled_local SET status = ? WHERE id = ?;", status, id.uuidString)
+    }
+
+    func deleteLocalScheduled(id: UUID) {
+        exec("DELETE FROM scheduled_local WHERE id = ?;", id.uuidString)
     }
 
     func unreadCount(channelId: UUID) -> Int {

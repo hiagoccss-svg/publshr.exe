@@ -42,14 +42,14 @@ Shortcuts: **⌘⇧O** or Chat menu → “Pop Out Channel”
 ### Medium priority
 
 8. **Quick reply from notification** — macOS notification actions.
-9. **Dock badge** — unread total on app icon (`NSApp.dockTile`).
+9. ~~**Dock badge**~~ — unread total on dock + bar menu badge (`ChatNotificationService` + `LibraryBarMenuColumn`).
 10. **Focus Mode** — notification interruption levels (macOS 12+).
 11. **Read receipt UI** — “Seen by …” list when enabled.
-12. **Channel notification prefs** — per-channel mute/keywords (DB: `chat_channel_members.notification_level` — UI incomplete).
+12. ~~**Channel notification prefs**~~ — per-channel All/Mentions/Mute in settings sheet + DM inspector.
 13. **True speech-to-text** — replace `ChatAIService.mockTranscribeVoice` with Whisper / cloud STT.
 14. **AI via gateway** — replace heuristics with Vercel AI SDK / your LLM.
 15. **Client-safe channel filtering** — hide internal channels for guest role at query level.
-16. **Group DM creation UI** — `kind = group` with multi-select members.
+16. **Group DM creation UI** — `kind = group` with multi-select members (DM inspector shows members for existing groups).
 17. **Announcement / read-only channels** — block non-admin posts in UI when `visibility = announcement`.
 
 ### Lower priority

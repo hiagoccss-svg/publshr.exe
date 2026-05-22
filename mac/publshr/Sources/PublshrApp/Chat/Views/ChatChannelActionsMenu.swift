@@ -34,6 +34,16 @@ struct ChatChannelActionsMenu: View {
                 Label("Mark as read", systemImage: "checkmark.circle")
             }
             Button {
+                chat.markChannelUnread(channel)
+            } label: {
+                Label("Mark as unread", systemImage: "envelope.badge")
+            }
+            Button {
+                chat.copyChannelLink(channel)
+            } label: {
+                Label("Copy link", systemImage: "link")
+            }
+            Button {
                 Task { await chat.muteChannel(channel) }
             } label: {
                 Label("Mute notifications", systemImage: "bell.slash")
