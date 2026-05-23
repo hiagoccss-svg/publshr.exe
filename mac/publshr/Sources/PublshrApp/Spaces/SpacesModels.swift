@@ -24,6 +24,68 @@ enum SpaceTaskStatus: String, Codable, CaseIterable, Identifiable {
     }
 
     static let boardColumns: [SpaceTaskStatus] = [.todo, .in_progress, .review, .approved, .completed]
+
+    /// Value for Supabase `task_status` (legacy planner enum vs ClickUp text column).
+    var databaseValue: String { TaskStatusWire.toDatabase(rawValue) }
+
+    init(databaseValue: String) {
+        let canonical = TaskStatusWire.fromDatabase(databaseValue)
+        self = SpaceTaskStatus(rawValue: canonical) ?? .todo
+    }
+}
+
+/// Maps app task statuses to production Postgres `task_status` (`open`, `done`, …).
+enum TaskStatusWire {
+    private static let toLegacy: [String: String] = [
+        SpaceTaskStatus.todo.rawValue: "open",
+        SpaceTaskStatus.completed.rawValue: "done",
+        SpaceTaskStatus.archived.rawValue: "cancelled",
+        SpaceTaskStatus.blocked.rawValue: "review",
+        SpaceTaskStatus.approved.rawValue: "review",
+    ]
+
+    private static let fromLegacy: [String: String] = [
+        "open": SpaceTaskStatus.todo.rawValue,
+        "done": SpaceTaskStatus.completed.rawValue,
+        "cancelled": SpaceTaskStatus.archived.rawValue,
+    ]
+
+    static func toDatabase(_ appStatus: String) -> String {
+        let key = appStatus.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        if let mapped = toLegacy[key] { return mapped }
+        if fromLegacy[key] != nil || SpaceTaskStatus(rawValue: key) != nil { return key }
+        return "open"
+    }
+
+    static func fromDatabase(_ stored: String) -> String {
+        let key = stored.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        if let mapped = fromLegacy[key] { return mapped }
+        if SpaceTaskStatus(rawValue: key) != nil { return key }
+        return SpaceTaskStatus.todo.rawValue
+    }
+}
+
+/// Maps app priorities to production `tasks.priority` check (`medium` vs `normal`).
+enum TaskPriorityWire {
+    static func toDatabase(_ appPriority: String) -> String? {
+        let key = appPriority.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        switch key {
+        case SpaceTaskPriority.none.rawValue: return nil
+        case SpaceTaskPriority.normal.rawValue: return "medium"
+        case SpaceTaskPriority.low.rawValue, SpaceTaskPriority.high.rawValue, SpaceTaskPriority.urgent.rawValue:
+            return key
+        default:
+            return "medium"
+        }
+    }
+
+    static func fromDatabase(_ stored: String?) -> String {
+        guard let stored else { return SpaceTaskPriority.none.rawValue }
+        let key = stored.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        if key == "medium" { return SpaceTaskPriority.normal.rawValue }
+        if SpaceTaskPriority(rawValue: key) != nil { return key }
+        return SpaceTaskPriority.normal.rawValue
+    }
 }
 
 /// Top-level space kinds — no separate `project` type; use folders inside a Space (ClickUp-style).
@@ -237,6 +299,7 @@ struct SpaceTaskRecord: Codable, Identifiable, Equatable {
         case dueDate = "due_date"
         case tags, checklist
         case sortOrder = "sort_order"
+        case isArchived = "is_archived"
     }
 
     init(from decoder: Decoder) throws {
@@ -246,8 +309,19 @@ struct SpaceTaskRecord: Codable, Identifiable, Equatable {
         listId = try c.decodeIfPresent(UUID.self, forKey: .listId)
         title = try c.decode(String.self, forKey: .title)
         description = try c.decodeIfPresent(String.self, forKey: .description) ?? ""
-        status = try c.decode(SpaceTaskStatus.self, forKey: .status)
-        priority = try c.decodeIfPresent(SpaceTaskPriority.self, forKey: .priority) ?? .normal
+        if let rawStatus = try? c.decode(String.self, forKey: .status) {
+            status = SpaceTaskStatus(databaseValue: rawStatus)
+        } else {
+            status = try c.decode(SpaceTaskStatus.self, forKey: .status)
+        }
+        if c.contains(.isArchived), try c.decode(Bool.self, forKey: .isArchived) {
+            status = .archived
+        }
+        if let rawPriority = try? c.decode(String.self, forKey: .priority) {
+            priority = SpaceTaskPriority(rawValue: TaskPriorityWire.fromDatabase(rawPriority)) ?? .normal
+        } else {
+            priority = try c.decodeIfPresent(SpaceTaskPriority.self, forKey: .priority) ?? .normal
+        }
         assigneeId = try c.decodeIfPresent(UUID.self, forKey: .assigneeId)
         startDate = try c.decodeIfPresent(String.self, forKey: .startDate)
         dueDate = try c.decodeIfPresent(String.self, forKey: .dueDate)
@@ -403,6 +477,7 @@ struct SpaceTaskPatch: Encodable {
     var tags: [String]?
     var checklist: [SpaceChecklistItem]?
     var sortOrder: Double?
+    var isArchived: Bool?
 
     enum CodingKeys: String, CodingKey {
         case title, description
@@ -413,6 +488,7 @@ struct SpaceTaskPatch: Encodable {
         case dueDate = "due_date"
         case tags, checklist
         case sortOrder = "sort_order"
+        case isArchived = "is_archived"
     }
 
     func encode(to encoder: Encoder) throws {
@@ -420,8 +496,17 @@ struct SpaceTaskPatch: Encodable {
         try c.encodeIfPresent(title, forKey: .title)
         try c.encodeIfPresent(description, forKey: .description)
         try c.encodeIfPresent(listId, forKey: .listId)
-        try c.encodeIfPresent(status, forKey: .status)
-        try c.encodeIfPresent(priority, forKey: .priority)
+        if let status {
+            try c.encode(TaskStatusWire.toDatabase(status), forKey: .status)
+        }
+        if let priority {
+            if let db = TaskPriorityWire.toDatabase(priority) {
+                try c.encode(db, forKey: .priority)
+            } else {
+                try c.encodeNil(forKey: .priority)
+            }
+        }
+        try c.encodeIfPresent(isArchived, forKey: .isArchived)
         if clearAssignee {
             try c.encodeNil(forKey: .assigneeId)
         } else if let assigneeId {

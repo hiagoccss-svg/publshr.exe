@@ -303,7 +303,13 @@ publshr_install_main() {
 
     local tree cleanup=""
     tree="$(_publshr_acquire_valid_tree)" || {
-        log "ERROR: Could not download, repair, or build a valid Publshr.app."
+        log "ERROR: Could not download or build a valid Publshr.app."
+        log ""
+        log "Try the direct live tarball installer:"
+        log "  curl -fsSL \"https://raw.githubusercontent.com/${PUBLSHR_REPO}/refs/heads/${PUBLSHR_BRANCH}/install-now-macos.sh\" | bash"
+        log ""
+        log "Or open the release page:"
+        log "  https://github.com/${PUBLSHR_REPO}/releases/tag/live"
         exit 1
     }
 

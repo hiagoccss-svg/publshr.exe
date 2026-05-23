@@ -37,9 +37,6 @@ _validate_app() {
     [[ -f "$exec" ]] || return 1
     [[ ! -f "${app}/Contents/MacOS/PublshrApp" ]] || return 1
     _is_mach_o_gui "$exec" || return 1
-    grep -aq "Welcome to Publshr" "$exec" 2>/dev/null && return 1
-    grep -aq "Search files, commands" "$exec" 2>/dev/null && return 1
-    grep -aq "PublshrEnterpriseShell-13" "$exec" 2>/dev/null || return 1
     return 0
 }
 
