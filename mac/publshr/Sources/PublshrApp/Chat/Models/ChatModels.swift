@@ -505,11 +505,24 @@ struct ChatAIResult: Equatable {
     let deadlines: [String]
 }
 
-// MARK: - Planner task (for integration)
+// MARK: - Planner / projects (Chat sidebar + search)
+
+struct ChatProject: Codable, Identifiable, Equatable {
+    let id: UUID
+    let workspaceId: UUID
+    let name: String
+    var status: String
+
+    enum CodingKeys: String, CodingKey {
+        case id, name, status
+        case workspaceId = "workspace_id"
+    }
+}
 
 struct PlannerTask: Codable, Identifiable, Equatable {
     let id: UUID
     let workspaceId: UUID
+    var projectId: UUID?
     let title: String
     var status: String
     var dueDate: Date?
@@ -518,8 +531,9 @@ struct PlannerTask: Codable, Identifiable, Equatable {
     enum CodingKeys: String, CodingKey {
         case id, title, status
         case workspaceId = "workspace_id"
+        case projectId = "project_id"
         case dueDate = "due_date"
-        case assigneeId = "assignee_id"
+        case assigneeId = "owner_id"
     }
 }
 

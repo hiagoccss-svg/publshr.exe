@@ -8,6 +8,7 @@ Publshr Chat follows [ClickUp Chat Sidebar](https://help.clickup.com/hc/en-us/ar
 |------|-------|----------|
 | **Bar menu** | 200pt expanded / ~56–96pt icon rail · glass tint | **Chat** · **Spaces** (modules); profile in footer |
 | **Universal submenu** | 272pt fixed · **#FFFFFF** | Search in unified titlebar row (Chat + Spaces); filters, lists, footer (flat, no boxed chrome) |
+| **Your projects** | submenu section | `projects` + `planner_items` in Supabase — **+** creates projects; menu adds tasks / share to channel |
 | **Main column** | ~50% remainder · **#FFFFFF** | Full-bleed flat column (Chat + Spaces — no rounded editor “card” box). Titlebar: 32×32 icon slots, 8pt gaps, aligned with columns 1–2 |
 | **Thread panel** (optional) | ~320px | Right-side thread replies |
 | **Unified titlebar** | full width | Traffic lights row: sidebar, back/forward, submenu search, channel title + actions |

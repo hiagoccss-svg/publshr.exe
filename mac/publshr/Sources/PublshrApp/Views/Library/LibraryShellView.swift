@@ -211,6 +211,8 @@ struct LibraryShellView: View {
         spaces.attach(auth: auth)
         Task {
             await subscription.refresh(client: auth.client, workspace: auth.selectedWorkspace)
+            await chat.loadWorkspaceProjects()
+            await chat.loadPlannerTasks()
             if chat.channels.isEmpty, chat.directMessages.isEmpty {
                 await chat.refreshAfterReconnect()
             }

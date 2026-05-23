@@ -100,9 +100,12 @@ struct ContentView: View {
         spaces.attach(auth: auth)
         Task {
             await subscription.refresh(client: auth.client, workspace: auth.selectedWorkspace)
-            if auth.selectedWorkspace != nil,
-               chat.channels.isEmpty, chat.directMessages.isEmpty {
-                await chat.refreshAfterReconnect()
+            if auth.selectedWorkspace != nil {
+                await chat.loadWorkspaceProjects()
+                await chat.loadPlannerTasks()
+                if chat.channels.isEmpty, chat.directMessages.isEmpty {
+                    await chat.refreshAfterReconnect()
+                }
             }
             if let uid = auth.profile?.id {
                 await DeviceIdentityService.register(
