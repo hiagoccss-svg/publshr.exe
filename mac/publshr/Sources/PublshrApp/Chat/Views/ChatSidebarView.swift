@@ -266,11 +266,11 @@ struct ChatSidebarView: View {
             .padding(.vertical, 8)
     }
 
-    /// ClickUp lower-left — icon layout toggles + compose + settings (no wrapping labels).
+    /// ClickUp lower-left — icon layout toggles + compose + workspace settings (no wrapping labels).
     private var layoutFooter: some View {
         HStack(alignment: .center, spacing: 6) {
-            layoutSegment(.organized, icon: "list.bullet.rectangle", label: "Organized")
-            layoutSegment(.recents, icon: "clock", label: "Recents")
+            layoutIconButton(.organized, icon: "list.bullet.rectangle", help: "Organized")
+            layoutIconButton(.recents, icon: "clock", help: "Recents")
             Spacer(minLength: 4)
             composeMenu
             sidebarSettingsMenu
@@ -310,7 +310,7 @@ struct ChatSidebarView: View {
         .help("New channel or message")
     }
 
-    private func layoutSegment(_ layout: ChatSidebarLayout, icon: String, label: String) -> some View {
+    private func layoutIconButton(_ layout: ChatSidebarLayout, icon: String, help: String) -> some View {
         let selected = chat.sidebarLayout == layout
         return Button {
             chat.setSidebarLayout(layout)
@@ -332,11 +332,36 @@ struct ChatSidebarView: View {
                 )
         }
         .buttonStyle(.plain)
-        .help(label)
+        .help(help)
     }
 
     private var sidebarSettingsMenu: some View {
         Menu {
+            Button {
+                NotificationCenter.default.post(
+                    name: .publshrOpenSettings,
+                    object: SettingsSection.workspace.rawValue
+                )
+            } label: {
+                Label("Workspace settings", systemImage: "building.2")
+            }
+            Button {
+                NotificationCenter.default.post(
+                    name: .publshrOpenSettings,
+                    object: SettingsSection.security.rawValue
+                )
+            } label: {
+                Label("Security", systemImage: "lock.shield")
+            }
+            Button {
+                NotificationCenter.default.post(
+                    name: .publshrOpenSettings,
+                    object: SettingsSection.billing.rawValue
+                )
+            } label: {
+                Label("Subscription", systemImage: "creditcard")
+            }
+            Divider()
             Button {
                 chat.showNotificationSettings = true
             } label: {
@@ -377,7 +402,7 @@ struct ChatSidebarView: View {
         }
         .menuStyle(.borderlessButton)
         .menuIndicator(.hidden)
-        .help("Chat settings")
+        .help("Workspace & chat settings")
     }
 
     // MARK: - Sections & rows

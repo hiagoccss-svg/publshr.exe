@@ -6,6 +6,7 @@ struct LibraryBarMenuIconRail: View {
     @EnvironmentObject private var auth: AuthViewModel
     @EnvironmentObject private var tabStore: WorkspaceTabStore
     @EnvironmentObject private var chat: ChatViewModel
+    @EnvironmentObject private var spaces: SpacesViewModel
     @Binding var module: AppModule
     @Binding var profilePresentation: WorkspaceProfilePresentation?
 
@@ -43,6 +44,15 @@ struct LibraryBarMenuIconRail: View {
         return Button {
             module = item
             tabStore.openFromModule(item, activate: true)
+            if item == .whiteboard {
+                spaces.taskView = .whiteboard
+                if spaces.selectedSpaceId == nil, let first = spaces.spaces.first {
+                    Task { await spaces.selectSpace(first.id) }
+                }
+            }
+            if item == .mediaMonitoring {
+                _ = DesktopCompanionAppLauncher.open(.mediaMonitoring)
+            }
         } label: {
             TitlebarToolbarSlot {
                 ZStack(alignment: .topTrailing) {

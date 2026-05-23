@@ -4,6 +4,8 @@ import Foundation
 enum AppModule: String, CaseIterable, Identifiable {
     case chat
     case spaces
+    case whiteboard
+    case mediaMonitoring
     case settings
 
     var id: String { rawValue }
@@ -12,6 +14,8 @@ enum AppModule: String, CaseIterable, Identifiable {
         switch self {
         case .chat: return "Chat"
         case .spaces: return "Spaces"
+        case .whiteboard: return "Whiteboard"
+        case .mediaMonitoring: return "Media Monitoring"
         case .settings: return "Settings"
         }
     }
@@ -20,10 +24,20 @@ enum AppModule: String, CaseIterable, Identifiable {
         switch self {
         case .chat: return "bubble.left.and.bubble.right"
         case .spaces: return "square.grid.2x2"
+        case .whiteboard: return "scribble.variable"
+        case .mediaMonitoring: return "dot.radiowaves.left.and.right"
         case .settings: return "gearshape"
         }
     }
 
-    /// Modules pinned in the activity strip. Settings opens from the title bar (separate window).
-    static let mainStrip: [AppModule] = [.chat, .spaces]
+    /// Uses the Spaces submenu column (search + space tree).
+    var usesSpacesSubmenu: Bool {
+        switch self {
+        case .spaces, .whiteboard: return true
+        case .chat, .mediaMonitoring, .settings: return false
+        }
+    }
+
+    /// Modules pinned in the activity strip. Full settings open from the submenu gear or ⌘,.
+    static let mainStrip: [AppModule] = [.chat, .spaces, .whiteboard, .mediaMonitoring]
 }

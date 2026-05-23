@@ -6,6 +6,12 @@ final class WorkspaceModuleWindowManager: ObservableObject {
     static let shared = WorkspaceModuleWindowManager()
 
     private var windows: [AppModule: NSWindow] = [:]
+    private(set) var pendingSettingsSection: SettingsSection?
+
+    func consumePendingSettingsSection() -> SettingsSection? {
+        defer { pendingSettingsSection = nil }
+        return pendingSettingsSection
+    }
 
     func openSettings(
         auth: AuthViewModel,
@@ -13,8 +19,10 @@ final class WorkspaceModuleWindowManager: ObservableObject {
         spaces: SpacesViewModel,
         updates: AppUpdateViewModel,
         subscription: SubscriptionService,
-        enterprise: EnterpriseWorkspaceService
+        enterprise: EnterpriseWorkspaceService,
+        section: SettingsSection? = nil
     ) {
+        pendingSettingsSection = section
         open(
             module: .settings,
             chat: chat,
@@ -49,9 +57,14 @@ final class WorkspaceModuleWindowManager: ObservableObject {
                         .environmentObject(auth)
                         .environmentObject(subscription)
                 )
-            case .spaces:
+            case .spaces, .whiteboard:
                 return AnyView(
                     SpacesRootView(spaces: spaces, topInset: 12, embedInPopOut: true)
+                        .environmentObject(auth)
+                )
+            case .mediaMonitoring:
+                return AnyView(
+                    MediaMonitoringModuleView()
                         .environmentObject(auth)
                 )
             case .settings:

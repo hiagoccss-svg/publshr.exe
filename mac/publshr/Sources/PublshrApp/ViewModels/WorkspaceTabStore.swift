@@ -116,7 +116,14 @@ final class WorkspaceTabStore: ObservableObject {
 
         switch tab.kind {
         case .app(let appModule):
-            module = appModule == .settings ? .chat : appModule
+            if appModule == .settings {
+                module = .chat
+            } else {
+                module = appModule
+                if appModule == .whiteboard {
+                    spaces.taskView = .whiteboard
+                }
+            }
         case .chatChannel(let id), .chatDirectMessage(let id):
             module = .chat
             chat.selectChannelById(id, recordHistory: true)

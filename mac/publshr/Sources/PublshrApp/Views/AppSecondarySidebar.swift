@@ -20,9 +20,9 @@ struct AppSecondarySidebar: View {
                     showNewDM: $showNewDM,
                     submenuWidth: submenuWidth
                 )
-            case .spaces:
+            case .spaces, .whiteboard:
                 SpacesNavSidebar(spaces: spaces, submenuWidth: submenuWidth)
-            case .settings:
+            case .mediaMonitoring, .settings:
                 EmptyView()
             }
         }

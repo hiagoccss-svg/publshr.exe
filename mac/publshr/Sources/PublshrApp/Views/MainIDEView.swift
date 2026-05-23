@@ -49,7 +49,7 @@ struct MainIDEView: View {
             tabStore.syncTabMetadata(chat: chat, spaces: spaces)
         }
         .onChange(of: auth.selectedMembership?.workspace.id) { _, _ in
-            if module == .spaces { spaces.attach(auth: auth) }
+            if module.usesSpacesSubmenu { spaces.attach(auth: auth) }
             if module == .chat { chat.attach(auth: auth) }
         }
         .sheet(isPresented: $showNewChannel) { newChannelSheet }
@@ -113,14 +113,16 @@ struct MainIDEView: View {
             if module == .chat { chat.navigateForward() }
             else { Task { await spaces.navigateForward() } }
         }
-        .onReceive(NotificationCenter.default.publisher(for: .publshrOpenSettings)) { _ in
+        .onReceive(NotificationCenter.default.publisher(for: .publshrOpenSettings)) { output in
+            let section = (output.object as? String).flatMap { SettingsSection(rawValue: $0) }
             WorkspaceModuleWindowManager.shared.openSettings(
                 auth: auth,
                 chat: chat,
                 spaces: spaces,
                 updates: updates,
                 subscription: subscription,
-                enterprise: enterprise
+                enterprise: enterprise,
+                section: section
             )
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -164,11 +166,35 @@ struct MainIDEView: View {
         storedModule = newModule.rawValue
         withAnimation(.easeInOut(duration: 0.15)) {
             if newModule != .chat { chat.chatFocusMode = false }
-            if newModule != .spaces { spaces.spacesFocusMode = false }
+            if !newModule.usesSpacesSubmenu { spaces.spacesFocusMode = false }
         }
         if newModule == .chat { chat.attach(auth: auth) }
-        if newModule == .spaces { spaces.attach(auth: auth) }
+        if newModule.usesSpacesSubmenu {
+            spaces.attach(auth: auth)
+            applySpacesModulePresentation(newModule)
+        }
+        if newModule == .mediaMonitoring {
+            _ = DesktopCompanionAppLauncher.open(.mediaMonitoring)
+        }
         tabStore.openFromModule(newModule, activate: true)
+    }
+
+    private func applySpacesModulePresentation(_ newModule: AppModule) {
+        switch newModule {
+        case .whiteboard:
+            spaces.taskView = .whiteboard
+            if spaces.selectedSpaceId == nil, let first = spaces.spaces.first {
+                Task { await spaces.selectSpace(first.id) }
+            } else if let id = spaces.selectedSpaceId {
+                Task { await spaces.loadWhiteboards(for: id) }
+            }
+        case .spaces:
+            if spaces.taskView == .whiteboard, let id = spaces.selectedSpaceId {
+                spaces.taskView = spaces.defaultView(for: id)
+            }
+        default:
+            break
+        }
     }
 
     private var newChannelSheet: some View {
