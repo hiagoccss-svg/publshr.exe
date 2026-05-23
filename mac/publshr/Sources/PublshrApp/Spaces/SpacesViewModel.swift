@@ -378,7 +378,7 @@ final class SpacesViewModel: ObservableObject {
         guard let service else { return }
         do {
             tasks = try await service.fetchTasks(spaceId: spaceId, listId: selectedListId)
-            if let workspaceId {
+            if workspaceId != nil {
                 localStore.saveTasks(tasks, spaceId: spaceId)
             }
         } catch {
