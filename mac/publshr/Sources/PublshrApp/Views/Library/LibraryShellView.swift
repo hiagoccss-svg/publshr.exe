@@ -36,7 +36,6 @@ struct LibraryShellView: View {
             .frame(width: geometry.size.width, height: geometry.size.height)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .ignoresSafeArea(.container, edges: .top)
         .background(Color.clear)
         .onAppear {
             tabStore.sidebarExpanded = true
@@ -145,9 +144,9 @@ struct LibraryShellView: View {
                     )
                     .layoutPriority(0)
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .animation(.easeInOut(duration: 0.15), value: submenuHidden)
         .animation(.easeInOut(duration: 0.15), value: tabStore.barMenuExpanded)
     }

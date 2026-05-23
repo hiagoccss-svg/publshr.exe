@@ -42,7 +42,6 @@ struct LibraryBarMenuProfileFooter: View {
                         .font(.system(size: 10, weight: .semibold))
                         .foregroundStyle(LibraryGlassDesign.inkMuted)
                 }
-                .padding(.horizontal, LibraryGlassDesign.barMenuRowHorizontal)
                 .padding(.vertical, 8)
                 .contentShape(Rectangle())
             }

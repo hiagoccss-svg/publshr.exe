@@ -6,8 +6,17 @@ struct LibraryBarMenuColumn: View {
     @EnvironmentObject private var tabStore: WorkspaceTabStore
     @EnvironmentObject private var chat: ChatViewModel
     @EnvironmentObject private var spaces: SpacesViewModel
+    @ObservedObject private var trafficLayout = TrafficLightLayoutStore.shared
     @Binding var module: AppModule
     @Binding var profilePresentation: WorkspaceProfilePresentation?
+
+    private var bodyLeadingPadding: CGFloat {
+        ShellBarColumnInset.bodyLeadingPadding(
+            barWidth: barWidth,
+            expanded: tabStore.barMenuExpanded,
+            trafficLeadingInset: trafficLayout.leadingInset
+        )
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -25,10 +34,14 @@ struct LibraryBarMenuColumn: View {
             }
             .padding(.top, AppWindowChromeMetrics.barColumnBodyTopSpacing)
             .padding(.bottom, AppWindowChromeMetrics.toolbarItemSpacing)
+            .padding(.leading, bodyLeadingPadding)
+            .padding(.trailing, LibraryGlassDesign.barMenuRowHorizontal)
 
             Spacer(minLength: 0)
 
             LibraryBarMenuProfileFooter(profilePresentation: $profilePresentation)
+                .padding(.leading, bodyLeadingPadding)
+                .padding(.trailing, LibraryGlassDesign.barMenuRowHorizontal)
         }
         .frame(width: barWidth, alignment: .leading)
         .frame(minHeight: 0, maxHeight: .infinity)
@@ -67,7 +80,6 @@ struct LibraryBarMenuColumn: View {
                         .clipShape(Capsule())
                 }
             }
-            .padding(.horizontal, LibraryGlassDesign.barMenuRowHorizontal)
             .frame(height: LibraryGlassDesign.barMenuRowHeight)
             .background(
                 RoundedRectangle(cornerRadius: LibraryGlassDesign.sidebarRowRadius, style: .continuous)
