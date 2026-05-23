@@ -53,16 +53,23 @@ struct ShellUnifiedTitlebar: View {
     // MARK: - Column 1 (traffic reserve + shell controls)
 
     private var leadingBand: some View {
-        TitlebarToolbarRow(trailingPadding: 6) {
+        let compact = !tabStore.barMenuExpanded || barColumnCompact
+        let trafficSpacer = compact
+            ? CGFloat(0)
+            : min(layout.leadingInset, max(0, barColumnWidth - AppWindowChromeMetrics.controlSize))
+
+        return TitlebarToolbarRow(trailingPadding: 6) {
             Color.clear
-                .frame(width: min(layout.leadingInset, max(0, barColumnWidth - AppWindowChromeMetrics.controlSize)))
+                .frame(width: trafficSpacer)
                 .accessibilityHidden(true)
             ShellTrafficLeadingActions(
                 module: $module,
-                compact: !tabStore.barMenuExpanded || barColumnCompact
+                compact: compact,
+                submenuHidden: submenuHidden
             )
         }
         .frame(height: layout.rowHeight)
+        .clipped()
         .background { GlassPrimaryBarChrome() }
     }
 
@@ -107,10 +114,11 @@ struct ShellUnifiedTitlebar: View {
 
 /// Hairline between titlebar column bands (matches body column dividers).
 struct ShellColumnVerticalRule: View {
+    @ObservedObject private var layout = TrafficLightLayoutStore.shared
+
     var body: some View {
         Rectangle()
             .fill(LibraryGlassDesign.hairline.opacity(0.85))
-            .frame(width: CursorMacShellDesign.columnDividerWidth)
-            .frame(maxHeight: .infinity)
+            .frame(width: CursorMacShellDesign.columnDividerWidth, height: layout.rowHeight)
     }
 }

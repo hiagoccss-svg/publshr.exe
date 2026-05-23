@@ -1,20 +1,21 @@
 import SwiftUI
 
-/// ClickUp-style hub tabs — horizontal pills above channel lists (consistent across hubs).
+/// ClickUp-style hub tabs — text tabs with underline (Channels / Activity / Drafts / Sent).
 struct ChatSidebarHubStrip: View {
     @ObservedObject var chat: ChatViewModel
 
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 6) {
+            HStack(spacing: 16) {
                 ForEach(ChatSidebarHub.allCases) { hub in
-                    hubPill(hub)
+                    hubTab(hub)
                 }
             }
             .padding(.horizontal, LibraryGlassDesign.sidebarRowHorizontal)
-            .padding(.vertical, 4)
+            .padding(.top, 6)
+            .padding(.bottom, 8)
         }
-        .frame(height: ChatClickUpDesign.filterBarHeight, alignment: .center)
+        .frame(height: ChatClickUpDesign.filterBarHeight, alignment: .bottom)
         .overlay(alignment: .bottom) {
             Rectangle()
                 .fill(LibraryGlassDesign.contentDivider.opacity(0.55))
@@ -23,42 +24,34 @@ struct ChatSidebarHubStrip: View {
         }
     }
 
-    private func hubPill(_ hub: ChatSidebarHub) -> some View {
+    private func hubTab(_ hub: ChatSidebarHub) -> some View {
         let selected = chat.sidebarHub == hub
         let badge = badgeCount(for: hub)
         return Button {
             chat.setSidebarHub(hub)
         } label: {
-            HStack(spacing: 5) {
-                Image(systemName: hub.icon)
-                    .font(.system(size: 10, weight: .medium))
-                Text(hub.label)
-                    .font(.system(size: 11, weight: selected ? .semibold : .medium))
-                    .lineLimit(1)
-                if badge > 0 {
-                    Text(badge > 99 ? "99+" : "\(badge)")
-                        .font(.system(size: 9, weight: .bold))
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, 5)
-                        .padding(.vertical, 1)
-                        .background(LibraryGlassDesign.primaryCTA)
-                        .clipShape(Capsule())
+            VStack(spacing: 6) {
+                HStack(spacing: 5) {
+                    Text(hub.label)
+                        .font(.system(size: 12, weight: selected ? .semibold : .medium))
+                        .foregroundStyle(selected ? LibraryGlassDesign.ink : LibraryGlassDesign.inkMuted)
+                        .lineLimit(1)
+                    if badge > 0 {
+                        Text(badge > 99 ? "99+" : "\(badge)")
+                            .font(.system(size: 9, weight: .bold))
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 5)
+                            .padding(.vertical, 1)
+                            .background(LibraryGlassDesign.primaryCTA)
+                            .clipShape(Capsule())
+                    }
                 }
+                Rectangle()
+                    .fill(selected ? LibraryGlassDesign.ink : Color.clear)
+                    .frame(height: 2)
+                    .cornerRadius(1)
             }
-            .foregroundStyle(selected ? LibraryGlassDesign.ink : LibraryGlassDesign.inkMuted)
-            .padding(.horizontal, ChatClickUpDesign.filterPillHPadding)
-            .padding(.vertical, 5)
-            .background(
-                Capsule(style: .continuous)
-                    .fill(selected ? LibraryGlassDesign.sidebarSelection : LibraryGlassDesign.filterPillInactiveFill)
-            )
-            .overlay(
-                Capsule(style: .continuous)
-                    .strokeBorder(
-                        selected ? LibraryGlassDesign.sidebarSelectionStroke : LibraryGlassDesign.filterPillInactiveStroke,
-                        lineWidth: 1
-                    )
-            )
+            .fixedSize(horizontal: true, vertical: false)
         }
         .buttonStyle(.plain)
     }

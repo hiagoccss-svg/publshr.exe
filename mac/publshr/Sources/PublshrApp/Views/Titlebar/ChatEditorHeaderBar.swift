@@ -10,11 +10,14 @@ struct ChatEditorToolbarContent: View {
     var body: some View {
         TitlebarToolbarRow(leadingPadding: 0, trailingPadding: 0) {
             channelTitle
+                .layoutPriority(1)
             if chat.selectedChannel != nil {
                 channelPrimaryActions
+                    .layoutPriority(0)
             }
             Spacer(minLength: 8)
             trailingActions
+                .layoutPriority(0)
         }
         .frame(maxWidth: .infinity)
     }
@@ -148,6 +151,8 @@ struct TitlebarToolbarChannelTitle: View {
                 .font(.system(size: AppWindowChromeMetrics.toolbarTitleFontSize, weight: .semibold))
                 .foregroundStyle(LibraryGlassDesign.ink)
                 .lineLimit(1)
+                .truncationMode(.tail)
+                .frame(maxWidth: 360, alignment: .leading)
                 .frame(height: AppWindowChromeMetrics.controlSize, alignment: .leading)
         }
         .frame(height: AppWindowChromeMetrics.controlSize, alignment: .leading)

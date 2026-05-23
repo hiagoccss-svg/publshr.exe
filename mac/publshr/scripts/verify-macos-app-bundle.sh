@@ -72,8 +72,8 @@ if _binary_contains "EXPLORER"; then
     echo "ERROR: Binary still contains fake Explorer sidebar — wrong build" >&2
     exit 1
 fi
-if ! _binary_contains "PublshrEnterpriseShell-12"; then
-    echo "ERROR: Binary missing enterprise shell marker (PublshrEnterpriseShell-12) — wrong build" >&2
+if ! _binary_contains "PublshrEnterpriseShell-13"; then
+    echo "ERROR: Binary missing enterprise shell marker (PublshrEnterpriseShell-13) — wrong build" >&2
     exit 1
 fi
 

@@ -7,13 +7,18 @@ struct EnterpriseChatView: View {
     var topInset: CGFloat = 0
     var embedInPopOut: Bool = false
     var onNewMessage: (() -> Void)?
+    var onCreateChannel: (() -> Void)?
     @State private var showPlannerShare = false
 
     var body: some View {
         ChatWorkspaceChrome(topInset: topInset, embedInPopOut: embedInPopOut) {
             VStack(spacing: 0) {
                 chatStatusBanner
-                ChatConversationView(chat: chat, onNewMessage: onNewMessage ?? {})
+                ChatConversationView(
+                    chat: chat,
+                    onNewMessage: onNewMessage ?? {},
+                    onCreateChannel: onCreateChannel ?? {}
+                )
             }
         }
         .sheet(isPresented: $chat.showSearchSheet) { ChatSearchSheet(chat: chat) }
