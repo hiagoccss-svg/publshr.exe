@@ -4,21 +4,17 @@ import UniformTypeIdentifiers
 /// Root view for an isolated chat pop-out window.
 struct SessionPopOutRootView: View {
     @ObservedObject var session: ChatChannelSession
-    @State private var showVoice = false
     @State private var editText = ""
 
     var body: some View {
         HStack(spacing: 0) {
-            SessionConversationView(session: session, showVoice: $showVoice, editText: $editText)
+            SessionConversationView(session: session, editText: $editText)
             if session.showThreadPanel {
                 SessionThreadPanel(session: session)
             }
         }
         .background(CursorTheme.chatBackground)
         .preferredColorScheme(.light)
-        .sheet(isPresented: $showVoice) {
-            ChatVoiceRecorderSheetForSession(session: session)
-        }
         .sheet(isPresented: Binding(
             get: { session.editingMessageId != nil },
             set: { if !$0 { session.editingMessageId = nil } }
@@ -55,9 +51,10 @@ struct SessionPopOutRootView: View {
 /// Conversation surface for dedicated pop-out windows (`ChatChannelSession`).
 struct SessionConversationView: View {
     @ObservedObject var session: ChatChannelSession
-    @Binding var showVoice: Bool
     @Binding var editText: String
     @State private var showFileImporter = false
+    @StateObject private var voiceRecorder = ChatVoiceRecorder()
+    @State private var voiceCaptureActive = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -132,10 +129,32 @@ struct SessionConversationView: View {
 
     private var sessionComposer: some View {
         VStack(spacing: 6) {
+            if voiceCaptureActive, session.permissions.canUseVoiceNotes {
+                ChatInlineVoiceRecorderBar(
+                    recorder: voiceRecorder,
+                    onSend: { url, ms, wave in
+                        voiceCaptureActive = false
+                        Task { await session.sendVoiceNote(url: url, durationMs: ms, waveform: wave) }
+                    },
+                    onCancel: {
+                        voiceRecorder.cancelRecording()
+                        voiceCaptureActive = false
+                    }
+                )
+                .padding(.horizontal, 12)
+            } else {
             HStack(alignment: .bottom, spacing: 8) {
                 if session.permissions.canUseVoiceNotes {
-                    Button { showVoice = true } label: {
-                        Image(systemName: "mic").foregroundStyle(CursorTheme.foregroundDim)
+                    Button {
+                        voiceCaptureActive.toggle()
+                        if voiceCaptureActive {
+                            Task { try? await voiceRecorder.startRecording() }
+                        } else {
+                            voiceRecorder.cancelRecording()
+                        }
+                    } label: {
+                        Image(systemName: voiceCaptureActive ? "mic.fill" : "mic")
+                            .foregroundStyle(CursorTheme.foregroundDim)
                     }
                     .buttonStyle(.plain)
                 }
@@ -157,6 +176,7 @@ struct SessionConversationView: View {
                 .disabled(session.composerText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
             .padding(12)
+            }
         }
         .background(Color.white)
     }

@@ -6,7 +6,6 @@ struct ChatConversationView: View {
     var onNewMessage: () -> Void = {}
     var onCreateChannel: () -> Void = {}
     @State private var showFileImporter = false
-    @State private var showVoiceSheet = false
     @State private var editText = ""
     @State private var assignTargetMessage: ChatMessage?
 
@@ -29,9 +28,6 @@ struct ChatConversationView: View {
             if case .success(let urls) = result, let url = urls.first {
                 Task { await chat.uploadFile(from: url) }
             }
-        }
-        .sheet(isPresented: $showVoiceSheet) {
-            ChatVoiceRecorderSheet(chat: chat)
         }
         .sheet(isPresented: Binding(
             get: { chat.editingMessageId != nil },
@@ -83,6 +79,7 @@ struct ChatConversationView: View {
     @ViewBuilder
     private func conversation(_ channel: ChatChannel) -> some View {
         VStack(spacing: 0) {
+            conversationToolbar(channel)
             if chat.showPinnedPanel && !chat.pinnedItems.isEmpty {
                 ChatPinnedPanelView(chat: chat)
             }
@@ -95,7 +92,9 @@ struct ChatConversationView: View {
                 chat: chat,
                 canSendVoiceNotes: chat.permissions.canUseVoiceNotes,
                 onAttachFile: { attachFiles() },
-                onVoiceNote: { showVoiceSheet = true }
+                onSendVoiceNote: { url, ms, wave in
+                    await chat.sendVoiceNote(url: url, durationMs: ms, waveform: wave)
+                }
             )
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -104,13 +103,72 @@ struct ChatConversationView: View {
         }
     }
 
+    private func conversationToolbar(_ channel: ChatChannel) -> some View {
+        HStack(spacing: 8) {
+            Text(channel.displayTitle)
+                .font(.system(size: 13, weight: .semibold))
+                .lineLimit(1)
+            Spacer(minLength: 0)
+            Button {
+                chat.showConversationSearch.toggle()
+                if !chat.showConversationSearch { chat.conversationFilterQuery = "" }
+            } label: {
+                Image(systemName: chat.showConversationSearch ? "magnifyingglass.circle.fill" : "magnifyingglass")
+                    .font(.system(size: 14))
+            }
+            .buttonStyle(.plain)
+            .help("Search this conversation")
+            Button { chat.openChannelSearch() } label: {
+                Image(systemName: "text.magnifyingglass")
+                    .font(.system(size: 14))
+            }
+            .buttonStyle(.plain)
+            .help("Search workspace or channel history")
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
+        .overlay(alignment: .bottom) {
+            Rectangle().fill(CursorTheme.borderSubtle).frame(height: 1)
+        }
+        .overlay(alignment: .bottom) {
+            if chat.showConversationSearch {
+                HStack(spacing: 8) {
+                    TextField("Search in conversation…", text: $chat.conversationFilterQuery)
+                        .textFieldStyle(.plain)
+                        .font(.system(size: 12))
+                    if !chat.conversationFilterQuery.isEmpty {
+                        Button {
+                            chat.conversationFilterQuery = ""
+                        } label: {
+                            Image(systemName: "xmark.circle.fill")
+                                .foregroundStyle(CursorTheme.foregroundDim)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(CursorTheme.inputBackground)
+                .offset(y: 44)
+            }
+        }
+        .padding(.bottom, chat.showConversationSearch ? 44 : 0)
+    }
+
     private var messageList: some View {
         Group {
-            if chat.mainChannelMessages.isEmpty && !chat.isLoading {
-                ChatEmptyStateView(
-                    onNewMessage: onNewMessage,
-                    onCreateChannel: onCreateChannel
-                )
+            if chat.filteredMainChannelMessages.isEmpty && !chat.isLoading {
+                if chat.mainChannelMessages.isEmpty {
+                    ChatEmptyStateView(
+                        onNewMessage: onNewMessage,
+                        onCreateChannel: onCreateChannel
+                    )
+                } else {
+                    Text("No messages match your search.")
+                        .font(.system(size: 13))
+                        .foregroundStyle(CursorTheme.foregroundMuted)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
             } else {
                 ScrollViewReader { proxy in
                     ScrollView {
@@ -127,8 +185,8 @@ struct ChatConversationView: View {
                         .padding(.top, CursorMacShellDesign.editorTopPadding)
                         .padding(.bottom, CursorMacShellDesign.editorBottomPadding)
                     }
-                    .onChange(of: chat.mainChannelMessages.count) { _, _ in
-                        if chat.scrollTargetMessageId == nil, let last = chat.mainChannelMessages.last {
+                    .onChange(of: chat.filteredMainChannelMessages.count) { _, _ in
+                        if chat.scrollTargetMessageId == nil, let last = chat.filteredMainChannelMessages.last {
                             withAnimation(.easeOut(duration: 0.2)) {
                                 proxy.scrollTo(last.id, anchor: .bottom)
                             }
@@ -191,7 +249,7 @@ struct ChatConversationView: View {
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
         var groups: [String: [ChatMessage]] = [:]
-        for msg in chat.mainChannelMessages {
+        for msg in chat.filteredMainChannelMessages {
             let key = formatter.string(from: msg.createdAt)
             groups[key, default: []].append(msg)
         }

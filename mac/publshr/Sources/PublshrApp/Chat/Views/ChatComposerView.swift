@@ -4,7 +4,10 @@ struct ChatComposerView: View {
     @ObservedObject var chat: ChatViewModel
     var canSendVoiceNotes: Bool = false
     var onAttachFile: (() -> Void)?
-    var onVoiceNote: (() -> Void)?
+    var onSendVoiceNote: ((URL, Int, [Double]) async -> Void)?
+
+    @StateObject private var voiceRecorder = ChatVoiceRecorder()
+    @State private var voiceCaptureActive = false
 
     private static let quickEmojis = ["👍", "❤️", "😂", "🎉", "👀", "✅"]
 
@@ -38,43 +41,60 @@ struct ChatComposerView: View {
                 .frame(maxHeight: 180)
             }
 
-            HStack(alignment: .bottom, spacing: 10) {
-                TextField(composerPlaceholder, text: $chat.composerText, axis: .vertical)
-                    .textFieldStyle(.plain)
-                    .font(.system(size: MacSystemChrome.fieldFontSize))
-                    .foregroundStyle(LibraryGlassDesign.ink)
-                    .lineLimit(1...6)
-                    .disabled(!chat.canPostInSelectedChannel)
-                    .macInlineTextField(
-                        background: CursorMacShellDesign.editorColumnBackground,
-                        cornerRadius: 10
-                    )
-                    .onChange(of: chat.composerText) { _, _ in
-                        chat.composerActivityChanged()
+            if voiceCaptureActive, canSendVoiceNotes, let onSendVoiceNote {
+                ChatInlineVoiceRecorderBar(
+                    recorder: voiceRecorder,
+                    onSend: { url, ms, wave in
+                        voiceCaptureActive = false
+                        Task { await onSendVoiceNote(url, ms, wave) }
+                    },
+                    onCancel: {
+                        voiceRecorder.cancelRecording()
+                        voiceCaptureActive = false
                     }
-
-                Button {
-                    Task { await chat.sendMessage() }
-                } label: {
-                    Image(systemName: "arrow.up.circle.fill")
-                        .font(.system(size: 26))
-                        .foregroundStyle(
-                            chat.composerText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                                ? CursorTheme.foregroundDim.opacity(0.4)
-                                : CursorTheme.accent
-                        )
-                }
-                .buttonStyle(.plain)
-                .disabled(
-                    !chat.canPostInSelectedChannel
-                        || chat.composerText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
                 )
-                .keyboardShortcut(.return, modifiers: .command)
+                .padding(.horizontal, 16)
+                .padding(.bottom, 10)
+                .padding(.top, 6)
+            } else {
+                HStack(alignment: .bottom, spacing: 10) {
+                    TextField(composerPlaceholder, text: $chat.composerText, axis: .vertical)
+                        .textFieldStyle(.plain)
+                        .font(.system(size: MacSystemChrome.fieldFontSize))
+                        .foregroundStyle(LibraryGlassDesign.ink)
+                        .lineLimit(1...6)
+                        .disabled(!chat.canPostInSelectedChannel)
+                        .macInlineTextField(
+                            background: CursorMacShellDesign.editorColumnBackground,
+                            cornerRadius: 10
+                        )
+                        .onChange(of: chat.composerText) { _, _ in
+                            chat.composerActivityChanged()
+                        }
+
+                    Button {
+                        Task { await chat.sendMessage() }
+                    } label: {
+                        Image(systemName: "arrow.up.circle.fill")
+                            .font(.system(size: 26))
+                            .foregroundStyle(
+                                chat.composerText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                                    ? CursorTheme.foregroundDim.opacity(0.4)
+                                    : CursorTheme.accent
+                            )
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(
+                        !chat.canPostInSelectedChannel
+                            || chat.composerText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                    )
+                    .keyboardShortcut(.return, modifiers: .command)
+                }
+                .padding(.horizontal, 16)
+                .padding(.bottom, 10)
+                .padding(.top, 6)
+                .opacity(chat.canPostInSelectedChannel ? 1 : 0.45)
             }
-            .padding(.horizontal, 16)
-            .padding(.bottom, 10)
-            .padding(.top, 6)
-            .opacity(chat.canPostInSelectedChannel ? 1 : 0.45)
         }
         .padding(.horizontal, 12)
         .padding(.bottom, 12)
@@ -105,10 +125,21 @@ struct ChatComposerView: View {
             if chat.permissions.canUploadFiles {
                 composerIcon("paperclip") { onAttachFile?() }
                     .help("Attach file")
+                composerIcon("doc.on.clipboard") {
+                    Task { await chat.pasteFromClipboard() }
+                }
+                .help("Paste image or file from clipboard")
             }
-            if canSendVoiceNotes {
-                composerIcon("mic") { onVoiceNote?() }
-                    .help("Voice note")
+            if canSendVoiceNotes, onSendVoiceNote != nil {
+                composerIcon(voiceCaptureActive ? "mic.fill" : "mic") {
+                    voiceCaptureActive.toggle()
+                    if voiceCaptureActive {
+                        Task { try? await voiceRecorder.startRecording() }
+                    } else {
+                        voiceRecorder.cancelRecording()
+                    }
+                }
+                .help("Record voice note in place")
             }
 
             composerIcon("clock") {

@@ -136,6 +136,14 @@ struct PublshrApp: App {
                     }
                 }
                 .keyboardShortcut("o", modifiers: [.command, .shift])
+                Divider()
+                Button("Paste from Clipboard") {
+                    Task { await chat.pasteFromClipboard() }
+                }
+                .keyboardShortcut("v", modifiers: [.command, .shift])
+                Button("Notification Settings…") {
+                    chat.showNotificationSettings = true
+                }
             }
         }
     }
@@ -204,6 +212,20 @@ struct PublshrApp: App {
         }
         ChatWindowManager.shared.onSelectChannelInIDE = { channelId in
             chat.selectChannelById(channelId)
+        }
+        ChatIncomingMessagePopupManager.shared.onOpenChannel = { channelId in
+            guard auth.isAuthenticated else { return }
+            NSApp.activate(ignoringOtherApps: true)
+            chat.selectChannelById(channelId)
+            if ChatUserPreferences.popupOpensChannelWindow,
+               let channel = (chat.channels + chat.directMessages).first(where: { $0.id == channelId }) {
+                ChatWindowManager.shared.openChannel(channel, chat: chat, auth: auth)
+            }
+        }
+        ChatIncomingMessagePopupManager.shared.onQuickReply = { channelId, text in
+            guard auth.isAuthenticated else { return }
+            NSApp.activate(ignoringOtherApps: true)
+            Task { await chat.sendQuickReply(channelId: channelId, text: text) }
         }
         AppLifecycleService.shared.onWake = {
             Task { await performFullSync() }

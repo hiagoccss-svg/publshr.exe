@@ -144,9 +144,10 @@ struct ChatChannelSettingsSheet: View {
                             .foregroundStyle(CursorTheme.foregroundMuted)
                     }
                 }
-                Text(member.role.capitalized)
+                Text(chat.presenceDetail(for: member.userId))
                     .font(.system(size: 11))
                     .foregroundStyle(CursorTheme.foregroundDim)
+                    .lineLimit(2)
             }
             Spacer()
             if canRemove, channel?.kind != .dm || isSelf {

@@ -78,9 +78,10 @@ struct ChatDMInspectorPanel: View {
             VStack(alignment: .leading, spacing: 1) {
                 Text(name)
                     .font(.system(size: 12, weight: .medium))
-                Text(member.role.capitalized)
+                Text(chat.presenceDetail(for: member.userId))
                     .font(.system(size: 10))
                     .foregroundStyle(CursorTheme.foregroundDim)
+                    .lineLimit(2)
             }
             Spacer(minLength: 0)
         }
