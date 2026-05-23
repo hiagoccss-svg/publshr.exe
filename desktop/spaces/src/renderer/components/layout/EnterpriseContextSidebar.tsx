@@ -1,13 +1,13 @@
-import { ChevronLeft, LayoutDashboard, Pin, Plus, Settings, Star } from 'lucide-react'
+import { LayoutDashboard, Pin, Plus, Settings, Star } from 'lucide-react'
 import clsx from 'clsx'
 import { useSpacesStore } from '../../stores/spaces-store'
 import { SpacesHierarchyTree } from '../spaces/SpacesHierarchyTree'
 import { ChatContextSidebar } from '../chat/ChatContextSidebar'
+import { ModuleContextNav } from './ModuleContextNav'
 
 /** Column 2 — contextual sidebar (spaces tree, chat channels placeholder, etc.). */
 export function EnterpriseContextSidebar(): React.ReactElement {
   const collapsed = useSpacesStore((s) => s.sidebarCollapsed)
-  const setSidebarCollapsed = useSpacesStore((s) => s.setSidebarCollapsed)
   const activeSection = useSpacesStore((s) => s.activeSection)
   const spaces = useSpacesStore((s) => s.spaces)
   const setActiveSpace = useSpacesStore((s) => s.setActiveSpace)
@@ -23,15 +23,14 @@ export function EnterpriseContextSidebar(): React.ReactElement {
   const showSpacesTree = activeSection === 'spaces'
   const showChatNav = activeSection === 'chat'
 
+  const contextClass = clsx(
+    'glass-sidebar enterprise-context-sidebar flex min-h-0 shrink-0 flex-col overflow-hidden border-r border-black/5 transition-[width] duration-200',
+    collapsed && 'enterprise-context-sidebar-collapsed'
+  )
+
   if (showChatNav) {
     return (
-      <aside
-        className={clsx(
-          'glass-sidebar flex min-h-0 w-56 shrink-0 flex-col overflow-hidden border-r border-black/5',
-          collapsed && 'w-12'
-        )}
-      >
-        <ContextHeader collapsed={collapsed} onToggle={() => setSidebarCollapsed(!collapsed)} />
+      <aside className={contextClass}>
         {!collapsed && <ChatContextSidebar />}
         <SettingsFooter collapsed={collapsed} onSettings={() => setActiveSection('settings')} />
       </aside>
@@ -40,21 +39,8 @@ export function EnterpriseContextSidebar(): React.ReactElement {
 
   if (!showSpacesTree) {
     return (
-      <aside
-        className={clsx(
-          'glass-sidebar flex min-h-0 shrink-0 flex-col border-r border-black/5 transition-[width] duration-200',
-          collapsed ? 'w-12' : 'w-56'
-        )}
-      >
-        <ContextHeader collapsed={collapsed} onToggle={() => setSidebarCollapsed(!collapsed)} />
-        {!collapsed && (
-          <div className="flex-1 overflow-y-auto px-3 py-2 text-xs text-ink-muted">
-            <p className="font-medium text-ink-secondary">{sectionContextLabel(activeSection)}</p>
-            <p className="mt-2 leading-relaxed">
-              Use the main workspace to browse and manage {sectionContextLabel(activeSection).toLowerCase()}.
-            </p>
-          </div>
-        )}
+      <aside className={contextClass}>
+        {!collapsed && <ModuleContextNav section={activeSection} />}
         <SettingsFooter collapsed={collapsed} onSettings={() => setActiveSection('settings')} />
       </aside>
     )
@@ -63,8 +49,8 @@ export function EnterpriseContextSidebar(): React.ReactElement {
   return (
     <aside
       className={clsx(
-        'glass-sidebar flex min-h-0 shrink-0 flex-col overflow-hidden border-r border-black/5 transition-[width] duration-200',
-        collapsed ? 'w-12' : activeSpaceId ? 'glass-sidebar-wide w-64' : 'w-56'
+        contextClass,
+        !collapsed && activeSpaceId && 'enterprise-context-sidebar-wide'
       )}
     >
       {!collapsed && (
@@ -80,9 +66,7 @@ export function EnterpriseContextSidebar(): React.ReactElement {
         </div>
       )}
 
-      <ContextHeader collapsed={collapsed} onToggle={() => setSidebarCollapsed(!collapsed)} />
-
-      <div className="flex-1 space-y-0.5 overflow-y-auto px-2 pb-2">
+      <div className="flex-1 space-y-0.5 overflow-y-auto px-2 pb-2 pt-2">
         {!collapsed && (
           <>
             <button
@@ -131,28 +115,6 @@ export function EnterpriseContextSidebar(): React.ReactElement {
   )
 }
 
-function ContextHeader({
-  collapsed,
-  onToggle
-}: {
-  collapsed: boolean
-  onToggle: () => void
-}): React.ReactElement {
-  return (
-    <div className="flex items-center justify-between px-3 py-2">
-      {!collapsed && <span className="library-section-label !px-0">Spaces</span>}
-      <button
-        type="button"
-        onClick={onToggle}
-        className="rounded p-1 text-ink-muted hover:bg-surface-muted"
-        title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-      >
-        <ChevronLeft className={clsx('h-4 w-4 transition', collapsed && 'rotate-180')} />
-      </button>
-    </div>
-  )
-}
-
 function SettingsFooter({
   collapsed,
   onSettings
@@ -172,24 +134,6 @@ function SettingsFooter({
       </button>
     </div>
   )
-}
-
-function sectionContextLabel(section: string): string {
-  const map: Record<string, string> = {
-    dashboard: 'Dashboard',
-    planner: 'Planner',
-    chat: 'Chat',
-    documents: 'Documents',
-    approvals: 'Approvals',
-    reports: 'Reports',
-    clients: 'Clients',
-    campaigns: 'Campaigns',
-    team: 'Team',
-    media: 'Media Monitoring',
-    files: 'Files',
-    settings: 'Settings'
-  }
-  return map[section] ?? 'Workspace'
 }
 
 function SpaceGroup({

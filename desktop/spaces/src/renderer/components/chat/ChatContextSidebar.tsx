@@ -5,6 +5,7 @@ import { useChatStore } from '../../stores/chat-store'
 /** Column 2 — chat channels when Chat is selected in the main nav. */
 export function ChatContextSidebar(): React.ReactElement {
   const channels = useChatStore((s) => s.channels)
+  const sidebarSearchQuery = useChatStore((s) => s.sidebarSearchQuery)
   const activeChannelId = useChatStore((s) => s.activeChannelId)
   const setActiveChannel = useChatStore((s) => s.setActiveChannel)
   const createChannel = useChatStore((s) => s.createChannel)
@@ -26,7 +27,13 @@ export function ChatContextSidebar(): React.ReactElement {
       </div>
       <p className="library-section-label">Channels</p>
       <nav className="flex-1 space-y-0.5 overflow-y-auto px-2 pb-2">
-        {channels.map((ch) => (
+        {channels
+          .filter((ch) => {
+            const q = sidebarSearchQuery.trim().toLowerCase()
+            if (!q) return true
+            return ch.name.toLowerCase().includes(q) || ch.description.toLowerCase().includes(q)
+          })
+          .map((ch) => (
           <button
             key={ch.id}
             type="button"

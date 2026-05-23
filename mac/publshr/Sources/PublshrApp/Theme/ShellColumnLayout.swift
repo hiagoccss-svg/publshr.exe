@@ -4,8 +4,8 @@ import SwiftUI
 enum ShellColumnLayout {
     static let referenceWindowWidth: CGFloat = 1280
 
-    /// Primary bar menu (Chat / Spaces labels) — Cursor Mac ~200pt, not a % of window.
-    static let barExpandedWidth: CGFloat = 200
+    /// Primary bar menu (Chat / Spaces labels) — wide enough for "Media Monitoring" without truncation.
+    static let barExpandedWidth: CGFloat = 220
     /// Icon-only bar column (content below titlebar; traffic lights live in titlebar band).
     static let barCollapsedMin: CGFloat = 56
     /// Cap collapsed column so traffic-light reserve does not waste body width.
@@ -65,7 +65,7 @@ enum ShellColumnLayout {
         let fixedPeer = submenuVisible ? submenuWidth : 0
         let reserved = fixedPeer + dividers + editorMinWidth
         let availableForBar = windowWidth - reserved
-        let minBarForLabels: CGFloat = 168
+        let minBarForLabels: CGFloat = 200
         return min(barExpandedWidth, max(minBarForLabels, availableForBar))
     }
 }

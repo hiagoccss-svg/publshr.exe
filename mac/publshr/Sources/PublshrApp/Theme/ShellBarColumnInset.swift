@@ -14,11 +14,12 @@ enum ShellBarColumnInset {
         expanded: Bool,
         trafficLeadingInset: CGFloat
     ) -> CGFloat {
-        let reserve = trafficReserve(barWidth: barWidth, trafficLeadingInset: trafficLeadingInset)
         let minimum = LibraryGlassDesign.barMenuRowHorizontal
         if expanded {
-            return min(barWidth - minimum, max(minimum, reserve))
+            // Traffic lights sit in the unified titlebar row above — body rows only need standard inset.
+            return minimum
         }
+        let reserve = trafficReserve(barWidth: barWidth, trafficLeadingInset: trafficLeadingInset)
         return max(minimum, reserve)
     }
 }

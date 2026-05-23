@@ -1,4 +1,5 @@
 import { TopBar } from './TopBar'
+import { ShellColumnTitlebar } from './ShellColumnTitlebar'
 import { EnterpriseNavRail } from './EnterpriseNavRail'
 import { EnterpriseContextSidebar } from './EnterpriseContextSidebar'
 import { WorkspaceArea } from './WorkspaceArea'
@@ -19,7 +20,11 @@ export function MainShell({ embedded = false, onSignOut }: MainShellProps = {}):
 
   return (
     <div className={embedded ? 'flex h-full min-h-0 flex-1 flex-col' : 'glass-shell flex h-full flex-col'}>
-      <TopBar embedded={embedded} onSignOut={onSignOut} />
+      {embedded ? (
+        <ShellColumnTitlebar embedded onSignOut={onSignOut} />
+      ) : (
+        <TopBar onSignOut={onSignOut} />
+      )}
       <div className="flex min-h-0 flex-1">
         <EnterpriseNavRail />
         <EnterpriseContextSidebar />

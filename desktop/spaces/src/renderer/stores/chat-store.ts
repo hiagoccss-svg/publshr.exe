@@ -20,15 +20,16 @@ export interface ChatMessage {
 const STORAGE_KEY = 'publshr.enterprise.chat.v1'
 
 const DEFAULT_CHANNELS: ChatChannel[] = [
-  { id: 'general', name: 'general', description: 'Workspace-wide updates', isDm: false, unread: 0 },
-  { id: 'operations', name: 'operations', description: 'Ops and delivery', isDm: false, unread: 0 },
-  { id: 'creative', name: 'creative', description: 'Docs, campaigns, assets', isDm: false, unread: 0 }
+  { id: 'editorial', name: 'editorial', description: 'Editorial coordination', isDm: false, unread: 0 },
+  { id: 'approvals', name: 'approvals', description: 'Review and sign-off', isDm: false, unread: 1 },
+  { id: 'campaign-launch', name: 'campaign-launch', description: 'Launch comms', isDm: false, unread: 0 },
+  { id: 'general', name: 'general', description: 'Workspace-wide updates', isDm: false, unread: 0 }
 ]
 
 const DEFAULT_MESSAGES: ChatMessage[] = [
   {
     id: 'm1',
-    channelId: 'general',
+    channelId: 'editorial',
     authorId: 'system',
     authorName: 'Publshr',
     body: 'Welcome to enterprise chat. Messages are stored locally until Supabase sync is connected.',
@@ -63,9 +64,11 @@ interface ChatState {
   channels: ChatChannel[]
   messages: ChatMessage[]
   activeChannelId: string
+  sidebarSearchQuery: string
   draft: string
   hydrate: () => void
   setActiveChannel: (id: string) => void
+  setSidebarSearchQuery: (q: string) => void
   setDraft: (v: string) => void
   sendMessage: (authorId: string, authorName: string) => void
   createChannel: (name: string) => void
@@ -75,7 +78,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
   hydrated: false,
   channels: DEFAULT_CHANNELS,
   messages: DEFAULT_MESSAGES,
-  activeChannelId: 'general',
+  activeChannelId: 'editorial',
+  sidebarSearchQuery: '',
   draft: '',
 
   hydrate: () => {
@@ -84,9 +88,11 @@ export const useChatStore = create<ChatState>((set, get) => ({
       hydrated: true,
       channels: data.channels,
       messages: data.messages,
-      activeChannelId: data.channels[0]?.id ?? 'general'
+      activeChannelId: data.channels.find((c) => c.id === 'editorial')?.id ?? data.channels[0]?.id ?? 'editorial'
     })
   },
+
+  setSidebarSearchQuery: (sidebarSearchQuery) => set({ sidebarSearchQuery }),
 
   setActiveChannel: (id) => {
     set((s) => ({

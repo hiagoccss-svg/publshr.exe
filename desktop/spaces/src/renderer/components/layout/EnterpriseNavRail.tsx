@@ -4,6 +4,7 @@ import {
   Briefcase,
   Calendar,
   CheckCircle2,
+  ChevronRight,
   FileText,
   FolderKanban,
   LayoutDashboard,
@@ -15,6 +16,7 @@ import {
 } from 'lucide-react'
 import clsx from 'clsx'
 import { useSpacesStore } from '../../stores/spaces-store'
+import { useChatStore } from '../../stores/chat-store'
 import type { SidebarSection } from '../../../shared/types'
 
 type NavId = SidebarSection | 'whiteboard'
@@ -40,13 +42,12 @@ export function EnterpriseNavRail(): React.ReactElement {
   const activeSection = useSpacesStore((s) => s.activeSection)
   const taskView = useSpacesStore((s) => s.taskView)
   const selectNav = useSpacesStore((s) => s.selectEnterpriseNav)
+  const currentUserName = useSpacesStore((s) => s.currentUserName)
+  const myStatus = useChatStore((s) => s.channels.length > 0 ? 'online' : 'offline')
 
   return (
-    <aside className="glass-sidebar flex w-[var(--lib-bar-menu-width,200px)] min-h-0 shrink-0 flex-col border-r border-black/5">
-      <div className="px-3 pt-4 pb-2">
-        <p className="text-[10px] font-semibold uppercase tracking-wide text-ink-muted">Workspace</p>
-      </div>
-      <nav className="flex-1 space-y-0.5 overflow-y-auto px-2 pb-2">
+    <aside className="glass-sidebar enterprise-nav-rail flex min-h-0 shrink-0 flex-col border-r border-black/5">
+      <nav className="flex-1 space-y-0.5 overflow-y-auto px-2 pb-2 pt-3">
         {NAV.map((item) => {
           const Icon = item.icon
           const active =
@@ -67,6 +68,22 @@ export function EnterpriseNavRail(): React.ReactElement {
           )
         })}
       </nav>
+      <div className="border-t border-surface-border px-2 py-2">
+        <button
+          type="button"
+          className="flex w-full min-w-0 items-center gap-2.5 rounded-lg px-2 py-2 text-left hover:bg-surface-muted/60"
+        >
+          <span className="relative inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-sm font-semibold text-emerald-800">
+            {(currentUserName || 'J').slice(0, 1).toUpperCase()}
+            <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-white bg-emerald-500" />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-sm font-semibold text-ink">{currentUserName || 'John'}</span>
+            <span className="block truncate text-[11px] capitalize text-ink-muted">{myStatus}</span>
+          </span>
+          <ChevronRight className="h-3.5 w-3.5 shrink-0 text-ink-muted" />
+        </button>
+      </div>
     </aside>
   )
 }

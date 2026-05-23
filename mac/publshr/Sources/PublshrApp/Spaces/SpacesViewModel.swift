@@ -127,6 +127,9 @@ final class SpacesViewModel: ObservableObject {
         defer { isLoading = false }
 
         do {
+            if let userId {
+                try await service.seedDefaultWorkspace(workspaceId: workspaceId, ownerId: userId)
+            }
             let loaded = try await service.fetchSpaces(workspaceId: workspaceId)
             spaces = loaded
             let profs = try await service.fetchWorkspaceProfiles(workspaceId: workspaceId)
