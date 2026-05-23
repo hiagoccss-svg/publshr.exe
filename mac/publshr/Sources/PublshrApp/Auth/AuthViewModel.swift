@@ -235,7 +235,7 @@ final class AuthViewModel: ObservableObject {
 
         do {
             try await withAsyncTimeout(seconds: Self.cloudReconcileTimeoutSeconds) {
-                await self.performCloudReconcile(unlockMethod: unlockMethod)
+                try await self.performCloudReconcile(unlockMethod: unlockMethod)
             }
         } catch is AsyncTimeoutError {
             if applyOfflineSnapshotIfAvailable() {
