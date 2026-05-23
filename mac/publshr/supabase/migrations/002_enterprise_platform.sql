@@ -93,6 +93,32 @@ alter table public.subscription_plans enable row level security;
 
 create policy "subscription_plans_read" on public.subscription_plans for select using (true);
 create policy "devices_own" on public.device_registrations for all using (auth.uid() = user_id);
-create policy "privacy_audit_own" on public.privacy_audit_events for insert with check (auth.uid() = user_id);
-create policy "call_rooms_member" on public.call_rooms for all using (true);
-create policy "call_participants_member" on public.call_participants for all using (true);
+create policy "privacy_audit_insert" on public.privacy_audit_events for insert with check (auth.uid() = user_id);
+create policy "privacy_audit_select" on public.privacy_audit_events for select using (
+  auth.uid() = user_id
+  or (
+    workspace_id is not null
+    and publshr_private.role_at_least(
+      publshr_private.workspace_member_role(workspace_id, auth.uid()),
+      'admin'::publshr_private.workspace_role
+    )
+  )
+);
+create policy "call_rooms_workspace_member" on public.call_rooms for all
+  using (publshr_private.is_workspace_member(workspace_id, auth.uid()))
+  with check (publshr_private.is_workspace_member(workspace_id, auth.uid()));
+create policy "call_participants_workspace_member" on public.call_participants for all
+  using (
+    exists (
+      select 1 from public.call_rooms r
+      where r.id = room_id
+        and publshr_private.is_workspace_member(r.workspace_id, auth.uid())
+    )
+  )
+  with check (
+    exists (
+      select 1 from public.call_rooms r
+      where r.id = room_id
+        and publshr_private.is_workspace_member(r.workspace_id, auth.uid())
+    )
+  );

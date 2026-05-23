@@ -34,11 +34,11 @@ struct GlassPrimaryBarChrome: View {
     }
 }
 
-/// Chat / Spaces submenu column — soft white glass (matches editor readability).
+/// Chat / Spaces submenu column — soft glass over the grey submenu step.
 struct GlassSubmenuChrome: View {
     var body: some View {
         ZStack {
-            Color.white.opacity(0.92)
+            LibraryGlassDesign.submenuColumnBackground
             VisualEffectBlur(
                 material: .contentBackground,
                 blendingMode: .withinWindow

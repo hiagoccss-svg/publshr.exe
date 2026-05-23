@@ -49,7 +49,7 @@ CREATE POLICY chat_channel_members_update ON public.chat_channel_members
     user_id = auth.uid()
     OR publshr_private.role_at_least(
       publshr_private.workspace_member_role(workspace_id, auth.uid()),
-      'admin'::workspace_role
+      'admin'::publshr_private.workspace_role
     )
   );
 

@@ -51,10 +51,10 @@ enum LibraryGlassDesign {
         )
         return submenuColumnWidth(for: windowWidth, barWidth: bar, submenuVisible: true)
     }
-    /// Column 2 + editor — soft white (Cursor Mac content columns).
-    static let submenuColumnBackground = Color.white.opacity(0.96)
-    /// Column 1 — warm gray tint over desktop blur.
-    static let primaryBarColumnBackground = Color(hex: 0xEBE8E3).opacity(0.72)
+    /// Column 2 — lighter grey step toward the white editor (main shell alignment).
+    static let submenuColumnBackground = Color(hex: 0xF4F4F4)
+    /// Column 1 — warm grey tint over desktop blur (translucent rail).
+    static let primaryBarColumnBackground = Color(hex: 0xE8E8E8).opacity(0.72)
     /// Chat submenu footer strip (enterprise chrome).
     static let submenuFooterBackground = Color(hex: 0xFAFAF8)
 

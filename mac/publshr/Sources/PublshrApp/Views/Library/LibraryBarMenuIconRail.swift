@@ -33,7 +33,7 @@ struct LibraryBarMenuIconRail: View {
             .help("Your profile")
             .padding(.bottom, 10)
         }
-        .padding(.top, 8)
+        .padding(.top, AppWindowChromeMetrics.barColumnBodyTopSpacing)
         .padding(.horizontal, 6)
         .frame(width: barWidth, alignment: .center)
         .frame(maxHeight: .infinity)
