@@ -212,6 +212,7 @@ jobs:
               test "$REMOTE_DIGEST" = "$LOCAL_DIGEST"
               echo "Live tarball digest verified (${LOCAL_DIGEST:0:12}…)"
               echo "Live channel verified for build ${BUILD}"
+              PUBLSHR_REQUIRE_LIVE_DMG=1 bash mac/publshr/scripts/verify-github-live.sh
               exit 0
             fi
             echo "Waiting for live VERSION.txt (attempt ${attempt})… got ${REMOTE_VER}/${REMOTE_BUILD}"

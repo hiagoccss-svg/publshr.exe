@@ -18,10 +18,27 @@ check_url() {
   echo "OK   $label ($code)"
 }
 
+# DMG is published on the first deliver-macos run after merge; PR CI must not fail while live is still zip-only.
+check_url_when_present() {
+  local label="$1"
+  local url="$2"
+  local code
+  code="$(curl -sL -o /dev/null -w "%{http_code}" "$url")"
+  if [[ "$code" == "200" || "$code" == "302" ]]; then
+    echo "OK   $label ($code)"
+    return 0
+  fi
+  if [[ "${PUBLSHR_REQUIRE_LIVE_DMG:-0}" == "1" ]]; then
+    echo "FAIL $label HTTP $code — $url" >&2
+    exit 1
+  fi
+  echo "WARN $label HTTP $code — not on live yet (ships after merge to main publishes deliver-macos)" >&2
+}
+
 echo "GitHub repo: $REPO (tag: $TAG)"
 check_url "VERSION.txt" "${BASE}/VERSION.txt"
 check_url "Publshr-macos tarball" "${BASE}/Publshr-macos-aarch64.tar.gz"
-check_url "Install DMG" "${BASE}/Publshr-Install-macos.dmg"
+check_url_when_present "Install DMG" "${BASE}/Publshr-Install-macos.dmg"
 check_url "Install zip" "${BASE}/Publshr-Install-macos.zip"
 
 ver="$(curl -fsSL "${BASE}/VERSION.txt" 2>/dev/null | head -1 || true)"
