@@ -42,10 +42,9 @@ final class AppLifecycleService: ObservableObject {
     }
 
     private func refreshReachabilityOnce() async {
-        async let githubUp = checkHEADReachable("https://github.com")
-        async let supabaseUp = checkHEADReachable(SupabaseConfig.url.absoluteString)
-        let github = await githubUp
-        let supabase = await supabaseUp
+        await CloudPlatformHealth.shared.refresh()
+        let github = CloudPlatformHealth.shared.isGitHubReachable
+        let supabase = CloudPlatformHealth.shared.isSupabaseReachable
         isNetworkReachable = github || supabase
     }
 
@@ -58,10 +57,9 @@ final class AppLifecycleService: ObservableObject {
 
     private func pollReachabilityLoop() async {
         while !Task.isCancelled {
-            async let githubReachable = checkHEADReachable("https://github.com")
-            async let supabaseReachable = checkHEADReachable(SupabaseConfig.url.absoluteString)
-            let githubUp = await githubReachable
-            let supabaseUp = await supabaseReachable
+            await CloudPlatformHealth.shared.refresh()
+            let githubUp = CloudPlatformHealth.shared.isGitHubReachable
+            let supabaseUp = CloudPlatformHealth.shared.isSupabaseReachable
             let reachable = githubUp || supabaseUp
             let wasOffline = !isNetworkReachable
             isNetworkReachable = reachable

@@ -14,10 +14,9 @@ enum AppCrashReporter {
     }
 
     static func crashLogURL() -> URL {
-        let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-        let dir = base.appendingPathComponent("Publshr/crashes", isDirectory: true)
-        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-        return dir.appendingPathComponent("last-crash.log")
+        LocalDataLayout.ensureRootExists()
+        try? FileManager.default.createDirectory(at: LocalDataLayout.crashesDirectory, withIntermediateDirectories: true)
+        return LocalDataLayout.crashesDirectory.appendingPathComponent("last-crash.log")
     }
 }
 
