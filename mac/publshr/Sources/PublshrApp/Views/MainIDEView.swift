@@ -116,6 +116,14 @@ struct MainIDEView: View {
             if module == .chat { chat.navigateForward() }
             else { Task { await spaces.navigateForward() } }
         }
+        .onReceive(NotificationCenter.default.publisher(for: .publshrSelectModule)) { output in
+            guard let raw = output.object as? String,
+                  let restored = AppModule(rawValue: raw),
+                  restored != .settings else { return }
+            module = restored
+            onModuleChange(restored)
+            tabStore.openFromModule(restored, activate: true)
+        }
         .onReceive(NotificationCenter.default.publisher(for: .publshrOpenSettings)) { output in
             let section = (output.object as? String).flatMap { SettingsSection(rawValue: $0) }
             WorkspaceModuleWindowManager.shared.openSettings(

@@ -38,6 +38,7 @@ check_table "privacy_audit_events"
 check_table "call_rooms"
 check_table "whiteboards"
 check_table "chat_scheduled_messages"
+check_table "approvals"
 
 echo "7. Device registration upsert"
 device_key="verify-$(date +%s)"

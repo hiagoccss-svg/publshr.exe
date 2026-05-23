@@ -7,4 +7,6 @@ extension Notification.Name {
     static let publshrPerformLiveSync = Notification.Name("publshrPerformLiveSync")
     /// Posted after each GitHub live poll — refreshes Chat, Spaces, and enterprise data from Supabase.
     static let publshrPerformCloudSync = Notification.Name("publshrPerformCloudSync")
+    /// `object`: `AppModule.rawValue` (excluding `.settings`).
+    static let publshrSelectModule = Notification.Name("com.publshr.selectModule")
 }

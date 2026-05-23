@@ -246,6 +246,55 @@ struct SpaceCommentRecord: Codable, Identifiable, Equatable {
     }
 }
 
+struct SpaceApprovalRecord: Codable, Identifiable, Equatable {
+    let id: UUID
+    let spaceId: UUID
+    let taskId: UUID?
+    let documentId: UUID?
+    var status: String
+    var title: String
+    var updatedAt: Date
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case spaceId = "space_id"
+        case taskId = "task_id"
+        case documentId = "document_id"
+        case status, title
+        case updatedAt = "updated_at"
+    }
+
+    var isPending: Bool {
+        status == "requested" || status == "in_review"
+    }
+}
+
+struct SpaceFileRecord: Codable, Identifiable, Equatable {
+    let id: UUID
+    let spaceId: UUID
+    var fileName: String
+    var fileUrl: String
+    var mimeType: String
+    var updatedAt: Date
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case spaceId = "space_id"
+        case fileName = "file_name"
+        case fileUrl = "file_url"
+        case mimeType = "mime_type"
+        case updatedAt = "updated_at"
+    }
+}
+
+struct SpacesWorkspaceSummary: Equatable {
+    var spaceCount: Int
+    var openTasks: Int
+    var overdueTasks: Int
+    var documentCount: Int
+    var pendingApprovals: Int
+}
+
 struct SpaceDocumentRecord: Codable, Identifiable, Equatable {
     let id: UUID
     let spaceId: UUID
