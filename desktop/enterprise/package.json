@@ -11,6 +11,7 @@
     "preview": "vite preview",
     "tauri": "tauri",
     "typecheck": "tsc --noEmit",
+    "verify:live": "bash scripts/verify-live.sh",
     "dist": "tauri build"
   },
   "dependencies": {

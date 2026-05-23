@@ -10,5 +10,9 @@ export const SUPABASE_ENV = {
 export function isSupabaseConfigured(
   env: Record<string, string | undefined>
 ): boolean {
-  return Boolean(env[SUPABASE_ENV.url] && env[SUPABASE_ENV.anonKey])
+  const url = env[SUPABASE_ENV.url]?.trim()
+  const key = env[SUPABASE_ENV.anonKey]?.trim()
+  if (!url || !key) return false
+  if (url.includes('your-project') || key.includes('your_anon')) return false
+  return true
 }

@@ -1,6 +1,7 @@
 import { invoke } from '@tauri-apps/api/core'
 import { listen } from '@tauri-apps/api/event'
 import { isTauriDesktop } from '@desktop/platform'
+import { createLocalSpacesAPI } from './local-spaces-api'
 import type { SpacesAPI } from '../../shared/types'
 
 function cmd<T>(name: string, args?: Record<string, unknown>): Promise<T> {
@@ -68,8 +69,6 @@ export function bindTauriSpacesRefresh(onRefresh: () => void): () => void {
 
 export function resolveSpacesAPI(): SpacesAPI {
   if (isTauriDesktop()) return createTauriSpacesAPI()
-  if (window.spaces) return window.spaces
-  throw new Error(
-    'Spaces API unavailable — run with `npm run tauri:dev` (Tauri) or `npm run dev:electron` (legacy)'
-  )
+  if (typeof window !== 'undefined' && window.spaces) return window.spaces
+  return createLocalSpacesAPI()
 }

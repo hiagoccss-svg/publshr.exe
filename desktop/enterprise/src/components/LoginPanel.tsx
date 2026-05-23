@@ -15,8 +15,14 @@ export function LoginPanel() {
     <div className="library-card mx-auto max-w-md">
       <h2 className="text-lg font-semibold text-[var(--lib-ink)]">Publshr Enterprise</h2>
       <p className="mt-1 text-sm text-[var(--lib-ink-muted)]">
-        Sign in for cloud sync, or continue with the full local workspace (SQLite).
+        Sign in for live Supabase sync (Spaces, Chat, enterprise modules), or continue with the full
+        local workspace (SQLite).
       </p>
+      {cloudConfigured ? (
+        <p className="mt-2 text-xs text-[var(--lib-ink-muted)]">
+          Test account: publshr-test-1779384952@mailinator.com / TestPass123!
+        </p>
+      ) : null}
 
       {cloudConfigured ? (
         <form className="mt-6 space-y-4" onSubmit={onSubmit}>
