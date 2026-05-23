@@ -3,13 +3,38 @@ import AppKit
 
 @main
 struct PublshrInstallerApp: App {
+    @NSApplicationDelegateAdaptor(InstallerAppDelegate.self) private var appDelegate
+
     var body: some Scene {
         WindowGroup {
             InstallerRootView()
-                .frame(minWidth: 520, minHeight: 420)
+                .frame(width: 340, height: 400)
+                .background(InstallerGlassBackdrop())
+                .background(WindowConfigurator())
         }
         .windowStyle(.hiddenTitleBar)
         .windowResizability(.contentSize)
+    }
+}
+
+final class InstallerAppDelegate: NSObject, NSApplicationDelegate {
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        NSApp.setActivationPolicy(.regular)
+        NSApp.activate(ignoringOtherApps: true)
+    }
+}
+
+private struct WindowConfigurator: NSViewRepresentable {
+    func makeNSView(context: Context) -> NSView {
+        let view = NSView(frame: .zero)
+        DispatchQueue.main.async {
+            InstallerWindowStyle.apply(to: view.window)
+        }
+        return view
+    }
+
+    func updateNSView(_ nsView: NSView, context: Context) {
+        InstallerWindowStyle.apply(to: nsView.window)
     }
 }
 
@@ -26,24 +51,22 @@ final class InstallerViewModel: ObservableObject {
     @Published var phase: Phase = .welcome
     @Published var progress: Double = 0
     @Published var statusLine = ""
-    @Published private(set) var releaseVersion: String?
     @Published private(set) var hasBundledApp = false
 
-    private let repo = ProcessInfo.processInfo.environment["PUBLSHR_REPO"] ?? "hiagoccss-svg/publshr.exe"
-    private let liveURL: URL
+    private let liveURL = URL(string: "https://github.com/hiagoccss-svg/publshr.exe/releases/download/live/Publshr-macos-aarch64.tar.gz")!
     let appDest: URL
     private let bundledSourceTree: URL?
     private let sourceMarker = FileManager.default.homeDirectoryForCurrentUser
         .appendingPathComponent("Library/Application Support/Publshr/install-source.tree")
 
     init() {
-        liveURL = URL(string: "https://github.com/\(repo)/releases/download/live/Publshr-macos-aarch64.tar.gz")!
         appDest = FileManager.default.homeDirectoryForCurrentUser
             .appendingPathComponent("Applications/Publshr.app", isDirectory: true)
         bundledSourceTree = Self.discoverBundledSourceTree(marker: sourceMarker)
         hasBundledApp = bundledSourceTree != nil
-        releaseVersion = Self.readReleaseVersion(near: bundledSourceTree)
     }
+
+    var shouldAutoStart: Bool { hasBundledApp }
 
     private static func discoverBundledSourceTree(marker: URL) -> URL? {
         if let raw = try? String(contentsOf: marker, encoding: .utf8) {
@@ -55,25 +78,6 @@ final class InstallerViewModel: ObservableObject {
         }
         let installFolder = Bundle.main.bundleURL.deletingLastPathComponent()
         if validateAppTree(installFolder) { return installFolder }
-        return nil
-    }
-
-    private static func readReleaseVersion(near tree: URL?) -> String? {
-        var candidates: [URL] = []
-        if let tree {
-            candidates.append(tree.appendingPathComponent("VERSION.txt"))
-        }
-        candidates.append(Bundle.main.bundleURL.deletingLastPathComponent().appendingPathComponent("VERSION.txt"))
-        for url in candidates {
-            guard let raw = try? String(contentsOf: url, encoding: .utf8) else { continue }
-            let line = raw.split(separator: "\n", omittingEmptySubsequences: true).first.map(String.init) ?? ""
-            let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
-            if !trimmed.isEmpty { return trimmed }
-        }
-        if let short = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String,
-           let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String {
-            return "\(short) (\(build))"
-        }
         return nil
     }
 
@@ -91,6 +95,14 @@ final class InstallerViewModel: ObservableObject {
     }
 
     func startInstall() {
+        switch phase {
+        case .downloading, .installing, .done:
+            return
+        case .failed:
+            phase = .welcome
+        case .welcome:
+            break
+        }
         Task { await runInstall() }
     }
 
@@ -102,13 +114,13 @@ final class InstallerViewModel: ObservableObject {
             let tree: URL
             if let bundled = bundledSourceTree {
                 phase = .installing
-                progress = 0.5
-                statusLine = "Installing from package…"
+                progress = 0.35
+                statusLine = "Installing…"
                 tree = bundled
             } else {
                 phase = .downloading
                 progress = 0.05
-                statusLine = "Downloading Publshr…"
+                statusLine = "Downloading…"
 
                 let archive = tmp.appendingPathComponent("Publshr-macos-aarch64.tar.gz")
                 let (bytes, response) = try await URLSession.shared.download(from: liveURL)
@@ -117,7 +129,7 @@ final class InstallerViewModel: ObservableObject {
                 }
                 try FileManager.default.moveItem(at: bytes, to: archive)
                 progress = 0.45
-                statusLine = "Extracting…"
+                statusLine = "Preparing…"
 
                 let extract = Process()
                 extract.executableURL = URL(fileURLWithPath: "/usr/bin/tar")
@@ -136,16 +148,18 @@ final class InstallerViewModel: ObservableObject {
             }
 
             phase = .installing
-            progress = 0.7
-            statusLine = "Installing Publshr…"
+            progress = 0.75
+            statusLine = "Installing…"
 
             try installApp(from: sourceApp, to: appDest)
             progress = 1
             phase = .done
-            statusLine = "Publshr is installed."
+            statusLine = "Done"
 
             try? FileManager.default.removeItem(at: tmp)
             NSWorkspace.shared.open(appDest)
+            try? await Task.sleep(nanoseconds: 900_000_000)
+            NSApp.terminate(nil)
         } catch {
             phase = .failed(error.localizedDescription)
             try? FileManager.default.removeItem(at: tmp)
@@ -192,7 +206,7 @@ final class InstallerViewModel: ObservableObject {
             try process.run()
             process.waitUntilExit()
             guard process.terminationStatus == 0 else {
-                throw InstallerError.installFailed("Could not copy Publshr.app.")
+                throw InstallerError.installFailed("Could not install Publshr.")
             }
             try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: dest.path)
             clearQuarantine(dest)
@@ -225,7 +239,6 @@ final class InstallerViewModel: ObservableObject {
         try? process.run()
         process.waitUntilExit()
     }
-
 }
 
 enum InstallerError: LocalizedError {
@@ -236,9 +249,9 @@ enum InstallerError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .downloadFailed: return "Could not download the latest Publshr build."
-        case .extractFailed: return "Could not extract the download."
-        case .invalidPackage: return "Downloaded package is missing Publshr.app."
+        case .downloadFailed: return "Could not download the app package."
+        case .extractFailed: return "Could not prepare the download."
+        case .invalidPackage: return "The package is missing Publshr.app."
         case .installFailed(let m): return m
         }
     }
@@ -246,123 +259,88 @@ enum InstallerError: LocalizedError {
 
 struct InstallerRootView: View {
     @StateObject private var model = InstallerViewModel()
+    @State private var didAutoStart = false
 
     var body: some View {
         ZStack {
-            InstallerTheme.background.ignoresSafeArea()
-            VStack(spacing: 0) {
-                header
-                content
-                footer
+            InstallerGlassBackdrop()
+            VStack(spacing: 28) {
+                branding
+                glassPanel
             }
-            .padding(32)
+            .padding(36)
+        }
+        .onAppear {
+            guard !didAutoStart, model.shouldAutoStart else { return }
+            didAutoStart = true
+            model.startInstall()
         }
     }
 
-    private var header: some View {
-        VStack(spacing: 10) {
+    private var branding: some View {
+        VStack(spacing: 14) {
             Group {
                 if let icon = InstallerBranding.appIcon {
                     Image(nsImage: icon)
                         .resizable()
                         .interpolation(.high)
                         .aspectRatio(contentMode: .fit)
-                        .frame(width: 72, height: 72)
-                        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                        .shadow(color: .black.opacity(0.12), radius: 8, y: 4)
+                        .frame(width: 88, height: 88)
+                        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+                        .shadow(color: .black.opacity(0.18), radius: 12, y: 6)
                 } else {
-                    Image(systemName: "chevron.left.forwardslash.chevron.right")
-                        .font(.system(size: 44, weight: .medium))
+                    Image(systemName: "app.fill")
+                        .font(.system(size: 56))
                         .foregroundStyle(InstallerTheme.accent)
                 }
             }
-            Text("Install Publshr")
-                .font(.system(size: 26, weight: .semibold))
+            Text("Publshr")
+                .font(.system(size: 22, weight: .semibold))
                 .foregroundStyle(InstallerTheme.foreground)
-            Text("Native macOS desktop — Swift, Supabase, enterprise chat")
-                .font(.system(size: 13))
-                .foregroundStyle(InstallerTheme.muted)
         }
-        .padding(.bottom, 28)
     }
 
     @ViewBuilder
-    private var content: some View {
-        VStack(alignment: .leading, spacing: 16) {
+    private var glassPanel: some View {
+        VStack(spacing: 20) {
             switch model.phase {
             case .welcome:
-                VStack(alignment: .leading, spacing: 8) {
-                    if let version = model.releaseVersion {
-                        Text("Build \(version)")
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundStyle(InstallerTheme.foreground)
-                    }
-                    if model.hasBundledApp {
-                        Text("This package includes the full app — no extra download during install.")
-                            .font(.system(size: 13))
-                            .foregroundStyle(InstallerTheme.muted)
-                    } else {
-                        Text("The installer will download the latest build from GitHub, then install it.")
-                            .font(.system(size: 13))
-                            .foregroundStyle(InstallerTheme.muted)
-                    }
-                    Text("Install location: ~/Applications/Publshr.app (recommended for automatic updates without an admin password).")
-                        .font(.system(size: 13))
-                        .foregroundStyle(InstallerTheme.muted)
+                if !model.hasBundledApp {
+                    Button("Install") { model.startInstall() }
+                        .buttonStyle(InstallerPrimaryButtonStyle())
+                } else {
+                    ProgressView()
+                        .controlSize(.regular)
                 }
-                .fixedSize(horizontal: false, vertical: true)
             case .downloading, .installing:
                 ProgressView(value: model.progress)
                     .progressViewStyle(.linear)
                 Text(model.statusLine)
-                    .font(.system(size: 12))
+                    .font(.system(size: 12, weight: .medium))
                     .foregroundStyle(InstallerTheme.muted)
             case .done:
-                Label("Installation complete", systemImage: "checkmark.circle.fill")
-                    .font(.system(size: 14, weight: .medium))
+                ProgressView(value: 1)
+                    .progressViewStyle(.linear)
+                Label("Opening Publshr…", systemImage: "checkmark.circle.fill")
+                    .font(.system(size: 13, weight: .medium))
                     .foregroundStyle(InstallerTheme.accent)
             case .failed(let msg):
                 Text(msg)
                     .font(.system(size: 12))
                     .foregroundStyle(InstallerTheme.error)
+                    .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(24)
-        .background(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(InstallerTheme.card)
-                .shadow(color: .black.opacity(0.06), radius: 12, y: 4)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .stroke(InstallerTheme.border, lineWidth: 1)
-        )
-    }
-
-    @ViewBuilder
-    private var footer: some View {
-        HStack {
-            Spacer()
-            switch model.phase {
-            case .welcome:
-                Button("Install") { model.startInstall() }
-                    .buttonStyle(InstallerPrimaryButtonStyle())
-            case .done:
-                Button("Open Publshr") {
-                    NSWorkspace.shared.open(model.appDest)
-                    NSApp.terminate(nil)
+                Button("Try again") {
+                    model.phase = .welcome
+                    model.startInstall()
                 }
                 .buttonStyle(InstallerPrimaryButtonStyle())
-            case .failed:
-                Button("Try again") { model.phase = .welcome }
-                    .buttonStyle(InstallerPrimaryButtonStyle())
-            default:
-                EmptyView()
             }
         }
-        .padding(.top, 24)
+        .frame(maxWidth: .infinity)
+        .padding(.horizontal, 28)
+        .padding(.vertical, 26)
+        .background { InstallerGlassCard() }
     }
 }
 
@@ -370,10 +348,10 @@ struct InstallerPrimaryButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.system(size: 14, weight: .semibold))
-            .padding(.horizontal, 28)
+            .padding(.horizontal, 32)
             .padding(.vertical, 10)
             .foregroundStyle(.white)
             .background(InstallerTheme.accent.opacity(configuration.isPressed ? 0.85 : 1))
-            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
     }
 }

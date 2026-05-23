@@ -143,17 +143,25 @@ final class AuthViewModel: ObservableObject {
         }
         defer { timeoutTask.cancel() }
 
-        // 1) Protected keychain quick unlock (single system biometric prompt on read).
+        // 1) Protected keychain quick unlock (single system prompt on read — no duplicate LAContext gate).
         if prefersBiometricUnlock, AuthKeychain.hasStoredSession() {
-            if let restored = await restoreSessionFromKeychain(requireBiometric: false) {
+            switch await restoreSessionFromKeychain(requireBiometric: false) {
+            case .restored(let restored):
                 session = restored
                 await finishSessionRestore(
                     reconcileCloud: isNetworkReachable,
                     unlockMethod: .biometric
                 )
                 return
+            case .cancelled:
+                flowState = .signedOut
+                isCloudValidated = false
+                infoMessage = "Quick unlock was cancelled. Sign in with your password."
+                supabaseStatusLine = "Sign in to continue"
+                return
+            case .unavailable:
+                break
             }
-            infoMessage = "Quick unlock was cancelled. Sign in with your password."
         }
 
         // 2) Restore persisted Supabase session (online refresh when needed).
@@ -168,14 +176,16 @@ final class AuthViewModel: ObservableObject {
             return
         }
 
-        // 3) Keychain without biometric gate — offline cache + stored tokens.
-        if canAttemptKeychainUnlock, let restored = await restoreSessionFromKeychain(requireBiometric: false) {
-            session = restored
-            await finishSessionRestore(
-                reconcileCloud: isNetworkReachable,
-                unlockMethod: .persisted
-            )
-            return
+        // 3) Keychain without biometric preference — offline cache + stored tokens.
+        if !prefersBiometricUnlock, canAttemptKeychainUnlock {
+            if case .restored(let restored) = await restoreSessionFromKeychain(requireBiometric: false) {
+                session = restored
+                await finishSessionRestore(
+                    reconcileCloud: isNetworkReachable,
+                    unlockMethod: .persisted
+                )
+                return
+            }
         }
 
         flowState = .signedOut
@@ -344,9 +354,10 @@ final class AuthViewModel: ObservableObject {
         }
     }
 
-    /// When Touch ID is enabled, require a successful scan before showing the IDE.
+    /// App-level gate for sessions restored outside the protected keychain item.
     private func gateSessionWithBiometricIfNeeded() async -> Bool {
         guard prefersBiometricUnlock else { return true }
+        if AuthKeychain.usesBiometricProtection { return true }
         let ok = await BiometricAuthService.authenticate(reason: "Unlock Publshr")
         if ok { return true }
         flowState = .signedOut
@@ -476,7 +487,7 @@ final class AuthViewModel: ObservableObject {
 
     func unlockWithBiometrics() async -> Bool {
         guard canOfferBiometricUnlock || AuthKeychain.hasStoredSession() else { return false }
-        guard let restored = await restoreSessionFromKeychain(requireBiometric: false) else { return false }
+        guard case .restored(let restored) = await restoreSessionFromKeychain(requireBiometric: false) else { return false }
         session = restored
         await finishSessionRestore(
             reconcileCloud: isNetworkReachable,
@@ -510,7 +521,11 @@ final class AuthViewModel: ObservableObject {
         guard ok else { return }
         biometricUnlockEnabled = true
         didOfferBiometricSetup = true
-        persistSessionToKeychain()
+        guard persistSessionToKeychain() else {
+            biometricUnlockEnabled = false
+            errorMessage = "Could not store your session for quick unlock. Try signing in again."
+            return
+        }
         infoMessage = "\(BiometricAuthService.biometricLabel) is enabled for this Mac."
     }
 
@@ -522,29 +537,46 @@ final class AuthViewModel: ObservableObject {
         }
     }
 
-    func persistSessionToKeychain() {
-        guard biometricUnlockEnabled, let session else { return }
-        guard BiometricAuthService.isAvailable else { return }
+    @discardableResult
+    func persistSessionToKeychain() -> Bool {
+        guard biometricUnlockEnabled, let session else { return false }
+        guard BiometricAuthService.isAvailable else { return false }
         let stored = AuthKeychain.StoredSession(
             email: session.user.email ?? email,
             accessToken: session.accessToken,
             refreshToken: session.refreshToken,
             userId: session.user.id
         )
-        _ = AuthKeychain.save(stored, requireBiometry: true)
+        guard AuthKeychain.save(stored, requireBiometry: true) else { return false }
         persistOfflineSnapshot()
+        return true
     }
 
-    private func restoreSessionFromKeychain(requireBiometric: Bool) async -> Session? {
+    private enum KeychainRestoreOutcome {
+        case restored(Session)
+        case cancelled
+        case unavailable
+    }
+
+    private func restoreSessionFromKeychain(requireBiometric: Bool) async -> KeychainRestoreOutcome {
         if requireBiometric, !AuthKeychain.usesBiometricProtection {
             let ok = await BiometricAuthService.authenticate(reason: "Unlock Publshr")
-            guard ok else { return nil }
+            guard ok else { return .cancelled }
         }
 
         _ = applyOfflineSnapshotIfAvailable()
 
-        guard let stored = AuthKeychain.load() else {
-            return try? await client.auth.session
+        let stored: AuthKeychain.StoredSession
+        switch AuthKeychain.loadResult() {
+        case .success(let value):
+            stored = value
+        case .userCancelled:
+            return .cancelled
+        case .notFound:
+            guard let session = try? await client.auth.session else { return .unavailable }
+            return .restored(session)
+        case .failed:
+            return .unavailable
         }
 
         try? await client.auth.setSession(
@@ -559,13 +591,19 @@ final class AuthViewModel: ObservableObject {
                     current = try await client.auth.refreshSession()
                 }
                 updateSupabaseStatus(connected: true)
-                return current
+                return .restored(current)
             } catch {
-                return try? await client.auth.session
+                if let session = try? await client.auth.session {
+                    return .restored(session)
+                }
+                return .unavailable
             }
         }
 
-        return try? await client.auth.session
+        if let session = try? await client.auth.session {
+            return .restored(session)
+        }
+        return .unavailable
     }
 
     func refreshSupabaseConnection() async {
