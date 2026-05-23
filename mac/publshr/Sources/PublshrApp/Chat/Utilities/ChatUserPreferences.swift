@@ -16,6 +16,16 @@ enum ChatUserPreferences {
     private static let incomingPopupKey = "publshr.chat.incomingMessagePopup"
     private static let popupOpensChannelKey = "publshr.chat.popupOpensChannelWindow"
     private static let localTimeZoneKey = "publshr.chat.timestampsLocalTimeZone"
+    private static let messageSoundKey = "publshr.chat.playMessageSound"
+
+    /// Short system sound when a message arrives (while app is running).
+    static var playMessageSound: Bool {
+        get {
+            if UserDefaults.standard.object(forKey: messageSoundKey) == nil { return true }
+            return UserDefaults.standard.bool(forKey: messageSoundKey)
+        }
+        set { UserDefaults.standard.set(newValue, forKey: messageSoundKey) }
+    }
 
     /// macOS Notification Center alerts for chat.
     static var macNotificationsEnabled: Bool {

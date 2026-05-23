@@ -178,49 +178,17 @@ extension ChatViewModel {
     // MARK: - Files
 
     func uploadFile(from url: URL) async {
-        guard permissions.canUploadFiles,
-              let service, let workspace, let channel = selectedChannel,
-              let userId = currentUserId else { return }
-        uploadProgress = 0.1
+        guard permissions.canUploadFiles else {
+            errorMessage = "File uploads are disabled in this workspace."
+            return
+        }
         do {
             let data = try FileAccessService.readData(from: url)
             let name = url.lastPathComponent
             let mime = UTType(filenameExtension: url.pathExtension)?.preferredMIMEType ?? "application/octet-stream"
-            let result = try await service.uploadChatFile(
-                workspaceId: workspace.id,
-                userId: userId,
-                fileName: name,
-                mimeType: mime,
-                data: data
-            )
-            uploadProgress = 0.7
-            let attachmentType: String = {
-                if mime.hasPrefix("image/") { return "image" }
-                if mime.hasPrefix("video/") { return "video" }
-                return "file"
-            }()
-            let attachment = ChatAttachment(
-                type: attachmentType,
-                url: result.publicURL.absoluteString,
-                name: name,
-                size: data.count
-            )
-            let body = "Shared \(name)"
-            let msg = try await service.sendMessageExtended(
-                workspaceId: workspace.id,
-                channelId: channel.id,
-                userId: userId,
-                body: body,
-                attachments: [attachment]
-            )
-            messages.append(msg)
-            uploadProgress = 1
-            try? await Task.sleep(nanoseconds: 300_000_000)
-            uploadProgress = nil
-            await loadChannelExtras()
+            await uploadData(data, fileName: name, mimeType: mime)
         } catch {
-            uploadProgress = nil
-            errorMessage = error.localizedDescription
+            errorMessage = friendlyChatUploadError(error)
         }
     }
 

@@ -600,6 +600,7 @@ final class ChatViewModel: ObservableObject {
             await loadChannelExtras()
             await markMessagesSeen()
             await refreshReadReceipts()
+            await syncChannelLastRead(for: channel)
         } catch {
             if messages.isEmpty {
                 errorMessage = error.localizedDescription
@@ -864,6 +865,11 @@ final class ChatViewModel: ObservableObject {
         set { ChatUserPreferences.showTimestampsInLocalTimeZone = newValue }
     }
 
+    var playMessageSound: Bool {
+        get { ChatUserPreferences.playMessageSound }
+        set { ChatUserPreferences.playMessageSound = newValue }
+    }
+
     @Published var conversationFilterQuery = ""
     @Published var showConversationSearch = false
 
@@ -1051,6 +1057,8 @@ final class ChatViewModel: ObservableObject {
                 deliverBanner: deliverBanner
             )
         }
+
+        playIncomingMessageSoundIfEnabled()
 
         if ChatUserPreferences.showIncomingMessagePopup, deliverBanner {
             ChatIncomingMessagePopupManager.shared.present(

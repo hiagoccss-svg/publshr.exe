@@ -125,6 +125,10 @@ struct ChatComposerView: View {
             if chat.permissions.canUploadFiles {
                 composerIcon("paperclip") { onAttachFile?() }
                     .help("Attach file")
+                composerIcon("doc.on.clipboard") {
+                    Task { await chat.pasteFromClipboard() }
+                }
+                .help("Paste image or file from clipboard")
             }
             if canSendVoiceNotes, onSendVoiceNote != nil {
                 composerIcon(voiceCaptureActive ? "mic.fill" : "mic") {

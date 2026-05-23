@@ -99,6 +99,7 @@ struct ContentView: View {
         )
         spaces.attach(auth: auth)
         Task {
+            await chat.bootstrapDesktopChatPermissions()
             await subscription.refresh(client: auth.client, workspace: auth.selectedWorkspace)
             if auth.selectedWorkspace != nil {
                 await chat.loadWorkspaceProjects()

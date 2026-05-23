@@ -136,6 +136,14 @@ struct PublshrApp: App {
                     }
                 }
                 .keyboardShortcut("o", modifiers: [.command, .shift])
+                Divider()
+                Button("Paste from Clipboard") {
+                    Task { await chat.pasteFromClipboard() }
+                }
+                .keyboardShortcut("v", modifiers: [.command, .shift])
+                Button("Notification Settings…") {
+                    chat.showNotificationSettings = true
+                }
             }
         }
     }

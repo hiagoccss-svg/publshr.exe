@@ -69,6 +69,7 @@ struct ChatNotificationSettingsSheet: View {
                         Toggle("Open channel window from preview", isOn: popupOpensWindowBinding)
                             .disabled(!chat.showIncomingMessagePopup)
                         Toggle("Timestamps in my local timezone", isOn: localTimeZoneBinding)
+                        Toggle("Play sound on new message", isOn: messageSoundBinding)
                     }
 
                     VStack(alignment: .leading, spacing: 8) {
@@ -123,6 +124,13 @@ struct ChatNotificationSettingsSheet: View {
         Binding(
             get: { chat.showTimestampsInLocalTimeZone },
             set: { chat.showTimestampsInLocalTimeZone = $0 }
+        )
+    }
+
+    private var messageSoundBinding: Binding<Bool> {
+        Binding(
+            get: { chat.playMessageSound },
+            set: { chat.playMessageSound = $0 }
         )
     }
 
