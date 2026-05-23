@@ -62,6 +62,10 @@ Every push to `main` runs `.github/workflows/deliver-macos.yml`, publishing the 
 
 Translucent **shell** (wallpaper bleeds through) vs solid **content** (cards, editors, tables). Shared CSS: `shared/design/desktop-transparency.css` (via `library-glass.css`). Electron windows: `shared/electron/glass-window.ts`. Docs: `shared/design/DESKTOP_TRANSPARENCY.md`. macOS IDE: `WorkspaceDesktopBackdrop`, `MainWindowChrome`.
 
+### Fully live (end users)
+
+No local repo required. See **`mac/publshr/docs/FULLY_LIVE.md`**. Verify: `bash mac/publshr/scripts/verify-fully-live.sh`.
+
 ### Desktop workflow (dev + installed auto-update)
 
 See **`desktop/docs/DESKTOP_WORKFLOW.md`**. Summary:

@@ -28,10 +28,20 @@ struct MediaMonitoringModuleView: View {
                     openCompanion()
                 }
                 .buttonStyle(.borderedProminent)
+                Button("Install from cloud") {
+                    Task { @MainActor in
+                        if !DesktopCompanionAppLauncher.installFromLive(.mediaMonitoring) {
+                            launchMessage = DesktopCompanionAppLauncher.installHint(for: .mediaMonitoring)
+                        } else {
+                            launchMessage = nil
+                        }
+                    }
+                }
+                .buttonStyle(.bordered)
                 Button("Copy install command") {
                     NSPasteboard.general.clearContents()
                     NSPasteboard.general.setString(
-                        "cd desktop/media-monitoring && npm install && npm run dev",
+                        DesktopCompanionAppLauncher.liveInstallCommand(for: .mediaMonitoring),
                         forType: .string
                     )
                 }
@@ -50,7 +60,7 @@ struct MediaMonitoringModuleView: View {
     }
 
     private func openCompanion() {
-        if DesktopCompanionAppLauncher.open(.mediaMonitoring) {
+        if DesktopCompanionAppLauncher.openOrInstall(.mediaMonitoring) {
             launchMessage = nil
         } else {
             launchMessage = DesktopCompanionAppLauncher.installHint(for: .mediaMonitoring)

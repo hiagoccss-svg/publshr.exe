@@ -92,10 +92,10 @@ struct SpacesWhiteboardView: View {
             .multilineTextAlignment(.center)
             .frame(maxWidth: 420)
             Button("Open canvas in Spaces") {
-                if !DesktopCompanionAppLauncher.open(.spaces) {
+                if !DesktopCompanionAppLauncher.openOrInstall(.spaces) {
                     NSPasteboard.general.clearContents()
                     NSPasteboard.general.setString(
-                        "cd desktop/spaces && npm install && npm run dev",
+                        DesktopCompanionAppLauncher.liveInstallCommand(for: .spaces),
                         forType: .string
                     )
                 }
