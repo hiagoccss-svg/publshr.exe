@@ -9,6 +9,7 @@ struct PublshrApp: App {
     @StateObject private var subscription = SubscriptionService()
     @StateObject private var enterprise = EnterpriseWorkspaceService()
     @StateObject private var tabStore = WorkspaceTabStore()
+    @ObservedObject private var cloudHealth = CloudPlatformHealth.shared
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
     init() {
@@ -25,11 +26,13 @@ struct PublshrApp: App {
                 .environmentObject(subscription)
                 .environmentObject(enterprise)
                 .environmentObject(tabStore)
+                .environmentObject(cloudHealth)
                 .onOpenURL { url in
                     auth.handleIncomingURL(url)
                 }
                 .task {
                     configureLifecycle()
+                    cloudHealth.startPolling(intervalSeconds: AppReleaseConfig.livePollIntervalSeconds)
                     updates.startAutomaticChecks()
                 }
                 .onChange(of: auth.flowState) { _, state in

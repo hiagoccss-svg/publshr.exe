@@ -107,8 +107,9 @@ From `mac/publshr/`:
 
 ```bash
 bash scripts/audit-macos-deployment-ready.sh # full pre-deploy audit (GitHub live + Supabase + shell tag)
-bash scripts/verify-github-live.sh      # live release + install-macos.sh URLs
-bash scripts/verify-all-connections.sh  # GitHub live + Supabase auth/chat/spaces/enterprise
+bash scripts/verify-cloud-ready.sh      # GitHub live + Supabase (required clouds only)
+bash scripts/verify-github-live.sh      # live release assets
+bash scripts/verify-all-connections.sh  # same checks (legacy name)
 bash scripts/cleanup-github-branches.sh # remove merged cursor/* branches (DRY_RUN=1 first)
 ```
 

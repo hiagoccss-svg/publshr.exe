@@ -1,5 +1,21 @@
 # Data architecture — GitHub, Mac, Supabase
 
+## What you need for the app to work
+
+| Required | Purpose |
+|----------|---------|
+| **GitHub `live`** | Deliver and update `Publshr.app` (`VERSION.txt` + tarball) |
+| **Supabase** | Auth, chat, spaces, enterprise data (source of truth) |
+| **Network** | Reach both when online |
+
+**Not required:** pre-existing files on the Mac, manual SQLite setup, or a local server. Application Support is an **optional cache** for speed and brief offline reading — delete it and sign in again; data comes back from Supabase.
+
+Verify both clouds:
+
+```bash
+cd mac/publshr && bash scripts/verify-cloud-ready.sh
+```
+
 Enterprise Publshr splits responsibility across three tiers. Nothing in this model stores Supabase service keys in the installer; users authenticate after install.
 
 ## Three tiers

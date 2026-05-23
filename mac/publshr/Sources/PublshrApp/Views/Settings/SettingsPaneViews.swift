@@ -5,9 +5,28 @@ import UniformTypeIdentifiers
 
 struct SettingsUpdatesPane: View {
     @EnvironmentObject private var updates: AppUpdateViewModel
+    @EnvironmentObject private var cloudHealth: CloudPlatformHealth
 
     var body: some View {
         Form {
+            Section("Cloud platform (required)") {
+                LabeledContent("GitHub live", value: cloudHealth.isGitHubReachable ? "Reachable" : "Unreachable")
+                LabeledContent("Supabase API", value: cloudHealth.isSupabaseReachable ? "Reachable" : "Unreachable")
+                if let live = cloudHealth.liveVersionLine {
+                    LabeledContent("Remote build", value: live)
+                }
+                if let err = cloudHealth.lastErrorLine {
+                    Text(err)
+                        .font(.caption)
+                        .foregroundStyle(.red)
+                }
+                Text("Publshr runs on GitHub (app updates) and Supabase (your data). Nothing on this Mac is required except the installed app binary and your sign-in session.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Button("Check GitHub + Supabase now") {
+                    Task { await cloudHealth.refresh() }
+                }
+            }
             Section("GitHub live channel") {
                 LabeledContent("Status", value: updates.githubStatusLine)
                 LabeledContent("Update phase", value: updates.statusLine)
@@ -82,12 +101,12 @@ struct SettingsStoragePane: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
-            Section("This Mac (offline cache)") {
+            Section("This Mac (optional speed cache)") {
                 LabeledContent("Root", value: LocalDataLayout.applicationSupportRoot.path)
                 LabeledContent("Chat cache", value: LocalDataLayout.chatDatabase.lastPathComponent)
                 LabeledContent("Spaces cache", value: LocalDataLayout.spacesDatabase.lastPathComponent)
                 LabeledContent("Auth snapshot", value: LocalDataLayout.authOfflineSnapshot.lastPathComponent)
-                Text("SQLite uses WAL mode for speed. Survives app updates and GitHub live installs.")
+                Text("Not required when online. Supabase is always the source of truth; local SQLite only speeds up the UI and allows brief offline reading.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
