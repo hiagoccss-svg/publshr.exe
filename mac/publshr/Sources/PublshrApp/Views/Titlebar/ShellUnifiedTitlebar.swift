@@ -116,13 +116,15 @@ struct ShellUnifiedTitlebar: View {
     }
 }
 
-/// Hairline between titlebar column bands (matches body column dividers).
+/// Hairline between shell columns. Pass `bandHeight` for the titlebar row; omit to fill the body column.
 struct ShellColumnVerticalRule: View {
-    var bandHeight: CGFloat
+    var bandHeight: CGFloat?
 
     var body: some View {
         Rectangle()
             .fill(LibraryGlassDesign.hairline.opacity(0.85))
-            .frame(width: CursorMacShellDesign.columnDividerWidth, height: bandHeight)
+            .frame(width: CursorMacShellDesign.columnDividerWidth)
+            .frame(height: bandHeight)
+            .frame(maxHeight: bandHeight == nil ? .infinity : nil)
     }
 }
