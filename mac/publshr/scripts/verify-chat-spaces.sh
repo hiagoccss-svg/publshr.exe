@@ -43,6 +43,19 @@ echo "4. Spaces"
 spaces=$(curl -sf "$SUPABASE_URL/rest/v1/spaces?workspace_id=eq.$ws_id&select=id,name&limit=5" \
   -H "apikey: $SUPABASE_KEY" \
   -H "Authorization: Bearer $token")
+space_count=$(echo "$spaces" | python3 -c "import sys,json; print(len(json.load(sys.stdin)))" 2>/dev/null || echo 0)
+if [[ "$space_count" == "0" ]]; then
+  echo "   No space — creating General"
+  curl -sf -X POST "$SUPABASE_URL/rest/v1/spaces" \
+    -H "apikey: $SUPABASE_KEY" \
+    -H "Authorization: Bearer $token" \
+    -H "Content-Type: application/json" \
+    -H "Prefer: return=representation" \
+    -d "{\"workspace_id\":\"$ws_id\",\"name\":\"General\",\"type\":\"project\",\"owner_id\":\"$user_id\"}" >/dev/null
+  spaces=$(curl -sf "$SUPABASE_URL/rest/v1/spaces?workspace_id=eq.$ws_id&select=id,name&limit=5" \
+    -H "apikey: $SUPABASE_KEY" \
+    -H "Authorization: Bearer $token")
+fi
 echo "   spaces=$spaces"
 
 echo "5. Documents table"

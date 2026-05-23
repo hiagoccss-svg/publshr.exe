@@ -33,7 +33,7 @@ final class SpacesService {
             .value
     }
 
-    func createSpace(workspaceId: UUID, ownerId: UUID, name: String, type: String = "general") async throws -> SpaceRecord {
+    func createSpace(workspaceId: UUID, ownerId: UUID, name: String, type: String = "project") async throws -> SpaceRecord {
         struct Insert: Encodable {
             let workspace_id: UUID
             let owner_id: UUID

@@ -27,7 +27,7 @@ permissions:
   contents: write
 
 env:
-  CHANNEL: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.channel || 'staging' }}
+  CHANNEL: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.channel || 'production' }}
 
 jobs:
   build-product:
@@ -50,7 +50,8 @@ jobs:
             renderer_out: out/renderer
             app_id: com.publshr.planner
             product_name: Publshr Planner
-    runs-on: ${{ matrix.product == 'spaces' && 'macos-14' || 'ubuntu-22.04' }}
+    # macOS shell installers for all desktop products (Spaces, Media Monitoring, Planner).
+    runs-on: macos-14
     steps:
       - uses: actions/checkout@v4
 

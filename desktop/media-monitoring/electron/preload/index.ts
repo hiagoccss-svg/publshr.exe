@@ -8,6 +8,11 @@ export interface MonitorCreateInput {
   language_filters?: string[]
   linked_client?: string
   linked_campaign?: string
+  alert_settings?: {
+    desktop?: boolean
+    min_relevance?: number
+    sentiment?: string[]
+  }
 }
 
 export interface ResultFilterOptions {

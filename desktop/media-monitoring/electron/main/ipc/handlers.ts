@@ -16,6 +16,7 @@ import {
   loadBiometricRefreshToken,
   clearBiometricSession
 } from '../auth/biometric'
+import { parseAlertSettings, shouldNotifyForArticle } from '../monitoring/alert-rules'
 
 export function registerIpcHandlers(engine: MonitoringEngine, sync: SyncService): void {
   const db = () => getDatabase()
@@ -498,11 +499,22 @@ export function registerIpcHandlers(engine: MonitoringEngine, sync: SyncService)
       }
 
       if (Notification.isSupported()) {
-        const article = event.article as { title?: string; publication_name?: string }
-        new Notification({
-          title: 'New coverage found',
-          body: `${article.publication_name ?? 'Publication'}: ${article.title ?? 'Article'}`
-        }).show()
+        const profile = db()
+          .prepare('SELECT alert_settings FROM monitor_profiles WHERE id = ?')
+          .get(event.monitorId) as { alert_settings?: string } | undefined
+        const rules = parseAlertSettings(profile?.alert_settings)
+        const article = event.article as {
+          title?: string
+          publication_name?: string
+          relevance_score?: number
+          sentiment?: string
+        }
+        if (shouldNotifyForArticle(rules, article)) {
+          new Notification({
+            title: 'New coverage found',
+            body: `${article.publication_name ?? 'Publication'}: ${article.title ?? 'Article'}`
+          }).show()
+        }
       }
     }
   })
