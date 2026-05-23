@@ -28,6 +28,10 @@ Chat lives under `mac/publshr/Sources/PublshrApp/Chat/`. See `mac/publshr/docs/C
 
 Subscriptions, onboarding, devices, privacy, files, and call signaling: `mac/publshr/Sources/PublshrApp/Enterprise/` and `Views/Settings/`. See `mac/publshr/docs/ENTERPRISE_PLATFORM.md`. Migration: `mac/publshr/supabase/migrations/002_enterprise_platform.sql`.
 
+### Data tiers (GitHub / Mac / Supabase)
+
+App delivery (`live` release), local cache (`~/Library/Application Support/Publshr/`), and cloud sync are documented in `mac/publshr/docs/DATA_ARCHITECTURE.md`. Paths are centralized in `Sources/PublshrApp/Config/LocalDataLayout.swift`.
+
 ### Tests
 
 No automated test suite exists yet (`swift test` reports "no tests found"). If tests are added later, run them with `swift test` from `mac/publshr/`.

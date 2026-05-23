@@ -27,9 +27,9 @@ struct SettingsUpdatesPane: View {
                     }
                 Toggle("Install updates automatically", isOn: $updates.autoInstallEnabled)
             }
-            Section("Supabase (Chat & Spaces)") {
+            Section("Supabase (cloud data)") {
                 LabeledContent("Cloud sync", value: updates.cloudSyncLine)
-                Text("Refreshes messages, channels, spaces, subscription, and devices every 30 seconds with the live channel check (or use Sync now).")
+                Text("GitHub updates the app shell only. Supabase holds Chat, Spaces, and enterprise data — refreshed in parallel every 30 seconds (or Sync now).")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -67,6 +67,44 @@ struct SettingsUpdatesPane: View {
     private func digestLabel(_ digest: String) -> String {
         if digest.isEmpty { return "— (recorded after next live install)" }
         return String(digest.prefix(12)) + "…"
+    }
+}
+
+// MARK: - Storage
+
+struct SettingsStoragePane: View {
+    var body: some View {
+        Form {
+            Section("GitHub (app delivery)") {
+                LabeledContent("Channel", value: AppReleaseConfig.liveTag)
+                LabeledContent("Installed build", value: "\(AppReleaseConfig.buildNumber)")
+                Text("Downloads and installs only Publshr.app. Never touches your chat or spaces cache.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Section("This Mac (offline cache)") {
+                LabeledContent("Root", value: LocalDataLayout.applicationSupportRoot.path)
+                LabeledContent("Chat cache", value: LocalDataLayout.chatDatabase.lastPathComponent)
+                LabeledContent("Spaces cache", value: LocalDataLayout.spacesDatabase.lastPathComponent)
+                LabeledContent("Auth snapshot", value: LocalDataLayout.authOfflineSnapshot.lastPathComponent)
+                Text("SQLite uses WAL mode for speed. Survives app updates and GitHub live installs.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Section("Supabase (source of truth)") {
+                Text("Profiles, workspaces, messages, spaces, tasks, devices, and billing live in your Supabase project. The Mac keeps a cache for offline read and fast UI.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Section {
+                Button("Reveal Application Support in Finder") {
+                    LocalDataLayout.ensureRootExists()
+                    NSWorkspace.shared.activateFileViewerSelecting([LocalDataLayout.applicationSupportRoot])
+                }
+            }
+        }
+        .formStyle(.grouped)
+        .navigationTitle("Storage")
     }
 }
 
@@ -232,8 +270,11 @@ struct SettingsPrivacyPane: View {
                 Link("Terms of service", destination: PrivacyConsentStore.termsURL)
             }
             Section("Data on this Mac") {
-                Text("Chat and Spaces cache locally under ~/Library/Application Support/Publshr/ for offline access. Sign out removes your session from the Keychain.")
+                Text("GitHub delivers the app. Supabase holds your workspace data. This Mac caches chat and spaces under Application Support for offline read. See Settings → Storage for paths.")
                     .font(.caption)
+                Text("Sign out clears your session (Keychain) and offline auth snapshot. Chat/Spaces SQLite caches remain until you clear them manually.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
             Section {
                 Button("Re-accept privacy policy") {

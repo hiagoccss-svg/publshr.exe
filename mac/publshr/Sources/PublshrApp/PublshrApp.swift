@@ -155,11 +155,12 @@ struct PublshrApp: App {
             await auth.reconcileCloudSession(unlockMethod: nil)
         }
         await auth.refreshSupabaseConnection()
-        await chat.refreshAfterReconnect()
-        await spaces.reload()
-        await chat.loadWorkspaceProjects()
-        await chat.loadPlannerTasks()
-        await syncEnterpriseServices()
+        async let chatSync = chat.refreshAfterReconnect()
+        async let spacesSync = spaces.reload()
+        async let enterpriseSync = syncEnterpriseServices()
+        await chatSync
+        await spacesSync
+        await enterpriseSync
         updates.recordCloudSync(summary: auth.supabaseStatusLine)
     }
 

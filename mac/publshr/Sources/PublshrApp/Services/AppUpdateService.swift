@@ -316,8 +316,8 @@ final class AppUpdateService: @unchecked Sendable {
     }
 
     private func supportUpdatesDirectory() -> URL {
-        let base = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-        return base.appendingPathComponent("Publshr/updates", isDirectory: true)
+        LocalDataLayout.ensureRootExists()
+        return LocalDataLayout.updatesDirectory
     }
 
     private func resolveApplyUpdateScript() -> URL? {
