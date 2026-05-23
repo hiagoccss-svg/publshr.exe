@@ -21,12 +21,24 @@ source "$ROOT/scripts/lib-shell-tag.sh"
 SHELL_TAG="$(resolve_publshr_shell_tag "$ROOT/Sources/PublshrApp/Config/AppShellIdentity.swift")"
 REMOTE_SHELL="$(curl -fsSL "https://github.com/hiagoccss-svg/publshr.exe/releases/download/live/VERSION.txt" | sed -n '5p' | tr -d '[:space:]')"
 
-if [[ "$SHELL_TAG" != "$REMOTE_SHELL" ]]; then
+LOCAL_VER="$(publshr_shell_tag_version "$SHELL_TAG")"
+REMOTE_VER="$(publshr_shell_tag_version "$REMOTE_SHELL")"
+
+if [[ "$SHELL_TAG" == "$REMOTE_SHELL" ]]; then
+    echo "OK: shell tag matches live channel ($SHELL_TAG)"
+elif [[ "$LOCAL_VER" -gt "$REMOTE_VER" ]]; then
+    echo "WARN: AppShellIdentity ($SHELL_TAG) is ahead of live ($REMOTE_SHELL)" >&2
+    echo "      Expected on PRs until deliver-macos publishes live VERSION.txt after merge." >&2
+    echo "OK: shell tag ahead of live (aligns after next live publish)"
+elif [[ "$LOCAL_VER" -lt "$REMOTE_VER" ]]; then
+    echo "ERROR: AppShellIdentity ($SHELL_TAG) is behind live ($REMOTE_SHELL)" >&2
+    echo "Bump AppShellIdentity.distributionTag to match or exceed the live channel." >&2
+    exit 1
+else
     echo "ERROR: AppShellIdentity ($SHELL_TAG) != live VERSION.txt shell ($REMOTE_SHELL)" >&2
     echo "Bump AppShellIdentity.distributionTag and push to main before expecting in-app updates." >&2
     exit 1
 fi
-echo "OK: shell tag matches live channel ($SHELL_TAG)"
 
 if command -v swift >/dev/null 2>&1; then
     echo
