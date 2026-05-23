@@ -36,7 +36,6 @@ struct LibraryShellView: View {
             .frame(width: geometry.size.width, height: geometry.size.height)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .ignoresSafeArea(.container, edges: .top)
         .background(Color.clear)
         .onAppear {
             tabStore.sidebarExpanded = true
@@ -145,9 +144,9 @@ struct LibraryShellView: View {
                     )
                     .layoutPriority(0)
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .animation(.easeInOut(duration: 0.15), value: submenuHidden)
         .animation(.easeInOut(duration: 0.15), value: tabStore.barMenuExpanded)
     }
@@ -197,7 +196,7 @@ struct LibraryShellView: View {
         case .mediaMonitoring:
             MediaMonitoringModuleView()
         case .settings:
-            EnterpriseModuleGate(moduleName: "Settings", planName: subscription.features.planName)
+            SettingsModuleRedirectView(module: $module)
         }
     }
 
@@ -212,6 +211,8 @@ struct LibraryShellView: View {
         spaces.attach(auth: auth)
         Task {
             await subscription.refresh(client: auth.client, workspace: auth.selectedWorkspace)
+            await chat.loadWorkspaceProjects()
+            await chat.loadPlannerTasks()
             if chat.channels.isEmpty, chat.directMessages.isEmpty {
                 await chat.refreshAfterReconnect()
             }
@@ -219,5 +220,21 @@ struct LibraryShellView: View {
                 await spaces.reload()
             }
         }
+    }
+}
+
+/// Settings opens in a dedicated window (⌘,). If the main shell ever lands on `.settings`, route there immediately.
+private struct SettingsModuleRedirectView: View {
+    @Binding var module: AppModule
+
+    var body: some View {
+        Color.clear
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .onAppear {
+                NotificationCenter.default.post(name: .publshrOpenSettings, object: nil)
+                if module == .settings {
+                    module = .chat
+                }
+            }
     }
 }

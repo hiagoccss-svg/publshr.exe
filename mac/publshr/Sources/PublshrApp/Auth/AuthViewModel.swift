@@ -118,10 +118,30 @@ final class AuthViewModel: ObservableObject {
         await completeBootstrap()
     }
 
+    private static let bootstrapTimeoutSeconds: TimeInterval = 18
+    private static let sessionFetchTimeoutSeconds: TimeInterval = 12
+    private static let cloudReconcileTimeoutSeconds: TimeInterval = 20
+
     func completeBootstrap() async {
         flowState = .bootstrapping
         isCloudValidated = false
         updateSupabaseStatus(connected: false)
+
+        let timeoutTask = Task { @MainActor in
+            try? await Task.sleep(nanoseconds: UInt64(Self.bootstrapTimeoutSeconds * 1_000_000_000))
+            guard flowState == .bootstrapping else { return }
+            if applyOfflineSnapshotIfAvailable() {
+                isCloudValidated = false
+                supabaseStatusLine = "Offline — showing cached workspace"
+                resolveFlowStateAfterSession()
+                return
+            }
+            flowState = .signedOut
+            isCloudValidated = false
+            errorMessage = "Could not restore your session. Check your network, then sign in again."
+            supabaseStatusLine = "Sign in to continue"
+        }
+        defer { timeoutTask.cancel() }
 
         // 1) Restore persisted Supabase session (online refresh when needed).
         if let existing = await loadPersistedSession() {
@@ -156,10 +176,14 @@ final class AuthViewModel: ObservableObject {
 
     private func loadPersistedSession() async -> Session? {
         do {
-            let current = try await client.auth.session
+            let current = try await withAsyncTimeout(seconds: Self.sessionFetchTimeoutSeconds) {
+                try await self.client.auth.session
+            }
             if isNetworkReachable {
                 if current.isExpired {
-                    let refreshed = try await client.auth.refreshSession()
+                    let refreshed = try await withAsyncTimeout(seconds: Self.sessionFetchTimeoutSeconds) {
+                        try await self.client.auth.refreshSession()
+                    }
                     updateSupabaseStatus(connected: true)
                     return refreshed
                 }
@@ -170,6 +194,8 @@ final class AuthViewModel: ObservableObject {
                 return nil
             }
             return current
+        } catch is AsyncTimeoutError {
+            return nil
         } catch {
             return nil
         }
@@ -208,35 +234,17 @@ final class AuthViewModel: ObservableObject {
         defer { isRefreshingConnection = false }
 
         do {
-            if let current = try? await client.auth.session, current.isExpired {
-                session = try await client.auth.refreshSession()
-            } else if session == nil, let stored = AuthKeychain.load() {
-                try await client.auth.setSession(
-                    accessToken: stored.accessToken,
-                    refreshToken: stored.refreshToken
-                )
-                session = try await client.auth.session
+            try await withAsyncTimeout(seconds: Self.cloudReconcileTimeoutSeconds) {
+                try await self.performCloudReconcile(unlockMethod: unlockMethod)
             }
-            if let active = session, active.isExpired {
-                session = try await client.auth.refreshSession()
+        } catch is AsyncTimeoutError {
+            if applyOfflineSnapshotIfAvailable() {
+                isCloudValidated = false
+                supabaseStatusLine = "Offline — cached workspace until Supabase reconnects"
+            } else {
+                errorMessage = "Supabase is taking too long to respond. Check your connection and tap Sync now in Settings."
+                supabaseStatusLine = "Connection timed out"
             }
-            session = try await client.auth.session
-            await loadProfile()
-            await loadWorkspaces()
-            restoreLastWorkspaceSelection()
-            persistOfflineSnapshot()
-            isCloudValidated = true
-            updateSupabaseStatus(connected: true)
-            persistSessionToKeychain()
-            if let method = unlockMethod, let uid = session?.user.id {
-                await DeviceIdentityService.recordSessionUnlock(
-                    client: client,
-                    userId: uid,
-                    workspaceId: selectedWorkspace?.id,
-                    method: method.rawValue
-                )
-            }
-            errorMessage = nil
         } catch {
             if applyOfflineSnapshotIfAvailable() {
                 isCloudValidated = false
@@ -246,6 +254,38 @@ final class AuthViewModel: ObservableObject {
                 supabaseStatusLine = "Connection error"
             }
         }
+    }
+
+    private func performCloudReconcile(unlockMethod: SessionUnlockMethod?) async throws {
+        if let current = try? await client.auth.session, current.isExpired {
+            session = try await client.auth.refreshSession()
+        } else if session == nil, let stored = AuthKeychain.load() {
+            try await client.auth.setSession(
+                accessToken: stored.accessToken,
+                refreshToken: stored.refreshToken
+            )
+            session = try await client.auth.session
+        }
+        if let active = session, active.isExpired {
+            session = try await client.auth.refreshSession()
+        }
+        session = try await client.auth.session
+        await loadProfile()
+        await loadWorkspaces()
+        restoreLastWorkspaceSelection()
+        persistOfflineSnapshot()
+        isCloudValidated = true
+        updateSupabaseStatus(connected: true)
+        persistSessionToKeychain()
+        if let method = unlockMethod, let uid = session?.user.id {
+            await DeviceIdentityService.recordSessionUnlock(
+                client: client,
+                userId: uid,
+                workspaceId: selectedWorkspace?.id,
+                method: method.rawValue
+            )
+        }
+        errorMessage = nil
     }
 
     @discardableResult

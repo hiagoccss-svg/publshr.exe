@@ -13,4 +13,7 @@ echo
 echo "=== Supabase (chat + spaces) ==="
 bash scripts/verify-chat-spaces.sh
 echo
+echo "=== Supabase (enterprise tables) ==="
+bash scripts/verify-enterprise.sh
+echo
 echo "All connection checks passed."

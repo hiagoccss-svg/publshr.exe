@@ -11,9 +11,9 @@ enum ShellColumnLayout {
     /// Cap collapsed column so traffic-light reserve does not waste body width.
     static let barCollapsedMax: CGFloat = 96
 
-    /// ClickUp-style chat submenu — wide enough for filter row + channel titles without clipping.
-    static let submenuWidth: CGFloat = 288
-    static let submenuMinWidth: CGFloat = 256
+    /// ClickUp-style chat submenu — matches `CHAT_CLICKUP_UI.md` and `shared/design/library-glass.css` (272pt).
+    static let submenuWidth: CGFloat = 272
+    static let submenuMinWidth: CGFloat = 248
 
     static let editorMinWidth: CGFloat = 420
 
@@ -28,11 +28,9 @@ enum ShellColumnLayout {
         if expanded {
             return fittedBarExpanded(windowWidth: windowWidth, submenuVisible: submenuVisible)
         }
-        let trafficLed = trafficInset
-            + AppWindowChromeMetrics.afterTrafficLightGap
-            + AppWindowChromeMetrics.controlSize
+        let minForTraffic = trafficInset + AppWindowChromeMetrics.afterTrafficLightGap
         let iconLed = AppWindowChromeMetrics.controlSize + 12
-        let compact = min(trafficLed, max(barCollapsedMin, iconLed))
+        let compact = max(minForTraffic, max(barCollapsedMin, iconLed))
         return min(barCollapsedMax, max(barCollapsedMin, compact))
     }
 

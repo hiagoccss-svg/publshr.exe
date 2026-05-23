@@ -35,7 +35,18 @@ final class AppLifecycleService: ObservableObject {
         })
 
         // Lightweight reachability via periodic HEAD (no extra framework).
-        Task { await pollReachabilityLoop() }
+        Task {
+            await refreshReachabilityOnce()
+            await pollReachabilityLoop()
+        }
+    }
+
+    private func refreshReachabilityOnce() async {
+        async let githubUp = checkHEADReachable("https://github.com")
+        async let supabaseUp = checkHEADReachable(SupabaseConfig.url.absoluteString)
+        let github = await githubUp
+        let supabase = await supabaseUp
+        isNetworkReachable = github || supabase
     }
 
     func stop() {
