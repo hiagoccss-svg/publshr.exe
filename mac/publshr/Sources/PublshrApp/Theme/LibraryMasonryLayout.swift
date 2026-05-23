@@ -2,6 +2,9 @@ import SwiftUI
 
 /// Variable-height masonry columns (reference library card grid).
 struct LibraryMasonryLayout: Layout {
+    private static let masonryMinColumnWidth: CGFloat = 240
+    private static let masonryMaxColumns = 4
+
     var columns: Int
     var spacing: CGFloat = LibraryGlassDesign.gridGutter
 
@@ -11,7 +14,7 @@ struct LibraryMasonryLayout: Layout {
     }
 
     func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
-        let width = sanitizedWidth(proposal.width)
+        let width = Self.sanitizedWidth(proposal.width)
         guard width > 0, !subviews.isEmpty else { return .zero }
         let colCount = effectiveColumns(forWidth: width)
         let colWidth = columnWidth(totalWidth: width, columnCount: colCount)
@@ -27,7 +30,7 @@ struct LibraryMasonryLayout: Layout {
     }
 
     func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
-        let width = sanitizedWidth(bounds.width)
+        let width = Self.sanitizedWidth(bounds.width)
         guard width > 0, !subviews.isEmpty else { return }
         let colCount = effectiveColumns(forWidth: width)
         let colWidth = columnWidth(totalWidth: width, columnCount: colCount)
@@ -47,9 +50,10 @@ struct LibraryMasonryLayout: Layout {
         }
     }
 
-    private func sanitizedWidth(_ width: CGFloat?) -> CGFloat {
+    /// SwiftUI often proposes `.infinity` width inside `ScrollView`; never convert that to `Int`.
+    private static func sanitizedWidth(_ width: CGFloat?) -> CGFloat {
         guard let width, width.isFinite, width > 0 else { return 0 }
-        return width
+        return min(width, 16_384)
     }
 
     private func columnWidth(totalWidth: CGFloat, columnCount: Int) -> CGFloat {
@@ -62,14 +66,15 @@ struct LibraryMasonryLayout: Layout {
 
     private func effectiveColumns(forWidth width: CGFloat) -> Int {
         guard width.isFinite, width > 0 else { return 1 }
-        let maxCols = LibraryGlassDesign.masonryMaxColumns
-        let minW = LibraryGlassDesign.masonryMinColumnWidth
-        let unit = minW + spacing
+        let maxCols = min(Self.masonryMaxColumns, columns)
+        let unit = Self.masonryMinColumnWidth + spacing
         guard unit.isFinite, unit > 0 else { return 1 }
         let raw = (width + spacing) / unit
         guard raw.isFinite, raw > 0 else { return 1 }
-        let fit = max(1, min(Int(raw.rounded(.down)), Int.max))
-        return min(columns, min(maxCols, fit))
+        // Clamp before any `Int` conversion — `Int(1e300)` traps even when finite.
+        let capped = min(raw, CGFloat(maxCols + 1))
+        let fit = max(1, Int(capped.rounded(.down)))
+        return min(maxCols, fit)
     }
 }
 
