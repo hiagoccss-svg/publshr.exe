@@ -6,11 +6,19 @@
   "type": "module",
   "main": "./out/main/index.js",
   "scripts": {
-    "dev": "electron-vite dev",
-    "build": "electron-vite build",
-    "dist": "npm run build && electron-builder --config electron-builder.yml",
-    "dist:shell": "npm run build && electron-builder --config electron-builder.yml --publish never",
-    "preview": "electron-vite preview",
+    "dev:web": "vite --config vite.config.ts",
+    "build:web": "vite build --config vite.config.ts",
+    "tauri": "tauri",
+    "tauri:dev": "tauri dev",
+    "tauri:build": "tauri build",
+    "dev": "npm run tauri:dev",
+    "dev:electron": "electron-vite dev",
+    "build": "npm run build:web",
+    "build:electron": "electron-vite build",
+    "dist": "npm run tauri:build",
+    "dist:electron": "npm run build:electron && electron-builder --config electron-builder.yml",
+    "dist:shell": "npm run build:electron && electron-builder --config electron-builder.yml --publish never",
+    "preview": "vite preview --config vite.config.ts",
     "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.node.json",
     "postinstall": "electron-builder install-app-deps"
   },
@@ -29,9 +37,11 @@
     "uuid": "^11.1.0",
     "zustand": "^5.0.3",
     "electron-updater": "^6.3.9",
-    "tldraw": "^3.10.0"
+    "tldraw": "^3.10.0",
+    "@tauri-apps/api": "^2.11.0"
   },
   "devDependencies": {
+    "@tauri-apps/cli": "^2.11.2",
     "@electron-toolkit/preload": "^3.0.1",
     "@electron-toolkit/utils": "^3.0.0",
     "@types/better-sqlite3": "^7.6.12",

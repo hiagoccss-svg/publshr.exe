@@ -58,30 +58,31 @@ curl -fsSL "https://raw.githubusercontent.com/hiagoccss-svg/publshr.exe/refs/hea
 
 Every push to `main` runs `.github/workflows/deliver-macos.yml`, publishing the **`live`** release asset `Publshr-macos-aarch64.tar.gz`. The installed app auto-updates from that channel. See `mac/publshr/docs/AUTO_UPDATE.md`.
 
-### Desktop transparency (Electron + macOS IDE)
+### Desktop transparency (Tauri / legacy Electron + macOS IDE)
 
-Translucent **shell** (wallpaper bleeds through) vs solid **content** (cards, editors, tables). Shared CSS: `shared/design/desktop-transparency.css` (via `library-glass.css`). Electron windows: `shared/electron/glass-window.ts`. Docs: `shared/design/DESKTOP_TRANSPARENCY.md`. macOS IDE: `WorkspaceDesktopBackdrop`, `MainWindowChrome`.
+Translucent **shell** (wallpaper bleeds through) vs solid **content** (cards, editors, tables). Shared CSS: `shared/design/desktop-transparency.css` (via `library-glass.css`). Tauri: `shared/desktop/TAURI_GLASS.md`. Legacy Electron: `shared/electron/glass-window.ts`. Docs: `shared/design/DESKTOP_TRANSPARENCY.md`. macOS IDE: `WorkspaceDesktopBackdrop`, `MainWindowChrome`.
 
-### Desktop workflow (dev + installed auto-update)
+### Desktop workflow (Tauri-first)
 
-See **`desktop/docs/DESKTOP_WORKFLOW.md`**. Summary:
+See **`desktop/docs/TAURI_DESKTOP.md`** and **`desktop/docs/DESKTOP_WORKFLOW.md`**. Summary:
 
-- **Dev:** `npm run dev` (or `make spaces-dev` / `planner-dev` / `media-monitoring-dev`) — native Electron window + Vite HMR; no reinstall.
-- **Installed:** Install shell once; **app bundle** updates from GitHub (`dev` / `staging` / `production`); **shell** installer only when main/preload changes.
-- Shared updater: `shared/electron/updater/`; CI: `.github/workflows/deliver-desktop.yml`.
+- **Preferred shell:** Tauri 2 (Rust + OS webview). React / Tailwind / TypeScript UI unchanged.
+- **Dev:** `npm run dev` in each app (e.g. `desktop/spaces` → `tauri dev` with Vite HMR). Legacy Electron: `npm run dev:electron` where still available.
+- **Do not** add new Electron surfaces unless blocked on Tauri (document in `TAURI_DESKTOP.md`).
+- **Legacy Electron updater:** `shared/electron/updater/`; CI: `.github/workflows/deliver-desktop.yml` until Tauri CI replaces it per app.
 
 ### Spaces (macOS IDE + Electron)
 
 The **native Spaces** module lives in `mac/publshr/Sources/PublshrApp/Spaces/` (SwiftUI + Supabase + SQLite cache). See `mac/publshr/docs/SPACES_SYSTEM.md`. Schema: `mac/publshr/supabase/migrations/001_spaces_schema.sql`.
 
-The standalone **Spaces** Electron app lives in `desktop/spaces/` (React + TypeScript + Tailwind + SQLite + Supabase). The renderer (“web” UI) and the macOS IDE Spaces module must stay identical — see `shared/spaces/PARITY.md` and `shared/spaces/view-modes.ts`.
+The standalone **Spaces** desktop app lives in `desktop/spaces/` (Tauri + React + TypeScript + Tailwind + Rust SQLite + Supabase). The renderer (“web” UI) and the macOS IDE Spaces module must stay identical — see `shared/spaces/PARITY.md` and `shared/spaces/view-modes.ts`.
 
 ```bash
 cd desktop/spaces
 npm install
-npm run dev         # native window + hot reload
-npm run build       # production bundle
-npm run dist:shell  # installer when Electron shell changed
+npm run dev          # Tauri native window + Vite HMR (default)
+npm run tauri:build  # production installers
+npm run dev:electron # legacy Electron (maintenance only)
 npm run typecheck
 ```
 
