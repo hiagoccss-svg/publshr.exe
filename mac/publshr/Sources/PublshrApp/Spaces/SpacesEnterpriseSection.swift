@@ -57,9 +57,9 @@ enum SpacesEnterpriseSection: String, CaseIterable, Identifiable {
         }
     }
 
-    /// Primary nav strip (settings pinned in footer).
+    /// Primary nav strip (settings pinned in footer). Dashboard removed — users land on Chat after sign-in.
     static let mainNav: [SpacesEnterpriseSection] = [
-        .dashboard, .spaces, .planner, .chat, .documents, .whiteboard, .approvals, .reports,
+        .spaces, .planner, .chat, .documents, .whiteboard, .approvals, .reports,
         .clients, .campaigns, .team, .media, .files
     ]
 }

@@ -107,7 +107,7 @@ export const useSpacesStore = create<SpacesState>((set, get) => ({
   activeFolderId: null,
   activeListId: null,
   expandedFolderIds: {},
-  activeSection: 'spaces',
+  activeSection: 'chat',
   taskView: 'overview',
   tasks: [],
   members: [],
@@ -148,11 +148,12 @@ export const useSpacesStore = create<SpacesState>((set, get) => ({
         workspace: data.workspace,
         spaces,
         activeSpaceId: spaces[0]?.id ?? null,
+        activeSection: 'chat',
+        spacesHomeOpen: false,
         currentUserId: data.currentUserId,
         currentUserName: data.currentUserName,
         syncStatus: data.syncStatus
       })
-      if (spaces[0]) await get().setActiveSpace(spaces[0].id)
       await get().loadWorkspaceData()
     } catch (e) {
       set({
@@ -286,18 +287,34 @@ export const useSpacesStore = create<SpacesState>((set, get) => ({
   },
 
   setActiveSection: (section) => {
-    set({ activeSection: section })
-    if (section !== 'spaces') void get().loadWorkspaceData()
+    const resolved = section === 'dashboard' ? 'chat' : section
+    set({ activeSection: resolved })
+    if (resolved !== 'spaces') void get().loadWorkspaceData()
   },
   selectEnterpriseNav: (id) => {
+    if (id === 'dashboard') {
+      set({ activeSection: 'chat', spacesHomeOpen: false })
+      return
+    }
     if (id === 'whiteboard') {
       set({ activeSection: 'spaces', spacesHomeOpen: false, taskView: 'whiteboard' })
       const spaceId = get().activeSpaceId ?? get().spaces[0]?.id ?? null
       if (spaceId) void get().setActiveSpace(spaceId)
       return
     }
+    if (id === 'planner') {
+      set({ activeSection: 'spaces', spacesHomeOpen: false, taskView: 'calendar' })
+      const spaceId = get().activeSpaceId ?? get().spaces[0]?.id ?? null
+      if (spaceId) void get().setActiveSpace(spaceId)
+      return
+    }
     if (id === 'spaces') {
       set({ activeSection: 'spaces', activeSpaceId: null, spacesHomeOpen: true })
+      return
+    }
+    if (id === 'chat') {
+      set({ activeSection: 'chat', spacesHomeOpen: false })
+      void get().loadWorkspaceData()
       return
     }
     get().setActiveSection(id)

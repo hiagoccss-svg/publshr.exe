@@ -55,11 +55,11 @@ final class AuthViewModel: ObservableObject {
     }
 
     var prefersBiometricUnlock: Bool {
-        biometricUnlockEnabled && BiometricAuthService.isAvailable && AuthKeychain.load() != nil
+        biometricUnlockEnabled && BiometricAuthService.isAvailable && AuthKeychain.hasStoredSession()
     }
 
     var canOfferBiometricUnlock: Bool {
-        biometricUnlockEnabled && BiometricAuthService.isAvailable && AuthKeychain.load() != nil
+        biometricUnlockEnabled && BiometricAuthService.isAvailable && AuthKeychain.hasStoredSession()
     }
 
     init() {
@@ -143,7 +143,20 @@ final class AuthViewModel: ObservableObject {
         }
         defer { timeoutTask.cancel() }
 
-        // 1) Restore persisted Supabase session (online refresh when needed).
+        // 1) Protected keychain quick unlock (single system biometric prompt on read).
+        if prefersBiometricUnlock, AuthKeychain.hasStoredSession() {
+            if let restored = await restoreSessionFromKeychain(requireBiometric: false) {
+                session = restored
+                await finishSessionRestore(
+                    reconcileCloud: isNetworkReachable,
+                    unlockMethod: .biometric
+                )
+                return
+            }
+            infoMessage = "Quick unlock was cancelled. Sign in with your password."
+        }
+
+        // 2) Restore persisted Supabase session (online refresh when needed).
         if let existing = await loadPersistedSession() {
             session = existing
             if await gateSessionWithBiometricIfNeeded() {
@@ -155,12 +168,12 @@ final class AuthViewModel: ObservableObject {
             return
         }
 
-        // 2) Keychain + biometrics — works offline (cached permissions) and online (Supabase reconcile).
-        if canAttemptKeychainUnlock, let restored = await restoreSessionFromKeychain(requireBiometric: prefersBiometricUnlock) {
+        // 3) Keychain without biometric gate — offline cache + stored tokens.
+        if canAttemptKeychainUnlock, let restored = await restoreSessionFromKeychain(requireBiometric: false) {
             session = restored
             await finishSessionRestore(
                 reconcileCloud: isNetworkReachable,
-                unlockMethod: prefersBiometricUnlock ? .biometric : .persisted
+                unlockMethod: .persisted
             )
             return
         }
@@ -171,7 +184,7 @@ final class AuthViewModel: ObservableObject {
     }
 
     private var canAttemptKeychainUnlock: Bool {
-        AuthKeychain.load() != nil || AuthOfflineSessionCache.load() != nil
+        AuthKeychain.hasStoredSession() || AuthOfflineSessionCache.load() != nil
     }
 
     private func loadPersistedSession() async -> Session? {
@@ -206,12 +219,14 @@ final class AuthViewModel: ObservableObject {
             UserDefaults.standard.set(mail, forKey: Self.lastEmailKey)
             email = mail
         }
+        UserDefaults.standard.set(AppModule.chat.rawValue, forKey: "publshr.selectedModule")
         if biometricUnlockEnabled {
             persistSessionToKeychain()
         } else if BiometricAuthService.isAvailable, !didOfferBiometricSetup {
             showBiometricSetupOffer = true
         }
         await finishSessionRestore(reconcileCloud: true, unlockMethod: .password)
+        NotificationCenter.default.post(name: .publshrSelectModule, object: AppModule.chat.rawValue)
     }
 
     private func finishSessionRestore(reconcileCloud: Bool, unlockMethod: SessionUnlockMethod) async {
@@ -324,7 +339,7 @@ final class AuthViewModel: ObservableObject {
                 userId: session.user.id
             )
             if biometricUnlockEnabled {
-                _ = AuthKeychain.save(stored)
+                _ = AuthKeychain.save(stored, requireBiometry: true)
             }
         }
     }
@@ -334,9 +349,8 @@ final class AuthViewModel: ObservableObject {
         guard prefersBiometricUnlock else { return true }
         let ok = await BiometricAuthService.authenticate(reason: "Unlock Publshr")
         if ok { return true }
-        session = nil
         flowState = .signedOut
-        infoMessage = "Quick unlock was cancelled. Sign in with your password."
+        infoMessage = "Quick unlock was cancelled. Sign in with your password or use Touch ID below."
         return false
     }
 
@@ -428,6 +442,7 @@ final class AuthViewModel: ObservableObject {
         saveLastWorkspaceSelection()
         flowState = .signedIn
         errorMessage = nil
+        NotificationCenter.default.post(name: .publshrSelectModule, object: AppModule.chat.rawValue)
     }
 
     func createWorkspaceAndContinue() async {
@@ -448,6 +463,7 @@ final class AuthViewModel: ObservableObject {
             saveLastWorkspaceSelection()
             flowState = .signedIn
             errorMessage = nil
+            NotificationCenter.default.post(name: .publshrSelectModule, object: AppModule.chat.rawValue)
         } catch {
             errorMessage = friendlyWorkspaceError(error)
         }
@@ -459,8 +475,8 @@ final class AuthViewModel: ObservableObject {
     }
 
     func unlockWithBiometrics() async -> Bool {
-        guard canOfferBiometricUnlock || AuthKeychain.load() != nil else { return false }
-        guard let restored = await restoreSessionFromKeychain(requireBiometric: true) else { return false }
+        guard canOfferBiometricUnlock || AuthKeychain.hasStoredSession() else { return false }
+        guard let restored = await restoreSessionFromKeychain(requireBiometric: false) else { return false }
         session = restored
         await finishSessionRestore(
             reconcileCloud: isNetworkReachable,
@@ -515,12 +531,12 @@ final class AuthViewModel: ObservableObject {
             refreshToken: session.refreshToken,
             userId: session.user.id
         )
-        _ = AuthKeychain.save(stored)
+        _ = AuthKeychain.save(stored, requireBiometry: true)
         persistOfflineSnapshot()
     }
 
     private func restoreSessionFromKeychain(requireBiometric: Bool) async -> Session? {
-        if requireBiometric {
+        if requireBiometric, !AuthKeychain.usesBiometricProtection {
             let ok = await BiometricAuthService.authenticate(reason: "Unlock Publshr")
             guard ok else { return nil }
         }

@@ -1,4 +1,5 @@
-import { format, formatDistanceToNow, isPast } from 'date-fns'
+import { useEffect } from 'react'
+import { format } from 'date-fns'
 import {
   Briefcase,
   Cloud,
@@ -6,7 +7,6 @@ import {
   ExternalLink,
   FileText,
   Megaphone,
-  MessageSquare,
   Plus,
   Radio
 } from 'lucide-react'
@@ -18,7 +18,7 @@ import type { Approval, SidebarSection, Space } from '../../../shared/types'
 export function EnterpriseSectionView({ section }: { section: SidebarSection }): React.ReactElement {
   switch (section) {
     case 'dashboard':
-      return <DashboardSection />
+      return <ChatRedirectSection />
     case 'documents':
       return <DocumentsSection />
     case 'approvals':
@@ -34,9 +34,9 @@ export function EnterpriseSectionView({ section }: { section: SidebarSection }):
     case 'reports':
       return <ReportsSection />
     case 'chat':
-      return <ChatSection />
+      return <ChatRedirectSection />
     case 'planner':
-      return <PlannerSection />
+      return <PlannerRedirectSection />
     case 'media':
       return <MediaSection />
     case 'whiteboard':
@@ -44,92 +44,20 @@ export function EnterpriseSectionView({ section }: { section: SidebarSection }):
     case 'settings':
       return <SettingsSection />
     default:
-      return <DashboardSection />
+      return <ChatRedirectSection />
   }
 }
 
-function DashboardSection(): React.ReactElement {
-  const summary = useSpacesStore((s) => s.workspaceSummary)
-  const activity = useSpacesStore((s) => s.workspaceActivity)
-  const tasks = useSpacesStore((s) => s.workspaceTasks)
-  const setActiveSection = useSpacesStore((s) => s.setActiveSection)
-  const setActiveSpace = useSpacesStore((s) => s.setActiveSpace)
-  const setSelectedTask = useSpacesStore((s) => s.setSelectedTask)
+function ChatRedirectSection(): React.ReactElement {
+  const selectEnterpriseNav = useSpacesStore((s) => s.selectEnterpriseNav)
 
-  const overdue = tasks.filter((t) => t.dueDate && isPast(new Date(t.dueDate)) && t.status !== 'completed')
+  useEffect(() => {
+    selectEnterpriseNav('chat')
+  }, [selectEnterpriseNav])
 
   return (
-    <div className="animate-fade-in space-y-6 p-6">
-      <header>
-        <h1 className="text-xl font-semibold text-ink">Operations dashboard</h1>
-        <p className="mt-1 text-sm text-ink-secondary">Cross-space summary for your workspace.</p>
-      </header>
-
-      {summary && (
-        <div className="library-masonry library-masonry-responsive">
-          <Metric label="Active spaces" value={summary.spaceCount} onClick={() => setActiveSection('spaces')} />
-          <Metric
-            label="Open tasks"
-            value={summary.openTasks}
-            warn={summary.overdueTasks > 0}
-            onClick={() => setActiveSection('spaces')}
-          />
-          <Metric
-            label="Overdue"
-            value={summary.overdueTasks}
-            warn={summary.overdueTasks > 0}
-            onClick={() => setActiveSection('spaces')}
-          />
-          <Metric
-            label="Pending approvals"
-            value={summary.pendingApprovals}
-            onClick={() => setActiveSection('approvals')}
-          />
-          <Metric label="Documents" value={summary.documentCount} onClick={() => setActiveSection('documents')} />
-          <Metric label="Files" value={summary.fileCount} onClick={() => setActiveSection('files')} />
-          <Metric label="Team online" value={summary.onlineMembers} onClick={() => setActiveSection('team')} />
-        </div>
-      )}
-
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Panel title="Overdue tasks">
-          {overdue.length === 0 ? (
-            <p className="text-xs text-ink-muted">No overdue tasks.</p>
-          ) : (
-            <ul className="space-y-1">
-              {overdue.slice(0, 8).map((t) => (
-                <li key={t.id}>
-                  <button
-                    type="button"
-                    className="flex w-full items-center justify-between rounded-lg px-2 py-1 text-left text-xs hover:bg-surface-muted"
-                    onClick={() => {
-                      void setActiveSpace(t.spaceId)
-                      void setSelectedTask(t.id)
-                    }}
-                  >
-                    <span className="truncate font-medium text-ink">{t.title}</span>
-                    <span className="shrink-0 text-ink-muted">{t.spaceName}</span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </Panel>
-        <Panel title="Latest activity">
-          {activity.length === 0 ? (
-            <p className="text-xs text-ink-muted">No activity yet.</p>
-          ) : (
-            activity.slice(0, 10).map((a) => (
-              <p key={a.id} className="mb-2 text-xs text-ink-secondary">
-                <span className="font-medium text-ink">{a.userName}</span> {a.action}
-                <span className="block text-[10px] text-ink-muted">
-                  {a.spaceName} · {formatDistanceToNow(new Date(a.createdAt), { addSuffix: true })}
-                </span>
-              </p>
-            ))
-          )}
-        </Panel>
-      </div>
+    <div className="flex h-full items-center justify-center p-6">
+      <p className="text-sm text-ink-muted">Opening Chat…</p>
     </div>
   )
 }
@@ -376,75 +304,16 @@ function ReportsSection(): React.ReactElement {
   )
 }
 
-function ChatSection(): React.ReactElement {
-  const notifications = useSpacesStore((s) => s.notifications)
-  const activity = useSpacesStore((s) => s.workspaceActivity)
-  const chatNotes = notifications.filter((n) => n.kind.includes('chat') || n.kind.includes('message'))
-  const chatActivity = activity.filter(
-    (a) => a.entityType === 'message' || a.action.toLowerCase().includes('message')
-  )
-  const hasItems = chatNotes.length > 0 || chatActivity.length > 0
+function PlannerRedirectSection(): React.ReactElement {
+  const selectEnterpriseNav = useSpacesStore((s) => s.selectEnterpriseNav)
+
+  useEffect(() => {
+    selectEnterpriseNav('planner')
+  }, [selectEnterpriseNav])
 
   return (
-    <div className="space-y-4 p-6">
-      <SectionHeader
-        title="Chat"
-        description="Select Chat in the main menu for channels and live messaging."
-        icon={MessageSquare}
-      />
-      {!hasItems ? (
-        <p className="text-sm text-ink-muted">
-          Open the Chat module from the left navigation to send messages and create channels.
-        </p>
-      ) : (
-        <ul className="space-y-2">
-          {chatNotes.map((n) => (
-            <li key={n.id} className="rounded-lg border border-surface-border px-3 py-2 text-sm">
-              <p className="font-medium text-ink">{n.title}</p>
-              <p className="text-xs text-ink-muted">{n.body}</p>
-            </li>
-          ))}
-          {chatActivity.map((a) => (
-            <li key={a.id} className="rounded-lg border border-surface-border px-3 py-2 text-sm">
-              <p className="text-ink">
-                <span className="font-medium">{a.userName}</span> {a.action}
-              </p>
-              <p className="text-xs text-ink-muted">{a.spaceName}</p>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
-  )
-}
-
-function PlannerSection(): React.ReactElement {
-  const tasks = useSpacesStore((s) => s.workspaceTasks)
-  const withDates = tasks.filter((t) => t.dueDate || t.startDate)
-
-  return (
-    <div className="space-y-4 p-6">
-      <SectionHeader
-        title="Planner"
-        description="Scheduled work from Spaces tasks. Use the Planner desktop app for editorial calendars."
-      />
-      {withDates.length === 0 ? (
-        <p className="text-sm text-ink-muted">No dated tasks. Add due dates on tasks to see them here.</p>
-      ) : (
-        <ul className="space-y-2">
-          {withDates.slice(0, 30).map((t) => (
-            <li
-              key={t.id}
-              className="flex items-center justify-between rounded-lg border border-surface-border px-3 py-2 text-sm"
-            >
-              <span className="font-medium text-ink">{t.title}</span>
-              <span className="text-xs text-ink-muted">
-                {t.dueDate ? format(new Date(t.dueDate), 'MMM d, yyyy') : '—'} · {t.spaceName}
-              </span>
-            </li>
-          ))}
-        </ul>
-      )}
+    <div className="flex h-full items-center justify-center p-6">
+      <p className="text-sm text-ink-muted">Opening Planner…</p>
     </div>
   )
 }
@@ -582,33 +451,6 @@ function EntityList<T>({
 }): React.ReactElement {
   if (items.length === 0) return <p className="text-sm text-ink-muted">{empty}</p>
   return <ul className="space-y-2">{items.map((item, i) => <li key={i}>{render(item)}</li>)}</ul>
-}
-
-function Metric({
-  label,
-  value,
-  warn,
-  onClick
-}: {
-  label: string
-  value: number
-  warn?: boolean
-  onClick?: () => void
-}): React.ReactElement {
-  const inner = (
-    <>
-      <span className="text-[11px] font-medium uppercase tracking-wide text-ink-muted">{label}</span>
-      <p className={clsx('mt-2 text-2xl font-semibold', warn ? 'text-status-blocked' : 'text-ink')}>{value}</p>
-    </>
-  )
-  if (onClick) {
-    return (
-      <button type="button" onClick={onClick} className="library-card library-masonry-item text-left hover:ring-2 hover:ring-accent/10">
-        {inner}
-      </button>
-    )
-  }
-  return <div className="library-card library-masonry-item">{inner}</div>
 }
 
 function Panel({ title, children }: { title: string; children: React.ReactNode }): React.ReactElement {

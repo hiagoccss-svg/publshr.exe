@@ -68,7 +68,7 @@ export function LoginPanel() {
           Continue with local workspace
         </button>
         <p className="mt-2 text-center text-xs text-[var(--lib-ink-muted)]">
-          Dashboard, Spaces, Chat, Documents, Whiteboard, Files, and Reports run offline.
+          Spaces, Chat, Documents, Whiteboard, Files, and Reports run offline.
         </p>
       </div>
     </div>
