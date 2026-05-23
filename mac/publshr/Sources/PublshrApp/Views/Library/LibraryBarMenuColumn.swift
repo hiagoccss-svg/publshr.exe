@@ -11,7 +11,7 @@ struct LibraryBarMenuColumn: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            VStack(spacing: 3) {
+            VStack(spacing: AppWindowChromeMetrics.toolbarItemSpacing) {
                 ForEach(AppModule.mainStrip) { item in
                     navRow(
                         item.label,
@@ -23,8 +23,8 @@ struct LibraryBarMenuColumn: View {
                     }
                 }
             }
-            .padding(.top, 6)
-            .padding(.bottom, 8)
+            .padding(.top, AppWindowChromeMetrics.barColumnBodyTopSpacing)
+            .padding(.bottom, AppWindowChromeMetrics.toolbarItemSpacing)
 
             Spacer(minLength: 0)
 

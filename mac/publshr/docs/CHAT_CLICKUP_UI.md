@@ -23,10 +23,10 @@ Settings opens in a **separate sheet/window** (not in the activity strip), match
 ├─────────────────────────────┤
 │ [All][Unread][Pinned][DMs][Ch] │  ← Filters (tap again to clear)
 ├─────────────────────────────┤
-│ CHANNELS              [+]   │  ← Organized layout
-│   ○ general            (3)  │
-│ DIRECT MESSAGES       [+]   │
-│ PLANNER                     │
+│ ▼ YOUR PROJECTS             │  ← Collapsible; planner_items from Supabase
+│ ▼ FAVORITES                 │
+│ ▼ CHANNELS            [+]   │
+│ ▼ DIRECT MESSAGES     [+]   │
 ├─────────────────────────────┤
 │ Organized · Recents    [+][⚙️] │  ← Bottom: layout toggles, new menu, settings
 └─────────────────────────────┘
@@ -56,10 +56,10 @@ Settings opens in a **separate sheet/window** (not in the activity strip), match
 
 | Layout | Icon | Behavior |
 |--------|------|----------|
-| **Organized** | `list.bullet.rectangle` | Sections: Pinned, Channels, Direct Messages, Planner |
-| **Recents** | `clock` | Single list sorted by `last_message_at` |
+| **Organized** | `list.bullet.rectangle` | Collapsible: Your projects, Favorites, Channels, Direct messages |
+| **Recents** | `clock` | Collapsible Recent list sorted by `last_message_at` |
 
-Active layout label appears next to the toggles. Preference keys: `publshr.chat.sidebarFilter`, `publshr.chat.sidebarLayout`.
+Section open/closed state and last selected channel persist per workspace (`publshr.chat.sidebarSections.*`, `publshr.chat.lastChannel.*`). Preference keys: `publshr.chat.sidebarFilter`, `publshr.chat.sidebarLayout`.
 
 ### Bottom settings menu (gear, lower-right)
 

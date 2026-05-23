@@ -13,7 +13,7 @@ enum AppWindowChromeMetrics {
     /// Gap between the green zoom button and the first app toolbar icon (Cursor Mac).
     static let afterTrafficLightGap: CGFloat = 12
     /// Vertical pad around measured traffic-light cluster inside the toolbar row.
-    static let trafficLightVerticalPad: CGFloat = 8
+    static let trafficLightVerticalPad: CGFloat = 6
     /// Minimum toolbar row height (matches native titlebar — do not go below ~44pt).
     static let minimumTitlebarRowHeight: CGFloat = 44
     /// Fallback when SwiftUI reports zero safe-area (pre-layout).
@@ -22,6 +22,8 @@ enum AppWindowChromeMetrics {
     static let trafficLightRowHeight: CGFloat = minimumTitlebarRowHeight
     /// Fallback top inset when traffic lights are not measurable yet (pre-layout).
     static let trafficLightVerticalAlignPadding: CGFloat = 8
+    /// Pulls the unified toolbar row up to align with native traffic-light bottoms (pt).
+    static let trafficToolbarRowNudge: CGFloat = 2
     /// Hard cap so a bad traffic-light measure cannot consume the whole window.
     static let maxTitlebarTopPadding: CGFloat = 18
     /// Square chrome control — Cursor Mac titlebar hit target.
@@ -33,6 +35,8 @@ enum AppWindowChromeMetrics {
     static let toolbarTitleFontSize: CGFloat = 13
     /// Gap between toolbar slots (sidebar toggle, icons, title cluster).
     static let toolbarItemSpacing: CGFloat = 8
+    /// Gap between the unified titlebar row and first-column nav (bar menu / icon rail).
+    static let barColumnBodyTopSpacing: CGFloat = toolbarItemSpacing
     /// Ask AI pill — same vertical footprint as chrome controls.
     static let askAIPillHeight: CGFloat = 24
     static let askAIPillHorizontalPadding: CGFloat = 10

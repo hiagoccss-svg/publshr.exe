@@ -25,6 +25,7 @@ final class ChatViewModel: ObservableObject {
     @Published var sidebarLayout: ChatSidebarLayout = ChatUserPreferences.loadSidebarLayout()
     @Published var sidebarSearchQuery = ""
     @Published private(set) var pinnedSidebarChannelIds: Set<UUID> = []
+    @Published private(set) var sidebarSectionExpanded: [ChatSidebarSection: Bool] = [:]
     @Published var permissions = ChatWorkspacePermissions.default
     @Published var isOffline = false
     @Published var inAppNotifications: [ChatInAppNotification] = []
@@ -125,6 +126,7 @@ final class ChatViewModel: ObservableObject {
             await service?.stopRealtime()
             self.workspace = workspace
             reloadPinnedSidebarChannels()
+            reloadSidebarSectionState()
             mergePermissions(workspace: workspace, fallback: permissions)
             messages = []
             channels = []
@@ -242,7 +244,7 @@ final class ChatViewModel: ObservableObject {
         let cached = service.cachedChannels(workspaceId: workspaceId)
         if !cached.isEmpty {
             partitionChannels(cached)
-            selectFirstChannelIfNeeded()
+            selectPersistedOrFirstChannelIfNeeded()
         }
 
         async let remoteChannels = service.fetchChannels(workspaceId: workspaceId)
@@ -273,7 +275,7 @@ final class ChatViewModel: ObservableObject {
             presence = Dictionary(uniqueKeysWithValues: pres.map { ($0.userId, $0) })
             isOffline = false
             errorMessage = nil
-            selectFirstChannelIfNeeded()
+            selectPersistedOrFirstChannelIfNeeded()
             await loadPlannerTasks()
             await reloadScheduledMessages()
             if filteredChannels.isEmpty, filteredDMs.isEmpty,
@@ -295,8 +297,14 @@ final class ChatViewModel: ObservableObject {
         profiles[profile.id] = profile
     }
 
-    private func selectFirstChannelIfNeeded() {
+    private func selectPersistedOrFirstChannelIfNeeded() {
         guard selectedChannel == nil else { return }
+        if let workspaceId = workspace?.id,
+           let lastId = ChatUserPreferences.loadLastSelectedChannelId(workspaceId: workspaceId),
+           let channel = (channels + directMessages).first(where: { $0.id == lastId }) {
+            selectChannel(channel)
+            return
+        }
         if let first = channels.first ?? directMessages.first {
             selectChannel(first)
         }
@@ -351,6 +359,9 @@ final class ChatViewModel: ObservableObject {
             navigationForwardStack.removeAll()
         }
         selectedChannel = channel
+        if let workspaceId = workspace?.id {
+            ChatUserPreferences.saveLastSelectedChannelId(channel.id, workspaceId: workspaceId)
+        }
         ChatNotificationFocusState.shared.setActiveChannel(channel.id)
         replyingTo = nil
         markInAppNotificationsRead(for: channel.id)
@@ -1117,6 +1128,35 @@ final class ChatViewModel: ObservableObject {
         ChatUserPreferences.saveSidebarLayout(layout)
     }
 
+    func reloadSidebarSectionState() {
+        guard let workspaceId = workspace?.id else {
+            sidebarSectionExpanded = [:]
+            return
+        }
+        var map: [ChatSidebarSection: Bool] = [:]
+        for section in ChatSidebarSection.allCases {
+            map[section] = ChatUserPreferences.loadSidebarSectionExpanded(
+                workspaceId: workspaceId,
+                section: section
+            )
+        }
+        sidebarSectionExpanded = map
+    }
+
+    func isSidebarSectionExpanded(_ section: ChatSidebarSection) -> Bool {
+        sidebarSectionExpanded[section] ?? true
+    }
+
+    func setSidebarSectionExpanded(_ section: ChatSidebarSection, expanded: Bool) {
+        sidebarSectionExpanded[section] = expanded
+        guard let workspaceId = workspace?.id else { return }
+        ChatUserPreferences.saveSidebarSectionExpanded(expanded, workspaceId: workspaceId, section: section)
+    }
+
+    func toggleSidebarSection(_ section: ChatSidebarSection) {
+        setSidebarSectionExpanded(section, expanded: !isSidebarSectionExpanded(section))
+    }
+
     var filteredChannels: [ChatChannel] {
         sidebarChannelsList(channels)
     }
@@ -1214,6 +1254,7 @@ final class ChatViewModel: ObservableObject {
             return
         }
         pinnedSidebarChannelIds = ChatUserPreferences.loadPinnedChannelIds(workspaceId: workspaceId)
+        reloadSidebarSectionState()
     }
 
     func toggleSidebarPin(for channel: ChatChannel) {

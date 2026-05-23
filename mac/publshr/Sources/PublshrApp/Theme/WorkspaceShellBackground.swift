@@ -21,14 +21,14 @@ struct WorkspaceDesktopBackdrop: View {
     }
 }
 
-/// First column shell — flat Cursor Mac rail (#F3F3F3), aligned with the titlebar band.
+/// First column shell — light grey rail, aligned with the titlebar band.
 struct GlassPrimaryBarChrome: View {
     var body: some View {
-        CursorMacShellDesign.columnChromeBackground
+        LibraryGlassDesign.primaryBarColumnBackground
     }
 }
 
-/// Chat / Spaces submenu column — solid white (same as editor column).
+/// Chat / Spaces submenu column — lighter grey step before the white editor.
 struct GlassSubmenuChrome: View {
     var body: some View {
         LibraryGlassDesign.submenuColumnBackground
