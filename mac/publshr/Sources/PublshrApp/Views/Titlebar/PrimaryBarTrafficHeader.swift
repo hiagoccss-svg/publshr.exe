@@ -1,22 +1,12 @@
 import SwiftUI
 
-/// First-column title band — sidebar toggle under traffic lights; module icons in the rail below.
+/// First-column title band — traffic-light reserve only (shell toggles live in `ShellUnifiedTitlebar`).
 struct PrimaryBarTrafficHeader: View {
-    @EnvironmentObject private var tabStore: WorkspaceTabStore
-
     var body: some View {
         TitlebarToolbarRow(leadingPadding: 10, trailingPadding: 6) {
-            TitlebarChromeIconButton(
-                systemName: tabStore.sidebarExpanded ? "sidebar.left" : "sidebar.right",
-                help: tabStore.sidebarExpanded
-                    ? "Hide submenu"
-                    : "Show submenu",
-                isActive: !tabStore.sidebarExpanded
-            ) {
-                withAnimation(.easeInOut(duration: 0.15)) {
-                    tabStore.sidebarExpanded.toggle()
-                }
-            }
+            Color.clear
+                .frame(width: AppWindowChromeMetrics.trafficLightLeadingInset)
+                .accessibilityHidden(true)
         }
         .trafficToolbarAligned()
         .frame(width: CursorMacShellDesign.barMenuIconRailWidth)

@@ -10,6 +10,9 @@ struct ChatEditorToolbarContent: View {
     var body: some View {
         TitlebarToolbarRow(leadingPadding: 0, trailingPadding: 0) {
             channelTitle
+            if chat.selectedChannel != nil {
+                channelPrimaryActions
+            }
             Spacer(minLength: 8)
             trailingActions
         }
@@ -33,38 +36,41 @@ struct ChatEditorToolbarContent: View {
     }
 
     @ViewBuilder
+    private var channelPrimaryActions: some View {
+        TitlebarChromeIconButton(systemName: "arrow.up.forward.square", help: "Open in new window") {
+            if let channel = chat.selectedChannel {
+                ChatWindowManager.shared.openChannel(channel, chat: chat, auth: auth)
+            }
+        }
+
+        TitlebarChromeIconButton(
+            systemName: chat.chatFocusMode ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right",
+            help: chat.chatFocusMode ? "Show sidebars" : "Focus on chat",
+            isActive: chat.chatFocusMode
+        ) {
+            withAnimation(.easeInOut(duration: 0.15)) {
+                chat.chatFocusMode.toggle()
+            }
+        }
+
+        TitlebarChromeIconButton(systemName: "sparkles", help: "Chat recap & AI") {
+            chat.showAISheet = true
+        }
+
+        TitlebarChromeIconButton(
+            systemName: chat.showPinnedPanel ? "pin.fill" : "pin",
+            help: "Pinned messages",
+            isActive: chat.showPinnedPanel
+        ) {
+            chat.showPinnedPanel.toggle()
+        }
+    }
+
+    @ViewBuilder
     private var trailingActions: some View {
         if chat.selectedChannel != nil {
-            TitlebarChromeIconButton(systemName: "arrow.up.forward.square", help: "Open in new window") {
-                if let channel = chat.selectedChannel {
-                    ChatWindowManager.shared.openChannel(channel, chat: chat, auth: auth)
-                }
-            }
-
-            TitlebarChromeIconButton(
-                systemName: chat.chatFocusMode ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right",
-                help: chat.chatFocusMode ? "Show sidebars" : "Focus on chat",
-                isActive: chat.chatFocusMode
-            ) {
-                withAnimation(.easeInOut(duration: 0.15)) {
-                    chat.chatFocusMode.toggle()
-                }
-            }
-
-            TitlebarChromeIconButton(systemName: "sparkles", help: "Chat recap & AI") {
-                chat.showAISheet = true
-            }
-
             TitlebarChromeIconButton(systemName: "magnifyingglass", help: "Search in channel") {
                 chat.openChannelSearch()
-            }
-
-            TitlebarChromeIconButton(
-                systemName: chat.showPinnedPanel ? "pin.fill" : "pin",
-                help: "Pinned messages",
-                isActive: chat.showPinnedPanel
-            ) {
-                chat.showPinnedPanel.toggle()
             }
 
             if let channel = chat.selectedChannel,
@@ -137,7 +143,7 @@ struct TitlebarToolbarChannelTitle: View {
     var detail: String?
 
     var body: some View {
-        HStack(spacing: 6) {
+        HStack(alignment: .center, spacing: 6) {
             TitlebarToolbarSlot {
                 ChatChannelIconView(channel: channel, size: AppWindowChromeMetrics.channelIconSize)
             }
@@ -145,6 +151,7 @@ struct TitlebarToolbarChannelTitle: View {
                 .font(.system(size: AppWindowChromeMetrics.toolbarTitleFontSize, weight: .semibold))
                 .foregroundStyle(LibraryGlassDesign.ink)
                 .lineLimit(1)
+                .frame(height: AppWindowChromeMetrics.controlSize, alignment: .leading)
         }
         .frame(height: AppWindowChromeMetrics.controlSize, alignment: .leading)
     }
