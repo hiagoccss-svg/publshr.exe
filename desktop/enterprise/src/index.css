@@ -30,6 +30,18 @@
   width: var(--lib-sidebar-width-wide, 272px) !important;
 }
 
+/* Column 3 titlebar band — same row height as traffic-light row (macOS editorBand parity). */
+.shell-unified-titlebar .enterprise-editor-titlebar {
+  background: var(--lib-workspace-bg, rgba(255, 255, 255, 0.72));
+  min-height: 3rem;
+}
+
+.titlebar-chrome-actions {
+  margin-left: auto;
+  padding-left: 0.25rem;
+  border-left: 1px solid rgba(0, 0, 0, 0.06);
+}
+
 html,
 body,
 #root {

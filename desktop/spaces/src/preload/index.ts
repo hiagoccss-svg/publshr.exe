@@ -38,6 +38,7 @@ const api: SpacesAPI = {
   listWorkspaceMembers: () => ipcRenderer.invoke('spaces:listWorkspaceMembers'),
   listWorkspaceActivity: (limit) => ipcRenderer.invoke('spaces:listWorkspaceActivity', limit),
   listNotifications: (limit) => ipcRenderer.invoke('spaces:listNotifications', limit),
+  listCoverage: (limit) => ipcRenderer.invoke('spaces:listCoverage', limit),
   getWorkspaceSummary: () => ipcRenderer.invoke('spaces:getWorkspaceSummary'),
   search: (query) => ipcRenderer.invoke('spaces:search', query),
   getSyncStatus: () => ipcRenderer.invoke('spaces:getSyncStatus'),

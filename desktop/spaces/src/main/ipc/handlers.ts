@@ -52,6 +52,7 @@ export function registerIpcHandlers(db: SpacesDatabase): void {
     db.listWorkspaceActivity(limit)
   )
   ipcMain.handle('spaces:listNotifications', (_e, limit?: number) => db.listNotifications(limit))
+  ipcMain.handle('spaces:listCoverage', (_e, limit?: number) => db.listCoverage(limit))
   ipcMain.handle('spaces:getWorkspaceSummary', () => db.getWorkspaceSummary())
   ipcMain.handle('spaces:search', (_e, query: string) => db.search(query))
   ipcMain.handle('spaces:getSyncStatus', () => db.getSyncStatus())

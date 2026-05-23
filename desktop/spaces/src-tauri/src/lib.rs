@@ -61,6 +61,7 @@ pub fn run() {
             commands::spaces_list_workspace_tasks,
             commands::spaces_list_workspace_members,
             commands::spaces_list_workspace_activity,
+            commands::spaces_list_coverage,
             commands::spaces_list_notifications,
             commands::spaces_get_workspace_summary,
             commands::spaces_list_comments,

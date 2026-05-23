@@ -1,18 +1,17 @@
 import {
-  Bell,
   ChevronLeft,
   ChevronRight,
   Cloud,
   CloudOff,
   PanelLeft,
   Plus,
-  Search,
-  Sparkles
+  Search
 } from 'lucide-react'
 import clsx from 'clsx'
 import { useSpacesStore } from '../../stores/spaces-store'
 import { useChatStore } from '../../stores/chat-store'
 import type { SidebarSection } from '../../../shared/types'
+import { TitlebarChromeActionBar } from './TitlebarChromeActionBar'
 
 const SECTION_SEARCH: Partial<Record<SidebarSection, string>> = {
   chat: 'Search channels and people',
@@ -22,7 +21,25 @@ const SECTION_SEARCH: Partial<Record<SidebarSection, string>> = {
   planner: 'Search scheduled work',
   approvals: 'Search approvals',
   team: 'Search team',
-  files: 'Search files'
+  files: 'Search files',
+  media: 'Search coverage',
+  reports: 'Search reports'
+}
+
+const SECTION_LABELS: Partial<Record<SidebarSection, string>> = {
+  dashboard: 'Dashboard',
+  spaces: 'Spaces',
+  planner: 'Planner',
+  chat: 'Chat',
+  documents: 'Documents',
+  approvals: 'Approvals',
+  reports: 'Reports',
+  clients: 'Clients',
+  campaigns: 'Campaigns',
+  team: 'Team',
+  media: 'Media Monitoring',
+  files: 'Files',
+  settings: 'Settings'
 }
 
 /** Unified titlebar row — column bands align with the shell below (traffic lights + col1/col2/col3). */
@@ -39,12 +56,15 @@ export function ShellColumnTitlebar({
   const searchQuery = useSpacesStore((s) => s.searchQuery)
   const setSearchQuery = useSpacesStore((s) => s.setSearchQuery)
   const setCommandOpen = useSpacesStore((s) => s.setCommandOpen)
+  const setNotificationsOpen = useSpacesStore((s) => s.setNotificationsOpen)
+  const setActiveSection = useSpacesStore((s) => s.setActiveSection)
   const createTask = useSpacesStore((s) => s.createTask)
   const workspace = useSpacesStore((s) => s.workspace)
   const syncStatus = useSpacesStore((s) => s.syncStatus)
   const members = useSpacesStore((s) => s.members)
-  const currentUserName = useSpacesStore((s) => s.currentUserName)
-
+  const notifications = useSpacesStore((s) => s.notifications)
+  const spaces = useSpacesStore((s) => s.spaces)
+  const activeSpaceId = useSpacesStore((s) => s.activeSpaceId)
   const chatSearch = useChatStore((s) => s.sidebarSearchQuery)
   const setChatSearch = useChatStore((s) => s.setSidebarSearchQuery)
 
@@ -58,13 +78,21 @@ export function ShellColumnTitlebar({
   const searchPlaceholder =
     SECTION_SEARCH[activeSection] ?? 'Search workspace'
 
+  const activeSpace = spaces.find((s) => s.id === activeSpaceId)
+  const editorTitle =
+    activeSection === 'spaces'
+      ? (activeSpace?.name ?? 'Spaces')
+      : (SECTION_LABELS[activeSection] ?? workspace?.name ?? 'Workspace')
+
   const onlineCount = members.filter((m) => m.isOnline).length
+  const unreadNotifications = notifications.filter((n) => !n.read).length
 
   return (
     <header
       data-tauri-drag-region={embedded ? true : undefined}
-      className="glass-toolbar flex h-12 shrink-0 items-stretch border-b border-black/5"
+      className="glass-toolbar shell-unified-titlebar flex h-12 shrink-0 items-stretch border-b border-black/5"
     >
+      {/* Column 1 — traffic reserve + shell navigation (matches macOS leadingBand) */}
       <div
         className="enterprise-nav-rail flex shrink-0 items-center gap-1 border-r border-black/5 px-2"
         style={{ width: 'var(--lib-bar-menu-width, 220px)' }}
@@ -100,6 +128,7 @@ export function ShellColumnTitlebar({
         </div>
       </div>
 
+      {/* Column 2 — module search */}
       <div
         className={clsx(
           'enterprise-context-sidebar no-drag flex shrink-0 items-center gap-2 border-r border-black/5 px-3',
@@ -116,12 +145,14 @@ export function ShellColumnTitlebar({
         />
       </div>
 
-      <div className="no-drag flex min-w-0 flex-1 items-center gap-3 px-4">
+      {/* Column 3 — editor titlebar band + chrome actions on the traffic row */}
+      <div className="enterprise-editor-titlebar no-drag flex min-w-0 flex-1 items-center gap-3 border-r-0 px-3">
         <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-accent text-xs font-semibold text-white">
           {(workspace?.name ?? 'P')[0]}
         </div>
         <div className="min-w-0 flex-1">
           <p className="truncate text-xs font-medium text-ink">{workspace?.name ?? 'Publshr Enterprise'}</p>
+          <p className="truncate text-[11px] text-ink-muted">{editorTitle}</p>
         </div>
         <button
           type="button"
@@ -131,7 +162,7 @@ export function ShellColumnTitlebar({
           <Plus className="h-3.5 w-3.5" />
           Create
         </button>
-        <div className="dt-content-surface-muted flex shrink-0 items-center gap-1 rounded-lg px-2 py-1 text-[11px] text-ink-secondary">
+        <div className="dt-content-surface-muted hidden shrink-0 items-center gap-1 rounded-lg px-2 py-1 text-[11px] text-ink-secondary sm:flex">
           {syncStatus === 'online' ? (
             <Cloud className="h-3.5 w-3.5 text-status-approved" />
           ) : (
@@ -139,7 +170,7 @@ export function ShellColumnTitlebar({
           )}
           <span className="capitalize">{syncStatus}</span>
         </div>
-        <div className="flex -space-x-1">
+        <div className="hidden shrink-0 -space-x-1 md:flex">
           {members.slice(0, 4).map((m) => (
             <span
               key={m.id}
@@ -154,27 +185,19 @@ export function ShellColumnTitlebar({
             <span className="ml-1 self-center text-[10px] text-ink-muted">{onlineCount} online</span>
           ) : null}
         </div>
-        <button type="button" className="rounded-lg p-1.5 text-ink-secondary hover:bg-surface-muted">
-          <Bell className="h-4 w-4" />
-        </button>
-        <button
-          type="button"
-          onClick={() => setCommandOpen(true)}
-          className="rounded-lg p-1.5 text-ink-secondary hover:bg-surface-muted"
-        >
-          <Sparkles className="h-4 w-4" />
-        </button>
-        <span
-          className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-accent-soft text-xs font-semibold text-accent"
-          title={currentUserName}
-        >
-          {(currentUserName || 'Y').slice(0, 1).toUpperCase()}
-        </span>
+
+        <TitlebarChromeActionBar
+          unreadCount={unreadNotifications}
+          onNotifications={() => setNotificationsOpen(true)}
+          onCommand={() => setCommandOpen(true)}
+          onSettings={() => setActiveSection('settings')}
+        />
+
         {onSignOut ? (
           <button
             type="button"
             onClick={onSignOut}
-            className="rounded-lg px-2 py-1 text-xs text-ink-muted hover:bg-surface-muted hover:text-ink"
+            className="hidden rounded-lg px-2 py-1 text-xs text-ink-muted hover:bg-surface-muted hover:text-ink lg:inline"
           >
             Sign out
           </button>
