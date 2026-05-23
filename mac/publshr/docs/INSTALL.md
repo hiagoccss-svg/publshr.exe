@@ -71,4 +71,4 @@ Downloads the live DMG and opens **PublshrInstaller.app** (no `curl | bash` pipe
 
 ## Enterprise checklist
 
-See [ENTERPRISE_DESKTOP.md](./ENTERPRISE_DESKTOP.md) for signing, notarization, and MDM notes.
+See [APPLE_MAC_DISTRIBUTION.md](./APPLE_MAC_DISTRIBUTION.md) for Developer ID + notarization (normal open without Right-click → Open). See [ENTERPRISE_DESKTOP.md](./ENTERPRISE_DESKTOP.md) for MDM notes.

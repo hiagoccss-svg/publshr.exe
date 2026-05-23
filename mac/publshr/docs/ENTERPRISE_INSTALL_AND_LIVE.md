@@ -119,7 +119,8 @@ Install location:
 - [x] Transactional update with rollback
 - [x] SHA-256 verify before install
 - [x] CI hooks for Developer ID sign + DMG notarize (`DEVELOPER_ID_APPLICATION`, `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD`, `APPLE_TEAM_ID` secrets)
-- [ ] Configure Apple secrets on the repo (until then: Right-click → Open on first launch)
+- [x] `PrivacyInfo.xcprivacy` + `Publshr.entitlements` in app bundle
+- [ ] **You:** add the four Apple secrets on GitHub (see [APPLE_MAC_DISTRIBUTION.md](./APPLE_MAC_DISTRIBUTION.md)) — until then: Right-click → Open on first launch
 - [ ] Remote crash reporting (Sentry / App Insights)
 
 ### Identity & compliance

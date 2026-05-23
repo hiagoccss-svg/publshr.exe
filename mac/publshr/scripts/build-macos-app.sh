@@ -47,8 +47,14 @@ if [[ "$(uname -s)" == "Darwin" ]]; then
         /usr/libexec/PlistBuddy -c "Add :CFBundleIconFile string AppIcon" "${APP_ROOT}/Contents/Info.plist" 2>/dev/null \
             || /usr/libexec/PlistBuddy -c "Set :CFBundleIconFile AppIcon" "${APP_ROOT}/Contents/Info.plist"
     fi
-    # Ad-hoc sign so Gatekeeper is less likely to block launch from /Applications.
-    codesign --force --deep --sign - "$APP_ROOT" 2>/dev/null || true
+    if [[ -f "${SCRIPT_DIR}/../app/PrivacyInfo.xcprivacy" ]]; then
+        cp "${SCRIPT_DIR}/../app/PrivacyInfo.xcprivacy" "${RES_DIR}/PrivacyInfo.xcprivacy"
+    fi
+    if [[ -n "${DEVELOPER_ID_APPLICATION:-}" ]]; then
+        bash "${SCRIPT_DIR}/sign-macos-release.sh" "$APP_ROOT"
+    else
+        codesign --force --deep --sign - "$APP_ROOT" 2>/dev/null || true
+    fi
 fi
 
 cp "${SCRIPT_DIR}/apply-macos-update.sh" "${RES_DIR}/apply-macos-update.sh"
