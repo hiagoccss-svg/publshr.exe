@@ -84,9 +84,12 @@ enum AppReleaseConfig {
     }
 
     static var preferredInstallPath: String {
-        FileManager.default.homeDirectoryForCurrentUser
-            .appendingPathComponent("Applications/Publshr.app", isDirectory: true)
-            .path
+        InstallPathPolicy.userApplicationsApp.path
+    }
+
+    /// Where live updates install (migrates off system /Applications without admin prompts).
+    static var liveUpdateTargetPath: String {
+        InstallPathPolicy.resolvedLiveUpdateTarget(runningBundlePath: installedAppPath)
     }
 
     static func releasesURL() -> URL? {

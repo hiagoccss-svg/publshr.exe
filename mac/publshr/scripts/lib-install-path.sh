@@ -42,3 +42,16 @@ publshr_app_path_is_user_updatable() {
     }
     return 1
 }
+
+# Live updates always target a user-writable install (never prompt for admin).
+publshr_resolved_live_update_target() {
+    local requested="${1:-$(publshr_default_mac_app)}"
+    if publshr_app_path_is_user_updatable "$requested"; then
+        printf '%s\n' "$requested"
+        return 0
+    fi
+    local user_app
+    user_app="$(publshr_user_applications_app)"
+    echo "NOTE: ${requested} is not user-writable — updating ${user_app} instead (no administrator password)." >&2
+    printf '%s\n' "$user_app"
+}

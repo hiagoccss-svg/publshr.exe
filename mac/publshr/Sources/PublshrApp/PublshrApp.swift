@@ -8,6 +8,7 @@ struct PublshrApp: App {
     @StateObject private var updates = AppUpdateViewModel()
     @StateObject private var subscription = SubscriptionService()
     @StateObject private var enterprise = EnterpriseWorkspaceService()
+    @StateObject private var mediaMonitoring = MediaMonitoringViewModel()
     @StateObject private var tabStore = WorkspaceTabStore()
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
@@ -24,6 +25,7 @@ struct PublshrApp: App {
                 .environmentObject(updates)
                 .environmentObject(subscription)
                 .environmentObject(enterprise)
+                .environmentObject(mediaMonitoring)
                 .environmentObject(tabStore)
                 .onOpenURL { url in
                     auth.handleIncomingURL(url)

@@ -265,8 +265,13 @@ struct SpacesEnterpriseSectionsView: View {
                     .padding(8)
                 }
             }
-            Button("Open Publshr Planner") {
-                _ = DesktopCompanionAppLauncher.open(.planner)
+            Button("Open calendar in Spaces") {
+                NotificationCenter.default.post(name: .publshrSelectModule, object: AppModule.spaces.rawValue)
+                spaces.activeSection = .spaces
+                if let first = spaces.spaces.first {
+                    Task { await spaces.selectSpace(first.id) }
+                    spaces.taskView = .calendar
+                }
             }
             .buttonStyle(.borderedProminent)
             .controlSize(.small)
@@ -298,8 +303,8 @@ struct SpacesEnterpriseSectionsView: View {
                     Text(space.name).font(.system(size: 13, weight: .medium))
                 }
             }
-            Button("Open Publshr Media Monitoring") {
-                _ = DesktopCompanionAppLauncher.open(.mediaMonitoring)
+            Button("Open Media Monitoring") {
+                NotificationCenter.default.post(name: .publshrSelectModule, object: AppModule.mediaMonitoring.rawValue)
             }
             .buttonStyle(.borderedProminent)
             .controlSize(.small)

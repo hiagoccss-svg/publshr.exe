@@ -6,6 +6,7 @@ struct LibraryShellView: View {
     @EnvironmentObject private var chat: ChatViewModel
     @EnvironmentObject private var spaces: SpacesViewModel
     @EnvironmentObject private var subscription: SubscriptionService
+    @EnvironmentObject private var mediaMonitoring: MediaMonitoringViewModel
     @EnvironmentObject private var tabStore: WorkspaceTabStore
     @ObservedObject private var trafficLayout = TrafficLightLayoutStore.shared
     @Binding var module: AppModule
@@ -208,6 +209,7 @@ struct LibraryShellView: View {
     private func syncModulesIfNeeded() {
         guard auth.flowState == .signedIn else { return }
         chat.attach(auth: auth)
+        mediaMonitoring.attach(auth: auth)
         chat.applyWorkspaceContext(
             workspace: auth.selectedWorkspace,
             permissions: auth.workspaceChatPermissions,

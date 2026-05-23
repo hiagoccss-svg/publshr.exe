@@ -12,6 +12,9 @@ struct SettingsUpdatesPane: View {
                 LabeledContent("Status", value: updates.githubStatusLine)
                 LabeledContent("Update phase", value: updates.statusLine)
                 LabeledContent("Installed", value: AppReleaseConfig.installedLabel)
+                LabeledContent("Running from", value: AppReleaseConfig.installedAppPath)
+                LabeledContent("Update target", value: AppReleaseConfig.liveUpdateTargetPath)
+                LabeledContent("Recommended install", value: AppReleaseConfig.preferredInstallPath)
                 LabeledContent("Installed build", value: "\(AppReleaseConfig.buildNumber)")
                 LabeledContent("Installed shell", value: AppReleaseConfig.liveShellTag)
                 LabeledContent("Installed commit", value: commitLabel(AppReleaseConfig.liveCommit))
@@ -27,9 +30,9 @@ struct SettingsUpdatesPane: View {
                     }
                 Toggle("Install updates automatically", isOn: $updates.autoInstallEnabled)
             }
-            Section("Supabase (Chat & Spaces)") {
+            Section("Supabase (enterprise cloud)") {
                 LabeledContent("Cloud sync", value: updates.cloudSyncLine)
-                Text("Refreshes messages, channels, spaces, subscription, and devices every 30 seconds with the live channel check (or use Sync now).")
+                Text("Refreshes Chat, Spaces, Media Monitoring, subscription, and devices every 30 seconds with the live channel check (or use Sync now).")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

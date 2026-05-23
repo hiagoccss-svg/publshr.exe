@@ -13,7 +13,8 @@ PUBLSHR_REPO="${PUBLSHR_REPO:-hiagoccss-svg/publshr.exe}"
 PUBLSHR_BRANCH="${PUBLSHR_BRANCH:-main}"
 PUBLSHR_INSTALLER_URL="https://raw.githubusercontent.com/${PUBLSHR_REPO}/refs/heads/${PUBLSHR_BRANCH}/install-macos.sh"
 PUBLSHR_LIVE_TAG="${PUBLSHR_LIVE_TAG:-live}"
-PUBLSHR_MAC_APP="${PUBLSHR_MAC_APP:-${HOME}/Applications/Publshr.app}"
+# Enterprise default: user-owned install only (passwordless live updates). Ignore system /Applications overrides.
+PUBLSHR_MAC_APP="${HOME}/Applications/Publshr.app"
 # Default CLI symlink: user-writable (no sudo). Override with PUBLSHR_BIN_LINK if needed.
 PUBLSHR_BIN_LINK="${PUBLSHR_BIN_LINK:-${HOME}/bin/publshr}"
 PUBLSHR_LIVE_ASSET_MACOS_ARM64="Publshr-macos-aarch64.tar.gz"
@@ -271,46 +272,14 @@ _publshr_install_app() {
 
 _publshr_install_with_privileges() {
     local tree="$1"
-    if [[ "$(id -u)" -eq 0 ]]; then
-        _publshr_install_app "$tree"
-        return 0
-    fi
-
     mkdir -p "$(dirname "$PUBLSHR_MAC_APP")"
-    if [[ -w "$(dirname "$PUBLSHR_MAC_APP")" ]] || { [[ -d "$PUBLSHR_MAC_APP" ]] && [[ -w "$PUBLSHR_MAC_APP" ]]; }; then
-        log "Installing to ${PUBLSHR_MAC_APP} (no administrator password) …"
-        _publshr_install_app "$tree"
-        return 0
+    if [[ ! -w "$(dirname "$PUBLSHR_MAC_APP")" ]]; then
+        log "ERROR: Cannot write to $(dirname "$PUBLSHR_MAC_APP")."
+        log "  Create ~/Applications or fix permissions, then re-run the installer."
+        exit 1
     fi
-
-    mkdir -p "$(dirname "$PUBLSHR_PREPARED_TREE_FILE")"
-    printf '%s\n' "$tree" >"$PUBLSHR_PREPARED_TREE_FILE"
-
-    log ""
-    log "Administrator password required once (installing to ${PUBLSHR_MAC_APP})."
-    if [[ ! -t 0 ]]; then
-        log "Enter your Mac password when prompted."
-    else
-        echo ""
-        read -r -p "Press Enter to install to /Applications (Ctrl+C to cancel) … " _
-    fi
-    log ""
-
-    local sudo_env=(
-        "PUBLSHR_REPO=${PUBLSHR_REPO}"
-        "PUBLSHR_BRANCH=${PUBLSHR_BRANCH}"
-        "PUBLSHR_MAC_APP=${PUBLSHR_MAC_APP}"
-        "PUBLSHR_BIN_LINK=${PUBLSHR_BIN_LINK}"
-        "PUBLSHR_PREPARED_TREE_FILE=${PUBLSHR_PREPARED_TREE_FILE}"
-        "INSTALLER_VERSION=${INSTALLER_VERSION}"
-    )
-
-    if [[ -n "${BASH_SOURCE[0]:-}" && -f "${BASH_SOURCE[0]}" ]]; then
-        exec sudo -E env "${sudo_env[@]}" bash "${BASH_SOURCE[0]}" --install-only
-    fi
-
-    exec sudo -E env "${sudo_env[@]}" bash -c \
-        'curl -fsSL "$1" | bash -s -- --install-only' _ "${PUBLSHR_INSTALLER_URL}"
+    log "Installing to ${PUBLSHR_MAC_APP} (no administrator password) …"
+    _publshr_install_app "$tree"
 }
 
 _publshr_try_gui_installer() {
@@ -351,10 +320,11 @@ publshr_install_main() {
 
 _publshr_print_next_steps() {
     log ""
-    log "Next steps (native app — no npm required):"
+    log "Next steps (native Swift app — no npm, no admin password for updates):"
     log "  1. Sign in or create an account in the app window."
-    log "  2. Settings → Sync now — refreshes GitHub live build + Supabase (Chat, Spaces)."
-    log "  3. Updates: Settings → Updates (auto-check every 30s on the live channel)."
+    log "  2. Settings → Sync now — refreshes GitHub live build + Supabase (Chat, Spaces, Media)."
+    log "  3. Updates install to ~/Applications automatically (remove old /Applications/Publshr.app if present)."
+    log "  4. Enterprise modules: Chat, Spaces, Planner, Media Monitoring — all native in this app."
     log ""
     log "This installer does NOT install the separate Tauri dev app under desktop/enterprise."
     log "To hack on that UI, clone the repo first:"
