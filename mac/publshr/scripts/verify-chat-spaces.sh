@@ -64,4 +64,23 @@ docs_code=$(curl -s -o /tmp/docs.json -w "%{http_code}" "$SUPABASE_URL/rest/v1/d
   -H "Authorization: Bearer $token")
 echo "   documents HTTP $docs_code (404 table missing, 200/[] OK)"
 
+echo "6. Create task (production tasks schema)"
+space_id=$(echo "$spaces" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d[0]['id'] if d else '')" 2>/dev/null || true)
+if [[ -n "$space_id" ]]; then
+  task_code=$(curl -s -o /tmp/task_create.json -w "%{http_code}" -X POST "$SUPABASE_URL/rest/v1/tasks" \
+    -H "apikey: $SUPABASE_KEY" \
+    -H "Authorization: Bearer $token" \
+    -H "Content-Type: application/json" \
+    -H "Prefer: return=representation" \
+    -d "{\"workspace_id\":\"$ws_id\",\"space_id\":\"$space_id\",\"title\":\"verify-smoke-task\",\"status\":\"open\",\"priority\":\"medium\",\"created_by\":\"$user_id\"}")
+  echo "   create task HTTP $task_code"
+  if [[ "$task_code" != "201" ]]; then
+    head -c 200 /tmp/task_create.json
+    echo ""
+    exit 1
+  fi
+else
+  echo "   skip (no space to attach task)"
+fi
+
 echo "OK — Chat & Spaces API reachable for signed-in user."

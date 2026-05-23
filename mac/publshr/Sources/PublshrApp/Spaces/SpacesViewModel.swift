@@ -571,9 +571,15 @@ final class SpacesViewModel: ObservableObject {
     }
 
     func createFolder() async {
-        guard let service, let spaceId = selectedSpaceId else { return }
+        guard let service, let spaceId = selectedSpaceId else {
+            errorMessage = "Select a space before adding a folder."
+            return
+        }
         let name = newFolderName.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !name.isEmpty else { return }
+        guard !name.isEmpty else {
+            errorMessage = "Enter a folder name."
+            return
+        }
         do {
             let folder = try await service.createFolder(spaceId: spaceId, name: name)
             newFolderName = ""
@@ -588,9 +594,15 @@ final class SpacesViewModel: ObservableObject {
     }
 
     func createList() async {
-        guard let service, let spaceId = selectedSpaceId else { return }
+        guard let service, let spaceId = selectedSpaceId else {
+            errorMessage = "Select a space before adding a list."
+            return
+        }
         let name = newListName.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !name.isEmpty else { return }
+        guard !name.isEmpty else {
+            errorMessage = "Enter a list name."
+            return
+        }
         do {
             let list = try await service.createList(spaceId: spaceId, folderId: selectedFolderId, name: name)
             newListName = ""
@@ -719,6 +731,25 @@ final class SpacesViewModel: ObservableObject {
             showNewSpaceSheet = false
             await reload()
             await selectSpace(space.id)
+            await bootstrapDefaultHierarchy(for: space.id)
+        } catch {
+            errorMessage = friendlySpacesError(error)
+        }
+    }
+
+    /// ClickUp-style: new Space gets a default List so tasks can be created immediately.
+    private func bootstrapDefaultHierarchy(for spaceId: UUID) async {
+        guard let service else { return }
+        do {
+            var loadedLists = try await service.fetchLists(spaceId: spaceId)
+            if loadedLists.isEmpty {
+                let list = try await service.createList(spaceId: spaceId, folderId: nil, name: "List")
+                loadedLists = [list]
+            }
+            lists = loadedLists
+            if let first = loadedLists.first {
+                selectedListId = first.id
+            }
         } catch {
             errorMessage = friendlySpacesError(error)
         }
@@ -757,20 +788,52 @@ final class SpacesViewModel: ObservableObject {
     // MARK: - Tasks
 
     func createTask() async {
-        guard let service, let spaceId = selectedSpaceId else { return }
+        guard let service else {
+            errorMessage = "Sign in to create tasks."
+            return
+        }
+        guard let workspaceId else {
+            errorMessage = "Select a workspace before creating tasks."
+            return
+        }
+        guard let spaceId = selectedSpaceId else {
+            errorMessage = "Select a space from the sidebar, then add a task."
+            return
+        }
+        guard let userId else {
+            errorMessage = "Your session is not ready. Wait a moment or sign out and back in."
+            return
+        }
         let title = newTaskTitle.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !title.isEmpty else { return }
+        guard !title.isEmpty else {
+            errorMessage = "Enter a task title."
+            return
+        }
+        var listId = selectedListId
+        if listId == nil {
+            await ensureDefaultList(spaceId: spaceId)
+            listId = selectedListId
+        }
         do {
-            let task = try await service.createTask(spaceId: spaceId, title: title, listId: selectedListId)
+            let task = try await service.createTask(
+                workspaceId: workspaceId,
+                spaceId: spaceId,
+                createdBy: userId,
+                title: title,
+                listId: listId
+            )
             newTaskTitle = ""
-            tasks.append(task)
+            errorMessage = nil
+            if !tasks.contains(where: { $0.id == task.id }) {
+                tasks.append(task)
+            }
             selectedTaskId = task.id
             showTaskPanel = true
             await loadComments(for: task.id)
             await logTaskAction("created task \"\(title)\"", taskId: task.id)
             await loadActivity(for: spaceId)
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = friendlySpacesError(error)
         }
     }
 
@@ -786,7 +849,7 @@ final class SpacesViewModel: ObservableObject {
     }
 
     func moveTask(_ taskId: UUID, to status: SpaceTaskStatus) async {
-        await applyTaskPatch(taskId: taskId, patch: SpaceTaskPatch(status: status.rawValue), log: "moved task to \(status.label)")
+        await applyTaskPatch(taskId: taskId, patch: SpaceTaskPatch(status: status.databaseValue), log: "moved task to \(status.label)")
     }
 
     func updateTaskTitle(_ taskId: UUID, title: String) async {
@@ -800,7 +863,11 @@ final class SpacesViewModel: ObservableObject {
     }
 
     func updateTaskPriority(_ taskId: UUID, priority: SpaceTaskPriority) async {
-        await applyTaskPatch(taskId: taskId, patch: SpaceTaskPatch(priority: priority.rawValue), log: "set priority to \(priority.label)")
+        await applyTaskPatch(
+            taskId: taskId,
+            patch: SpaceTaskPatch(priority: TaskPriorityWire.toDatabase(priority.rawValue) ?? priority.rawValue),
+            log: "set priority to \(priority.label)"
+        )
     }
 
     func updateTaskAssignee(_ taskId: UUID, assigneeId: UUID?) async {
@@ -990,6 +1057,15 @@ final class SpacesViewModel: ObservableObject {
         let text = error.localizedDescription.lowercased()
         if text.contains("enum space_type") || text.contains("invalid input value for enum space_type") {
             return "Spaces database type column is outdated. Apply migration 20260523140000_spaces_type_legacy_enum_to_text.sql in Supabase, then tap Retry (or Settings → Sync now)."
+        }
+        if text.contains("enum task_status") || text.contains("invalid input value for enum task_status") {
+            return "Task status mismatch on the server. Update the Mac app to the latest build, or ask your admin to align the tasks schema."
+        }
+        if text.contains("tasks_priority_check") {
+            return "Task priority value was rejected by the server. Try again on the latest app build."
+        }
+        if text.contains("created_by") || text.contains("workspace_id") {
+            return "Task could not be saved — workspace membership may be missing. Sign out, sign in, and confirm your workspace on the picker screen."
         }
         if text.contains("is_pinned") || text.contains("pgrst") && text.contains("400") {
             return "Spaces database needs an upgrade. Your admin must apply migration 20260522100000_spaces_legacy_schema_upgrade.sql in Supabase."

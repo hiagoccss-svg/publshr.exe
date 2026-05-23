@@ -118,11 +118,14 @@ struct SpacesRootView: View {
                 .foregroundStyle(CursorTheme.foregroundDim)
             Text("No spaces yet")
                 .font(.system(size: 15, weight: .medium))
-            Text("Create a space for clients, campaigns, launches, and editorial work.")
+            Text("Create a space for clients, campaigns, launches, and editorial work. Use the field at the bottom of the Spaces sidebar, or open the full form below.")
                 .font(.system(size: 12))
                 .foregroundStyle(CursorTheme.foregroundMuted)
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: 360)
+            Button("New Space…") { spaces.showNewSpaceSheet = true }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.regular)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
@@ -133,26 +136,42 @@ struct SpacesQuickAddBar: View {
     @ObservedObject var spaces: SpacesViewModel
 
     var body: some View {
-        HStack(spacing: 10) {
-            Image(systemName: "plus.circle")
-                .font(.system(size: 14))
-                .foregroundStyle(CursorTheme.foregroundDim)
-            TextField("Add task…", text: $spaces.newTaskTitle)
-                .textFieldStyle(.plain)
-                .font(.system(size: 13))
-                .onSubmit { Task { await spaces.createTask() } }
-            Button {
-                Task { await spaces.createTask() }
-            } label: {
-                Text("Add task")
-                    .font(.system(size: 12, weight: .medium))
+        VStack(spacing: 0) {
+            if let err = spaces.errorMessage, !err.isEmpty {
+                HStack(spacing: 8) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .font(.system(size: 11))
+                        .foregroundStyle(CursorTheme.error)
+                    Text(err)
+                        .font(.system(size: 11))
+                        .foregroundStyle(CursorTheme.error)
+                        .lineLimit(2)
+                    Spacer(minLength: 0)
+                }
+                .padding(.horizontal, 16)
+                .padding(.top, 8)
             }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.small)
-            .disabled(spaces.newTaskTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            HStack(spacing: 10) {
+                Image(systemName: "plus.circle")
+                    .font(.system(size: 14))
+                    .foregroundStyle(CursorTheme.foregroundDim)
+                TextField("Add task…", text: $spaces.newTaskTitle)
+                    .textFieldStyle(.plain)
+                    .font(.system(size: 13))
+                    .onSubmit { Task { await spaces.createTask() } }
+                Button {
+                    Task { await spaces.createTask() }
+                } label: {
+                    Text("Add task")
+                        .font(.system(size: 12, weight: .medium))
+                }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.small)
+                .disabled(spaces.newTaskTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 10)
         .glassDisconnectedFooter()
         .overlay(alignment: .top) {
             Rectangle().fill(LibraryGlassDesign.hairline).frame(height: 1)
