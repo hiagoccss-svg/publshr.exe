@@ -8,6 +8,8 @@ enum ChatUserPreferences {
     private static let permissionsPrefix = "publshr.chat.permissions."
     private static let sidebarFilterKey = "publshr.chat.sidebarFilter"
     private static let sidebarLayoutKey = "publshr.chat.sidebarLayout"
+    private static let sidebarSectionsPrefix = "publshr.chat.sidebarSections."
+    private static let lastChannelPrefix = "publshr.chat.lastChannel."
     private static let defaultNotificationKey = "publshr.chat.defaultNotificationLevel"
     private static let pinnedChannelsPrefix = "publshr.chat.pinnedChannels."
 
@@ -55,6 +57,32 @@ enum ChatUserPreferences {
 
     static func saveSidebarLayout(_ layout: ChatSidebarLayout) {
         UserDefaults.standard.set(layout.rawValue, forKey: sidebarLayoutKey)
+    }
+
+    static func loadSidebarSectionExpanded(workspaceId: UUID, section: ChatSidebarSection) -> Bool {
+        let key = sidebarSectionsPrefix + workspaceId.uuidString + "." + section.rawValue
+        guard UserDefaults.standard.object(forKey: key) != nil else { return true }
+        return UserDefaults.standard.bool(forKey: key)
+    }
+
+    static func saveSidebarSectionExpanded(_ expanded: Bool, workspaceId: UUID, section: ChatSidebarSection) {
+        let key = sidebarSectionsPrefix + workspaceId.uuidString + "." + section.rawValue
+        UserDefaults.standard.set(expanded, forKey: key)
+    }
+
+    static func loadLastSelectedChannelId(workspaceId: UUID) -> UUID? {
+        let key = lastChannelPrefix + workspaceId.uuidString
+        guard let raw = UserDefaults.standard.string(forKey: key) else { return nil }
+        return UUID(uuidString: raw)
+    }
+
+    static func saveLastSelectedChannelId(_ channelId: UUID?, workspaceId: UUID) {
+        let key = lastChannelPrefix + workspaceId.uuidString
+        if let channelId {
+            UserDefaults.standard.set(channelId.uuidString, forKey: key)
+        } else {
+            UserDefaults.standard.removeObject(forKey: key)
+        }
     }
 
     static func loadMyStatus() -> ChatPresenceStatus {
