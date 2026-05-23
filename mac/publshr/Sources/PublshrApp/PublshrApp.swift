@@ -157,6 +157,7 @@ struct PublshrApp: App {
         await auth.refreshSupabaseConnection()
         await chat.refreshAfterReconnect()
         await spaces.reload()
+        await chat.loadWorkspaceProjects()
         await chat.loadPlannerTasks()
         await syncEnterpriseServices()
         updates.recordCloudSync(summary: auth.supabaseStatusLine)

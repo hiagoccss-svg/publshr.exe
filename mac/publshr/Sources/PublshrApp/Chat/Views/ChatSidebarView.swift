@@ -7,6 +7,9 @@ struct ChatSidebarView: View {
     @Binding var showNewChannel: Bool
     @Binding var showNewDM: Bool
     var submenuWidth: CGFloat = LibraryUniversalSubmenu.width
+    @State private var showNewProject = false
+    @State private var showNewPlannerTask = false
+    @State private var newPlannerTaskProjectId: UUID?
 
     var body: some View {
         LibraryUniversalSubmenuContainer(width: submenuWidth) {
@@ -39,6 +42,16 @@ struct ChatSidebarView: View {
         }
         .preferredColorScheme(.light)
         .onAppear { normalizeSidebarFilterIfNeeded() }
+        .sheet(isPresented: $showNewProject) {
+            ChatNewProjectSheet(chat: chat, isPresented: $showNewProject)
+        }
+        .sheet(isPresented: $showNewPlannerTask) {
+            ChatNewPlannerTaskSheet(
+                chat: chat,
+                projectId: newPlannerTaskProjectId,
+                isPresented: $showNewPlannerTask
+            )
+        }
     }
 
     private var submenuSoftRule: some View {
@@ -218,44 +231,111 @@ struct ChatSidebarView: View {
 
     private var projectsSection: some View {
         VStack(alignment: .leading, spacing: 0) {
-            collapsibleSectionHeader(.projects, onAdd: nil)
+            collapsibleSectionHeader(.projects, onAdd: {
+                showNewProject = true
+            })
             if chat.isSidebarSectionExpanded(.projects) {
-                if chat.filteredProjects.isEmpty {
-                    Text("No projects yet")
-                        .font(.system(size: 11))
-                        .foregroundStyle(LibraryGlassDesign.inkMuted)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 6)
+                if chat.filteredWorkspaceProjects.isEmpty, chat.unassignedPlannerTasks.isEmpty {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("No projects yet")
+                            .font(.system(size: 11))
+                            .foregroundStyle(LibraryGlassDesign.inkMuted)
+                        Button("Create project") { showNewProject = true }
+                            .font(.system(size: 11, weight: .semibold))
+                            .buttonStyle(.plain)
+                            .foregroundStyle(LibraryGlassDesign.ink)
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 6)
                 } else {
-                    ForEach(chat.filteredProjects) { task in
-                        Button {
-                            Task { await chat.sharePlannerTask(task) }
-                        } label: {
-                            HStack(spacing: 8) {
-                                Image(systemName: "folder")
-                                    .font(.system(size: 11, weight: .medium))
-                                    .foregroundStyle(LibraryGlassDesign.inkSecondary)
-                                    .frame(width: ChatClickUpDesign.rowIconSize)
-                                VStack(alignment: .leading, spacing: 1) {
-                                    Text(task.title)
-                                        .font(.system(size: 12))
-                                        .foregroundStyle(LibraryGlassDesign.inkSecondary)
-                                        .lineLimit(1)
-                                    Text(task.status)
-                                        .font(.system(size: 10))
-                                        .foregroundStyle(LibraryGlassDesign.inkMuted)
-                                }
-                                Spacer(minLength: 0)
-                            }
-                            .frame(height: ChatClickUpDesign.rowHeight)
-                            .padding(.horizontal, 10)
+                    ForEach(chat.filteredWorkspaceProjects) { project in
+                        projectRow(project)
+                        ForEach(chat.plannerTasks(for: project.id)) { task in
+                            plannerTaskRow(task, indented: true)
                         }
-                        .buttonStyle(.plain)
-                        .padding(.horizontal, 6)
+                    }
+                    if !chat.unassignedPlannerTasks.isEmpty {
+                        if !chat.filteredWorkspaceProjects.isEmpty {
+                            LibraryUniversalSubmenu.sectionDivider()
+                                .padding(.vertical, 4)
+                        }
+                        ForEach(chat.unassignedPlannerTasks) { task in
+                            plannerTaskRow(task, indented: false)
+                        }
                     }
                 }
             }
         }
+    }
+
+    private func projectRow(_ project: ChatProject) -> some View {
+        HStack(spacing: 4) {
+            HStack(spacing: 8) {
+                Image(systemName: "folder.fill")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(LibraryGlassDesign.ink)
+                    .frame(width: ChatClickUpDesign.rowIconSize)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(project.name)
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(LibraryGlassDesign.ink)
+                        .lineLimit(1)
+                    Text(project.status.capitalized)
+                        .font(.system(size: 10))
+                        .foregroundStyle(LibraryGlassDesign.inkMuted)
+                }
+                Spacer(minLength: 0)
+            }
+            .frame(height: ChatClickUpDesign.rowHeight)
+            .padding(.horizontal, 10)
+            Menu {
+                Button("Add task…") {
+                    newPlannerTaskProjectId = project.id
+                    showNewPlannerTask = true
+                }
+                if chat.selectedChannel != nil {
+                    Button("Share in channel") {
+                        Task { await chat.shareProjectInChannel(project) }
+                    }
+                }
+            } label: {
+                Image(systemName: "ellipsis")
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundStyle(LibraryGlassDesign.inkMuted)
+                    .frame(width: 20, height: ChatClickUpDesign.rowHeight)
+            }
+            .menuStyle(.borderlessButton)
+        }
+        .padding(.horizontal, 6)
+    }
+
+    private func plannerTaskRow(_ task: PlannerTask, indented: Bool) -> some View {
+        Button {
+            Task { await chat.sharePlannerTask(task) }
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: "checklist")
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundStyle(LibraryGlassDesign.inkSecondary)
+                    .frame(width: ChatClickUpDesign.rowIconSize)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(task.title)
+                        .font(.system(size: 12))
+                        .foregroundStyle(LibraryGlassDesign.inkSecondary)
+                        .lineLimit(1)
+                    Text(task.status.replacingOccurrences(of: "_", with: " "))
+                        .font(.system(size: 10))
+                        .foregroundStyle(LibraryGlassDesign.inkMuted)
+                }
+                Spacer(minLength: 0)
+            }
+            .frame(height: ChatClickUpDesign.rowHeight)
+            .padding(.leading, indented ? 22 : 10)
+            .padding(.trailing, 10)
+        }
+        .buttonStyle(.plain)
+        .padding(.horizontal, 6)
+        .help(chat.selectedChannel == nil ? "Select a channel to share this task" : "Share task in channel")
     }
 
     private var emptyHint: some View {

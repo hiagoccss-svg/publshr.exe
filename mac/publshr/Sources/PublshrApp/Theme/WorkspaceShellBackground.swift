@@ -37,14 +37,7 @@ struct GlassPrimaryBarChrome: View {
 /// Chat / Spaces submenu column — soft glass over the grey submenu step.
 struct GlassSubmenuChrome: View {
     var body: some View {
-        ZStack {
-            LibraryGlassDesign.submenuColumnBackground
-            VisualEffectBlur(
-                material: .contentBackground,
-                blendingMode: .withinWindow
-            )
-            .opacity(0.35)
-        }
+        LibraryGlassDesign.submenuColumnBackground
     }
 }
 

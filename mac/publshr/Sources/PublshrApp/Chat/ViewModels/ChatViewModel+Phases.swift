@@ -226,6 +226,24 @@ extension ChatViewModel {
 
     // MARK: - Planner share
 
+    func shareProjectInChannel(_ project: ChatProject) async {
+        guard let service, let workspace, let channel = selectedChannel, let userId = currentUserId else {
+            errorMessage = "Select a channel to share this project."
+            return
+        }
+        do {
+            let msg = try await service.sendMessageExtended(
+                workspaceId: workspace.id,
+                channelId: channel.id,
+                userId: userId,
+                body: "Shared project: \(project.name)"
+            )
+            messages.append(msg)
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
     func sharePlannerTask(_ task: PlannerTask) async {
         guard let service, let workspace, let channel = selectedChannel, let userId = currentUserId else { return }
         let preview = ChatLinkPreview(
@@ -254,9 +272,82 @@ extension ChatViewModel {
         } catch { errorMessage = error.localizedDescription }
     }
 
+    func loadWorkspaceProjects() async {
+        guard let service, let workspace else { return }
+        do {
+            workspaceProjects = try await service.fetchProjects(workspaceId: workspace.id)
+        } catch {
+            workspaceProjects = []
+            if channels.isEmpty, directMessages.isEmpty {
+                errorMessage = friendlyPlannerError(error)
+            }
+        }
+    }
+
     func loadPlannerTasks() async {
         guard let service, let workspace else { return }
-        plannerTasks = (try? await service.fetchTasks(workspaceId: workspace.id)) ?? []
+        do {
+            plannerTasks = try await service.fetchTasks(workspaceId: workspace.id)
+        } catch {
+            plannerTasks = []
+            errorMessage = friendlyPlannerError(error)
+        }
+    }
+
+    func createProject(name: String) async {
+        guard let service, let workspace, let userId = currentUserId else { return }
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else {
+            errorMessage = "Enter a project name."
+            return
+        }
+        do {
+            let project = try await service.createProject(
+                workspaceId: workspace.id,
+                name: trimmed,
+                createdBy: userId
+            )
+            workspaceProjects.insert(project, at: 0)
+            errorMessage = nil
+        } catch {
+            errorMessage = friendlyPlannerError(error)
+        }
+    }
+
+    func createPlannerTask(title: String, projectId: UUID? = nil) async {
+        guard let service, let workspace, let userId = currentUserId else { return }
+        let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else {
+            errorMessage = "Enter a task title."
+            return
+        }
+        do {
+            let task = try await service.createPlannerTask(
+                workspaceId: workspace.id,
+                title: trimmed,
+                createdBy: userId,
+                projectId: projectId
+            )
+            plannerTasks.insert(task, at: 0)
+            errorMessage = nil
+        } catch {
+            errorMessage = friendlyPlannerError(error)
+        }
+    }
+
+    private func friendlyPlannerError(_ error: Error) -> String {
+        let text = String(describing: error)
+        if text.localizedCaseInsensitiveContains("planner_items")
+            || text.localizedCaseInsensitiveContains("projects")
+            || text.localizedCaseInsensitiveContains("does not exist")
+            || text.localizedCaseInsensitiveContains("PGRST205") {
+            return "Projects are not available on the server yet. Sync now after your admin applies the latest database migration."
+        }
+        if text.localizedCaseInsensitiveContains("permission denied")
+            || text.localizedCaseInsensitiveContains("row-level security") {
+            return "You do not have permission to manage projects in this workspace."
+        }
+        return error.localizedDescription
     }
 
     // MARK: - Voice
@@ -398,17 +489,7 @@ extension ChatViewModel {
     }
 
     func createPlannerTaskFromFollowUp(_ title: String) async {
-        guard let service, let workspace, let userId = currentUserId else { return }
-        do {
-            let task = try await service.createPlannerTask(
-                workspaceId: workspace.id,
-                title: title,
-                createdBy: userId
-            )
-            plannerTasks.insert(task, at: 0)
-        } catch {
-            errorMessage = error.localizedDescription
-        }
+        await createPlannerTask(title: title)
     }
 
     // MARK: - AI

@@ -45,6 +45,7 @@ final class ChatViewModel: ObservableObject {
     @Published var editingMessageId: UUID?
 
     // Phase 3
+    @Published var workspaceProjects: [ChatProject] = []
     @Published var plannerTasks: [PlannerTask] = []
     @Published var showPermissionsSheet = false
     @Published var showChannelSettings = false
@@ -276,6 +277,7 @@ final class ChatViewModel: ObservableObject {
             isOffline = false
             errorMessage = nil
             selectPersistedOrFirstChannelIfNeeded()
+            await loadWorkspaceProjects()
             await loadPlannerTasks()
             await reloadScheduledMessages()
             if filteredChannels.isEmpty, filteredDMs.isEmpty,
@@ -580,6 +582,8 @@ final class ChatViewModel: ObservableObject {
     func refreshAfterReconnect() async {
         guard let workspace, let userId = currentUserId else { return }
         isOffline = false
+        await loadWorkspaceProjects()
+        await loadPlannerTasks()
         await loadWorkspaceData(workspaceId: workspace.id, userId: userId)
         startRealtime(workspaceId: workspace.id)
         if let channel = selectedChannel {
@@ -1335,12 +1339,25 @@ final class ChatViewModel: ObservableObject {
         }
     }
 
-    var filteredProjects: [PlannerTask] {
+    var filteredWorkspaceProjects: [ChatProject] {
         let q = sidebarSearchQuery.trimmingCharacters(in: .whitespaces).lowercased()
-        guard !q.isEmpty else { return plannerTasks }
-        return plannerTasks.filter {
+        guard !q.isEmpty else { return workspaceProjects }
+        return workspaceProjects.filter {
+            $0.name.lowercased().contains(q) || $0.status.lowercased().contains(q)
+        }
+    }
+
+    func plannerTasks(for projectId: UUID?) -> [PlannerTask] {
+        let q = sidebarSearchQuery.trimmingCharacters(in: .whitespaces).lowercased()
+        let scoped = plannerTasks.filter { $0.projectId == projectId }
+        guard !q.isEmpty else { return scoped }
+        return scoped.filter {
             $0.title.lowercased().contains(q) || $0.status.lowercased().contains(q)
         }
+    }
+
+    var unassignedPlannerTasks: [PlannerTask] {
+        plannerTasks(for: nil)
     }
 
     func unreadCount(for channelId: UUID) -> Int {

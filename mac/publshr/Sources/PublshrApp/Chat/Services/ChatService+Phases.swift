@@ -336,12 +336,69 @@ extension ChatService {
         return rows.first
     }
 
-    // MARK: - Planner
+    // MARK: - Planner & projects
 
-    func fetchTasks(workspaceId: UUID, limit: Int = 20) async throws -> [PlannerTask] {
+    func fetchProjects(workspaceId: UUID, limit: Int = 40) async throws -> [ChatProject] {
         struct Row: Decodable {
             let id: UUID
             let workspace_id: UUID
+            let name: String
+            let status: String
+        }
+        let rows: [Row] = try await client
+            .from("projects")
+            .select("id, workspace_id, name, status")
+            .eq("workspace_id", value: workspaceId.uuidString)
+            .order("updated_at", ascending: false)
+            .limit(limit)
+            .execute()
+            .value
+        return rows.map { row in
+            ChatProject(
+                id: row.id,
+                workspaceId: row.workspace_id,
+                name: row.name,
+                status: row.status
+            )
+        }
+    }
+
+    func createProject(
+        workspaceId: UUID,
+        name: String,
+        createdBy: UUID
+    ) async throws -> ChatProject {
+        struct Insert: Encodable {
+            let workspace_id: UUID
+            let name: String
+            let created_by: UUID
+        }
+        struct Row: Decodable {
+            let id: UUID
+            let workspace_id: UUID
+            let name: String
+            let status: String
+        }
+        let row: Row = try await client
+            .from("projects")
+            .insert(Insert(workspace_id: workspaceId, name: name, created_by: createdBy))
+            .select("id, workspace_id, name, status")
+            .single()
+            .execute()
+            .value
+        return ChatProject(
+            id: row.id,
+            workspaceId: row.workspace_id,
+            name: row.name,
+            status: row.status
+        )
+    }
+
+    func fetchTasks(workspaceId: UUID, limit: Int = 40) async throws -> [PlannerTask] {
+        struct Row: Decodable {
+            let id: UUID
+            let workspace_id: UUID
+            let project_id: UUID?
             let title: String
             let status: String
             let due_date: String?
@@ -349,7 +406,7 @@ extension ChatService {
         }
         let rows: [Row] = try await client
             .from("planner_items")
-            .select("id, workspace_id, title, status, due_date, owner_id")
+            .select("id, workspace_id, project_id, title, status, due_date, owner_id")
             .eq("workspace_id", value: workspaceId.uuidString)
             .order("updated_at", ascending: false)
             .limit(limit)
@@ -361,6 +418,7 @@ extension ChatService {
             PlannerTask(
                 id: row.id,
                 workspaceId: row.workspace_id,
+                projectId: row.project_id,
                 title: row.title,
                 status: row.status,
                 dueDate: row.due_date.flatMap { formatter.date(from: $0) },
@@ -372,10 +430,12 @@ extension ChatService {
     func createPlannerTask(
         workspaceId: UUID,
         title: String,
-        createdBy: UUID
+        createdBy: UUID,
+        projectId: UUID? = nil
     ) async throws -> PlannerTask {
         struct Insert: Encodable {
             let workspace_id: UUID
+            let project_id: UUID?
             let title: String
             let type: String
             let status: String
@@ -384,6 +444,7 @@ extension ChatService {
         struct Row: Decodable {
             let id: UUID
             let workspace_id: UUID
+            let project_id: UUID?
             let title: String
             let status: String
             let due_date: String?
@@ -393,21 +454,25 @@ extension ChatService {
             .from("planner_items")
             .insert(Insert(
                 workspace_id: workspaceId,
+                project_id: projectId,
                 title: title,
                 type: "internal_task",
                 status: "idea",
                 created_by: createdBy
             ))
-            .select("id, workspace_id, title, status, due_date, owner_id")
+            .select("id, workspace_id, project_id, title, status, due_date, owner_id")
             .single()
             .execute()
             .value
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withFullDate]
         return PlannerTask(
             id: row.id,
             workspaceId: row.workspace_id,
+            projectId: row.project_id,
             title: row.title,
             status: row.status,
-            dueDate: nil,
+            dueDate: row.due_date.flatMap { formatter.date(from: $0) },
             assigneeId: row.owner_id
         )
     }

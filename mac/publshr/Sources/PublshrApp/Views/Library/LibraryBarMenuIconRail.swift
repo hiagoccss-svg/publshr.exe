@@ -7,8 +7,16 @@ struct LibraryBarMenuIconRail: View {
     @EnvironmentObject private var tabStore: WorkspaceTabStore
     @EnvironmentObject private var chat: ChatViewModel
     @EnvironmentObject private var spaces: SpacesViewModel
+    @ObservedObject private var trafficLayout = TrafficLightLayoutStore.shared
     @Binding var module: AppModule
     @Binding var profilePresentation: WorkspaceProfilePresentation?
+
+    private var trafficReserve: CGFloat {
+        ShellBarColumnInset.trafficReserve(
+            barWidth: barWidth,
+            trafficLeadingInset: trafficLayout.leadingInset
+        )
+    }
 
     var body: some View {
         VStack(spacing: AppWindowChromeMetrics.toolbarItemSpacing) {
@@ -34,8 +42,9 @@ struct LibraryBarMenuIconRail: View {
             .padding(.bottom, 10)
         }
         .padding(.top, AppWindowChromeMetrics.barColumnBodyTopSpacing)
-        .padding(.horizontal, 6)
-        .frame(width: barWidth, alignment: .center)
+        .padding(.leading, trafficReserve)
+        .padding(.trailing, 6)
+        .frame(width: barWidth, alignment: .leading)
         .frame(maxHeight: .infinity)
     }
 
