@@ -16,6 +16,7 @@ Apply to project **publshr.exe** (`lboesdtsrqfvosznjpdy`) in this order:
 12. `20260522140000_whiteboards_enterprise.sql`
 13. `20260523100000_enterprise_hardening.sql` — devices, subscriptions, calls, privacy audit, scheduled dispatch, RPC hardening
 14. `20260523120000_spaces_approvals.sql` — workspace approval requests (live Approvals section)
+15. `20260523120000_seed_workspace_default_space.sql` — default **General** space + folder + list per workspace
 
 Media monitoring (optional): `desktop/media-monitoring/supabase/migrations/20250521000000_media_monitoring.sql` plus RLS from production `media_monitoring` migration.
 

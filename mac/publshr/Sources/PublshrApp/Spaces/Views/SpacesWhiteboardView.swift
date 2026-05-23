@@ -85,14 +85,20 @@ struct SpacesWhiteboardView: View {
             Text(selectedTitle)
                 .font(.system(size: 16, weight: .semibold))
             Text(
-                "Board list and metadata sync live from Supabase. Edit the canvas in Publshr Spaces (tldraw)."
+                "Draw on the infinite canvas in Publshr Spaces (tldraw + Supabase). Boards you create here sync to the same cloud workspace."
             )
             .font(.system(size: 12))
             .foregroundStyle(CursorTheme.foregroundMuted)
             .multilineTextAlignment(.center)
             .frame(maxWidth: 420)
-            Button("Open Publshr Spaces") {
-                _ = DesktopCompanionAppLauncher.open(.spaces)
+            Button("Open canvas in Spaces") {
+                if !DesktopCompanionAppLauncher.openOrInstall(.spaces) {
+                    NSPasteboard.general.clearContents()
+                    NSPasteboard.general.setString(
+                        DesktopCompanionAppLauncher.liveInstallCommand(for: .spaces),
+                        forType: .string
+                    )
+                }
             }
             .buttonStyle(.borderedProminent)
             .controlSize(.small)

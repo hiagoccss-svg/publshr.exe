@@ -5,6 +5,7 @@ import {
   FolderOpen,
   Newspaper,
   Bookmark,
+  Bell,
   Settings
 } from 'lucide-react'
 import { useMonitoringStore } from '@/store/monitoringStore'
@@ -16,6 +17,7 @@ const ITEMS: { id: SidebarSection; icon: typeof Radio; label: string }[] = [
   { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { id: 'monitoring', icon: Radio, label: 'Monitoring' },
   { id: 'coverage', icon: FolderOpen, label: 'Coverage' },
+  { id: 'alerts', icon: Bell, label: 'Alerts' },
   { id: 'saved-searches', icon: Bookmark, label: 'Saved' },
   { id: 'publications', icon: Newspaper, label: 'Publications' }
 ]

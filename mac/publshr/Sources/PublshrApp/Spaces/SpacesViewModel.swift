@@ -135,7 +135,14 @@ final class SpacesViewModel: ObservableObject {
                 // Best-effort demo seed — must not block loading when DB types are misconfigured.
                 try? await service.seedDefaultWorkspace(workspaceId: workspaceId, ownerId: userId)
             }
-            let loaded = try await service.fetchSpaces(workspaceId: workspaceId)
+            var loaded = try await service.fetchSpaces(workspaceId: workspaceId)
+            if loaded.isEmpty, let userId {
+                loaded = try await ensureDefaultSpace(
+                    service: service,
+                    workspaceId: workspaceId,
+                    ownerId: userId
+                )
+            }
             spaces = loaded
             let profs = try await service.fetchWorkspaceProfiles(workspaceId: workspaceId)
             profiles = Dictionary(uniqueKeysWithValues: profs.map { ($0.id, $0) })
@@ -175,6 +182,27 @@ final class SpacesViewModel: ObservableObject {
                 loadFromLocalCache(workspaceId: workspaceId)
             }
         }
+    }
+
+    /// Creates a default space when the workspace has none (trigger may have missed on older rows).
+    private func ensureDefaultSpace(
+        service: SpacesService,
+        workspaceId: UUID,
+        ownerId: UUID
+    ) async throws -> [SpaceRecord] {
+        let space = try await service.createSpace(
+            workspaceId: workspaceId,
+            ownerId: ownerId,
+            name: "General",
+            type: SpaceTypeOption.general.wireValue
+        )
+        _ = try await service.createFolder(spaceId: space.id, name: "Projects")
+        if let folder = try await service.fetchFolders(spaceId: space.id).first {
+            _ = try await service.createList(spaceId: space.id, folderId: folder.id, name: "List")
+        } else {
+            _ = try await service.createList(spaceId: space.id, folderId: nil, name: "List")
+        }
+        return try await service.fetchSpaces(workspaceId: workspaceId)
     }
 
     private func loadFromLocalCache(workspaceId: UUID) {
