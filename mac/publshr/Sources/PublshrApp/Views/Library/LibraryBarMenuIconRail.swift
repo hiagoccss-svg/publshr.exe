@@ -44,14 +44,14 @@ struct LibraryBarMenuIconRail: View {
         return Button {
             module = item
             tabStore.openFromModule(item, activate: true)
+            if item == .chat || item.usesSpacesSubmenu || item == .mediaMonitoring {
+                tabStore.sidebarExpanded = true
+            }
             if item == .whiteboard {
                 spaces.taskView = .whiteboard
                 if spaces.selectedSpaceId == nil, let first = spaces.spaces.first {
                     Task { await spaces.selectSpace(first.id) }
                 }
-            }
-            if item == .mediaMonitoring {
-                _ = DesktopCompanionAppLauncher.open(.mediaMonitoring)
             }
         } label: {
             TitlebarToolbarSlot {

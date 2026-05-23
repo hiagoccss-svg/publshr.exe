@@ -13,7 +13,9 @@ struct UniversalSubmenuTitlebarChrome: View {
                 ChatSidebarTitlebarChrome(chat: chat)
             case .spaces, .whiteboard:
                 SpacesSubmenuTitlebarChrome(spaces: spaces)
-            case .mediaMonitoring, .settings:
+            case .mediaMonitoring:
+                MediaMonitoringSubmenuTitlebarChrome()
+            case .settings:
                 Color.clear
             }
         }
@@ -50,6 +52,27 @@ struct SpacesSubmenuTitlebarChrome: View {
                     .buttonStyle(.plain)
                 }
             }
+        }
+    }
+}
+
+/// Media Monitoring submenu — search in the titlebar row (matches Chat / Spaces).
+struct MediaMonitoringSubmenuTitlebarChrome: View {
+    @State private var searchQuery = ""
+
+    var body: some View {
+        TitlebarToolbarRow(leadingPadding: 0, trailingPadding: 0) {
+            TitlebarToolbarSlot {
+                Image(systemName: "magnifyingglass")
+                    .font(.system(size: AppWindowChromeMetrics.controlIconSize, weight: .medium))
+                    .foregroundStyle(LibraryGlassDesign.inkMuted)
+            }
+            TextField("Search coverage and clips", text: $searchQuery)
+                .textFieldStyle(.plain)
+                .font(.system(size: MacSystemChrome.fieldFontSize))
+                .foregroundStyle(LibraryGlassDesign.ink)
+                .frame(maxWidth: .infinity)
+                .frame(height: AppWindowChromeMetrics.controlSize, alignment: .leading)
         }
     }
 }

@@ -85,6 +85,21 @@ struct TitlebarChromeIconButton: View {
     }
 }
 
+/// Opens workspace settings — always the last item in the editor titlebar cluster.
+struct TitlebarWorkspaceSettingsButton: View {
+    var body: some View {
+        TitlebarChromeIconButton(
+            systemName: "gearshape",
+            help: TitlebarShortcutHint.tooltip("Settings", shortcut: TitlebarShortcutHint.settings)
+        ) {
+            NotificationCenter.default.post(
+                name: .publshrOpenSettings,
+                object: SettingsSection.workspace.rawValue
+            )
+        }
+    }
+}
+
 /// Profile avatar menu locked to the shared toolbar slot (no chevron, no extra menu padding).
 struct TitlebarToolbarProfileMenu: View {
     @EnvironmentObject private var auth: AuthViewModel
