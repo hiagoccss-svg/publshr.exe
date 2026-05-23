@@ -30,6 +30,18 @@ do
 done
 
 echo ""
+echo "=== Live update target (never system /Applications) ==="
+# shellcheck source=lib-install-path.sh
+source "$ROOT/mac/publshr/scripts/lib-install-path.sh"
+resolved="$(publshr_resolved_live_update_target "/Applications/Publshr.app")"
+user_app="$(publshr_user_applications_app)"
+if [[ "$resolved" != "$user_app" ]]; then
+  echo "FAIL: /Applications install must resolve to $user_app, got $resolved"
+  exit 1
+fi
+echo "OK: system install updates -> $resolved"
+
+echo ""
 echo "=== Swift CLI package ==="
 cd "$ROOT/mac/publshr"
 swift build

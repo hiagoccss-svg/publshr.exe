@@ -223,6 +223,7 @@ private enum CloudSyncGate {
 final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         Task { @MainActor in
+            InstallPathMigration.offerMigrationFromSystemApplicationsIfNeeded()
             await ChatNotificationService.shared.requestAuthorizationIfNeeded()
         }
         if let frame = AppWindowStateStore.loadMainWindowFrame(),

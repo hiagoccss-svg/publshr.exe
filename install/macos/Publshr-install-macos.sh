@@ -17,7 +17,7 @@ PUBLSHR_BRANCH="${PUBLSHR_BRANCH:-main}"
 PUBLSHR_INSTALLER_URL="https://raw.githubusercontent.com/${PUBLSHR_REPO}/refs/heads/${PUBLSHR_BRANCH}/install-macos.sh"
 PUBLSHR_LIVE_TAG="${PUBLSHR_LIVE_TAG:-live}"
 PUBLSHR_MAC_APP="${PUBLSHR_MAC_APP:-${HOME}/Applications/Publshr.app}"
-PUBLSHR_BIN_LINK="${PUBLSHR_BIN_LINK:-/usr/local/bin/publshr}"
+PUBLSHR_BIN_LINK="${PUBLSHR_BIN_LINK:-${HOME}/bin/publshr}"
 PUBLSHR_LIVE_ASSET_MACOS_ARM64="Publshr-macos-aarch64.tar.gz"
 PUBLSHR_MIN_APP_BYTES=4000000
 
@@ -137,7 +137,12 @@ _publshr_install_app() {
         log "ERROR: Publshr.app missing in $tree"
         exit 1
     fi
-    log "Installing to ${PUBLSHR_MAC_APP} ..."
+    mkdir -p "$(dirname "$PUBLSHR_MAC_APP")"
+    if [[ ! -w "$(dirname "$PUBLSHR_MAC_APP")" ]]; then
+        log "ERROR: Cannot write to $(dirname "$PUBLSHR_MAC_APP"). Use ~/Applications (default)."
+        exit 1
+    fi
+    log "Installing to ${PUBLSHR_MAC_APP} (no administrator password) ..."
     rm -rf "$PUBLSHR_MAC_APP"
     ditto "$app" "$PUBLSHR_MAC_APP"
     chmod -R 755 "$PUBLSHR_MAC_APP"
@@ -209,8 +214,6 @@ publshr_install_main() {
             exit 0
         fi
     fi
-
-    _publshr_require_root "$@"
 
     if [[ -z "$tree" ]]; then
         if _publshr_live_exists; then

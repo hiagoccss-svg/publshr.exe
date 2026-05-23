@@ -46,7 +46,7 @@ else
   echo "WARN: PublshrInstaller.app not found — DMG will use drag-to-Applications only" >&2
 fi
 
-ln -sf /Applications "$STAGE/Applications"
+# Do not link to /Applications — drag-install there triggers admin passwords on every live update.
 
 if [[ -f "$DIST/VERSION.txt" ]]; then
   cp "$DIST/VERSION.txt" "$STAGE/VERSION.txt"
@@ -60,8 +60,7 @@ Recommended
   Double-click "PublshrInstaller.app" and follow the steps.
   Installs to ~/Applications (live updates without admin password).
 
-Alternative
-  Drag Publshr.app onto the Applications folder in this window.
+Do not drag Publshr.app to the system Applications folder — macOS will ask for your password on every update.
 
 Updates
   After install, Publshr checks GitHub "live" and updates itself automatically.

@@ -329,7 +329,10 @@ _publshr_print_next_steps() {
     log "Next steps (native Swift app — no npm, no admin password for updates):"
     log "  1. Sign in or create an account in the app window."
     log "  2. Settings → Sync now — refreshes GitHub live build + Supabase (Chat, Spaces, Media)."
-    log "  3. Updates install to ~/Applications automatically (remove old /Applications/Publshr.app if present)."
+    log "  3. Updates install to ~/Applications automatically — no Mac password."
+    if [[ -d "/Applications/Publshr.app" ]]; then
+        log "  4. Remove the old system copy (avoids password prompts): rm -rf /Applications/Publshr.app"
+    fi
     log "     Settings → Updates also auto-checks the live channel every 30 seconds."
     log "  4. Enterprise modules: Chat, Spaces, Planner, Media Monitoring — all native in this app."
     log ""

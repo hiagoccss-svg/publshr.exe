@@ -63,8 +63,8 @@ Downloads the live DMG and opens **PublshrInstaller.app** (no `curl | bash` pipe
 
 ## After install
 
-- App: `/Applications/Publshr.app`  
-- CLI (optional): `/usr/local/bin/publshr`  
+- App: `~/Applications/Publshr.app` (passwordless live updates)  
+- CLI (optional): `~/bin/publshr`  
 - Updates: automatic — see [AUTO_UPDATE.md](./AUTO_UPDATE.md)  
 
 ## Enterprise checklist

@@ -28,6 +28,18 @@ struct SettingsUpdatesPane: View {
                 }
             }
             Section("GitHub live channel") {
+                if InstallPathPolicy.isSystemApplicationsInstall(path: AppReleaseConfig.installedAppPath) {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Updates from /Applications require your Mac password each time. Use ~/Applications/Publshr.app for automatic, passwordless updates.")
+                            .font(.caption)
+                            .foregroundStyle(.orange)
+                        Button("Move to ~/Applications…") {
+                            Task { @MainActor in
+                                InstallPathMigration.offerMigrationFromSystemApplicationsIfNeeded(force: true)
+                            }
+                        }
+                    }
+                }
                 LabeledContent("Status", value: updates.githubStatusLine)
                 LabeledContent("Update phase", value: updates.statusLine)
                 LabeledContent("Installed", value: AppReleaseConfig.installedLabel)
