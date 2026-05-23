@@ -48,7 +48,7 @@ export function ModuleContextNav({ section }: { section: SidebarSection }): Reac
     in_review: workspaceApprovals.filter((a) => a.status === 'in_review').length,
     approved: workspaceApprovals.filter((a) => a.status === 'approved').length,
     week: workspaceTasks.length,
-    overdue: workspaceTasks.filter((t) => t.task.dueDate).length,
+    overdue: workspaceTasks.filter((t) => t.dueDate).length,
     members: workspaceMembers.length,
     client: spaces.filter((s) => s.type === 'client').length,
     campaign: spaces.filter((s) => s.type === 'campaign').length
