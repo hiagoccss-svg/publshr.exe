@@ -490,4 +490,63 @@ final class SpacesService {
             }
         }
     }
+
+    /// Seeds a starter workspace when empty so Dashboard, Documents, Planner, and related modules have live data.
+    func seedDefaultWorkspace(workspaceId: UUID, ownerId: UUID) async throws {
+        let existing = try await fetchSpaces(workspaceId: workspaceId)
+        guard existing.isEmpty else { return }
+
+        let editorial = try await createSpace(
+            workspaceId: workspaceId,
+            ownerId: ownerId,
+            name: "Editorial Ops",
+            type: "general"
+        )
+        _ = try await createSpace(
+            workspaceId: workspaceId,
+            ownerId: ownerId,
+            name: "Q2 Campaign",
+            type: "campaign"
+        )
+        _ = try await createSpace(
+            workspaceId: workspaceId,
+            ownerId: ownerId,
+            name: "Acme Corp",
+            type: "client"
+        )
+
+        let lists = try await fetchLists(spaceId: editorial.id)
+        let listId = lists.first?.id
+        let dueSoon = ISO8601DateFormatter().string(from: Calendar.current.date(byAdding: .day, value: 2, to: Date()) ?? Date())
+        let overdue = ISO8601DateFormatter().string(from: Calendar.current.date(byAdding: .day, value: -1, to: Date()) ?? Date())
+
+        _ = try await createTask(
+            spaceId: editorial.id,
+            title: "Finalize launch brief",
+            listId: listId,
+            status: .in_progress,
+            priority: .high,
+            assigneeId: ownerId,
+            dueDate: dueSoon
+        )
+        _ = try await createTask(
+            spaceId: editorial.id,
+            title: "Review social copy",
+            listId: listId,
+            status: .todo,
+            priority: .normal,
+            assigneeId: ownerId,
+            dueDate: overdue
+        )
+        _ = try await createDocument(spaceId: editorial.id, title: "Brand voice guide", docType: "brief")
+        _ = try await createDocument(spaceId: editorial.id, title: "Campaign one-pager", docType: "spec")
+
+        try await logActivity(
+            spaceId: editorial.id,
+            userId: ownerId,
+            action: "seeded workspace",
+            entityType: "space",
+            entityId: editorial.id
+        )
+    }
 }

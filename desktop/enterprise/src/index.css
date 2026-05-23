@@ -5,7 +5,29 @@
 @tailwind utilities;
 
 :root {
-  --lib-bar-menu-width: 200px;
+  --lib-bar-menu-width: 220px;
+  --traffic-leading-inset: 72px;
+  --lib-sidebar-collapsed-width: 3rem;
+}
+
+.glass-sidebar.enterprise-nav-rail {
+  width: var(--lib-bar-menu-width) !important;
+  min-width: var(--lib-bar-menu-width);
+  max-width: var(--lib-bar-menu-width);
+}
+
+.glass-sidebar.enterprise-context-sidebar {
+  width: var(--lib-sidebar-width-wide, 272px) !important;
+  min-width: var(--lib-sidebar-width-wide, 272px);
+}
+
+.glass-sidebar.enterprise-context-sidebar.enterprise-context-sidebar-collapsed {
+  width: var(--lib-sidebar-collapsed-width) !important;
+  min-width: var(--lib-sidebar-collapsed-width);
+}
+
+.glass-sidebar.enterprise-context-sidebar.enterprise-context-sidebar-wide {
+  width: var(--lib-sidebar-width-wide, 272px) !important;
 }
 
 html,

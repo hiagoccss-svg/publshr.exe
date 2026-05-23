@@ -233,34 +233,146 @@ impl SpacesDatabase {
     }
 
     fn ensure_seed(&self) -> DbResult<()> {
-        let count: i64 = self
+        let space_count: i64 = self
             .conn
             .query_row("SELECT COUNT(*) FROM spaces", [], |row| row.get(0))?;
-        if count > 0 {
+        if space_count > 0 {
             return Ok(());
         }
 
-        let workspace_id = new_uuid();
-        let user_id = new_uuid();
+        let mut meta = load_meta(&self.conn)?;
         let ts = now_iso();
 
-        self.conn.execute(
-            "INSERT INTO workspaces (id, name, updated_at) VALUES (?1, ?2, ?3)",
-            params![workspace_id, "Publshr Workspace", ts],
+        if meta.get("workspace_id").is_none() {
+            let workspace_id = new_uuid();
+            self.conn.execute(
+                "INSERT INTO workspaces (id, name, updated_at) VALUES (?1, ?2, ?3)",
+                params![workspace_id, "Publshr Workspace", ts],
+            )?;
+            self.conn.execute(
+                "INSERT INTO meta (key, value) VALUES (?1, ?2)",
+                params!["workspace_id", workspace_id],
+            )?;
+            meta.insert("workspace_id".into(), workspace_id);
+        }
+
+        if meta.get("current_user_id").is_none() {
+            let user_id = new_uuid();
+            self.conn.execute(
+                "INSERT INTO meta (key, value) VALUES (?1, ?2)",
+                params!["current_user_id", user_id],
+            )?;
+            meta.insert("current_user_id".into(), user_id);
+        }
+
+        if meta.get("current_user_name").is_none() {
+            self.conn.execute(
+                "INSERT INTO meta (key, value) VALUES (?1, ?2)",
+                params!["current_user_name", "John"],
+            )?;
+        }
+
+        let workspace_id = meta
+            .get("workspace_id")
+            .cloned()
+            .unwrap_or_else(new_uuid);
+        let user_id = meta
+            .get("current_user_id")
+            .cloned()
+            .unwrap_or_else(new_uuid);
+
+        self.seed_demo_workspace(&workspace_id, &user_id)?;
+        Ok(())
+    }
+
+    /// Starter spaces, tasks, documents, and team rows so every enterprise module has content on first launch.
+    fn seed_demo_workspace(&self, _workspace_id: &str, user_id: &str) -> DbResult<()> {
+        let editorial = self.create_space(CreateSpaceInput {
+            name: "Editorial Ops".into(),
+            description: Some("Cross-team publishing workspace".into()),
+            space_type: Some("general".into()),
+        })?;
+        let campaign = self.create_space(CreateSpaceInput {
+            name: "Q2 Campaign".into(),
+            description: Some("Launch planning".into()),
+            space_type: Some("campaign".into()),
+        })?;
+        let _client = self.create_space(CreateSpaceInput {
+            name: "Acme Corp".into(),
+            description: Some("Client delivery".into()),
+            space_type: Some("client".into()),
+        })?;
+
+        let lists = self.list_lists(&editorial.id)?;
+        let list_id = lists.first().map(|l| l.id.clone());
+
+        let due_soon = chrono::Utc::now() + chrono::Duration::days(2);
+        let overdue = chrono::Utc::now() - chrono::Duration::days(1);
+        let due_soon_s = due_soon.to_rfc3339_opts(chrono::SecondsFormat::Millis, true);
+        let overdue_s = overdue.to_rfc3339_opts(chrono::SecondsFormat::Millis, true);
+
+        self.create_task(CreateTaskInput {
+            space_id: editorial.id.clone(),
+            list_id: list_id.clone(),
+            title: "Finalize launch brief".into(),
+            status: Some("in_progress".into()),
+            priority: Some("high".into()),
+            assignee_id: Some(user_id.to_string()),
+            due_date: Some(due_soon_s),
+        })?;
+        self.create_task(CreateTaskInput {
+            space_id: editorial.id.clone(),
+            list_id,
+            title: "Review social copy".into(),
+            status: Some("todo".into()),
+            priority: Some("normal".into()),
+            assignee_id: Some(user_id.to_string()),
+            due_date: Some(overdue_s),
+        })?;
+
+        let brief = self.create_document(&editorial.id, "Brand voice guide", "")?;
+        self.create_document(&editorial.id, "Campaign one-pager", "")?;
+        self.create_file(
+            &editorial.id,
+            "launch-assets.zip",
+            "https://files.publshr.local/launch-assets.zip",
         )?;
+
+        let approval_id = new_uuid();
+        let ts = now_iso();
         self.conn.execute(
-            "INSERT INTO meta (key, value) VALUES (?1, ?2), (?3, ?4)",
-            params![
-                "workspace_id",
-                workspace_id,
-                "current_user_id",
-                user_id
-            ],
+            "INSERT INTO approvals (id, space_id, task_id, document_id, status, title, updated_at)
+             VALUES (?1, ?2, NULL, ?3, 'in_review', 'Approve brand voice guide', ?4)",
+            params![approval_id, editorial.id, brief.id, ts],
         )?;
+
+        for (name, email, color, online) in [
+            ("John", "john@publshr.local", "#22863A", 1),
+            ("Alex Kim", "alex@publshr.local", "#6B4FBB", 1),
+            ("Sam Rivera", "sam@publshr.local", "#0078D4", 0),
+        ] {
+            let uid = if name == "John" {
+                user_id.to_string()
+            } else {
+                new_uuid()
+            };
+            for space_id in [&editorial.id, &campaign.id] {
+                let member_id = new_uuid();
+                self.conn.execute(
+                    "INSERT INTO space_members (id, space_id, user_id, role, name, email, avatar_color, is_online)
+                     VALUES (?1, ?2, ?3, 'member', ?4, ?5, ?6, ?7)",
+                    params![member_id, space_id, uid, name, email, color, online],
+                )?;
+            }
+        }
+
+        let notif_id = new_uuid();
         self.conn.execute(
-            "INSERT INTO meta (key, value) VALUES (?1, ?2)",
-            params!["current_user_name", "You"],
+            "INSERT INTO notifications (id, space_id, title, body, kind, read, created_at)
+             VALUES (?1, ?2, 'Approval requested', 'Brand voice guide needs your review', 'approval', 0, ?3)",
+            params![notif_id, editorial.id, ts],
         )?;
+
         Ok(())
     }
 

@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { useSpacesStore } from '@spaces/stores/spaces-store'
+import { useChatStore } from '@spaces/stores/chat-store'
 import { MainShell } from '@spaces/components/layout/MainShell'
 import { initSpacesPlatform } from '@spaces/lib/api'
 import { DocumentWindow } from '@spaces/components/windows/DocumentWindow'
@@ -23,6 +24,7 @@ export function EnterpriseWorkspace(): React.ReactElement {
 
   useEffect(() => {
     initSpacesPlatform()
+    useChatStore.getState().hydrate()
     void loadBootstrap()
     const onRefresh = (): void => {
       void refreshActiveSpace()

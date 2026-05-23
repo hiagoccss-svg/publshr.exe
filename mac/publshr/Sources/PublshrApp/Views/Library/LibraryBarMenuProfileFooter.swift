@@ -30,13 +30,14 @@ struct LibraryBarMenuProfileFooter: View {
                             .font(.system(size: 13, weight: .semibold))
                             .foregroundStyle(LibraryGlassDesign.ink)
                             .lineLimit(1)
-                        HStack(spacing: 4) {
-                            ChatPresenceDot(status: chat.myStatus, size: 7)
-                            Text(chat.myStatus.label)
-                                .font(.system(size: 11))
-                                .foregroundStyle(LibraryGlassDesign.inkMuted)
-                        }
+                            .truncationMode(.tail)
+                        Text(chat.myStatus.label)
+                            .font(.system(size: 11))
+                            .foregroundStyle(LibraryGlassDesign.inkMuted)
+                            .lineLimit(1)
+                            .fixedSize(horizontal: true, vertical: false)
                     }
+                    .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
                     Spacer(minLength: 0)
                     Image(systemName: "chevron.right")
                         .font(.system(size: 10, weight: .semibold))
