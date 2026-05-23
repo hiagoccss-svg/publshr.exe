@@ -87,6 +87,18 @@ npm run typecheck
 
 No demo seed data on first run. Configure optional Supabase via `.env` from `.env.example`.
 
+### GitHub and Supabase health checks
+
+From `mac/publshr/`:
+
+```bash
+bash scripts/verify-github-live.sh      # live release + install-macos.sh URLs
+bash scripts/verify-all-connections.sh  # GitHub live + Supabase auth/chat/spaces
+bash scripts/cleanup-github-branches.sh # remove merged cursor/* branches (DRY_RUN=1 first)
+```
+
+See `mac/publshr/docs/REPO_CLEANUP.md`.
+
 ### Gotchas
 
 - On Ubuntu, Swift requires `libncurses6`, `libcurl4`, and `libxml2` runtime libraries. The update script installs these automatically.
