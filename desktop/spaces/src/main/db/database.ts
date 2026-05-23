@@ -877,6 +877,27 @@ export class SpacesDatabase {
     })
   }
 
+  listCoverage(limit = 100): import('../../shared/types').CoverageMention[] {
+    const rows = this.db
+      .prepare(`SELECT * FROM coverage_mentions ORDER BY published_at DESC LIMIT ?`)
+      .all(limit)
+    return rows.map((r) => {
+      const row = r as Record<string, unknown>
+      return {
+        id: row.id as string,
+        spaceId: (row.space_id as string) || null,
+        headline: row.headline as string,
+        publication: row.publication as string,
+        sentiment: row.sentiment as import('../../shared/types').CoverageSentiment,
+        reach: Number(row.reach),
+        prValue: Number(row.pr_value),
+        url: (row.url as string) || '',
+        saved: Boolean(row.saved),
+        publishedAt: row.published_at as string
+      }
+    })
+  }
+
   listNotifications(limit = 30): NotificationItem[] {
     const rows = this.db
       .prepare(`SELECT * FROM notifications ORDER BY created_at DESC LIMIT ?`)

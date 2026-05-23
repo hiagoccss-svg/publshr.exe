@@ -155,6 +155,21 @@ CREATE TABLE IF NOT EXISTS notifications (
   created_at TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS coverage_mentions (
+  id TEXT PRIMARY KEY,
+  space_id TEXT REFERENCES spaces(id) ON DELETE SET NULL,
+  headline TEXT NOT NULL,
+  publication TEXT NOT NULL,
+  sentiment TEXT NOT NULL DEFAULT 'neutral',
+  reach INTEGER NOT NULL DEFAULT 0,
+  pr_value REAL NOT NULL DEFAULT 0,
+  url TEXT NOT NULL DEFAULT '',
+  saved INTEGER NOT NULL DEFAULT 0,
+  published_at TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_coverage_published ON coverage_mentions(published_at);
+
 CREATE TABLE IF NOT EXISTS sync_queue (
   id TEXT PRIMARY KEY,
   table_name TEXT NOT NULL,

@@ -241,6 +241,21 @@ export interface SpaceFile {
   updatedAt: string
 }
 
+export type CoverageSentiment = 'positive' | 'negative' | 'neutral' | 'mixed'
+
+export interface CoverageMention {
+  id: string
+  spaceId: string | null
+  headline: string
+  publication: string
+  sentiment: CoverageSentiment
+  reach: number
+  prValue: number
+  url: string
+  saved: boolean
+  publishedAt: string
+}
+
 export interface NotificationItem {
   id: string
   spaceId: string | null
@@ -325,6 +340,7 @@ export interface SpacesAPI {
   listWorkspaceMembers: () => Promise<WorkspaceMember[]>
   listWorkspaceActivity: (limit?: number) => Promise<WorkspaceActivity[]>
   listNotifications: (limit?: number) => Promise<NotificationItem[]>
+  listCoverage: (limit?: number) => Promise<CoverageMention[]>
   getWorkspaceSummary: () => Promise<WorkspaceSummary>
   search: (query: string) => Promise<SearchResult[]>
   getSyncStatus: () => Promise<SyncStatus>

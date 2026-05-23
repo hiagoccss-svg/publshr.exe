@@ -146,6 +146,19 @@ CREATE TABLE IF NOT EXISTS space_activity (
   created_at TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS coverage_mentions (
+  id TEXT PRIMARY KEY,
+  space_id TEXT,
+  headline TEXT NOT NULL,
+  publication TEXT NOT NULL,
+  sentiment TEXT NOT NULL DEFAULT 'neutral',
+  reach INTEGER NOT NULL DEFAULT 0,
+  pr_value REAL NOT NULL DEFAULT 0,
+  url TEXT NOT NULL DEFAULT '',
+  saved INTEGER NOT NULL DEFAULT 0,
+  published_at TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS notifications (
   id TEXT PRIMARY KEY,
   space_id TEXT,

@@ -1,7 +1,8 @@
 use crate::db::{DbError, SpacesDatabase};
 use crate::models::{
-    Approval, BootstrapPayload, CreateCommentInput, CreateSpaceInput, CreateTaskInput,
-    NotificationItem, SearchResult, Space, SpaceActivity, SpaceComment, SpaceDocument,
+    Approval, BootstrapPayload, CoverageMention, CreateCommentInput, CreateSpaceInput,
+    CreateTaskInput, NotificationItem, SearchResult, Space, SpaceActivity, SpaceComment,
+    SpaceDocument,
     SpaceDocumentDetail, SpaceFile, SpaceFolder, SpaceList, SpaceMember, SyncStatus, Task,
     UpdateDocumentPatch, UpdateFolderPatch, UpdateListPatch, UpdateSpacePatch, UpdateTaskInput,
     WorkspaceActivity, WorkspaceMember, WorkspaceSummary, WorkspaceTask,
@@ -448,6 +449,19 @@ pub fn spaces_list_workspace_activity(
         .lock()
         .map_err(|e| e.to_string())?
         .list_workspace_activity(limit.unwrap_or(40))
+        .map_err(db_err)
+}
+
+#[tauri::command]
+pub fn spaces_list_coverage(
+    state: State<'_, DbState>,
+    limit: Option<i64>,
+) -> Result<Vec<CoverageMention>, String> {
+    state
+        .0
+        .lock()
+        .map_err(|e| e.to_string())?
+        .list_coverage_mentions(limit.unwrap_or(100))
         .map_err(db_err)
 }
 

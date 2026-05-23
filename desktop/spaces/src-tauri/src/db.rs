@@ -1,6 +1,7 @@
 use crate::models::{
-    load_meta, Approval, BootstrapPayload, CreateCommentInput, CreateSpaceInput, CreateTaskInput,
-    NotificationItem, SearchResult, Space, SpaceActivity, SpaceComment, SpaceDocument,
+    load_meta, Approval, BootstrapPayload, CoverageMention, CreateCommentInput, CreateSpaceInput,
+    CreateTaskInput, NotificationItem, SearchResult, Space, SpaceActivity, SpaceComment,
+    SpaceDocument,
     SpaceDocumentDetail, SpaceFile, SpaceFolder, SpaceList, SpaceMember, SyncQueueItem,
     SyncStatus, Task, UpdateDocumentPatch, UpdateFolderPatch, UpdateListPatch, UpdateSpacePatch,
     UpdateTaskInput, Workspace, WorkspaceActivity, WorkspaceMember, WorkspaceSummary,
@@ -147,6 +148,7 @@ impl SpacesDatabase {
         };
         db.run_migrations()?;
         db.ensure_seed()?;
+        db.ensure_coverage_seed()?;
         Ok(db)
     }
 
@@ -205,6 +207,42 @@ impl SpacesDatabase {
             self.ensure_default_lists_for_existing_spaces()?;
             self.conn.execute(
                 "INSERT INTO meta (key, value) VALUES ('schema_version', '2')
+                 ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+                [],
+            )?;
+        }
+
+        let version_now: i64 = self
+            .conn
+            .query_row(
+                "SELECT value FROM meta WHERE key = 'schema_version'",
+                [],
+                |row| row.get::<_, String>(0),
+            )
+            .ok()
+            .and_then(|v| v.parse().ok())
+            .unwrap_or(version);
+
+        if version_now < 3 {
+            self.conn.execute_batch(
+                "
+                CREATE TABLE IF NOT EXISTS coverage_mentions (
+                  id TEXT PRIMARY KEY,
+                  space_id TEXT REFERENCES spaces(id) ON DELETE SET NULL,
+                  headline TEXT NOT NULL,
+                  publication TEXT NOT NULL,
+                  sentiment TEXT NOT NULL DEFAULT 'neutral',
+                  reach INTEGER NOT NULL DEFAULT 0,
+                  pr_value REAL NOT NULL DEFAULT 0,
+                  url TEXT NOT NULL DEFAULT '',
+                  saved INTEGER NOT NULL DEFAULT 0,
+                  published_at TEXT NOT NULL
+                );
+                CREATE INDEX IF NOT EXISTS idx_coverage_published ON coverage_mentions(published_at);
+                ",
+            )?;
+            self.conn.execute(
+                "INSERT INTO meta (key, value) VALUES ('schema_version', '3')
                  ON CONFLICT(key) DO UPDATE SET value = excluded.value",
                 [],
             )?;
@@ -373,6 +411,134 @@ impl SpacesDatabase {
             params![notif_id, editorial.id, ts],
         )?;
 
+        let publication = self.create_space(CreateSpaceInput {
+            name: "Global Coverage".into(),
+            description: Some("Publication monitoring hub".into()),
+            space_type: Some("publication".into()),
+        })?;
+
+        let published = chrono::Utc::now() - chrono::Duration::hours(6);
+        let published_s = published.to_rfc3339_opts(chrono::SecondsFormat::Millis, true);
+        for (headline, publication_name, sentiment, reach, pr_value) in [
+            (
+                "Brand launches sustainability pledge ahead of summit",
+                "Reuters",
+                "positive",
+                4_200_000_i64,
+                18500.0,
+            ),
+            (
+                "Analysts question timing of Q2 campaign spend",
+                "Financial Times",
+                "neutral",
+                890_000,
+                6200.0,
+            ),
+            (
+                "Social backlash after influencer partnership",
+                "The Guardian",
+                "negative",
+                1_100_000,
+                9400.0,
+            ),
+            (
+                "Agency wins integrated comms mandate",
+                "PR Week",
+                "positive",
+                320_000,
+                4100.0,
+            ),
+        ] {
+            let id = new_uuid();
+            self.conn.execute(
+                "INSERT INTO coverage_mentions
+                 (id, space_id, headline, publication, sentiment, reach, pr_value, url, saved, published_at)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, '', 0, ?8)",
+                params![
+                    id,
+                    publication.id,
+                    headline,
+                    publication_name,
+                    sentiment,
+                    reach,
+                    pr_value,
+                    published_s
+                ],
+            )?;
+        }
+
+        Ok(())
+    }
+
+    /// Backfill coverage demo rows for workspaces created before the monitoring module shipped.
+    fn ensure_coverage_seed(&self) -> DbResult<()> {
+        let count: i64 = self
+            .conn
+            .query_row("SELECT COUNT(*) FROM coverage_mentions", [], |row| row.get(0))?;
+        if count > 0 {
+            return Ok(());
+        }
+
+        let space_id: String = if let Ok(id) = self.conn.query_row(
+            "SELECT id FROM spaces WHERE type = 'publication' AND is_archived = 0 LIMIT 1",
+            [],
+            |row| row.get(0),
+        ) {
+            id
+        } else if let Ok(id) = self
+            .conn
+            .query_row(
+                "SELECT id FROM spaces WHERE is_archived = 0 ORDER BY updated_at DESC LIMIT 1",
+                [],
+                |row| row.get(0),
+            ) {
+            id
+        } else {
+            return Ok(());
+        };
+
+        let published = chrono::Utc::now() - chrono::Duration::hours(6);
+        let published_s = published.to_rfc3339_opts(chrono::SecondsFormat::Millis, true);
+        for (headline, publication_name, sentiment, reach, pr_value) in [
+            (
+                "Brand launches sustainability pledge ahead of summit",
+                "Reuters",
+                "positive",
+                4_200_000_i64,
+                18500.0,
+            ),
+            (
+                "Analysts question timing of Q2 campaign spend",
+                "Financial Times",
+                "neutral",
+                890_000,
+                6200.0,
+            ),
+            (
+                "Social backlash after influencer partnership",
+                "The Guardian",
+                "negative",
+                1_100_000,
+                9400.0,
+            ),
+        ] {
+            let id = new_uuid();
+            self.conn.execute(
+                "INSERT INTO coverage_mentions
+                 (id, space_id, headline, publication, sentiment, reach, pr_value, url, saved, published_at)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, '', 0, ?8)",
+                params![
+                    id,
+                    space_id,
+                    headline,
+                    publication_name,
+                    sentiment,
+                    reach,
+                    pr_value,
+                    published_s
+                ],
+            )?;
+        }
         Ok(())
     }
 
@@ -1141,6 +1307,27 @@ impl SpacesDatabase {
                 entity_id: row.get("entity_id")?,
                 created_at: row.get("created_at")?,
                 space_name: row.get("space_name")?,
+            })
+        })?;
+        rows.collect::<Result<Vec<_>, _>>().map_err(DbError::from)
+    }
+
+    pub fn list_coverage_mentions(&self, limit: i64) -> DbResult<Vec<CoverageMention>> {
+        let mut stmt = self.conn.prepare(
+            "SELECT * FROM coverage_mentions ORDER BY published_at DESC LIMIT ?1",
+        )?;
+        let rows = stmt.query_map(params![limit], |row| {
+            Ok(CoverageMention {
+                id: row.get("id")?,
+                space_id: opt_str(row.get("space_id")?),
+                headline: row.get("headline")?,
+                publication: row.get("publication")?,
+                sentiment: row.get("sentiment")?,
+                reach: row.get("reach")?,
+                pr_value: row.get("pr_value")?,
+                url: row.get("url")?,
+                saved: row_bool(row, "saved")?,
+                published_at: row.get("published_at")?,
             })
         })?;
         rows.collect::<Result<Vec<_>, _>>().map_err(DbError::from)
