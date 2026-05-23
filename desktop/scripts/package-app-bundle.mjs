@@ -5,7 +5,7 @@
  */
 import { createHash } from 'crypto'
 import { createReadStream, existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs'
-import { dirname, join } from 'path'
+import { dirname, join, resolve } from 'path'
 import { pipeline } from 'stream/promises'
 import { execFileSync } from 'child_process'
 
@@ -17,16 +17,19 @@ if (!product || !rendererDir || !outZip) {
   process.exit(1)
 }
 
-if (!existsSync(join(rendererDir, 'index.html'))) {
-  console.error(`Missing index.html in ${rendererDir}`)
+const rendererRoot = resolve(rendererDir)
+const indexHtml = join(rendererRoot, 'index.html')
+if (!existsSync(indexHtml)) {
+  console.error(`Missing index.html in ${rendererRoot}`)
   process.exit(1)
 }
 
-mkdirSync(dirname(outZip), { recursive: true })
-if (existsSync(outZip)) {
-  execFileSync('rm', ['-f', outZip])
+const zipPath = resolve(outZip)
+mkdirSync(dirname(zipPath), { recursive: true })
+if (existsSync(zipPath)) {
+  execFileSync('rm', ['-f', zipPath])
 }
-execFileSync('zip', ['-rq', outZip, '.'], { cwd: rendererDir, stdio: 'inherit' })
+execFileSync('zip', ['-rq', zipPath, '.'], { cwd: rendererRoot, stdio: 'inherit' })
 
 async function sha256(path) {
   const hash = createHash('sha256')
@@ -34,18 +37,18 @@ async function sha256(path) {
   return hash.digest('hex')
 }
 
-const digest = await sha256(outZip)
-const metaPath = outZip.replace(/\.zip$/, '.meta.json')
+const digest = await sha256(zipPath)
+const metaPath = zipPath.replace(/\.zip$/, '.meta.json')
 writeFileSync(
   metaPath,
   JSON.stringify(
     {
       product,
       sha256: digest,
-      size: readFileSync(outZip).length
+      size: readFileSync(zipPath).length
     },
     null,
     2
   )
 )
-console.log(`Packaged ${outZip} sha256=${digest}`)
+console.log(`Packaged ${zipPath} sha256=${digest}`)
