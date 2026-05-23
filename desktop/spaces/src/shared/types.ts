@@ -192,6 +192,33 @@ export interface SpaceDocument {
   title: string
   docType: string
   updatedAt: string
+  spaceName?: string
+}
+
+export interface SpaceDocumentDetail extends SpaceDocument {
+  content: string
+}
+
+export interface WorkspaceActivity extends SpaceActivity {
+  spaceName: string
+}
+
+export interface WorkspaceMember extends SpaceMember {
+  spaceCount: number
+}
+
+export interface WorkspaceTask extends Task {
+  spaceName: string
+}
+
+export interface WorkspaceSummary {
+  spaceCount: number
+  openTasks: number
+  overdueTasks: number
+  pendingApprovals: number
+  documentCount: number
+  fileCount: number
+  onlineMembers: number
 }
 
 export interface Approval {
@@ -282,7 +309,22 @@ export interface SpacesAPI {
   listMembers: (spaceId: string) => Promise<SpaceMember[]>
   listApprovals: (spaceId: string) => Promise<Approval[]>
   listDocuments: (spaceId: string) => Promise<SpaceDocument[]>
+  getDocument: (id: string) => Promise<SpaceDocumentDetail | null>
+  createDocument: (spaceId: string, title: string, content?: string) => Promise<SpaceDocumentDetail>
+  updateDocument: (
+    id: string,
+    patch: { title?: string; content?: string }
+  ) => Promise<SpaceDocumentDetail>
   listFiles: (spaceId: string) => Promise<SpaceFile[]>
+  createFile: (spaceId: string, fileName: string, fileUrl: string) => Promise<SpaceFile>
+  listWorkspaceDocuments: () => Promise<SpaceDocument[]>
+  listWorkspaceApprovals: () => Promise<Approval[]>
+  listWorkspaceFiles: () => Promise<SpaceFile[]>
+  listWorkspaceTasks: () => Promise<WorkspaceTask[]>
+  listWorkspaceMembers: () => Promise<WorkspaceMember[]>
+  listWorkspaceActivity: (limit?: number) => Promise<WorkspaceActivity[]>
+  listNotifications: (limit?: number) => Promise<NotificationItem[]>
+  getWorkspaceSummary: () => Promise<WorkspaceSummary>
   search: (query: string) => Promise<SearchResult[]>
   getSyncStatus: () => Promise<SyncStatus>
   openDocumentWindow: (documentId: string, title: string) => void

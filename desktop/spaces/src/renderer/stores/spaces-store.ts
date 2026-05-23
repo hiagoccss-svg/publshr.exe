@@ -3,6 +3,7 @@ import { getSpacesAPI } from '../lib/api'
 import type {
   Approval,
   BootstrapPayload,
+  NotificationItem,
   SidebarSection,
   Space,
   SpaceActivity,
@@ -14,7 +15,11 @@ import type {
   SpaceMember,
   SyncStatus,
   Task,
-  TaskViewMode
+  TaskViewMode,
+  WorkspaceActivity,
+  WorkspaceMember,
+  WorkspaceSummary,
+  WorkspaceTask
 } from '../../shared/types'
 
 interface SpacesState {
@@ -35,6 +40,14 @@ interface SpacesState {
   documents: SpaceDocument[]
   files: SpaceFile[]
   approvals: Approval[]
+  workspaceSummary: WorkspaceSummary | null
+  workspaceDocuments: SpaceDocument[]
+  workspaceApprovals: Approval[]
+  workspaceFiles: SpaceFile[]
+  workspaceTasks: WorkspaceTask[]
+  workspaceMembers: WorkspaceMember[]
+  workspaceActivity: WorkspaceActivity[]
+  notifications: NotificationItem[]
   taskComments: SpaceComment[]
   currentUserId: string
   currentUserName: string
@@ -48,6 +61,7 @@ interface SpacesState {
   spaceSettingsId: string | null
   spacesHomeOpen: boolean
   loadBootstrap: () => Promise<void>
+  loadWorkspaceData: () => Promise<void>
   refreshActiveSpace: () => Promise<void>
   refreshHierarchy: () => Promise<void>
   setActiveSpace: (id: string | null) => Promise<void>
@@ -75,6 +89,8 @@ interface SpacesState {
   updateTaskStatus: (taskId: string, status: Task['status']) => Promise<void>
   loadTaskComments: (taskId: string) => Promise<void>
   postComment: (body: string) => Promise<void>
+  createDocument: (title: string, spaceId?: string) => Promise<void>
+  createFileLink: (fileName: string, fileUrl: string, spaceId?: string) => Promise<void>
 }
 
 export const useSpacesStore = create<SpacesState>((set, get) => ({
@@ -95,6 +111,14 @@ export const useSpacesStore = create<SpacesState>((set, get) => ({
   documents: [],
   files: [],
   approvals: [],
+  workspaceSummary: null,
+  workspaceDocuments: [],
+  workspaceApprovals: [],
+  workspaceFiles: [],
+  workspaceTasks: [],
+  workspaceMembers: [],
+  workspaceActivity: [],
+  notifications: [],
   taskComments: [],
   currentUserId: '',
   currentUserName: 'You',
@@ -122,6 +146,43 @@ export const useSpacesStore = create<SpacesState>((set, get) => ({
       syncStatus: data.syncStatus
     })
     if (spaces[0]) await get().setActiveSpace(spaces[0].id)
+    await get().loadWorkspaceData()
+  },
+
+  loadWorkspaceData: async () => {
+    const api = getSpacesAPI()
+    const [
+      workspaceSummary,
+      workspaceDocuments,
+      workspaceApprovals,
+      workspaceFiles,
+      workspaceTasks,
+      workspaceMembers,
+      workspaceActivity,
+      notifications,
+      syncStatus
+    ] = await Promise.all([
+      api.getWorkspaceSummary(),
+      api.listWorkspaceDocuments(),
+      api.listWorkspaceApprovals(),
+      api.listWorkspaceFiles(),
+      api.listWorkspaceTasks(),
+      api.listWorkspaceMembers(),
+      api.listWorkspaceActivity(50),
+      api.listNotifications(30),
+      api.getSyncStatus()
+    ])
+    set({
+      workspaceSummary,
+      workspaceDocuments,
+      workspaceApprovals,
+      workspaceFiles,
+      workspaceTasks,
+      workspaceMembers,
+      workspaceActivity,
+      notifications,
+      syncStatus
+    })
   },
 
   refreshHierarchy: async () => {
@@ -209,7 +270,10 @@ export const useSpacesStore = create<SpacesState>((set, get) => ({
     set({ expandedFolderIds: expanded })
   },
 
-  setActiveSection: (section) => set({ activeSection: section }),
+  setActiveSection: (section) => {
+    set({ activeSection: section })
+    if (section !== 'spaces') void get().loadWorkspaceData()
+  },
   setTaskView: (view) => set({ taskView: view }),
   setSelectedTask: async (id) => {
     set({ selectedTaskId: id, contextPanelOpen: true })
@@ -330,6 +394,25 @@ export const useSpacesStore = create<SpacesState>((set, get) => ({
     await api.createComment({ spaceId: activeSpaceId, taskId: selectedTaskId, body: body.trim() })
     await get().loadTaskComments(selectedTaskId)
     await get().refreshActiveSpace()
+  },
+
+  createDocument: async (title, spaceId) => {
+    const targetSpaceId = spaceId ?? get().activeSpaceId ?? get().spaces[0]?.id
+    if (!targetSpaceId || !title.trim()) return
+    const api = getSpacesAPI()
+    const doc = await api.createDocument(targetSpaceId, title.trim())
+    await get().loadWorkspaceData()
+    if (get().activeSpaceId === targetSpaceId) await get().refreshActiveSpace()
+    getSpacesAPI().openDocumentWindow(doc.id, doc.title)
+  },
+
+  createFileLink: async (fileName, fileUrl, spaceId) => {
+    const targetSpaceId = spaceId ?? get().activeSpaceId ?? get().spaces[0]?.id
+    if (!targetSpaceId || !fileName.trim() || !fileUrl.trim()) return
+    const api = getSpacesAPI()
+    await api.createFile(targetSpaceId, fileName.trim(), fileUrl.trim())
+    await get().loadWorkspaceData()
+    if (get().activeSpaceId === targetSpaceId) await get().refreshActiveSpace()
   }
 }))
 

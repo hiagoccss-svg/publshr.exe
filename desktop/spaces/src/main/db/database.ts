@@ -13,7 +13,13 @@ import type {
   SpaceActivity,
   SpaceComment,
   SpaceDocument,
+  SpaceDocumentDetail,
   SpaceFile,
+  WorkspaceActivity,
+  WorkspaceMember,
+  WorkspaceSummary,
+  WorkspaceTask,
+  NotificationItem,
   SpaceFolder,
   SpaceList,
   SpaceMember,
@@ -647,16 +653,308 @@ export class SpacesDatabase {
 
   listDocuments(spaceId: string): SpaceDocument[] {
     const rows = this.db.prepare('SELECT * FROM documents WHERE space_id = ?').all(spaceId)
+    return rows.map((r) => this.rowToDocument(r as Record<string, unknown>))
+  }
+
+  private rowToDocument(row: Record<string, unknown>, spaceName?: string): SpaceDocument {
+    return {
+      id: row.id as string,
+      spaceId: row.space_id as string,
+      title: row.title as string,
+      docType: row.doc_type as string,
+      updatedAt: row.updated_at as string,
+      ...(spaceName ? { spaceName } : {})
+    }
+  }
+
+  getDocument(id: string): SpaceDocumentDetail | null {
+    const row = this.db
+      .prepare(
+        `SELECT d.*, s.name as space_name FROM documents d
+         JOIN spaces s ON s.id = d.space_id WHERE d.id = ?`
+      )
+      .get(id) as Record<string, unknown> | undefined
+    if (!row) return null
+    return {
+      ...this.rowToDocument(row, row.space_name as string),
+      content: (row.content as string) ?? ''
+    }
+  }
+
+  createDocument(spaceId: string, title: string, content = ''): SpaceDocumentDetail {
+    const meta = Object.fromEntries(
+      this.db.prepare('SELECT key, value FROM meta').all().map((r) => {
+        const row = r as { key: string; value: string }
+        return [row.key, row.value]
+      })
+    )
+    const id = uuid()
+    const ts = now()
+    this.db
+      .prepare(
+        `INSERT INTO documents (id, space_id, title, doc_type, content, updated_at, sync_pending)
+         VALUES (?, ?, ?, 'brief', ?, ?, 1)`
+      )
+      .run(id, spaceId, title, content, ts)
+    const userId = meta.current_user_id ?? uuid()
+    const userName = meta.current_user_name ?? 'You'
+    this.logActivity(spaceId, userId, userName, 'created document', 'document', id)
+    this.indexSearch('doc', id, spaceId, title, content)
+    const doc = this.getDocument(id)!
+    this.enqueueSync('documents', id, 'insert', doc)
+    return doc
+  }
+
+  updateDocument(id: string, patch: { title?: string; content?: string }): SpaceDocumentDetail {
+    const existing = this.getDocument(id)
+    if (!existing) throw new Error('Document not found')
+    const title = patch.title ?? existing.title
+    const content = patch.content ?? existing.content
+    const ts = now()
+    this.db
+      .prepare(`UPDATE documents SET title = ?, content = ?, updated_at = ?, sync_pending = 1 WHERE id = ?`)
+      .run(title, content, ts, id)
+    this.indexSearch('doc', id, existing.spaceId, title, content)
+    const doc = this.getDocument(id)!
+    this.enqueueSync('documents', id, 'update', doc)
+    return doc
+  }
+
+  listWorkspaceDocuments(): SpaceDocument[] {
+    const rows = this.db
+      .prepare(
+        `SELECT d.*, s.name as space_name FROM documents d
+         JOIN spaces s ON s.id = d.space_id
+         WHERE s.is_archived = 0
+         ORDER BY d.updated_at DESC`
+      )
+      .all()
+    return rows.map((r) => this.rowToDocument(r as Record<string, unknown>, (r as Record<string, unknown>).space_name as string))
+  }
+
+  listWorkspaceApprovals(): Approval[] {
+    const rows = this.db
+      .prepare(
+        `SELECT a.* FROM approvals a
+         JOIN spaces s ON s.id = a.space_id
+         WHERE s.is_archived = 0
+         ORDER BY a.updated_at DESC`
+      )
+      .all()
     return rows.map((r) => {
       const row = r as Record<string, unknown>
       return {
         id: row.id as string,
         spaceId: row.space_id as string,
+        taskId: (row.task_id as string) || null,
+        documentId: (row.document_id as string) || null,
+        status: row.status as Approval['status'],
         title: row.title as string,
-        docType: row.doc_type as string,
         updatedAt: row.updated_at as string
       }
     })
+  }
+
+  listWorkspaceFiles(): SpaceFile[] {
+    const rows = this.db
+      .prepare(
+        `SELECT f.* FROM space_files f
+         JOIN spaces s ON s.id = f.space_id
+         WHERE s.is_archived = 0
+         ORDER BY f.updated_at DESC`
+      )
+      .all()
+    return rows.map((r) => {
+      const row = r as Record<string, unknown>
+      return {
+        id: row.id as string,
+        spaceId: row.space_id as string,
+        fileName: row.file_name as string,
+        fileUrl: row.file_url as string,
+        mimeType: row.mime_type as string,
+        updatedAt: row.updated_at as string
+      }
+    })
+  }
+
+  createFile(spaceId: string, fileName: string, fileUrl: string): SpaceFile {
+    const id = uuid()
+    const ts = now()
+    this.db
+      .prepare(
+        `INSERT INTO space_files (id, space_id, file_name, file_url, mime_type, updated_at)
+         VALUES (?, ?, ?, ?, 'application/octet-stream', ?)`
+      )
+      .run(id, spaceId, fileName, fileUrl, ts)
+    const meta = Object.fromEntries(
+      this.db.prepare('SELECT key, value FROM meta').all().map((r) => {
+        const row = r as { key: string; value: string }
+        return [row.key, row.value]
+      })
+    )
+    this.logActivity(
+      spaceId,
+      meta.current_user_id ?? uuid(),
+      meta.current_user_name ?? 'You',
+      'added file',
+      'file',
+      id
+    )
+    return {
+      id,
+      spaceId,
+      fileName,
+      fileUrl,
+      mimeType: 'application/octet-stream',
+      updatedAt: ts
+    }
+  }
+
+  listWorkspaceTasks(): WorkspaceTask[] {
+    const rows = this.db
+      .prepare(
+        `SELECT t.*, s.name as space_name FROM tasks t
+         JOIN spaces s ON s.id = t.space_id
+         WHERE s.is_archived = 0 AND t.status NOT IN ('archived')
+         ORDER BY t.updated_at DESC LIMIT 500`
+      )
+      .all()
+    return rows.map((r) => {
+      const row = r as Record<string, unknown>
+      return { ...rowToTask(row), spaceName: row.space_name as string }
+    })
+  }
+
+  listWorkspaceMembers(): WorkspaceMember[] {
+    const rows = this.db
+      .prepare(
+        `SELECT user_id, name, email, role, avatar_color,
+                MAX(is_online) as is_online,
+                COUNT(DISTINCT space_id) as space_count
+         FROM space_members
+         GROUP BY user_id, name, email, role, avatar_color
+         ORDER BY name ASC`
+      )
+      .all()
+    return rows.map((r) => {
+      const row = r as Record<string, unknown>
+      return {
+        id: row.user_id as string,
+        spaceId: '',
+        userId: row.user_id as string,
+        role: row.role as SpaceMember['role'],
+        name: row.name as string,
+        email: row.email as string,
+        avatarColor: row.avatar_color as string,
+        isOnline: Boolean(row.is_online),
+        spaceCount: row.space_count as number
+      }
+    })
+  }
+
+  listWorkspaceActivity(limit = 40): WorkspaceActivity[] {
+    const rows = this.db
+      .prepare(
+        `SELECT a.*, s.name as space_name FROM space_activity a
+         JOIN spaces s ON s.id = a.space_id
+         WHERE s.is_archived = 0
+         ORDER BY a.created_at DESC LIMIT ?`
+      )
+      .all(limit)
+    return rows.map((r) => {
+      const row = r as Record<string, unknown>
+      return {
+        id: row.id as string,
+        spaceId: row.space_id as string,
+        userId: row.user_id as string,
+        userName: row.user_name as string,
+        action: row.action as string,
+        entityType: row.entity_type as string,
+        entityId: row.entity_id as string,
+        createdAt: row.created_at as string,
+        spaceName: row.space_name as string
+      }
+    })
+  }
+
+  listNotifications(limit = 30): NotificationItem[] {
+    const rows = this.db
+      .prepare(`SELECT * FROM notifications ORDER BY created_at DESC LIMIT ?`)
+      .all(limit)
+    return rows.map((r) => {
+      const row = r as Record<string, unknown>
+      return {
+        id: row.id as string,
+        spaceId: (row.space_id as string) || null,
+        title: row.title as string,
+        body: row.body as string,
+        kind: row.kind as string,
+        read: Boolean(row.read),
+        createdAt: row.created_at as string
+      }
+    })
+  }
+
+  getWorkspaceSummary(): WorkspaceSummary {
+    const spaceCount = (
+      this.db.prepare(`SELECT COUNT(*) as c FROM spaces WHERE is_archived = 0`).get() as { c: number }
+    ).c
+    const openTasks = (
+      this.db
+        .prepare(
+          `SELECT COUNT(*) as c FROM tasks t
+           JOIN spaces s ON s.id = t.space_id
+           WHERE s.is_archived = 0 AND t.status NOT IN ('completed', 'archived')`
+        )
+        .get() as { c: number }
+    ).c
+    const overdueTasks = (
+      this.db
+        .prepare(
+          `SELECT COUNT(*) as c FROM tasks t
+           JOIN spaces s ON s.id = t.space_id
+           WHERE s.is_archived = 0 AND t.due_date IS NOT NULL AND t.due_date < ?
+           AND t.status NOT IN ('completed', 'archived')`
+        )
+        .get(now()) as { c: number }
+    ).c
+    const pendingApprovals = (
+      this.db
+        .prepare(
+          `SELECT COUNT(*) as c FROM approvals a
+           JOIN spaces s ON s.id = a.space_id
+           WHERE s.is_archived = 0 AND a.status IN ('requested', 'in_review')`
+        )
+        .get() as { c: number }
+    ).c
+    const documentCount = (
+      this.db
+        .prepare(
+          `SELECT COUNT(*) as c FROM documents d JOIN spaces s ON s.id = d.space_id WHERE s.is_archived = 0`
+        )
+        .get() as { c: number }
+    ).c
+    const fileCount = (
+      this.db
+        .prepare(
+          `SELECT COUNT(*) as c FROM space_files f JOIN spaces s ON s.id = f.space_id WHERE s.is_archived = 0`
+        )
+        .get() as { c: number }
+    ).c
+    const onlineMembers = (
+      this.db.prepare(`SELECT COUNT(DISTINCT user_id) as c FROM space_members WHERE is_online = 1`).get() as {
+        c: number
+      }
+    ).c
+    return {
+      spaceCount,
+      openTasks,
+      overdueTasks,
+      pendingApprovals,
+      documentCount,
+      fileCount,
+      onlineMembers
+    }
   }
 
   listComments(taskId: string): SpaceComment[] {

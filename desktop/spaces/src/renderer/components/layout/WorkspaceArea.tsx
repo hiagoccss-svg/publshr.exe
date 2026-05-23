@@ -9,7 +9,7 @@ import { TimelineView } from '../tasks/TimelineView'
 import { WorkloadView } from '../tasks/WorkloadView'
 import { PriorityMatrixView } from '../tasks/PriorityMatrixView'
 import { EmptySpaceState } from '../spaces/EmptySpaceState'
-import { PlaceholderSection } from '../spaces/PlaceholderSection'
+import { EnterpriseSectionView } from '../enterprise/EnterpriseSections'
 import { SpacesBreadcrumb } from '../spaces/SpacesBreadcrumb'
 import { WhiteboardView } from '../whiteboard/WhiteboardView'
 import { SPACES_VIEW_TABS } from '../../../../../../shared/spaces/view-modes'
@@ -27,7 +27,13 @@ export function WorkspaceArea(): React.ReactElement {
   const createTask = useSpacesStore((s) => s.createTask)
 
   if (activeSection !== 'spaces') {
-    return <PlaceholderSection section={activeSection} />
+    return (
+      <main className="glass-workspace-flat flex min-w-0 flex-1 flex-col overflow-hidden">
+        <div className="min-h-0 flex-1 overflow-auto">
+          <EnterpriseSectionView section={activeSection} />
+        </div>
+      </main>
+    )
   }
 
   if (!activeSpaceId) {
