@@ -44,7 +44,9 @@ final class AppLifecycleService: ObservableObject {
     private func refreshReachabilityOnce() async {
         async let githubUp = checkHEADReachable("https://github.com")
         async let supabaseUp = checkHEADReachable(SupabaseConfig.url.absoluteString)
-        isNetworkReachable = await githubUp || await supabaseUp
+        let github = await githubUp
+        let supabase = await supabaseUp
+        isNetworkReachable = github || supabase
     }
 
     func stop() {
