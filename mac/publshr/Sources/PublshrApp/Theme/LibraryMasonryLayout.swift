@@ -11,10 +11,11 @@ struct LibraryMasonryLayout: Layout {
     }
 
     func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
-        let width = proposal.width ?? 0
+        let width = sanitizedWidth(proposal.width)
         guard width > 0, !subviews.isEmpty else { return .zero }
         let colCount = effectiveColumns(forWidth: width)
-        let colWidth = (width - spacing * CGFloat(colCount - 1)) / CGFloat(colCount)
+        let colWidth = columnWidth(totalWidth: width, columnCount: colCount)
+        guard colWidth > 0 else { return .zero }
         var columnHeights = Array(repeating: CGFloat(0), count: colCount)
         for subview in subviews {
             let size = subview.sizeThatFits(.init(width: colWidth, height: nil))
@@ -26,8 +27,11 @@ struct LibraryMasonryLayout: Layout {
     }
 
     func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
-        let colCount = effectiveColumns(forWidth: bounds.width)
-        let colWidth = (bounds.width - spacing * CGFloat(colCount - 1)) / CGFloat(colCount)
+        let width = sanitizedWidth(bounds.width)
+        guard width > 0, !subviews.isEmpty else { return }
+        let colCount = effectiveColumns(forWidth: width)
+        let colWidth = columnWidth(totalWidth: width, columnCount: colCount)
+        guard colWidth > 0 else { return }
         var columnHeights = Array(repeating: CGFloat(0), count: colCount)
         var columnX = Array(repeating: CGFloat(0), count: colCount)
         for i in 0..<colCount {
@@ -43,11 +47,29 @@ struct LibraryMasonryLayout: Layout {
         }
     }
 
+    private func sanitizedWidth(_ width: CGFloat?) -> CGFloat {
+        guard let width, width.isFinite, width > 0 else { return 0 }
+        return width
+    }
+
+    private func columnWidth(totalWidth: CGFloat, columnCount: Int) -> CGFloat {
+        guard columnCount > 0, totalWidth.isFinite else { return 0 }
+        let gutters = spacing * CGFloat(max(0, columnCount - 1))
+        let usable = totalWidth - gutters
+        guard usable.isFinite, usable > 0 else { return 0 }
+        return usable / CGFloat(columnCount)
+    }
+
     private func effectiveColumns(forWidth width: CGFloat) -> Int {
+        guard width.isFinite, width > 0 else { return 1 }
         let maxCols = LibraryGlassDesign.masonryMaxColumns
         let minW = LibraryGlassDesign.masonryMinColumnWidth
-        let fit = max(1, Int((width + spacing) / (minW + spacing)))
-        return min(maxCols, fit, columns)
+        let unit = minW + spacing
+        guard unit.isFinite, unit > 0 else { return 1 }
+        let raw = (width + spacing) / unit
+        guard raw.isFinite, raw > 0 else { return 1 }
+        let fit = max(1, min(Int(raw.rounded(.down)), Int.max))
+        return min(columns, min(maxCols, fit))
     }
 }
 
