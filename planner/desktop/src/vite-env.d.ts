@@ -9,7 +9,16 @@ interface ImportMeta {
   readonly env: ImportMetaEnv
 }
 
+import type { Session } from '@supabase/supabase-js'
+
 interface PlannerAPI {
+  getAuthSession: () => Promise<Session | null>
+  signIn: (email: string, password: string) => Promise<Session>
+  signUp: (email: string, password: string, displayName?: string) => Promise<Session | null>
+  signOut: () => Promise<boolean>
+  setAuthSession: (session: Session) => Promise<boolean>
+  clearAuthSession: () => Promise<boolean>
+  refreshAuthSession: () => Promise<Session | null>
   getPreference: (key: string) => Promise<string | null>
   setPreference: (key: string, value: string) => Promise<boolean>
   getPlannerItemsCache: (workspaceId: string) => Promise<unknown[]>
