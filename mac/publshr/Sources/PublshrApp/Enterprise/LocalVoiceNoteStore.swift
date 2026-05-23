@@ -18,9 +18,8 @@ enum LocalVoiceNoteStore {
     }
 
     private static func baseDirectory(workspaceId: UUID, channelId: UUID) -> URL {
-        let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-        return support
-            .appendingPathComponent("Publshr/voice-notes", isDirectory: true)
+        LocalDataLayout.ensureRootExists()
+        return LocalDataLayout.voiceNotesDirectory
             .appendingPathComponent(workspaceId.uuidString, isDirectory: true)
             .appendingPathComponent(channelId.uuidString, isDirectory: true)
     }

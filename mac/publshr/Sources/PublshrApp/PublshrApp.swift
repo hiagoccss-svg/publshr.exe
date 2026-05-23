@@ -9,6 +9,7 @@ struct PublshrApp: App {
     @StateObject private var subscription = SubscriptionService()
     @StateObject private var enterprise = EnterpriseWorkspaceService()
     @StateObject private var tabStore = WorkspaceTabStore()
+    @ObservedObject private var cloudHealth = CloudPlatformHealth.shared
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
     init() {
@@ -25,11 +26,13 @@ struct PublshrApp: App {
                 .environmentObject(subscription)
                 .environmentObject(enterprise)
                 .environmentObject(tabStore)
+                .environmentObject(cloudHealth)
                 .onOpenURL { url in
                     auth.handleIncomingURL(url)
                 }
                 .task {
                     configureLifecycle()
+                    cloudHealth.startPolling(intervalSeconds: AppReleaseConfig.livePollIntervalSeconds)
                     updates.startAutomaticChecks()
                 }
                 .onChange(of: auth.flowState) { _, state in
@@ -155,11 +158,12 @@ struct PublshrApp: App {
             await auth.reconcileCloudSession(unlockMethod: nil)
         }
         await auth.refreshSupabaseConnection()
-        await chat.refreshAfterReconnect()
-        await spaces.reload()
-        await chat.loadWorkspaceProjects()
-        await chat.loadPlannerTasks()
-        await syncEnterpriseServices()
+        async let chatSync = chat.refreshAfterReconnect()
+        async let spacesSync = spaces.reload()
+        async let enterpriseSync = syncEnterpriseServices()
+        await chatSync
+        await spacesSync
+        await enterpriseSync
         updates.recordCloudSync(summary: auth.supabaseStatusLine)
     }
 
