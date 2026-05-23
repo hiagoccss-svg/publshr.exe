@@ -330,6 +330,30 @@ struct SpaceTaskRecord: Codable, Identifiable, Equatable {
         sortOrder = try c.decodeIfPresent(Double.self, forKey: .sortOrder) ?? 0
     }
 
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+        try c.encode(spaceId, forKey: .spaceId)
+        try c.encodeIfPresent(listId, forKey: .listId)
+        try c.encode(title, forKey: .title)
+        try c.encode(description, forKey: .description)
+        try c.encode(status.databaseValue, forKey: .status)
+        if let dbPriority = TaskPriorityWire.toDatabase(priority.rawValue) {
+            try c.encode(dbPriority, forKey: .priority)
+        } else {
+            try c.encodeNil(forKey: .priority)
+        }
+        try c.encodeIfPresent(assigneeId, forKey: .assigneeId)
+        try c.encodeIfPresent(startDate, forKey: .startDate)
+        try c.encodeIfPresent(dueDate, forKey: .dueDate)
+        try c.encode(tags, forKey: .tags)
+        try c.encode(checklist, forKey: .checklist)
+        try c.encode(sortOrder, forKey: .sortOrder)
+        if status == .archived {
+            try c.encode(true, forKey: .isArchived)
+        }
+    }
+
     var checklistDoneCount: Int {
         checklist.filter(\.done).count
     }
