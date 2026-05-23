@@ -39,6 +39,13 @@ final class SpacesViewModel: ObservableObject {
     @Published var expandedFolderIds: Set<UUID> = []
     @Published var spacesHomeOpen = false
     @Published var spaceSettingsSpaceId: UUID?
+    @Published var activeSection: SpacesEnterpriseSection = .spaces
+    @Published private(set) var workspaceSummary: SpacesWorkspaceSummary?
+    @Published private(set) var workspaceDocuments: [SpaceDocumentRecord] = []
+    @Published private(set) var workspaceApprovals: [SpaceApprovalRecord] = []
+    @Published private(set) var workspaceFiles: [SpaceFileRecord] = []
+    @Published private(set) var workspaceTasks: [SpaceTaskRecord] = []
+    @Published private(set) var workspaceActivity: [SpaceActivityRecord] = []
 
     enum TaskViewMode: String, CaseIterable, Identifiable {
         case overview, list, board, whiteboard, calendar, timeline, workload, priority
@@ -141,6 +148,7 @@ final class SpacesViewModel: ObservableObject {
             }
 
             persistToCache(workspaceId: workspaceId)
+            await loadWorkspaceData()
 
             if let selected = selectedSpaceId, loaded.contains(where: { $0.id == selected }) {
                 await loadSpaceContext(selected)
@@ -181,9 +189,84 @@ final class SpacesViewModel: ObservableObject {
         guard let service, let workspaceId else { return }
         do {
             spaces = try await service.fetchSpaces(workspaceId: workspaceId)
+            await loadWorkspaceData()
         } catch {
             errorMessage = error.localizedDescription
         }
+    }
+
+    // MARK: - Enterprise operations sidebar
+
+    func setActiveSection(_ section: SpacesEnterpriseSection) {
+        activeSection = section
+        if section == .spaces {
+            return
+        }
+        selectedSpaceId = nil
+        spacesHomeOpen = false
+        Task { await loadWorkspaceData() }
+    }
+
+    func openSpacesSection() {
+        activeSection = .spaces
+    }
+
+    func loadWorkspaceData() async {
+        guard let service, !spaces.isEmpty else {
+            workspaceSummary = spaces.isEmpty
+                ? SpacesWorkspaceSummary(spaceCount: 0, openTasks: 0, overdueTasks: 0, documentCount: 0, pendingApprovals: 0)
+                : nil
+            workspaceDocuments = []
+            workspaceApprovals = []
+            workspaceFiles = []
+            workspaceTasks = []
+            workspaceActivity = []
+            return
+        }
+        let spaceIds = spaces.map(\.id)
+        do {
+            async let docs = service.fetchWorkspaceDocuments(spaceIds: spaceIds)
+            async let approvals = service.fetchWorkspaceApprovals(spaceIds: spaceIds)
+            async let files = service.fetchWorkspaceFiles(spaceIds: spaceIds)
+            async let allTasks = service.fetchWorkspaceTasks(spaceIds: spaceIds)
+            async let activity = service.fetchWorkspaceActivity(spaceIds: spaceIds)
+            let (documents, approvalRows, fileRows, tasks, activityRows) = try await (
+                docs, approvals, files, allTasks, activity
+            )
+            workspaceDocuments = documents
+            workspaceApprovals = approvalRows
+            workspaceFiles = fileRows
+            workspaceTasks = tasks
+            workspaceActivity = activityRows
+            let open = tasks.filter { $0.status != .completed }
+            let overdue = open.filter { isOverdue(dueDate: $0.dueDate) }
+            let pending = approvalRows.filter(\.isPending)
+            workspaceSummary = SpacesWorkspaceSummary(
+                spaceCount: spaces.count,
+                openTasks: open.count,
+                overdueTasks: overdue.count,
+                documentCount: documents.count,
+                pendingApprovals: pending.count
+            )
+        } catch {
+            errorMessage = friendlySpacesError(error)
+        }
+    }
+
+    func spaceName(for spaceId: UUID) -> String {
+        spaces.first(where: { $0.id == spaceId })?.name ?? "Space"
+    }
+
+    func spacesFiltered(type: String) -> [SpaceRecord] {
+        spaces.filter { $0.type == type && !$0.isArchived }
+    }
+
+    private func isOverdue(dueDate: String?) -> Bool {
+        guard let dueDate, !dueDate.isEmpty else { return false }
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withFullDate, .withDashSeparatorInDate]
+        guard let date = formatter.date(from: String(dueDate.prefix(10))) else { return false }
+        return date < Calendar.current.startOfDay(for: Date())
     }
 
     private func refreshTasksFromRealtime() async {
@@ -197,6 +280,7 @@ final class SpacesViewModel: ObservableObject {
             if navigationBackStack.count > 32 { navigationBackStack.removeFirst() }
             navigationForwardStack.removeAll()
         }
+        activeSection = .spaces
         selectedSpaceId = id
         spacesHomeOpen = false
         selectedFolderId = nil
@@ -208,6 +292,7 @@ final class SpacesViewModel: ObservableObject {
     }
 
     func openSpacesHome() {
+        activeSection = .spaces
         selectedSpaceId = nil
         selectedFolderId = nil
         selectedListId = nil
@@ -293,7 +378,7 @@ final class SpacesViewModel: ObservableObject {
         guard let service else { return }
         do {
             tasks = try await service.fetchTasks(spaceId: spaceId, listId: selectedListId)
-            if let workspaceId {
+            if workspaceId != nil {
                 localStore.saveTasks(tasks, spaceId: spaceId)
             }
         } catch {

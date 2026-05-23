@@ -362,6 +362,69 @@ final class SpacesService {
         return row
     }
 
+    // MARK: - Workspace-wide (enterprise operations)
+
+    func fetchWorkspaceDocuments(spaceIds: [UUID]) async throws -> [SpaceDocumentRecord] {
+        guard !spaceIds.isEmpty else { return [] }
+        return try await client
+            .from("documents")
+            .select()
+            .in("space_id", values: spaceIds.map(\.uuidString))
+            .order("updated_at", ascending: false)
+            .limit(100)
+            .execute()
+            .value
+    }
+
+    func fetchWorkspaceApprovals(spaceIds: [UUID]) async throws -> [SpaceApprovalRecord] {
+        guard !spaceIds.isEmpty else { return [] }
+        return try await client
+            .from("approvals")
+            .select()
+            .in("space_id", values: spaceIds.map(\.uuidString))
+            .order("updated_at", ascending: false)
+            .limit(100)
+            .execute()
+            .value
+    }
+
+    func fetchWorkspaceFiles(spaceIds: [UUID]) async throws -> [SpaceFileRecord] {
+        guard !spaceIds.isEmpty else { return [] }
+        return try await client
+            .from("space_files")
+            .select()
+            .in("space_id", values: spaceIds.map(\.uuidString))
+            .order("updated_at", ascending: false)
+            .limit(100)
+            .execute()
+            .value
+    }
+
+    func fetchWorkspaceTasks(spaceIds: [UUID]) async throws -> [SpaceTaskRecord] {
+        guard !spaceIds.isEmpty else { return [] }
+        return try await client
+            .from("tasks")
+            .select()
+            .in("space_id", values: spaceIds.map(\.uuidString))
+            .neq("status", value: SpaceTaskStatus.archived.rawValue)
+            .order("updated_at", ascending: false)
+            .limit(200)
+            .execute()
+            .value
+    }
+
+    func fetchWorkspaceActivity(spaceIds: [UUID], limit: Int = 50) async throws -> [SpaceActivityRecord] {
+        guard !spaceIds.isEmpty else { return [] }
+        return try await client
+            .from("space_activity")
+            .select()
+            .in("space_id", values: spaceIds.map(\.uuidString))
+            .order("created_at", ascending: false)
+            .limit(limit)
+            .execute()
+            .value
+    }
+
     // MARK: - Profiles
 
     func fetchWorkspaceProfiles(workspaceId: UUID) async throws -> [Profile] {

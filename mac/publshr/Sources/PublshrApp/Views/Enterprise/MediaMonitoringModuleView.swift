@@ -11,7 +11,7 @@ struct MediaMonitoringModuleView: View {
                 .foregroundStyle(CursorTheme.foregroundDim)
             Text("Media Monitoring")
                 .font(.system(size: 18, weight: .semibold))
-            Text("Coverage feeds, sentiment, and clipping detail run in the dedicated desktop app.")
+            Text("Coverage feeds, sentiment, and clipping detail run in Publshr Media Monitoring (live Supabase).")
                 .font(.system(size: 13))
                 .foregroundStyle(CursorTheme.foregroundMuted)
                 .multilineTextAlignment(.center)

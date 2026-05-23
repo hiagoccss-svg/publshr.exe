@@ -40,6 +40,15 @@ struct SpacesRootView: View {
 
     @ViewBuilder
     private var workspaceContent: some View {
+        if spaces.activeSection != .spaces {
+            SpacesEnterpriseSectionsView(spaces: spaces)
+        } else {
+            spacesWorkspaceContent
+        }
+    }
+
+    @ViewBuilder
+    private var spacesWorkspaceContent: some View {
         VStack(spacing: 0) {
             Group {
                 if spaces.isLoading && spaces.spaces.isEmpty {
