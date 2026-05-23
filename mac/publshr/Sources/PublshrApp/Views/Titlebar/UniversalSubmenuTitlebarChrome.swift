@@ -36,7 +36,8 @@ struct SpacesSubmenuTitlebarChrome: View {
                 .textFieldStyle(.plain)
                 .font(.system(size: MacSystemChrome.fieldFontSize))
                 .foregroundStyle(LibraryGlassDesign.ink)
-                .frame(maxWidth: .infinity, alignment: .leading)
+                .frame(maxWidth: .infinity)
+                .frame(height: AppWindowChromeMetrics.controlSize, alignment: .leading)
             if !spaces.searchQuery.isEmpty {
                 TitlebarToolbarSlot {
                     Button {

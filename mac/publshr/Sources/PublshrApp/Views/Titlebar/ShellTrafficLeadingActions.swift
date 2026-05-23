@@ -1,8 +1,7 @@
 import SwiftUI
 
-/// Controls immediately after the macOS traffic-light cluster (bar menu + optional back/forward).
+/// Controls immediately after the macOS traffic-light cluster (back / forward when the bar menu is expanded).
 struct ShellTrafficLeadingActions: View {
-    @EnvironmentObject private var tabStore: WorkspaceTabStore
     @EnvironmentObject private var chat: ChatViewModel
     @EnvironmentObject private var spaces: SpacesViewModel
     @Binding var module: AppModule
@@ -10,18 +9,6 @@ struct ShellTrafficLeadingActions: View {
 
     var body: some View {
         HStack(alignment: .center, spacing: AppWindowChromeMetrics.toolbarItemSpacing) {
-            TitlebarChromeIconButton(
-                systemName: tabStore.barMenuExpanded ? "rectangle.leadinghalf.filled" : "rectangle.leadinghalf.inset.filled",
-                help: tabStore.barMenuExpanded
-                    ? "Collapse main menu to icon bar"
-                    : "Expand main menu",
-                isActive: !tabStore.barMenuExpanded
-            ) {
-                withAnimation(.easeInOut(duration: 0.15)) {
-                    tabStore.barMenuExpanded.toggle()
-                }
-            }
-
             if !compact {
                 TitlebarChromeIconButton(
                     systemName: "chevron.left",
