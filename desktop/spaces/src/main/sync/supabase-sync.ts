@@ -82,13 +82,20 @@ export class SupabaseSyncService {
     }
   }
 
+  /** Production `space_type` enum: project | folder | list | board | channel */
+  private mapSpaceTypeForCloud(type: unknown): string {
+    const t = String(type ?? 'general')
+    if (['project', 'folder', 'list', 'board', 'channel'].includes(t)) return t
+    return 'project'
+  }
+
   private mapSpace(p: Record<string, unknown>) {
     return {
       id: p.id,
       workspace_id: p.workspaceId,
       name: p.name,
       description: p.description ?? '',
-      type: p.type ?? 'general',
+      type: this.mapSpaceTypeForCloud(p.type),
       status: p.status ?? 'active',
       owner_id: p.ownerId,
       color: p.color ?? '#3d5a80',

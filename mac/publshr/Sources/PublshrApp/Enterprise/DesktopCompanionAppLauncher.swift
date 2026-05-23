@@ -5,8 +5,16 @@ import Foundation
 enum DesktopCompanionAppLauncher {
     enum Product: String {
         case mediaMonitoring = "Publshr Media Monitoring"
+        case spaces = "Publshr Spaces"
 
         var bundleName: String { "\(rawValue).app" }
+
+        var bundleIdentifier: String {
+            switch self {
+            case .mediaMonitoring: return "com.publshr.media-monitoring"
+            case .spaces: return "com.publshr.spaces"
+            }
+        }
     }
 
     @discardableResult
@@ -19,7 +27,7 @@ enum DesktopCompanionAppLauncher {
             NSWorkspace.shared.open(url)
             return true
         }
-        if let appURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: "com.publshr.media-monitoring") {
+        if let appURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: product.bundleIdentifier) {
             NSWorkspace.shared.open(appURL)
             return true
         }
@@ -33,6 +41,12 @@ enum DesktopCompanionAppLauncher {
             Install Media Monitoring from the repo desktop bundle, then open “\(product.rawValue)” from Applications.
 
             Dev: cd desktop/media-monitoring && npm install && npm run dev
+            """
+        case .spaces:
+            return """
+            Install Spaces from the desktop bundle, then open “\(product.rawValue)” from Applications.
+
+            Dev: cd desktop/spaces && npm install && npm run dev
             """
         }
     }

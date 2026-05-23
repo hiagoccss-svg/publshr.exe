@@ -19,6 +19,8 @@ export function MonitorCreatePanel({ onCreated }: Props) {
   const [languages, setLanguages] = useState<string[]>(['en'])
   const [client, setClient] = useState('')
   const [campaign, setCampaign] = useState('')
+  const [alertDesktop, setAlertDesktop] = useState(true)
+  const [alertMinRelevance, setAlertMinRelevance] = useState(40)
   const [saving, setSaving] = useState(false)
 
   if (!showCreatePanel) return null
@@ -39,7 +41,12 @@ export function MonitorCreatePanel({ onCreated }: Props) {
         regions: regions.length ? regions : undefined,
         language_filters: languages,
         linked_client: client.trim() || undefined,
-        linked_campaign: campaign.trim() || undefined
+        linked_campaign: campaign.trim() || undefined,
+        alert_settings: {
+          desktop: alertDesktop,
+          min_relevance: alertMinRelevance,
+          sentiment: []
+        }
       })
       setActiveMonitor((monitor as { id: string }).id)
       await window.publshr.startMonitoring((monitor as { id: string }).id)
@@ -117,6 +124,28 @@ export function MonitorCreatePanel({ onCreated }: Props) {
 
         <Field label="Linked campaign">
           <input className="input-field" value={campaign} onChange={(e) => setCampaign(e.target.value)} />
+        </Field>
+
+        <Field label="Alert rules">
+          <label className="flex items-center gap-2 text-[11px] text-content-muted">
+            <input
+              type="checkbox"
+              checked={alertDesktop}
+              onChange={(e) => setAlertDesktop(e.target.checked)}
+            />
+            Desktop notification on new coverage
+          </label>
+          <div className="mt-2">
+            <span className="text-[10px] text-content-dim">Min relevance score</span>
+            <input
+              type="number"
+              min={0}
+              max={100}
+              className="input-field mt-1 w-20"
+              value={alertMinRelevance}
+              onChange={(e) => setAlertMinRelevance(Number(e.target.value) || 0)}
+            />
+          </div>
         </Field>
 
         <p className="text-[10px] text-content-dim leading-relaxed">

@@ -85,12 +85,23 @@ struct SpacesWhiteboardView: View {
             Text(selectedTitle)
                 .font(.system(size: 16, weight: .semibold))
             Text(
-                "The whiteboard canvas matches the Electron renderer (tldraw + Supabase). Use Spaces in desktop/spaces for editing; macOS embeds the same web bundle in Phase 2 (see shared/spaces/PARITY.md)."
+                "Draw on the infinite canvas in Publshr Spaces (tldraw + Supabase). Boards you create here sync to the same cloud workspace."
             )
             .font(.system(size: 12))
             .foregroundStyle(CursorTheme.foregroundMuted)
             .multilineTextAlignment(.center)
             .frame(maxWidth: 420)
+            Button("Open canvas in Spaces") {
+                if !DesktopCompanionAppLauncher.open(.spaces) {
+                    NSPasteboard.general.clearContents()
+                    NSPasteboard.general.setString(
+                        "cd desktop/spaces && npm install && npm run dev",
+                        forType: .string
+                    )
+                }
+            }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.regular)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding(24)

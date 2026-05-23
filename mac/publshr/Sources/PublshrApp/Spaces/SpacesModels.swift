@@ -33,6 +33,14 @@ enum SpaceTypeOption: String, CaseIterable, Identifiable {
 
     var id: String { rawValue }
 
+    /// Maps UI labels to production `space_type` enum (`project`, `folder`, `list`, `board`, `channel`).
+    var databaseValue: String {
+        switch self {
+        case .general, .project: return "project"
+        case .campaign: return "channel"
+        }
+    }
+
     var label: String {
         switch self {
         case .general: return "General"
@@ -131,7 +139,7 @@ struct SpaceRecord: Codable, Identifiable, Equatable {
         workspaceId = try c.decode(UUID.self, forKey: .workspaceId)
         name = try c.decode(String.self, forKey: .name)
         description = try c.decodeIfPresent(String.self, forKey: .description) ?? ""
-        type = try c.decodeIfPresent(String.self, forKey: .type) ?? "general"
+        type = try c.decodeIfPresent(String.self, forKey: .type) ?? "project"
         status = try c.decodeIfPresent(String.self, forKey: .status) ?? "active"
         color = try c.decodeIfPresent(String.self, forKey: .color) ?? "#3d5a80"
         isPinned = try c.decodeIfPresent(Bool.self, forKey: .isPinned) ?? false

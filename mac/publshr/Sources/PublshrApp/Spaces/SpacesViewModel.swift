@@ -120,7 +120,14 @@ final class SpacesViewModel: ObservableObject {
         defer { isLoading = false }
 
         do {
-            let loaded = try await service.fetchSpaces(workspaceId: workspaceId)
+            var loaded = try await service.fetchSpaces(workspaceId: workspaceId)
+            if loaded.isEmpty, let userId {
+                loaded = try await ensureDefaultSpace(
+                    service: service,
+                    workspaceId: workspaceId,
+                    ownerId: userId
+                )
+            }
             spaces = loaded
             let profs = try await service.fetchWorkspaceProfiles(workspaceId: workspaceId)
             profiles = Dictionary(uniqueKeysWithValues: profs.map { ($0.id, $0) })
@@ -159,6 +166,27 @@ final class SpacesViewModel: ObservableObject {
                 loadFromLocalCache(workspaceId: workspaceId)
             }
         }
+    }
+
+    /// Creates a default space when the workspace has none (trigger may have missed on older rows).
+    private func ensureDefaultSpace(
+        service: SpacesService,
+        workspaceId: UUID,
+        ownerId: UUID
+    ) async throws -> [SpaceRecord] {
+        let space = try await service.createSpace(
+            workspaceId: workspaceId,
+            ownerId: ownerId,
+            name: "General",
+            type: "project"
+        )
+        _ = try await service.createFolder(spaceId: space.id, name: "Projects")
+        if let folder = try await service.fetchFolders(spaceId: space.id).first {
+            _ = try await service.createList(spaceId: space.id, folderId: folder.id, name: "List")
+        } else {
+            _ = try await service.createList(spaceId: space.id, folderId: nil, name: "List")
+        }
+        return try await service.fetchSpaces(workspaceId: workspaceId)
     }
 
     private func loadFromLocalCache(workspaceId: UUID) {
@@ -554,7 +582,7 @@ final class SpacesViewModel: ObservableObject {
                 workspaceId: workspaceId,
                 ownerId: userId,
                 name: name,
-                type: newSpaceType.rawValue
+                type: newSpaceType.databaseValue
             )
             let description = newSpaceDescription.trimmingCharacters(in: .whitespacesAndNewlines)
             if !description.isEmpty {
