@@ -303,12 +303,41 @@ final class ChatViewModel: ObservableObject {
     }
 
     private func partitionChannels(_ all: [ChatChannel]) {
-        channels = all
+        let deduped = deduplicatedSidebarChannels(all)
+        channels = deduped
             .filter { $0.kind == .channel }
             .sorted { $0.sidebarTitle.localizedCaseInsensitiveCompare($1.sidebarTitle) == .orderedAscending }
-        directMessages = all
+        directMessages = deduped
             .filter { $0.kind == .dm || $0.kind == .group }
             .sorted { $0.sidebarTitle.localizedCaseInsensitiveCompare($1.sidebarTitle) == .orderedAscending }
+    }
+
+    /// Collapse duplicate rows from cache/realtime (same id, or same kind+name keeping newest activity).
+    private func deduplicatedSidebarChannels(_ all: [ChatChannel]) -> [ChatChannel] {
+        var byId: [UUID: ChatChannel] = [:]
+        for ch in all {
+            if let existing = byId[ch.id] {
+                byId[ch.id] = preferredChannel(existing, ch)
+            } else {
+                byId[ch.id] = ch
+            }
+        }
+        var byNameKey: [String: ChatChannel] = [:]
+        for ch in byId.values {
+            let key = "\(ch.kind.rawValue):\(ch.name.lowercased())"
+            if let existing = byNameKey[key] {
+                byNameKey[key] = preferredChannel(existing, ch)
+            } else {
+                byNameKey[key] = ch
+            }
+        }
+        return Array(byNameKey.values)
+    }
+
+    private func preferredChannel(_ a: ChatChannel, _ b: ChatChannel) -> ChatChannel {
+        let aDate = a.lastMessageAt ?? a.updatedAt
+        let bDate = b.lastMessageAt ?? b.updatedAt
+        return bDate > aDate ? b : a
     }
 
     // MARK: - Channel selection
@@ -700,7 +729,9 @@ final class ChatViewModel: ObservableObject {
                 description: description,
                 createdBy: userId
             )
-            channels.insert(ch, at: 0)
+            if !channels.contains(where: { $0.id == ch.id }) {
+                channels.insert(ch, at: 0)
+            }
             selectChannel(ch)
         } catch {
             errorMessage = error.localizedDescription

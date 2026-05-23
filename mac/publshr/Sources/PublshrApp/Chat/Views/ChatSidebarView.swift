@@ -31,13 +31,15 @@ struct ChatSidebarView: View {
                             }
                         }
                     }
-                    .padding(.bottom, 4)
+                    .padding(.bottom, chat.sidebarHub == .channels ? 6 : 4)
                 }
                 .frame(minHeight: 0, maxHeight: .infinity)
             }
             .frame(minHeight: 0, maxHeight: .infinity)
         } footer: {
-            layoutFooter
+            if chat.sidebarHub == .channels {
+                layoutFooter
+            }
         }
         .preferredColorScheme(.light)
         .onAppear { normalizeSidebarFilterIfNeeded() }
@@ -61,18 +63,68 @@ struct ChatSidebarView: View {
     // MARK: - Filters (ClickUp: tap again to clear; flat on chrome)
 
     private var filterBar: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 6) {
-                ForEach(ChatSidebarFilter.allCases) { filter in
-                    filterPill(filter)
+        HStack(spacing: 6) {
+            filterPickerMenu
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 6) {
+                    ForEach(quickSidebarFilters) { filter in
+                        filterPill(filter)
+                    }
+                }
+                .padding(.vertical, 4)
+            }
+        }
+        .padding(.horizontal, LibraryGlassDesign.sidebarRowHorizontal)
+        .padding(.top, 2)
+        .frame(height: ChatClickUpDesign.filterBarHeight, alignment: .center)
+    }
+
+    /// ClickUp primary filters — All lives in the dropdown; chips are quick toggles.
+    private var quickSidebarFilters: [ChatSidebarFilter] {
+        [.unread, .mentions, .pinned, .dms, .channels]
+    }
+
+    private var filterPickerMenu: some View {
+        Menu {
+            ForEach(ChatSidebarFilter.allCases) { filter in
+                Button {
+                    if chat.sidebarFilter == filter, filter != .all {
+                        chat.setSidebarFilter(.all)
+                    } else {
+                        chat.setSidebarFilter(filter)
+                    }
+                } label: {
+                    if chat.sidebarFilter == filter {
+                        Label(filter.label, systemImage: "checkmark")
+                    } else {
+                        Text(filter.label)
+                    }
                 }
             }
-            .padding(.horizontal, LibraryGlassDesign.sidebarRowHorizontal)
-            .padding(.vertical, 4)
+        } label: {
+            HStack(spacing: 4) {
+                Text(chat.sidebarFilter.label)
+                    .font(.system(size: 11, weight: .semibold))
+                    .lineLimit(1)
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 9, weight: .bold))
+            }
+            .foregroundStyle(LibraryGlassDesign.ink)
+            .padding(.horizontal, ChatClickUpDesign.filterPillHPadding)
+            .padding(.vertical, 5)
+            .background(
+                Capsule(style: .continuous)
+                    .fill(LibraryGlassDesign.sidebarSelection)
+            )
+            .overlay(
+                Capsule(style: .continuous)
+                    .strokeBorder(LibraryGlassDesign.sidebarSelectionStroke, lineWidth: 1)
+            )
+            .fixedSize(horizontal: true, vertical: false)
         }
-        .padding(.top, 2)
-        .frame(height: ChatClickUpDesign.filterBarHeight)
-        .clipped()
+        .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
+        .help("Filter conversations")
     }
 
     private func filterPill(_ filter: ChatSidebarFilter) -> some View {
@@ -87,6 +139,8 @@ struct ChatSidebarView: View {
             Text(filter.label)
                 .font(.system(size: 11, weight: selected ? .semibold : .medium))
                 .foregroundStyle(selected ? LibraryGlassDesign.ink : LibraryGlassDesign.inkMuted)
+                .lineLimit(1)
+                .fixedSize(horizontal: true, vertical: false)
                 .padding(.horizontal, ChatClickUpDesign.filterPillHPadding)
                 .padding(.vertical, 5)
                 .background(
@@ -212,17 +266,17 @@ struct ChatSidebarView: View {
             .padding(.vertical, 8)
     }
 
-    /// Enterprise footer — layout mode + compose + settings (no stacked duplicate rows).
+    /// ClickUp lower-left — icon layout toggles + compose + settings (no wrapping labels).
     private var layoutFooter: some View {
-        HStack(spacing: 8) {
+        HStack(alignment: .center, spacing: 6) {
             layoutSegment(.organized, icon: "list.bullet.rectangle", label: "Organized")
             layoutSegment(.recents, icon: "clock", label: "Recents")
-            Spacer(minLength: 0)
+            Spacer(minLength: 4)
             composeMenu
             sidebarSettingsMenu
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 10)
+        .padding(.horizontal, 10)
+        .frame(height: ChatClickUpDesign.footerHeight, alignment: .center)
     }
 
     private var composeMenu: some View {
@@ -261,28 +315,24 @@ struct ChatSidebarView: View {
         return Button {
             chat.setSidebarLayout(layout)
         } label: {
-            HStack(spacing: 5) {
-                Image(systemName: icon)
-                    .font(.system(size: 11, weight: .medium))
-                Text(label)
-                    .font(.system(size: 11, weight: selected ? .semibold : .medium))
-            }
-            .foregroundStyle(selected ? LibraryGlassDesign.ink : LibraryGlassDesign.inkMuted)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 7)
-            .background(
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .fill(selected ? LibraryGlassDesign.sidebarSelection : LibraryGlassDesign.filterPillInactiveFill)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .strokeBorder(
-                        selected ? LibraryGlassDesign.sidebarSelectionStroke : LibraryGlassDesign.filterPillInactiveStroke,
-                        lineWidth: 1
-                    )
-            )
+            Image(systemName: icon)
+                .font(.system(size: 13, weight: selected ? .semibold : .medium))
+                .foregroundStyle(selected ? LibraryGlassDesign.ink : LibraryGlassDesign.inkMuted)
+                .frame(width: AppWindowChromeMetrics.controlSize, height: AppWindowChromeMetrics.controlSize)
+                .background(
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .fill(selected ? LibraryGlassDesign.sidebarSelection : LibraryGlassDesign.filterPillInactiveFill)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .strokeBorder(
+                            selected ? LibraryGlassDesign.sidebarSelectionStroke : LibraryGlassDesign.filterPillInactiveStroke,
+                            lineWidth: 1
+                        )
+                )
         }
         .buttonStyle(.plain)
+        .help(label)
     }
 
     private var sidebarSettingsMenu: some View {

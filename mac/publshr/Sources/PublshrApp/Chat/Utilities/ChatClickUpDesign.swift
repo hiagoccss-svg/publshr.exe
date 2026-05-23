@@ -7,7 +7,8 @@ enum ChatClickUpDesign {
     static let headerHeight: CGFloat = 44
     static let searchHeight: CGFloat = 32
     static let filterBarHeight: CGFloat = 40
-    static let footerHeight: CGFloat = 40
+    /// Pinned footer band — icon layout toggles + compose + settings (ClickUp lower-left).
+    static let footerHeight: CGFloat = 48
 
     static let filterPillHeight: CGFloat = 26
     static let filterPillRadius: CGFloat = 13
