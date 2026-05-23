@@ -31,7 +31,11 @@ if [[ "$(uname -s)" == "Darwin" ]]; then
         /usr/libexec/PlistBuddy -c "Add :CFBundleIconFile string AppIcon" "${APP_ROOT}/Contents/Info.plist" 2>/dev/null \
             || /usr/libexec/PlistBuddy -c "Set :CFBundleIconFile AppIcon" "${APP_ROOT}/Contents/Info.plist"
     fi
-    codesign --force --deep --sign - "$APP_ROOT" 2>/dev/null || true
+    if [[ -n "${DEVELOPER_ID_APPLICATION:-}" && -f "${SCRIPT_DIR}/sign-macos-release.sh" ]]; then
+        bash "${SCRIPT_DIR}/sign-macos-release.sh" "$APP_ROOT"
+    else
+        codesign --force --deep --sign - "$APP_ROOT" 2>/dev/null || true
+    fi
 fi
 
 echo "Built ${APP_ROOT}" >&2

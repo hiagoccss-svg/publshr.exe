@@ -5,18 +5,42 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ENTITLEMENTS="${SCRIPT_DIR}/../app/Publshr.entitlements"
 
-sign_app() {
-  local app="$1"
-  [[ -d "$app" ]] || return 0
-  local identity="${DEVELOPER_ID_APPLICATION:--}"
-  echo "Signing $(basename "$app") with ${identity} …" >&2
+sign_with_identity() {
+  local target="$1"
+  local identity="$2"
   local ent_args=()
-  if [[ -f "$ENTITLEMENTS" ]]; then
+  if [[ -f "$ENTITLEMENTS" && "$target" == *.app/Contents/MacOS/* ]]; then
     ent_args=(--entitlements "$ENTITLEMENTS")
   fi
   codesign --force --options runtime --timestamp \
     "${ent_args[@]}" \
-    --deep --sign "$identity" "$app"
+    --sign "$identity" "$target"
+}
+
+sign_app_bundle() {
+  local app="$1"
+  local identity="$2"
+  [[ -d "$app" ]] || return 0
+
+  echo "Signing $(basename "$app") with ${identity} …" >&2
+
+  local macos="${app}/Contents/MacOS"
+  if [[ -d "$macos" ]]; then
+    while IFS= read -r -d '' bin; do
+      sign_with_identity "$bin" "$identity"
+    done < <(find "$macos" -type f -perm +111 -print0 2>/dev/null)
+  fi
+
+  local res="${app}/Contents/Resources"
+  if [[ -d "$res" ]]; then
+    while IFS= read -r -d '' helper; do
+      [[ "$helper" == *.sh ]] || continue
+      codesign --force --options runtime --timestamp --sign "$identity" "$helper" 2>/dev/null || true
+    done < <(find "$res" -maxdepth 1 -type f -print0 2>/dev/null)
+  fi
+
+  codesign --force --options runtime --timestamp \
+    --sign "$identity" "$app"
   codesign --verify --deep --strict "$app"
 }
 
@@ -51,6 +75,7 @@ notarize_app() {
   xcrun "${args[@]}"
   xcrun stapler staple "$app"
   rm -f "$zip"
+  echo "Stapled $(basename "$app")" >&2
 }
 
 if [[ "${1:-}" == "--notarize-dmg" ]]; then
@@ -70,7 +95,7 @@ if [[ -z "${DEVELOPER_ID_APPLICATION:-}" ]]; then
   exit 0
 fi
 
-sign_app "$TARGET"
+sign_app_bundle "$TARGET" "$DEVELOPER_ID_APPLICATION"
 if [[ "${2:-}" == "--notarize-app" ]]; then
   notarize_app "$TARGET"
 fi

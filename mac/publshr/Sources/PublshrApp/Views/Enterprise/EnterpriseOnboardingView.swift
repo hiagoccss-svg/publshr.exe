@@ -6,7 +6,6 @@ struct EnterpriseOnboardingView: View {
     @EnvironmentObject private var subscription: SubscriptionService
     @Binding var isPresented: Bool
 
-    @State private var acceptedPrivacy = false
     @State private var step = 0
 
     var body: some View {
@@ -18,7 +17,7 @@ struct EnterpriseOnboardingView: View {
                     .foregroundStyle(CursorTheme.accent)
                 Text("Enterprise setup")
                     .font(.title.weight(.semibold))
-                Text("Configure privacy, register this Mac, and confirm your workspace plan before using Chat and Spaces.")
+                Text("Register this Mac and confirm your workspace plan. Privacy policy links are below — no separate Apple form.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
@@ -39,6 +38,9 @@ struct EnterpriseOnboardingView: View {
                     }
                     Spacer()
                     Button(step < 2 ? "Continue" : "Get started") {
+                        if step == 0 {
+                            PrivacyConsentStore.accept()
+                        }
                         if step < 2 {
                             step += 1
                         } else {
@@ -46,7 +48,6 @@ struct EnterpriseOnboardingView: View {
                         }
                     }
                     .keyboardShortcut(.defaultAction)
-                    .disabled(step == 0 && !acceptedPrivacy)
                 }
                 .padding(.top, 8)
             }
@@ -61,7 +62,9 @@ struct EnterpriseOnboardingView: View {
     private var privacyStep: some View {
         Form {
             Section {
-                Toggle("I agree to the Privacy Policy and Terms of Service", isOn: $acceptedPrivacy)
+                Text("Publshr connects to your Supabase workspace. Microphone, camera, and Touch ID are only used when you enable those features — macOS will ask permission then.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
                 Link("Privacy Policy", destination: PrivacyConsentStore.privacyPolicyURL)
                 Link("Terms of Service", destination: PrivacyConsentStore.termsURL)
             }
