@@ -112,7 +112,7 @@ struct AuthView: View {
     private var biometricRow: some View {
         Button { Task { await auth.unlockWithBiometrics() } } label: {
             HStack(spacing: 8) {
-                Image(systemName: "touchid")
+                Image(systemName: BiometricAuthService.systemImageName)
                 Text("Unlock with \(BiometricAuthService.biometricLabel)")
                     .font(.system(size: 13, weight: .medium))
             }

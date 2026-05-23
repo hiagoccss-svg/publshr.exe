@@ -15,7 +15,6 @@ export interface EnterpriseNavItem {
 
 /** Primary bar menu — matches product shell first column. */
 export const ENTERPRISE_MAIN_NAV: EnterpriseNavItem[] = [
-  { id: 'dashboard', label: 'Dashboard', icon: 'LayoutDashboard' },
   { id: 'spaces', label: 'Spaces', icon: 'FolderKanban' },
   { id: 'planner', label: 'Planner', icon: 'Calendar' },
   { id: 'chat', label: 'Chat', icon: 'MessageSquare' },

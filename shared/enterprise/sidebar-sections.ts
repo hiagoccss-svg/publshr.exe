@@ -4,7 +4,6 @@
  * `desktop/spaces/src/shared/types.ts` (`SidebarSection`).
  */
 export const SPACES_SIDEBAR_SECTIONS = [
-  { id: 'dashboard', label: 'Dashboard' },
   { id: 'spaces', label: 'Spaces' },
   { id: 'planner', label: 'Planner' },
   { id: 'chat', label: 'Chat' },
