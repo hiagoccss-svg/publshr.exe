@@ -10,14 +10,14 @@ struct SpacesOverviewView: View {
                     header(space)
                 }
 
-                LibraryMasonryGrid(columns: 4, spacing: LibraryGlassDesign.gridGutter) {
+                overviewGrid(columns: 4) {
                     metricCard("Open", value: openCount)
                     metricCard("Completed", value: completedCount)
                     metricCard("In review", value: reviewCount)
                     metricCard("High priority", value: urgentCount)
                 }
 
-                LibraryMasonryGrid(columns: 2, spacing: LibraryGlassDesign.gridGutter) {
+                overviewGrid(columns: 2) {
                     documentsCard
                     activityCard
                 }
@@ -153,6 +153,18 @@ struct SpacesOverviewView: View {
             }
         }
         .libraryCard()
+    }
+
+    private func overviewGrid<Content: View>(
+        columns count: Int,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        let gutter = LibraryGlassDesign.gridGutter
+        let items = Array(
+            repeating: GridItem(.flexible(minimum: 200), spacing: gutter),
+            count: max(1, count)
+        )
+        return LazyVGrid(columns: items, spacing: gutter, content: content)
     }
 
     private func metricCard(_ label: String, value: Int) -> some View {

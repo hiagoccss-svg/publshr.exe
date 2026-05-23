@@ -206,33 +206,33 @@ final class SpacesViewModel: ObservableObject {
     // MARK: - Enterprise operations sidebar
 
     func setActiveSection(_ section: SpacesEnterpriseSection) {
-        let resolved: SpacesEnterpriseSection = section == .dashboard ? .chat : section
-        activeSection = resolved
-        if resolved == .spaces {
-            return
-        }
-        if resolved == .chat {
+        switch section {
+        case .spaces:
+            activeSection = .spaces
+        case .chat:
             NotificationCenter.default.post(name: .publshrSelectModule, object: AppModule.chat.rawValue)
-            return
-        }
-        if resolved == .planner {
-            openPlannerCalendar()
-            return
-        }
-        if resolved == .media {
+        case .media:
             NotificationCenter.default.post(name: .publshrSelectModule, object: AppModule.mediaMonitoring.rawValue)
-            return
-        }
-        if resolved == .whiteboard {
+        case .planner:
+            activeSection = .spaces
+            openPlannerCalendar()
+        case .whiteboard:
+            activeSection = .whiteboard
             spacesHomeOpen = false
             if selectedSpaceId == nil, let first = spaces.first {
                 Task { await selectSpace(first.id) }
             }
-            return
+        case .dashboard:
+            activeSection = .dashboard
+            selectedSpaceId = nil
+            spacesHomeOpen = false
+            Task { await loadWorkspaceData() }
+        default:
+            activeSection = section
+            selectedSpaceId = nil
+            spacesHomeOpen = false
+            Task { await loadWorkspaceData() }
         }
-        selectedSpaceId = nil
-        spacesHomeOpen = false
-        Task { await loadWorkspaceData() }
     }
 
     func openSpacesSection() {

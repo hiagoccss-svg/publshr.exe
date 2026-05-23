@@ -9,7 +9,7 @@ struct SpacesEnterpriseSectionsView: View {
             VStack(alignment: .leading, spacing: 16) {
                 switch spaces.activeSection {
                 case .dashboard:
-                    chatSection
+                    reportsSection
                 case .documents: documentsSection
                 case .whiteboard:
                     if spaces.selectedSpace != nil {
@@ -239,11 +239,15 @@ struct SpacesEnterpriseSectionsView: View {
 
     private var chatSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            sectionHeader("Chat", subtitle: "Team messaging and channels.")
-            emptyHint("Opening Chat…")
-        }
-        .onAppear {
-            NotificationCenter.default.post(name: .publshrSelectModule, object: AppModule.chat.rawValue)
+            sectionHeader("Chat", subtitle: "Channels, DMs, threads, and realtime messaging.")
+            Text("Open the Chat module for the full ClickUp-style inbox: Activity, DMs, channels, schedule send, and search.")
+                .font(.system(size: 12))
+                .foregroundStyle(CursorTheme.foregroundMuted)
+            Button("Open Chat") {
+                NotificationCenter.default.post(name: .publshrSelectModule, object: AppModule.chat.rawValue)
+            }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.regular)
         }
     }
 
