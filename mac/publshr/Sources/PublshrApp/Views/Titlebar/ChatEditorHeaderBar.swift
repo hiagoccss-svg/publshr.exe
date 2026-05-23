@@ -103,6 +103,27 @@ struct ChatEditorToolbarContent: View {
         ) {
             showCommandPalette = true
         }
+
+        chatSettingsMenu
+    }
+
+    private var chatSettingsMenu: some View {
+        TitlebarToolbarSlot {
+            Menu {
+                ChatSettingsMenu.items(chat: chat)
+            } label: {
+                Image(systemName: "gearshape")
+                    .font(.system(size: AppWindowChromeMetrics.controlIconSize, weight: .regular))
+                    .foregroundStyle(LibraryGlassDesign.inkSecondary)
+                    .frame(
+                        width: AppWindowChromeMetrics.controlSize,
+                        height: AppWindowChromeMetrics.controlSize
+                    )
+                    .contentShape(Rectangle())
+            }
+            .menuStyle(.borderlessButton)
+            .help("Workspace, app, and channel settings")
+        }
     }
 
     private func channelMoreMenu(_ channel: ChatChannel) -> some View {

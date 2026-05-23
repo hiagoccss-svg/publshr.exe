@@ -78,10 +78,10 @@ enum TitlebarChromeCommands {
                 showNotificationsPanel.wrappedValue = true
             },
             TitlebarCommandPaletteItem(
-                id: "settings",
+                id: "settings-workspace",
                 title: "Workspace settings",
                 subtitle: nil,
-                systemImage: "gearshape",
+                systemImage: "building.2",
                 shortcut: TitlebarShortcutHint.settings,
                 isEnabled: true
             ) {
@@ -89,6 +89,29 @@ enum TitlebarChromeCommands {
                     name: .publshrOpenSettings,
                     object: SettingsSection.workspace.rawValue
                 )
+            },
+            TitlebarCommandPaletteItem(
+                id: "settings-app",
+                title: "App settings",
+                subtitle: nil,
+                systemImage: "gearshape",
+                shortcut: nil,
+                isEnabled: true
+            ) {
+                NotificationCenter.default.post(
+                    name: .publshrOpenSettings,
+                    object: SettingsSection.account.rawValue
+                )
+            },
+            TitlebarCommandPaletteItem(
+                id: "settings-channel",
+                title: "Channel settings",
+                subtitle: chat.selectedChannel?.displayTitle,
+                systemImage: "number",
+                shortcut: nil,
+                isEnabled: module.wrappedValue == .chat && chat.selectedChannel != nil
+            ) {
+                chat.showChannelSettings = true
             },
             TitlebarCommandPaletteItem(
                 id: "whiteboard",
@@ -171,7 +194,7 @@ struct TitlebarChromeShortcutBridge: View {
             Button("") {
                 NotificationCenter.default.post(
                     name: .publshrOpenSettings,
-                    object: SettingsSection.workspace.rawValue
+                    object: SettingsSection.account.rawValue
                 )
             }
                 .keyboardShortcut(",", modifiers: .command)
