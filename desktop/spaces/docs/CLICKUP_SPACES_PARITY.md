@@ -17,7 +17,8 @@ Both surfaces share the same **views bar** contract: `shared/spaces/view-modes.t
 
 | ClickUp capability | Publshr status |
 |--------------------|----------------|
-| Spaces Home (browse all spaces) | ✅ Electron + macOS IDE |
+| Spaces Home (browse, search, filter, grid/list) | ✅ `SpacesEnterpriseHome` + macOS IDE |
+| Unified “Spaces” naming (no top-level Project type) | ✅ Folders = project groups |
 | Create / edit space | ✅ Modal + settings |
 | Pin / favorites | ✅ Settings + sidebar sections |
 | Space privacy / guest access | 🔶 Workspace roles only (no guest tier) |

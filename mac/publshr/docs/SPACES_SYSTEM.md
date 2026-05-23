@@ -12,10 +12,14 @@ Apply the schema once per Supabase project:
 
 ## Architecture (ClickUp hierarchy)
 
+We use **Spaces** only at the top level — not a separate Projects module. **Folders** inside a Space map to ClickUp project folders.
+
 ```
 Workspace → Space → (optional) Folder → List → Tasks
                               └─ Docs (space-level)
 ```
+
+Shared contract: `shared/spaces/hierarchy.ts`, `shared/spaces/spaces-home.ts`, `shared/spaces/SPACES_ENTERPRISE.md`.
 
 ```
 Activity bar → Spaces sidebar (spaces + folder/list/doc tree) → Breadcrumbs + Views bar → Board / List / Calendar / Overview → Inspector
