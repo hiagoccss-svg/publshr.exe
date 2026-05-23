@@ -1,8 +1,10 @@
 import SwiftUI
 
-/// Whiteboard list for the active space. Full infinite canvas runs in Spaces Electron (`desktop/spaces`) or Phase 2 native host.
+/// Whiteboard list + embedded tldraw canvas inside Publshr.app (no separate Electron window).
 struct SpacesWhiteboardView: View {
+    @EnvironmentObject private var auth: AuthViewModel
     @ObservedObject var spaces: SpacesViewModel
+    @State private var webError: String?
 
     var body: some View {
         HStack(spacing: 0) {
@@ -11,7 +13,7 @@ struct SpacesWhiteboardView: View {
             Rectangle()
                 .fill(CursorTheme.borderSubtle)
                 .frame(width: 1)
-            canvasPlaceholder
+            canvasArea
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .background(CursorMacShellDesign.editorColumnBackground)
@@ -41,6 +43,7 @@ struct SpacesWhiteboardView: View {
                         ForEach(spaces.whiteboards) { board in
                             Button {
                                 spaces.selectedWhiteboardId = board.id
+                                webError = nil
                             } label: {
                                 HStack {
                                     Image(systemName: "scribble.variable")
@@ -77,30 +80,42 @@ struct SpacesWhiteboardView: View {
     }
 
     @ViewBuilder
-    private var canvasPlaceholder: some View {
-        VStack(spacing: 14) {
-            Image(systemName: "scribble.variable")
-                .font(.system(size: 36))
-                .foregroundStyle(CursorTheme.accent.opacity(0.85))
-            Text(selectedTitle)
-                .font(.system(size: 16, weight: .semibold))
-            Text(
-                "The whiteboard canvas matches the Electron renderer (tldraw + Supabase). Use Spaces in desktop/spaces for editing; macOS embeds the same web bundle in Phase 2 (see shared/spaces/PARITY.md)."
+    private var canvasArea: some View {
+        if let boardId = spaces.selectedWhiteboardId, let spaceId = spaces.selectedSpaceId {
+            MacWebModuleHost(
+                config: MacWebModuleConfig(
+                    module: .whiteboard,
+                    spaceId: spaceId,
+                    whiteboardId: boardId,
+                    workspaceId: auth.selectedWorkspace?.id,
+                    accessToken: auth.session?.accessToken,
+                    userId: auth.session?.user.id
+                ),
+                onLoadError: { webError = $0 }
             )
-            .font(.system(size: 12))
-            .foregroundStyle(CursorTheme.foregroundMuted)
-            .multilineTextAlignment(.center)
-            .frame(maxWidth: 420)
+            .overlay(alignment: .bottomLeading) {
+                if let webError {
+                    Text(webError)
+                        .font(.system(size: 11))
+                        .foregroundStyle(CursorTheme.error)
+                        .padding(10)
+                        .background(CursorTheme.panelBackground.opacity(0.9))
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                        .padding(12)
+                }
+            }
+        } else {
+            VStack(spacing: 14) {
+                Image(systemName: "scribble.variable")
+                    .font(.system(size: 36))
+                    .foregroundStyle(CursorTheme.accent.opacity(0.85))
+                Text("Select or create a whiteboard")
+                    .font(.system(size: 16, weight: .semibold))
+                Text("Canvas runs inside Publshr.app with live Supabase sync.")
+                    .font(.system(size: 12))
+                    .foregroundStyle(CursorTheme.foregroundMuted)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .padding(24)
-    }
-
-    private var selectedTitle: String {
-        if let id = spaces.selectedWhiteboardId,
-           let board = spaces.whiteboards.first(where: { $0.id == id }) {
-            return board.name
-        }
-        return "Whiteboard"
     }
 }

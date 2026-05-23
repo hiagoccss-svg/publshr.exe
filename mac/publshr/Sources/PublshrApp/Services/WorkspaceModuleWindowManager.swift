@@ -54,6 +54,18 @@ final class WorkspaceModuleWindowManager: ObservableObject {
                     SpacesRootView(spaces: spaces, topInset: 12, embedInPopOut: true)
                         .environmentObject(auth)
                 )
+            case .mediaMonitoring:
+                return AnyView(
+                    MediaMonitoringModuleView()
+                        .environmentObject(auth)
+                        .environmentObject(subscription)
+                )
+            case .planner:
+                return AnyView(
+                    PlannerModuleView()
+                        .environmentObject(auth)
+                        .environmentObject(chat)
+                )
             case .settings:
                 guard let updates, let enterprise else {
                     return AnyView(Text("Settings unavailable").padding())

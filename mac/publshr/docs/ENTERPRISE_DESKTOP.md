@@ -76,9 +76,21 @@ flowchart TB
   Upd --> GH
 ```
 
-## Electron modules (Spaces / Planner / Media Monitoring)
+## Enterprise modules in Publshr.app
 
-These are **separate products** with local-first SQLite and optional Supabase sync.
+| Module | macOS IDE |
+|--------|-----------|
+| Chat | Native SwiftUI |
+| Spaces | Native SwiftUI (+ Timeline, Workload, Priority, Home) |
+| Whiteboard | Embedded `WebBundles/whiteboard` (tldraw + Supabase) |
+| Media Monitoring | Native SwiftUI (`MediaMonitoring/`) |
+| Planner | Native SwiftUI (`Planner/`) |
+
+Use the **left bar menu** in the app: Chat · Spaces · Media · Planner. Settings opens from the title bar.
+
+## Electron builds (optional / cross-platform)
+
+Electron apps under `desktop/` share Supabase schemas and support dev on Linux/Windows. macOS users should use **`Publshr.app`** only.
 
 **Desktop workflow (implemented):** see [`desktop/docs/DESKTOP_WORKFLOW.md`](../../../desktop/docs/DESKTOP_WORKFLOW.md).
 

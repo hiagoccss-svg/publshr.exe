@@ -52,6 +52,8 @@ struct SubscriptionPlanRecord: Codable, Identifiable, Equatable {
 struct EnterpriseFeatureFlags: Equatable {
     var chatEnabled = true
     var spacesEnabled = true
+    var mediaMonitoringEnabled = true
+    var plannerEnabled = true
     var callsEnabled = true
     var fileUploadEnabled = true
     var seatLimit = 3
@@ -62,6 +64,8 @@ struct EnterpriseFeatureFlags: Equatable {
         EnterpriseFeatureFlags(
             chatEnabled: plan.includesChat,
             spacesEnabled: plan.includesSpaces,
+            mediaMonitoringEnabled: plan.includesSpaces,
+            plannerEnabled: plan.includesChat,
             callsEnabled: plan.includesCalls,
             fileUploadEnabled: true,
             seatLimit: plan.seatLimit,

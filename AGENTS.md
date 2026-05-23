@@ -74,7 +74,7 @@ See **`desktop/docs/DESKTOP_WORKFLOW.md`**. Summary:
 
 The **native Spaces** module lives in `mac/publshr/Sources/PublshrApp/Spaces/` (SwiftUI + Supabase + SQLite cache). See `mac/publshr/docs/SPACES_SYSTEM.md`. Schema: `mac/publshr/supabase/migrations/001_spaces_schema.sql`.
 
-The standalone **Spaces** Electron app lives in `desktop/spaces/` (React + TypeScript + Tailwind + SQLite + Supabase). The renderer (“web” UI) and the macOS IDE Spaces module must stay identical — see `shared/spaces/PARITY.md` and `shared/spaces/view-modes.ts`.
+The standalone **Spaces** Electron app lives in `desktop/spaces/` (React + TypeScript + Tailwind + SQLite + Supabase). Enterprise modules (Chat, Spaces, Whiteboard, Media Monitoring, Planner) ship **inside `Publshr.app`** first — see `mac/publshr/docs/ENTERPRISE_DESKTOP.md`. The renderer (Electron) and macOS IDE Spaces module must stay identical — see `shared/spaces/PARITY.md` and `shared/spaces/view-modes.ts`.
 
 ```bash
 cd desktop/spaces

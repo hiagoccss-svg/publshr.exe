@@ -63,4 +63,12 @@ final class SubscriptionService: ObservableObject {
         features.spacesEnabled
     }
 
+    func canUseMediaMonitoring(workspace: Workspace?) -> Bool {
+        features.mediaMonitoringEnabled
+    }
+
+    func canUsePlanner(workspace: Workspace?) -> Bool {
+        features.plannerEnabled
+    }
+
 }

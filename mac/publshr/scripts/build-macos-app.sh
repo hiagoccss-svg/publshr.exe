@@ -55,4 +55,10 @@ cp "${SCRIPT_DIR}/apply-macos-update.sh" "${RES_DIR}/apply-macos-update.sh"
 cp "${SCRIPT_DIR}/lib-install-path.sh" "${RES_DIR}/lib-install-path.sh"
 chmod 755 "${RES_DIR}/apply-macos-update.sh" "${RES_DIR}/lib-install-path.sh"
 
+# Embedded web modules (whiteboard tldraw host, etc.)
+if [[ -d "${SCRIPT_DIR}/../app/WebBundles" ]]; then
+    mkdir -p "${RES_DIR}/WebBundles"
+    cp -R "${SCRIPT_DIR}/../app/WebBundles/"* "${RES_DIR}/WebBundles/" 2>/dev/null || true
+fi
+
 echo "Built ${APP_ROOT} (${SHORT_VERSION} build ${BUILD})" >&2

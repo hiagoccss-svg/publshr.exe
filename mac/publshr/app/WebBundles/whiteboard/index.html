@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Publshr Whiteboard</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tldraw@2.4.0/tldraw.css" />
+    <style>
+      html, body, #root { margin: 0; height: 100%; width: 100%; background: #f8f9fb; }
+      #status { position: fixed; left: 12px; bottom: 12px; font: 12px system-ui; color: #64748b; z-index: 2; }
+      #error { position: fixed; inset: 0; display: none; place-items: center; padding: 24px; text-align: center; font: 13px system-ui; color: #b91c1c; background: #fff; }
+    </style>
+  </head>
+  <body>
+    <div id="error"></div>
+    <div id="root"></div>
+    <div id="status">Loading whiteboard…</div>
+    <script type="module">
+      import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.1/+esm'
+      import { Tldraw, getSnapshot, loadSnapshot as applySnapshot } from 'https://cdn.jsdelivr.net/npm/tldraw@2.4.0/+esm'
+      import React from 'https://cdn.jsdelivr.net/npm/react@18.3.1/+esm'
+      import ReactDOM from 'https://cdn.jsdelivr.net/npm/react-dom@18.3.1/client/+esm'
+
+      const cfg = window.__PUBLSHR__ || {}
+      const params = new URLSearchParams(location.search)
+      const spaceId = cfg.spaceId || params.get('spaceId')
+      const whiteboardId = cfg.whiteboardId || params.get('whiteboardId')
+      const status = document.getElementById('status')
+      const errorEl = document.getElementById('error')
+
+      function fail(msg) {
+        errorEl.style.display = 'grid'
+        errorEl.textContent = msg
+        status.textContent = ''
+      }
+
+      if (!cfg.supabaseUrl || !cfg.supabaseAnonKey) {
+        fail('Supabase not configured in Publshr.app.')
+      } else if (!spaceId) {
+        fail('Select a space in the macOS IDE, then open the Whiteboard tab.')
+      } else {
+        const client = createClient(cfg.supabaseUrl, cfg.supabaseAnonKey, {
+          auth: { persistSession: false, autoRefreshToken: false }
+        })
+        if (cfg.accessToken) {
+          client.auth.setSession({ access_token: cfg.accessToken, refresh_token: cfg.accessToken })
+        }
+
+        let activeId = whiteboardId
+        let saveTimer = null
+
+        async function listBoards() {
+          const { data, error } = await client.from('whiteboards').select('*').eq('space_id', spaceId).eq('is_archived', false).order('updated_at', { ascending: false })
+          if (error) throw error
+          return data || []
+        }
+
+        async function fetchBoardSnapshot(id) {
+          const { data, error } = await client.from('whiteboards').select('snapshot').eq('id', id).maybeSingle()
+          if (error) throw error
+          return data?.snapshot || {}
+        }
+
+        async function saveBoardSnapshot(id, snapshot) {
+          const { error } = await client.from('whiteboards').update({ snapshot, updated_at: new Date().toISOString() }).eq('id', id)
+          if (error) throw error
+        }
+
+        function App() {
+          const [editor, setEditor] = React.useState(null)
+          React.useEffect(() => {
+            if (!editor || !activeId) return
+            fetchBoardSnapshot(activeId).then((snap) => {
+              if (snap && Object.keys(snap).length) applySnapshot(editor.store, snap)
+            }).catch(console.error)
+          }, [editor, activeId])
+
+          const onMount = (ed) => {
+            setEditor(ed)
+            ed.store.listen(() => {
+              if (!activeId) return
+              if (saveTimer) clearTimeout(saveTimer)
+              saveTimer = setTimeout(() => {
+                const snap = getSnapshot(ed.store)
+                saveBoardSnapshot(activeId, snap).then(() => { status.textContent = 'Saved' }).catch(console.error)
+              }, 1200)
+            })
+          }
+
+          return React.createElement('div', { style: { position: 'absolute', inset: 0 } },
+            React.createElement(Tldraw, { onMount })
+          )
+        }
+
+        listBoards().then((boards) => {
+          if (!boards.length) {
+            fail('Create a whiteboard from the list on the left, then select it.')
+            return
+          }
+          if (!activeId) activeId = boards[0].id
+          status.textContent = 'Editing · ' + (boards.find((b) => b.id === activeId)?.name || 'Whiteboard')
+          ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App))
+        }).catch((e) => fail(e.message || String(e)))
+      }
+    </script>
+  </body>
+</html>
