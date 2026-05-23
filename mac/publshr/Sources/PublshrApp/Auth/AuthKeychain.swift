@@ -1,7 +1,7 @@
 import Foundation
 import Security
 
-/// Secure storage for session tokens. When biometrics are enabled, items require Touch ID / Face ID to read.
+/// Secure storage for session tokens. When biometrics are enabled, items require Touch ID / Face ID (or device password) to read.
 enum AuthKeychain {
     private static let service = "com.publshr.app.auth"
     private static let protectionVersionKey = "com.publshr.app.auth.protection.v1"
@@ -13,7 +13,14 @@ enum AuthKeychain {
         let userId: UUID
     }
 
-    /// True when the stored item was saved with `SecAccessControl` biometry (system prompt on read).
+    enum LoadResult {
+        case success(StoredSession)
+        case notFound
+        case userCancelled
+        case failed
+    }
+
+    /// True when the stored item was saved with `SecAccessControl` (system prompt on read).
     static var usesBiometricProtection: Bool {
         UserDefaults.standard.bool(forKey: protectionVersionKey)
     }
@@ -28,6 +35,24 @@ enum AuthKeychain {
         return SecItemCopyMatching(query as CFDictionary, nil) == errSecSuccess
     }
 
+    /// Prefer biometric access control; fall back to user presence (login password) on Macs without enrolled biometrics.
+    private static func makeProtectedAccessControl() -> SecAccessControl? {
+        var error: Unmanaged<CFError>?
+        let flagSets: [SecAccessControlCreateFlags] = [.biometryCurrentSet, .userPresence]
+        for flags in flagSets {
+            error = nil
+            if let access = SecAccessControlCreateWithFlags(
+                kCFAllocatorDefault,
+                kSecAttrAccessibleWhenUnlockedThisDeviceOnly,
+                flags,
+                &error
+            ) {
+                return access
+            }
+        }
+        return nil
+    }
+
     static func save(_ session: StoredSession, requireBiometry: Bool) -> Bool {
         guard let data = try? JSONEncoder().encode(session) else { return false }
         delete()
@@ -37,18 +62,11 @@ enum AuthKeychain {
             kSecAttrService as String: service,
             kSecAttrAccount as String: session.email,
             kSecValueData as String: data,
+            kSecAttrSynchronizable as String: false,
         ]
 
         if requireBiometry {
-            var error: Unmanaged<CFError>?
-            guard let access = SecAccessControlCreateWithFlags(
-                kCFAllocatorDefault,
-                kSecAttrAccessibleWhenUnlockedThisDeviceOnly,
-                .biometryCurrentSet,
-                &error
-            ) else {
-                return false
-            }
+            guard let access = makeProtectedAccessControl() else { return false }
             query[kSecAttrAccessControl as String] = access
             UserDefaults.standard.set(true, forKey: protectionVersionKey)
         } else {
@@ -61,6 +79,13 @@ enum AuthKeychain {
     }
 
     static func load() -> StoredSession? {
+        switch loadResult() {
+        case .success(let session): return session
+        default: return nil
+        }
+    }
+
+    static func loadResult() -> LoadResult {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
@@ -69,12 +94,20 @@ enum AuthKeychain {
         ]
         var item: CFTypeRef?
         let status = SecItemCopyMatching(query as CFDictionary, &item)
-        guard status == errSecSuccess,
-              let data = item as? Data,
-              let session = try? JSONDecoder().decode(StoredSession.self, from: data) else {
-            return nil
+        switch status {
+        case errSecSuccess:
+            guard let data = item as? Data,
+                  let session = try? JSONDecoder().decode(StoredSession.self, from: data) else {
+                return .failed
+            }
+            return .success(session)
+        case errSecItemNotFound:
+            return .notFound
+        case errSecUserCanceled, errSecAuthFailed:
+            return .userCancelled
+        default:
+            return .failed
         }
-        return session
     }
 
     static func delete() {
