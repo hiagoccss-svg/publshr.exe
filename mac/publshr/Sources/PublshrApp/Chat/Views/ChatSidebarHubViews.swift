@@ -39,7 +39,7 @@ struct ChatSidebarHubStrip: View {
                 }
             }
             .frame(height: ChatClickUpDesign.rowHeight)
-            .padding(.horizontal, 10)
+            .padding(.horizontal, LibraryGlassDesign.sidebarRowHorizontal - 2)
             .background(
                 RoundedRectangle(cornerRadius: LibraryGlassDesign.sidebarRowRadius, style: .continuous)
                     .fill(selected ? LibraryGlassDesign.sidebarSelection : Color.clear)

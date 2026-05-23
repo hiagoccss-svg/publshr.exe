@@ -22,12 +22,12 @@ curl -fsSL "https://raw.githubusercontent.com/hiagoccss-svg/publshr.exe/refs/hea
 ┌──────────────────────────────────────────────────────────────┐
 │  Desktop wallpaper (behindWindow vibrancy)                    │
 │  ┌────────┬──────────────┬─────────────────────────────────┐ │
-│  │ Bar    │  Universal   │  Floating glass panel (20px     │ │
-│  │ menu   │  submenu     │  radius) — Chat / Spaces        │ │
-│  │ 200pt  │  272pt       │  editor (flex, min 420pt)       │ │
+│  │ Bar    │  Universal   │  Page content (Chat / Spaces)   │ │
+│  │ menu   │  submenu     │  — flat white (Chat); card on   │ │
+│  │ 200pt  │  272pt       │  gray gutter (Spaces); flex     │ │
 │  └────────┴──────────────┴─────────────────────────────────┘ │
-│  Per-column title bands (traffic: sidebar/back/forward; editor: profile, notifications, command) │
-│  Disconnected status line                                     │
+│  One unified titlebar row: traffic + bar toggle + submenu     │
+│  search + editor actions (no duplicate toolbars in modules)   │
 └──────────────────────────────────────────────────────────────┘
 ```
 
@@ -38,7 +38,7 @@ curl -fsSL "https://raw.githubusercontent.com/hiagoccss-svg/publshr.exe/refs/hea
 | Glass | `WorkspaceDesktopBackdrop`, `LibraryFloatingPanel`, `LibraryGlassDesign` |
 | Submenu | `LibraryUniversalSubmenu`, `ChatSidebarView`, `SpacesNavSidebar` |
 | Chrome | `ShellColumnChromeStack` + `LibraryShellHeaderView` (per-column title bands), `TitlebarToolbarRow` / `TitlebarToolbarSlot` (`AppWindowChromeMetrics`), `TitlebarChromeActionBar`, `WindowChromeConfigurator` |
-| Marker | `AppShellIdentity.distributionTag` = `PublshrEnterpriseShell-11` (line 5 of `live/VERSION.txt`; auto-update when it changes) |
+| Marker | `AppShellIdentity.distributionTag` = `PublshrEnterpriseShell-12` (line 5 of `live/VERSION.txt`; auto-update when it changes) |
 
 ## Adding a new module (same pattern as Chat)
 
@@ -53,7 +53,7 @@ curl -fsSL "https://raw.githubusercontent.com/hiagoccss-svg/publshr.exe/refs/hea
 
 - App checks GitHub tag **`live`** using `releases/download/...` URLs (avoids API 403).
 - Downloads install in place to `~/Applications/Publshr.app` when possible.
-- Shell marker **`PublshrEnterpriseShell-11`** must be present in the binary for CI verification.
+- Shell marker **`PublshrEnterpriseShell-12`** must be present in the binary for CI verification.
 
 ## CI
 
