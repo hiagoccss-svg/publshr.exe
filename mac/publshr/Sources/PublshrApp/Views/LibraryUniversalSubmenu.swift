@@ -10,6 +10,7 @@ enum LibraryUniversalSubmenu {
                 .font(.system(size: 10, weight: .semibold))
                 .foregroundStyle(LibraryGlassDesign.inkMuted)
                 .tracking(0.6)
+                .lineLimit(1)
             Spacer(minLength: 0)
             if let onAdd {
                 Button(action: onAdd) {
@@ -57,7 +58,7 @@ struct LibraryUniversalSubmenuContainer<Content: View, Footer: View>: View {
                 .frame(minHeight: 0, maxHeight: .infinity)
 
             footer()
-                .frame(maxWidth: .infinity, alignment: .leading)
+                .frame(maxWidth: .infinity, minHeight: ChatClickUpDesign.footerHeight, alignment: .leading)
                 .background(LibraryGlassDesign.submenuFooterBackground)
                 .overlay(alignment: .top) {
                     Rectangle()
