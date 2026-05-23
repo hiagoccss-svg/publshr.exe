@@ -186,7 +186,19 @@ jobs:
           else
             gh release create "live" --repo "$REPO" --title "Publshr live (${FULL})" --notes-file /tmp/publshr-release-notes.md
           fi
-          gh release upload "live" "$INSTALL_DMG" "$INSTALL_ZIP" "$INSTALL_SH" "$LIVE" "$VERSION_TXT" --repo "$REPO" --clobber
+          upload_ok=0
+          for attempt in 1 2 3 4 5; do
+            if gh release upload "live" "$INSTALL_DMG" "$INSTALL_ZIP" "$INSTALL_SH" "$LIVE" "$VERSION_TXT" --repo "$REPO" --clobber; then
+              upload_ok=1
+              break
+            fi
+            echo "release upload attempt ${attempt} failed; retrying in $((attempt * 5))s…" >&2
+            sleep $((attempt * 5))
+          done
+          if [[ "$upload_ok" != "1" ]]; then
+            echo "ERROR: could not upload live release assets after 5 attempts" >&2
+            exit 1
+          fi
           echo "Published live → Publshr-Install-macos.dmg + zip"
 
       - name: Verify live channel metadata
