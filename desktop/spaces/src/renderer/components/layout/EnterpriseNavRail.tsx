@@ -7,7 +7,6 @@ import {
   ChevronRight,
   FileText,
   FolderKanban,
-  LayoutDashboard,
   Megaphone,
   MessageSquare,
   PenLine,
@@ -15,27 +14,34 @@ import {
   Users
 } from 'lucide-react'
 import clsx from 'clsx'
+import { ENTERPRISE_MAIN_NAV } from '../../../../../../shared/enterprise/nav-config'
 import { useSpacesStore } from '../../stores/spaces-store'
 import { useChatStore } from '../../stores/chat-store'
 import type { SidebarSection } from '../../../shared/types'
 
 type NavId = SidebarSection | 'whiteboard'
 
-const NAV: { id: NavId; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
-  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { id: 'spaces', label: 'Spaces', icon: FolderKanban },
-  { id: 'planner', label: 'Planner', icon: Calendar },
-  { id: 'chat', label: 'Chat', icon: MessageSquare },
-  { id: 'documents', label: 'Documents', icon: FileText },
-  { id: 'whiteboard', label: 'Whiteboard', icon: PenLine },
-  { id: 'approvals', label: 'Approvals', icon: CheckCircle2 },
-  { id: 'reports', label: 'Reports', icon: BarChart3 },
-  { id: 'clients', label: 'Clients', icon: Briefcase },
-  { id: 'campaigns', label: 'Campaigns', icon: Megaphone },
-  { id: 'team', label: 'Team', icon: Users },
-  { id: 'media', label: 'Media Monitoring', icon: Radio },
-  { id: 'files', label: 'Files', icon: Archive }
-]
+const ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
+  FolderKanban,
+  Calendar,
+  MessageSquare,
+  FileText,
+  PenLine,
+  CheckCircle2,
+  BarChart3,
+  Briefcase,
+  Megaphone,
+  Users,
+  Radio,
+  Archive
+}
+
+const NAV: { id: NavId; label: string; icon: React.ComponentType<{ className?: string }> }[] =
+  ENTERPRISE_MAIN_NAV.map((item) => ({
+    id: item.id as NavId,
+    label: item.label,
+    icon: ICONS[item.icon] ?? FolderKanban
+  }))
 
 /** Column 1 — primary enterprise navigation (ClickUp-style bar menu). */
 export function EnterpriseNavRail(): React.ReactElement {

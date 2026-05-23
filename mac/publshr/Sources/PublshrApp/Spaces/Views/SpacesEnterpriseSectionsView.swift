@@ -8,7 +8,8 @@ struct SpacesEnterpriseSectionsView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 switch spaces.activeSection {
-                case .dashboard: dashboardSection
+                case .dashboard:
+                    chatSection
                 case .documents: documentsSection
                 case .whiteboard:
                     if spaces.selectedSpace != nil {
@@ -48,35 +49,6 @@ struct SpacesEnterpriseSectionsView: View {
     }
 
     // MARK: - Sections
-
-    private var dashboardSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            sectionHeader("Operations dashboard", subtitle: "Cross-space summary for your workspace.")
-            if let s = spaces.workspaceSummary {
-                LazyVGrid(columns: [GridItem(.adaptive(minimum: 140), spacing: 12)], spacing: 12) {
-                    metricCard("Active spaces", value: s.spaceCount) { spaces.setActiveSection(.spaces) }
-                    metricCard("Open tasks", value: s.openTasks, warn: s.overdueTasks > 0) { spaces.setActiveSection(.spaces) }
-                    metricCard("Overdue", value: s.overdueTasks, warn: s.overdueTasks > 0) { spaces.setActiveSection(.spaces) }
-                    metricCard("Documents", value: s.documentCount) { spaces.setActiveSection(.documents) }
-                    metricCard("Pending approvals", value: s.pendingApprovals) { spaces.setActiveSection(.approvals) }
-                }
-            }
-            if !spaces.workspaceActivity.isEmpty {
-                panel("Recent activity") {
-                    ForEach(spaces.workspaceActivity.prefix(12)) { row in
-                        HStack {
-                            Text(row.action)
-                                .font(.system(size: 12))
-                            Spacer()
-                            Text(spaces.spaceName(for: row.spaceId))
-                                .font(.system(size: 11))
-                                .foregroundStyle(CursorTheme.foregroundMuted)
-                        }
-                    }
-                }
-            }
-        }
-    }
 
     private var documentsSection: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -248,40 +220,30 @@ struct SpacesEnterpriseSectionsView: View {
     }
 
     private var plannerSection: some View {
-        let dated = spaces.workspaceTasks.filter { $0.dueDate != nil || $0.startDate != nil }
-        return VStack(alignment: .leading, spacing: 12) {
-            sectionHeader("Planner", subtitle: "Scheduled work from Spaces tasks.")
-            if dated.isEmpty {
-                emptyHint("No dated tasks. Add due dates on tasks to see them here.")
+        VStack(alignment: .leading, spacing: 12) {
+            sectionHeader("Planner", subtitle: "Task calendar for the active Space.")
+            if spaces.selectedSpace != nil {
+                SpacesCalendarView(spaces: spaces)
             } else {
-                ForEach(dated.prefix(30)) { task in
-                    HStack {
-                        Text(task.title).font(.system(size: 13, weight: .medium))
-                        Spacer()
-                        Text(task.dueDate ?? task.startDate ?? "—")
-                            .font(.system(size: 11))
-                            .foregroundStyle(CursorTheme.foregroundMuted)
+                emptyHint("Select a Space to view scheduled tasks on the calendar.")
+                if let first = spaces.spaces.first {
+                    Button("Open \(first.name)") {
+                        Task { await spaces.openPlannerCalendar() }
                     }
-                    .padding(8)
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.small)
                 }
             }
-            Button("Open Publshr Planner") {
-                _ = DesktopCompanionAppLauncher.open(.planner)
-            }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.small)
         }
     }
 
     private var chatSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            sectionHeader("Chat", subtitle: "Team messaging runs in the native Chat module.")
-            emptyHint("Open Chat for live channels, threads, and notifications.")
-            Button("Open Chat") {
-                NotificationCenter.default.post(name: .publshrSelectModule, object: AppModule.chat.rawValue)
-            }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.small)
+            sectionHeader("Chat", subtitle: "Team messaging and channels.")
+            emptyHint("Opening Chat…")
+        }
+        .onAppear {
+            NotificationCenter.default.post(name: .publshrSelectModule, object: AppModule.chat.rawValue)
         }
     }
 

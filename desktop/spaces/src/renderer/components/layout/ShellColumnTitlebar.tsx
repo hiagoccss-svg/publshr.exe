@@ -16,7 +16,6 @@ import { TitlebarChromeActionBar } from './TitlebarChromeActionBar'
 const SECTION_SEARCH: Partial<Record<SidebarSection, string>> = {
   chat: 'Search channels and people',
   spaces: 'Search spaces and tasks',
-  dashboard: 'Search workspace',
   documents: 'Search documents',
   planner: 'Search scheduled work',
   approvals: 'Search approvals',
