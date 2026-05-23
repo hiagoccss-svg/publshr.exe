@@ -28,9 +28,7 @@ Settings opens in a **separate sheet/window** (not in the activity strip), match
 │ DIRECT MESSAGES       [+]   │
 │ PLANNER                     │
 ├─────────────────────────────┤
-│ Organized · Recents    [+][⚙️] │  ← Bottom: layout toggles, new, settings
-│ Create channel              │  ← Flat footer rows (`LibrarySubmenuTextButtonStyle`)
-│ New message                 │
+│ Organized · Recents    [+][⚙️] │  ← Bottom: layout toggles, new menu, settings
 └─────────────────────────────┘
 ```
 
