@@ -92,7 +92,8 @@ flowchart LR
 
 - `VERSION.txt` on the `live` release (version, build, commit, package hash, shell tag)
 - Immediate check when the app becomes **active** or **wakes from sleep**
-- **Settings → Sync now** = GitHub live + Supabase in one action
+- **Settings → Sync now** = GitHub live + Supabase in one action (always runs GitHub check, even when auto-check is off)
+- After each successful in-place update, the app records the live `VERSION.txt` digest so the next poll does not re-download the same build
 
 ### Settings toggles (per machine)
 
