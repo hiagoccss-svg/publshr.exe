@@ -19,7 +19,23 @@ echo
 # shellcheck source=lib-shell-tag.sh
 source "$ROOT/scripts/lib-shell-tag.sh"
 SHELL_TAG="$(resolve_publshr_shell_tag "$ROOT/Sources/PublshrApp/Config/AppShellIdentity.swift")"
-REMOTE_SHELL="$(curl -fsSL "https://github.com/hiagoccss-svg/publshr.exe/releases/download/live/VERSION.txt" | sed -n '5p' | tr -d '[:space:]')"
+
+fetch_live_version_shell_tag() {
+  local url="https://github.com/hiagoccss-svg/publshr.exe/releases/download/live/VERSION.txt"
+  local attempt body
+  for attempt in 1 2 3 4; do
+    body="$(curl -fsSL "$url" 2>/dev/null || true)"
+    if [[ -n "$body" ]]; then
+      printf '%s' "$body" | sed -n '5p' | tr -d '[:space:]'
+      return 0
+    fi
+    sleep "$attempt"
+  done
+  echo "ERROR: could not fetch live VERSION.txt after retries" >&2
+  return 1
+}
+
+REMOTE_SHELL="$(fetch_live_version_shell_tag)"
 
 LOCAL_VER="$(publshr_shell_tag_version "$SHELL_TAG")"
 REMOTE_VER="$(publshr_shell_tag_version "$REMOTE_SHELL")"
