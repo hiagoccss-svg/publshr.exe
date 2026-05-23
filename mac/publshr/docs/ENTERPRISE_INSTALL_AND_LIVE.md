@@ -60,6 +60,8 @@ All under `~/Library/Application Support/Publshr/`:
 
 Cloud source of truth: **Supabase** (profiles, chat, spaces, devices, subscriptions).
 
+Full three-tier model (GitHub vs Mac vs Supabase): [DATA_ARCHITECTURE.md](./DATA_ARCHITECTURE.md).
+
 ## Live mode: push here → see on Mac quickly
 
 ```mermaid

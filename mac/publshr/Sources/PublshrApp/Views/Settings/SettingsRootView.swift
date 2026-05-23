@@ -1,13 +1,14 @@
 import SwiftUI
 
 enum SettingsSection: String, CaseIterable, Identifiable {
-    case updates, account, workspace, billing, privacy, devices, files, security, chat
+    case updates, storage, account, workspace, billing, privacy, devices, files, security, chat
 
     var id: String { rawValue }
 
     var title: String {
         switch self {
         case .updates: return "Updates"
+        case .storage: return "Storage"
         case .account: return "Account"
         case .workspace: return "Workspace"
         case .billing: return "Subscription"
@@ -22,6 +23,7 @@ enum SettingsSection: String, CaseIterable, Identifiable {
     var icon: String {
         switch self {
         case .updates: return "arrow.down.circle"
+        case .storage: return "externaldrive"
         case .account: return "person.circle"
         case .workspace: return "building.2"
         case .billing: return "creditcard"
@@ -108,6 +110,7 @@ struct SettingsRootView: View {
     private var detailView: some View {
         switch selection {
         case .updates: SettingsUpdatesPane()
+        case .storage: SettingsStoragePane()
         case .account: SettingsAccountPane()
         case .workspace: SettingsWorkspacePane()
         case .billing: SettingsBillingPane()

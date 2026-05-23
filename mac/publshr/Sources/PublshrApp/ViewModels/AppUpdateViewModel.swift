@@ -284,9 +284,9 @@ final class AppUpdateViewModel: ObservableObject {
             digest: digest
         )
         do {
-            let updatesRoot = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-                .appendingPathComponent("Publshr/updates", isDirectory: true)
-            let staging = updatesRoot.appendingPathComponent("staging-\(update.version)", isDirectory: true)
+            LocalDataLayout.ensureRootExists()
+            let staging = LocalDataLayout.updatesDirectory
+                .appendingPathComponent("staging-\(update.version)", isDirectory: true)
             try service.applyUpdate(treeURL: staging, parentPID: ProcessInfo.processInfo.processIdentifier)
             NSApplication.shared.terminate(nil)
         } catch {
