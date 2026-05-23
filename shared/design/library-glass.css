@@ -44,6 +44,13 @@
     @apply dt-chrome-workspace;
   }
 
+  /** Full-bleed editor column (Chat + Spaces) — solid surface, no inset “card” margin. */
+  .glass-workspace-flat {
+    background: #ffffff;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
   .library-workspace-pad {
     padding: var(--lib-outer-margin);
   }
