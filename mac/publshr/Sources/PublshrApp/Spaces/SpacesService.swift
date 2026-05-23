@@ -153,15 +153,17 @@ final class SpacesService {
             .from("tasks")
             .select()
             .eq("space_id", value: spaceId.uuidString)
-            .neq("status", value: SpaceTaskStatus.archived.rawValue)
         if let listId {
             query = query.eq("list_id", value: listId.uuidString)
         }
-        return try await query.order("sort_order").execute().value
+        let rows: [SpaceTaskRecord] = try await query.order("sort_order").execute().value
+        return rows.filter { $0.status != .archived }
     }
 
     func createTask(
+        workspaceId: UUID,
         spaceId: UUID,
+        createdBy: UUID,
         title: String,
         listId: UUID? = nil,
         status: SpaceTaskStatus = .todo,
@@ -170,24 +172,28 @@ final class SpacesService {
         dueDate: String? = nil
     ) async throws -> SpaceTaskRecord {
         struct Insert: Encodable {
+            let workspace_id: UUID
             let space_id: UUID
             let list_id: UUID?
             let title: String
             let status: String
-            let priority: String
+            let priority: String?
             let assignee_id: UUID?
             let due_date: String?
+            let created_by: UUID
         }
         let row: SpaceTaskRecord = try await client
             .from("tasks")
             .insert(Insert(
+                workspace_id: workspaceId,
                 space_id: spaceId,
                 list_id: listId,
                 title: title,
-                status: status.rawValue,
-                priority: priority.rawValue,
+                status: status.databaseValue,
+                priority: TaskPriorityWire.toDatabase(priority.rawValue),
                 assignee_id: assigneeId,
-                due_date: dueDate
+                due_date: dueDate,
+                created_by: createdBy
             ))
             .select()
             .single()
@@ -209,11 +215,13 @@ final class SpacesService {
     }
 
     func updateTaskStatus(taskId: UUID, status: SpaceTaskStatus) async throws {
-        _ = try await updateTask(id: taskId, patch: SpaceTaskPatch(status: status.rawValue))
+        _ = try await updateTask(id: taskId, patch: SpaceTaskPatch(status: status.databaseValue))
     }
 
     func archiveTask(taskId: UUID) async throws {
-        _ = try await updateTask(id: taskId, patch: SpaceTaskPatch(status: SpaceTaskStatus.archived.rawValue))
+        var patch = SpaceTaskPatch(status: SpaceTaskStatus.archived.databaseValue)
+        patch.isArchived = true
+        _ = try await updateTask(id: taskId, patch: patch)
     }
 
     // MARK: - Activity
@@ -516,13 +524,19 @@ final class SpacesService {
             type: "client"
         )
 
-        let lists = try await fetchLists(spaceId: editorial.id)
+        var lists = try await fetchLists(spaceId: editorial.id)
+        if lists.isEmpty {
+            let list = try await createList(spaceId: editorial.id, folderId: nil, name: "List")
+            lists = [list]
+        }
         let listId = lists.first?.id
         let dueSoon = ISO8601DateFormatter().string(from: Calendar.current.date(byAdding: .day, value: 2, to: Date()) ?? Date())
         let overdue = ISO8601DateFormatter().string(from: Calendar.current.date(byAdding: .day, value: -1, to: Date()) ?? Date())
 
         _ = try await createTask(
+            workspaceId: workspaceId,
             spaceId: editorial.id,
+            createdBy: ownerId,
             title: "Finalize launch brief",
             listId: listId,
             status: .in_progress,
@@ -531,7 +545,9 @@ final class SpacesService {
             dueDate: dueSoon
         )
         _ = try await createTask(
+            workspaceId: workspaceId,
             spaceId: editorial.id,
+            createdBy: ownerId,
             title: "Review social copy",
             listId: listId,
             status: .todo,
