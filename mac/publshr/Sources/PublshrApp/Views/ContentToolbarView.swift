@@ -10,7 +10,7 @@ struct ContentToolbarView: View {
 
     private var toolbarHeight: CGFloat {
         switch module {
-        case .chat, .spaces: return CursorTheme.chatToolbarHeight
+        case .chat, .spaces, .whiteboard, .mediaMonitoring: return CursorTheme.chatToolbarHeight
         case .settings: return CursorTheme.titleBarHeight
         }
     }
@@ -18,9 +18,9 @@ struct ContentToolbarView: View {
     var body: some View {
         HStack(spacing: 12) {
             toolbarLeading
-                .frame(minWidth: (module == .chat || module == .spaces) ? 180 : 0, alignment: .leading)
+                .frame(minWidth: (module == .chat || module.usesSpacesSubmenu) ? 180 : 0, alignment: .leading)
 
-            if module == .chat || module == .spaces {
+            if module == .chat || module.usesSpacesSubmenu {
                 searchField
                     .frame(maxWidth: .infinity)
             } else {
@@ -47,8 +47,12 @@ struct ContentToolbarView: View {
         switch module {
         case .chat:
             chatToolbarLeading
-        case .spaces:
+        case .spaces, .whiteboard:
             spacesToolbarLeading
+        case .mediaMonitoring:
+            Text("Media Monitoring")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(CursorTheme.foreground)
         case .settings:
             Text("Settings")
                 .font(.system(size: 13, weight: .semibold))
@@ -400,7 +404,8 @@ struct ContentToolbarView: View {
     private var searchPlaceholder: String {
         switch module {
         case .chat: return "Search in this channel"
-        case .spaces: return "Search spaces and tasks"
+        case .spaces, .whiteboard: return "Search spaces and tasks"
+        case .mediaMonitoring: return "Search coverage"
         case .settings: return "Search settings"
         }
     }
@@ -412,12 +417,12 @@ struct ContentToolbarView: View {
                 get: { chat.searchQuery },
                 set: { chat.searchQuery = $0 }
             )
-        case .spaces:
+        case .spaces, .whiteboard:
             return Binding(
                 get: { spaces.searchQuery },
                 set: { spaces.searchQuery = $0 }
             )
-        case .settings:
+        case .mediaMonitoring, .settings:
             return .constant("")
         }
     }

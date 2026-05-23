@@ -52,6 +52,11 @@ struct SettingsRootView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(Color(nsColor: .windowBackgroundColor))
         }
+        .onAppear {
+            if let pending = WorkspaceModuleWindowManager.shared.consumePendingSettingsSection() {
+                selection = pending
+            }
+        }
         .onReceive(NotificationCenter.default.publisher(for: .publshrOpenSettings)) { output in
             if let raw = output.object as? String, let section = SettingsSection(rawValue: raw) {
                 selection = section

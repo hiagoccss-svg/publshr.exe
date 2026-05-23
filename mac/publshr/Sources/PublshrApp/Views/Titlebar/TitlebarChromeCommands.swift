@@ -79,13 +79,40 @@ enum TitlebarChromeCommands {
             },
             TitlebarCommandPaletteItem(
                 id: "settings",
-                title: "Settings",
+                title: "Workspace settings",
                 subtitle: nil,
                 systemImage: "gearshape",
                 shortcut: TitlebarShortcutHint.settings,
                 isEnabled: true
             ) {
-                NotificationCenter.default.post(name: .publshrOpenSettings, object: nil)
+                NotificationCenter.default.post(
+                    name: .publshrOpenSettings,
+                    object: SettingsSection.workspace.rawValue
+                )
+            },
+            TitlebarCommandPaletteItem(
+                id: "whiteboard",
+                title: "Open Whiteboard",
+                subtitle: "Spaces canvas",
+                systemImage: "scribble.variable",
+                shortcut: nil,
+                isEnabled: true
+            ) {
+                module.wrappedValue = .whiteboard
+                tabStore.openFromModule(.whiteboard, activate: true)
+                spaces.taskView = .whiteboard
+            },
+            TitlebarCommandPaletteItem(
+                id: "media-monitoring",
+                title: "Open Media Monitoring",
+                subtitle: "Coverage desktop app",
+                systemImage: "dot.radiowaves.left.and.right",
+                shortcut: nil,
+                isEnabled: true
+            ) {
+                module.wrappedValue = .mediaMonitoring
+                tabStore.openFromModule(.mediaMonitoring, activate: true)
+                _ = DesktopCompanionAppLauncher.open(.mediaMonitoring)
             },
             TitlebarCommandPaletteItem(
                 id: "workspace",
@@ -141,7 +168,12 @@ struct TitlebarChromeShortcutBridge: View {
                 .keyboardShortcut("[", modifiers: .command)
             Button("") { NotificationCenter.default.post(name: .publshrTitlebarNavigateForward, object: nil) }
                 .keyboardShortcut("]", modifiers: .command)
-            Button("") { NotificationCenter.default.post(name: .publshrOpenSettings, object: nil) }
+            Button("") {
+                NotificationCenter.default.post(
+                    name: .publshrOpenSettings,
+                    object: SettingsSection.workspace.rawValue
+                )
+            }
                 .keyboardShortcut(",", modifiers: .command)
         }
         .frame(width: 0, height: 0)

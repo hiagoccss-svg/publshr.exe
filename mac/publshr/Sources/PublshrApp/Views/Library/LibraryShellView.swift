@@ -17,9 +17,10 @@ struct LibraryShellView: View {
 
     private var submenuHidden: Bool {
         module == .settings
+            || module == .mediaMonitoring
             || !tabStore.sidebarExpanded
             || (module == .chat && chat.chatFocusMode)
-            || (module == .spaces && spaces.spacesFocusMode)
+            || (module.usesSpacesSubmenu && spaces.spacesFocusMode)
     }
 
     var body: some View {
@@ -166,7 +167,11 @@ struct LibraryShellView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(module == .chat ? CursorMacShellDesign.editorColumnBackground : CursorMacShellDesign.workspaceBackground)
+        .background(
+            (module == .chat || module == .mediaMonitoring)
+                ? CursorMacShellDesign.editorColumnBackground
+                : CursorMacShellDesign.workspaceBackground
+        )
     }
 
     @ViewBuilder
@@ -178,12 +183,14 @@ struct LibraryShellView: View {
             } else {
                 EnterpriseModuleGate(moduleName: "Chat", planName: subscription.features.planName)
             }
-        case .spaces:
+        case .spaces, .whiteboard:
             if subscription.canUseSpaces(workspace: auth.selectedWorkspace) {
                 SpacesRootView(spaces: spaces, topInset: 0)
             } else {
-                EnterpriseModuleGate(moduleName: "Spaces", planName: subscription.features.planName)
+                EnterpriseModuleGate(moduleName: module.label, planName: subscription.features.planName)
             }
+        case .mediaMonitoring:
+            MediaMonitoringModuleView()
         case .settings:
             EnterpriseModuleGate(moduleName: "Settings", planName: subscription.features.planName)
         }

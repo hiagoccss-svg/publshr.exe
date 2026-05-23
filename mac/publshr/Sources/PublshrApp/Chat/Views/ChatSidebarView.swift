@@ -211,17 +211,17 @@ struct ChatSidebarView: View {
             .padding(.vertical, 8)
     }
 
-    /// Enterprise footer — layout mode + compose + settings (no stacked duplicate rows).
+    /// Enterprise footer — icon layout toggle + compose + workspace settings (fits 272pt submenu).
     private var layoutFooter: some View {
-        HStack(spacing: 8) {
-            layoutSegment(.organized, icon: "list.bullet.rectangle", label: "Organized")
-            layoutSegment(.recents, icon: "clock", label: "Recents")
+        HStack(spacing: 6) {
+            layoutIconButton(.organized, icon: "list.bullet.rectangle", help: "Organized")
+            layoutIconButton(.recents, icon: "clock", help: "Recents")
             Spacer(minLength: 0)
             composeMenu
             sidebarSettingsMenu
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 10)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 8)
     }
 
     private var composeMenu: some View {
@@ -255,37 +255,58 @@ struct ChatSidebarView: View {
         .help("New channel or message")
     }
 
-    private func layoutSegment(_ layout: ChatSidebarLayout, icon: String, label: String) -> some View {
+    private func layoutIconButton(_ layout: ChatSidebarLayout, icon: String, help: String) -> some View {
         let selected = chat.sidebarLayout == layout
         return Button {
             chat.setSidebarLayout(layout)
         } label: {
-            HStack(spacing: 5) {
-                Image(systemName: icon)
-                    .font(.system(size: 11, weight: .medium))
-                Text(label)
-                    .font(.system(size: 11, weight: selected ? .semibold : .medium))
-            }
-            .foregroundStyle(selected ? LibraryGlassDesign.ink : LibraryGlassDesign.inkMuted)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 7)
-            .background(
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .fill(selected ? LibraryGlassDesign.sidebarSelection : LibraryGlassDesign.filterPillInactiveFill)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .strokeBorder(
-                        selected ? LibraryGlassDesign.sidebarSelectionStroke : LibraryGlassDesign.filterPillInactiveStroke,
-                        lineWidth: 1
-                    )
-            )
+            Image(systemName: icon)
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(selected ? LibraryGlassDesign.ink : LibraryGlassDesign.inkSecondary)
+                .frame(width: 30, height: 30)
+                .background(
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .fill(selected ? LibraryGlassDesign.sidebarSelection : LibraryGlassDesign.filterPillInactiveFill)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .strokeBorder(
+                            selected ? LibraryGlassDesign.sidebarSelectionStroke : LibraryGlassDesign.filterPillInactiveStroke,
+                            lineWidth: 1
+                        )
+                )
         }
         .buttonStyle(.plain)
+        .help(help)
     }
 
     private var sidebarSettingsMenu: some View {
         Menu {
+            Button {
+                NotificationCenter.default.post(
+                    name: .publshrOpenSettings,
+                    object: SettingsSection.workspace.rawValue
+                )
+            } label: {
+                Label("Workspace settings", systemImage: "building.2")
+            }
+            Button {
+                NotificationCenter.default.post(
+                    name: .publshrOpenSettings,
+                    object: SettingsSection.security.rawValue
+                )
+            } label: {
+                Label("Security", systemImage: "lock.shield")
+            }
+            Button {
+                NotificationCenter.default.post(
+                    name: .publshrOpenSettings,
+                    object: SettingsSection.billing.rawValue
+                )
+            } label: {
+                Label("Subscription", systemImage: "creditcard")
+            }
+            Divider()
             Button {
                 chat.showNotificationSettings = true
             } label: {
@@ -326,7 +347,7 @@ struct ChatSidebarView: View {
         }
         .menuStyle(.borderlessButton)
         .menuIndicator(.hidden)
-        .help("Chat settings")
+        .help("Workspace & chat settings")
     }
 
     // MARK: - Sections & rows

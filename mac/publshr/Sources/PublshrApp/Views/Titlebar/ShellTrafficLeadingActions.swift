@@ -32,32 +32,32 @@ struct ShellTrafficLeadingActions: View {
     private var canNavigateBack: Bool {
         switch module {
         case .chat: chat.canNavigateBack
-        case .spaces: spaces.canNavigateBack
-        case .settings: false
+        case .spaces, .whiteboard: spaces.canNavigateBack
+        case .mediaMonitoring, .settings: false
         }
     }
 
     private var canNavigateForward: Bool {
         switch module {
         case .chat: chat.canNavigateForward
-        case .spaces: spaces.canNavigateForward
-        case .settings: false
+        case .spaces, .whiteboard: spaces.canNavigateForward
+        case .mediaMonitoring, .settings: false
         }
     }
 
     private func navigateBack() {
         switch module {
         case .chat: chat.navigateBack()
-        case .spaces: Task { await spaces.navigateBack() }
-        case .settings: break
+        case .spaces, .whiteboard: Task { await spaces.navigateBack() }
+        case .mediaMonitoring, .settings: break
         }
     }
 
     private func navigateForward() {
         switch module {
         case .chat: chat.navigateForward()
-        case .spaces: Task { await spaces.navigateForward() }
-        case .settings: break
+        case .spaces, .whiteboard: Task { await spaces.navigateForward() }
+        case .mediaMonitoring, .settings: break
         }
     }
 }

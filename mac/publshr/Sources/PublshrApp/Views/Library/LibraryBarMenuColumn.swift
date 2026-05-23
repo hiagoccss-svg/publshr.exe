@@ -5,6 +5,7 @@ struct LibraryBarMenuColumn: View {
     var barWidth: CGFloat = LibraryGlassDesign.barMenuWidth
     @EnvironmentObject private var tabStore: WorkspaceTabStore
     @EnvironmentObject private var chat: ChatViewModel
+    @EnvironmentObject private var spaces: SpacesViewModel
     @Binding var module: AppModule
     @Binding var profilePresentation: WorkspaceProfilePresentation?
 
@@ -79,8 +80,17 @@ struct LibraryBarMenuColumn: View {
     private func switchModule(_ item: AppModule) {
         module = item
         tabStore.openFromModule(item, activate: true)
-        if item == .chat {
+        if item == .chat || item.usesSpacesSubmenu {
             tabStore.sidebarExpanded = true
+        }
+        if item == .whiteboard {
+            spaces.taskView = .whiteboard
+            if spaces.selectedSpaceId == nil, let first = spaces.spaces.first {
+                Task { await spaces.selectSpace(first.id) }
+            }
+        }
+        if item == .mediaMonitoring {
+            _ = DesktopCompanionAppLauncher.open(.mediaMonitoring)
         }
     }
 }

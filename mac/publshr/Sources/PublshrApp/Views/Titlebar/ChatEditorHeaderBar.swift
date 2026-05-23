@@ -103,11 +103,6 @@ struct ChatEditorToolbarContent: View {
         ) {
             showCommandPalette = true
         }
-
-        TitlebarChromeIconButton(systemName: "gearshape", help: "Channel settings") {
-            chat.showChannelSettings = true
-        }
-        .disabled(chat.selectedChannel == nil)
     }
 
     private func channelMoreMenu(_ channel: ChatChannel) -> some View {

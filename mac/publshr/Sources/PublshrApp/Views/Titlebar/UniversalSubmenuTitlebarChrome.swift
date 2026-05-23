@@ -11,9 +11,9 @@ struct UniversalSubmenuTitlebarChrome: View {
             switch module {
             case .chat:
                 ChatSidebarTitlebarChrome(chat: chat)
-            case .spaces:
+            case .spaces, .whiteboard:
                 SpacesSubmenuTitlebarChrome(spaces: spaces)
-            case .settings:
+            case .mediaMonitoring, .settings:
                 Color.clear
             }
         }

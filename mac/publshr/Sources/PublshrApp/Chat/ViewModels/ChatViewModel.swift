@@ -303,12 +303,35 @@ final class ChatViewModel: ObservableObject {
     }
 
     private func partitionChannels(_ all: [ChatChannel]) {
-        channels = all
+        let unique = Self.dedupedChannels(all)
+        channels = unique
             .filter { $0.kind == .channel }
             .sorted { $0.sidebarTitle.localizedCaseInsensitiveCompare($1.sidebarTitle) == .orderedAscending }
-        directMessages = all
+        directMessages = unique
             .filter { $0.kind == .dm || $0.kind == .group }
             .sorted { $0.sidebarTitle.localizedCaseInsensitiveCompare($1.sidebarTitle) == .orderedAscending }
+    }
+
+    /// Collapses duplicate rows (same id, or same channel name in one workspace).
+    private static func dedupedChannels(_ all: [ChatChannel]) -> [ChatChannel] {
+        var byId: [UUID: ChatChannel] = [:]
+        for ch in all {
+            if let existing = byId[ch.id] {
+                if ch.updatedAt > existing.updatedAt { byId[ch.id] = ch }
+            } else {
+                byId[ch.id] = ch
+            }
+        }
+        var byName: [String: ChatChannel] = [:]
+        for ch in byId.values {
+            let key = "\(ch.kind.rawValue):\(ch.name.lowercased())"
+            if let existing = byName[key] {
+                if ch.updatedAt > existing.updatedAt { byName[key] = ch }
+            } else {
+                byName[key] = ch
+            }
+        }
+        return Array(byName.values)
     }
 
     // MARK: - Channel selection
