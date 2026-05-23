@@ -197,7 +197,7 @@ struct LibraryShellView: View {
         case .mediaMonitoring:
             MediaMonitoringModuleView()
         case .settings:
-            EnterpriseModuleGate(moduleName: "Settings", planName: subscription.features.planName)
+            SettingsModuleRedirectView(module: $module)
         }
     }
 
@@ -219,5 +219,21 @@ struct LibraryShellView: View {
                 await spaces.reload()
             }
         }
+    }
+}
+
+/// Settings opens in a dedicated window (⌘,). If the main shell ever lands on `.settings`, route there immediately.
+private struct SettingsModuleRedirectView: View {
+    @Binding var module: AppModule
+
+    var body: some View {
+        Color.clear
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .onAppear {
+                NotificationCenter.default.post(name: .publshrOpenSettings, object: nil)
+                if module == .settings {
+                    module = .chat
+                }
+            }
     }
 }

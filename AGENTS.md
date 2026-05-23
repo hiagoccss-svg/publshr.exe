@@ -92,8 +92,9 @@ No demo seed data on first run. Configure optional Supabase via `.env` from `.en
 From `mac/publshr/`:
 
 ```bash
+bash scripts/audit-macos-deployment-ready.sh # full pre-deploy audit (GitHub live + Supabase + shell tag)
 bash scripts/verify-github-live.sh      # live release + install-macos.sh URLs
-bash scripts/verify-all-connections.sh  # GitHub live + Supabase auth/chat/spaces
+bash scripts/verify-all-connections.sh  # GitHub live + Supabase auth/chat/spaces/enterprise
 bash scripts/cleanup-github-branches.sh # remove merged cursor/* branches (DRY_RUN=1 first)
 ```
 
