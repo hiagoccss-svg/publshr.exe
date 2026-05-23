@@ -66,6 +66,7 @@ final class WorkspaceModuleWindowManager: ObservableObject {
                 return AnyView(
                     MediaMonitoringModuleView()
                         .environmentObject(auth)
+                        .environmentObject(MediaMonitoringViewModel())
                 )
             case .settings:
                 guard let updates, let enterprise else {

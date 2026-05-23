@@ -4,7 +4,7 @@
 #   curl -fsSL "https://raw.githubusercontent.com/hiagoccss-svg/publshr.exe/refs/heads/main/install-now-macos.sh" | bash
 set -euo pipefail
 
-PUBLSHR_MAC_APP="${PUBLSHR_MAC_APP:-${HOME}/Applications/Publshr.app}"
+PUBLSHR_MAC_APP="${HOME}/Applications/Publshr.app"
 
 _install_path_writable() {
     local target="$1"
@@ -84,21 +84,14 @@ SHELL_VER="$(/usr/libexec/PlistBuddy -c 'Print :PublshrShellVersion' "${APP}/Con
 log "Verified enterprise build ${BUILD} (shell ${SHELL_VER})"
 
 mkdir -p "$(dirname "$PUBLSHR_MAC_APP")"
-if _install_path_writable "$PUBLSHR_MAC_APP"; then
-    log "Installing to ${PUBLSHR_MAC_APP} (no administrator password) …"
-    rm -rf "$PUBLSHR_MAC_APP"
-    ditto "$APP" "$PUBLSHR_MAC_APP"
-    xattr -cr "$PUBLSHR_MAC_APP" 2>/dev/null || true
-elif [[ "$(id -u)" -ne 0 ]]; then
-    log "Installing to ${PUBLSHR_MAC_APP} (one administrator approval) …"
-    inner="set -e; rm -rf $(printf '%q' "$PUBLSHR_MAC_APP"); ditto $(printf '%q' "$APP") $(printf '%q' "$PUBLSHR_MAC_APP"); xattr -cr $(printf '%q' "$PUBLSHR_MAC_APP") 2>/dev/null || true"
-    esc="${inner//\\/\\\\}"; esc="${esc//\"/\\\"}"
-    osascript -e "do shell script \"${esc}\" with administrator privileges"
-else
-    rm -rf "$PUBLSHR_MAC_APP"
-    ditto "$APP" "$PUBLSHR_MAC_APP"
-    xattr -cr "$PUBLSHR_MAC_APP" 2>/dev/null || true
+if ! _install_path_writable "$PUBLSHR_MAC_APP"; then
+    log "ERROR: Cannot write to $(dirname "$PUBLSHR_MAC_APP"). Fix permissions and re-run."
+    exit 1
 fi
+log "Installing to ${PUBLSHR_MAC_APP} (no administrator password) …"
+rm -rf "$PUBLSHR_MAC_APP"
+ditto "$APP" "$PUBLSHR_MAC_APP"
+xattr -cr "$PUBLSHR_MAC_APP" 2>/dev/null || true
 
 _validate_app "$PUBLSHR_MAC_APP" || { log "ERROR: installed app failed verification"; exit 1; }
 

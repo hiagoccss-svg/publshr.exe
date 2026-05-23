@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 # Replace the installed Publshr.app after the running instance exits, then relaunch.
-# User-owned installs (~/Applications) update without any administrator password.
-# System /Applications (root-owned) uses one AppleScript admin prompt for the whole operation.
+# Updates always install to a user-writable path (~/Applications by default) — never asks for admin.
 set -euo pipefail
 
 TREE="${1:?extracted release tree directory required}"
@@ -10,7 +9,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=lib-install-path.sh
 source "${SCRIPT_DIR}/lib-install-path.sh"
 
-TARGET="${3:-${PUBLSHR_MAC_APP:-$(publshr_default_mac_app)}}"
+REQUESTED="${3:-${PUBLSHR_MAC_APP:-$(publshr_default_mac_app)}}"
+TARGET="$(publshr_resolved_live_update_target "$REQUESTED")"
 LOG_DIR="${HOME}/Library/Application Support/Publshr/updates"
 LOG="${LOG_DIR}/last-update.log"
 BACKUP="${LOG_DIR}/Publshr.app.backup"
@@ -42,7 +42,8 @@ trap 'rollback "interrupted"' INT TERM
 
 echo "=== Publshr update $(date -u +%Y-%m-%dT%H:%M:%SZ) ==="
 echo "Tree: $TREE"
-echo "Target: $TARGET"
+echo "Requested target: $REQUESTED"
+echo "Install target: $TARGET"
 echo "Waiting for PID $PARENT_PID to exit ..."
 
 for _ in $(seq 1 120); do
@@ -78,71 +79,37 @@ if [[ ! -f "$APP_BIN_CHECK" ]]; then
     exit 1
 fi
 
-_run_user_update() {
-    rm -rf "$BACKUP"
-    if [[ -d "$TARGET" ]]; then
-        echo "Backing up current app to $BACKUP ..."
-        ditto "$TARGET" "$BACKUP"
-    fi
+mkdir -p "$(dirname "$TARGET")"
 
-    echo "Installing to $TARGET (no administrator password) ..."
-    rm -f "$STAGING_OK"
-    rm -rf "$TARGET"
-    if ! ditto "$APP_SRC" "$TARGET"; then
-        rollback "ditto install failed"
-        exit 1
-    fi
-    chmod -R u+rwX,go+rX "$TARGET" 2>/dev/null || chmod -R 755 "$TARGET"
-    xattr -cr "$TARGET" 2>/dev/null || true
-    touch "$STAGING_OK"
+rm -rf "$BACKUP"
+if [[ -d "$TARGET" ]]; then
+    echo "Backing up current app to $BACKUP ..."
+    ditto "$TARGET" "$BACKUP"
+fi
 
-    if [[ ! -f "${TARGET}/Contents/MacOS/Publshr" ]]; then
-        rollback "installed binary missing after ditto"
-        exit 1
-    fi
+echo "Installing to $TARGET (no administrator password) ..."
+rm -f "$STAGING_OK"
+rm -rf "$TARGET"
+if ! ditto "$APP_SRC" "$TARGET"; then
+    rollback "ditto install failed"
+    exit 1
+fi
+chmod -R u+rwX,go+rX "$TARGET" 2>/dev/null || chmod -R 755 "$TARGET"
+xattr -cr "$TARGET" 2>/dev/null || true
+touch "$STAGING_OK"
 
-    echo "Update installed successfully; removing backup."
-    rm -rf "$BACKUP"
-    rm -f "$STAGING_OK"
-    trap - INT TERM
-}
+if [[ ! -f "${TARGET}/Contents/MacOS/Publshr" ]]; then
+    rollback "installed binary missing after ditto"
+    exit 1
+fi
 
-_run_admin_update_once() {
-    echo "Target is not user-writable — requesting administrator approval once ..."
-    local backup_q target_q src_q backup_dir_q
-    backup_q="$(printf '%q' "$BACKUP")"
-    target_q="$(printf '%q' "$TARGET")"
-    src_q="$(printf '%q' "$APP_SRC")"
-    backup_dir_q="$(printf '%q' "$LOG_DIR")"
+echo "Update installed successfully; removing backup."
+rm -rf "$BACKUP"
+rm -f "$STAGING_OK"
+trap - INT TERM
 
-    local inner
-    inner="set -e
-mkdir -p ${backup_dir_q}
-rm -rf ${backup_q}
-if [[ -d ${target_q} ]]; then ditto ${target_q} ${backup_q}; fi
-rm -rf ${target_q}
-ditto ${src_q} ${target_q}
-chmod -R 755 ${target_q}
-xattr -cr ${target_q} 2>/dev/null || true
-test -f ${target_q}/Contents/MacOS/Publshr"
-
-    local escaped="${inner//\\/\\\\}"
-    escaped="${escaped//\"/\\\"}"
-    escaped="${escaped//$'\n'/ }"
-
-    if ! osascript -e "do shell script \"${escaped}\" with administrator privileges"; then
-        echo "ERROR: administrator approval required to update ${TARGET}" >&2
-        exit 1
-    fi
-    touch "$STAGING_OK" 2>/dev/null || true
-    rm -rf "$BACKUP"
-    trap - INT TERM
-}
-
-if publshr_app_path_is_user_updatable "$TARGET"; then
-    _run_user_update
-else
-    _run_admin_update_once
+if [[ "$TARGET" != "$REQUESTED" && -d "$REQUESTED" ]]; then
+    echo "NOTE: You can remove the old copy at $REQUESTED (updates now use $TARGET)." >&2
 fi
 
 echo "Launching Publshr ..."

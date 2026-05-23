@@ -260,8 +260,8 @@ struct SpacesEnterpriseSectionsView: View {
                     Text(space.name).font(.system(size: 13, weight: .medium))
                 }
             }
-            Button("Open Publshr Media Monitoring") {
-                _ = DesktopCompanionAppLauncher.open(.mediaMonitoring)
+            Button("Open Media Monitoring") {
+                NotificationCenter.default.post(name: .publshrSelectModule, object: AppModule.mediaMonitoring.rawValue)
             }
             .buttonStyle(.borderedProminent)
             .controlSize(.small)

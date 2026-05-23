@@ -58,7 +58,7 @@ struct SpacesSubmenuTitlebarChrome: View {
 
 /// Media Monitoring submenu — search in the titlebar row (matches Chat / Spaces).
 struct MediaMonitoringSubmenuTitlebarChrome: View {
-    @State private var searchQuery = ""
+    @EnvironmentObject private var media: MediaMonitoringViewModel
 
     var body: some View {
         TitlebarToolbarRow(leadingPadding: 0, trailingPadding: 0) {
@@ -67,7 +67,7 @@ struct MediaMonitoringSubmenuTitlebarChrome: View {
                     .font(.system(size: AppWindowChromeMetrics.controlIconSize, weight: .medium))
                     .foregroundStyle(LibraryGlassDesign.inkMuted)
             }
-            TextField("Search coverage and clips", text: $searchQuery)
+            TextField("Search coverage and clips", text: $media.searchQuery)
                 .textFieldStyle(.plain)
                 .font(.system(size: MacSystemChrome.fieldFontSize))
                 .foregroundStyle(LibraryGlassDesign.ink)

@@ -292,13 +292,14 @@ final class AppUpdateService: @unchecked Sendable {
         }
 
         let bundlePath = Bundle.main.bundleURL.standardizedFileURL.path
-        appendSyncLog("apply update in place: \(bundlePath)")
+        let targetPath = AppReleaseConfig.liveUpdateTargetPath
+        appendSyncLog("apply update: running=\(bundlePath) target=\(targetPath)")
 
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/bin/bash")
-        process.arguments = [script.path, treeURL.path, String(parentPID), bundlePath]
+        process.arguments = [script.path, treeURL.path, String(parentPID), targetPath]
         var env = ProcessInfo.processInfo.environment
-        env["PUBLSHR_MAC_APP"] = bundlePath
+        env["PUBLSHR_MAC_APP"] = targetPath
         process.environment = env
         let logURL = supportUpdatesDirectory().appendingPathComponent("last-update.log")
         if let logHandle = try? FileHandle(forWritingTo: logURL) {

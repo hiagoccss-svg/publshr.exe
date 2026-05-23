@@ -31,6 +31,9 @@ struct SettingsUpdatesPane: View {
                 LabeledContent("Status", value: updates.githubStatusLine)
                 LabeledContent("Update phase", value: updates.statusLine)
                 LabeledContent("Installed", value: AppReleaseConfig.installedLabel)
+                LabeledContent("Running from", value: AppReleaseConfig.installedAppPath)
+                LabeledContent("Update target", value: AppReleaseConfig.liveUpdateTargetPath)
+                LabeledContent("Recommended install", value: AppReleaseConfig.preferredInstallPath)
                 LabeledContent("Installed build", value: "\(AppReleaseConfig.buildNumber)")
                 LabeledContent("Installed shell", value: AppReleaseConfig.liveShellTag)
                 LabeledContent("Installed commit", value: commitLabel(AppReleaseConfig.liveCommit))
@@ -48,7 +51,7 @@ struct SettingsUpdatesPane: View {
             }
             Section("Supabase (cloud data)") {
                 LabeledContent("Cloud sync", value: updates.cloudSyncLine)
-                Text("GitHub updates the app shell only. Supabase holds Chat, Spaces, and enterprise data — refreshed in parallel every 30 seconds (or Sync now).")
+                Text("GitHub updates the app shell only. Supabase holds Chat, Spaces, Media Monitoring, and enterprise data — refreshed in parallel every 30 seconds (or Sync now).")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

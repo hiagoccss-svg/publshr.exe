@@ -105,14 +105,13 @@ enum TitlebarChromeCommands {
             TitlebarCommandPaletteItem(
                 id: "media-monitoring",
                 title: "Open Media Monitoring",
-                subtitle: "Coverage desktop app",
+                subtitle: "Native coverage workspace",
                 systemImage: "dot.radiowaves.left.and.right",
                 shortcut: nil,
                 isEnabled: true
             ) {
                 module.wrappedValue = .mediaMonitoring
                 tabStore.openFromModule(.mediaMonitoring, activate: true)
-                _ = DesktopCompanionAppLauncher.open(.mediaMonitoring)
             },
             TitlebarCommandPaletteItem(
                 id: "workspace",

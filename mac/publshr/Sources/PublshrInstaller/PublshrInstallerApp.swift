@@ -198,7 +198,9 @@ final class InstallerViewModel: ObservableObject {
             clearQuarantine(dest)
             return
         }
-        try installWithAdminPrivileges(from: source, to: dest)
+        throw InstallerError.installFailed(
+            "Cannot write to \(parent.path). Create ~/Applications or fix folder permissions."
+        )
     }
 
     private func isUserWritableAppDestination(_ dest: URL) -> Bool {
@@ -224,25 +226,6 @@ final class InstallerViewModel: ObservableObject {
         process.waitUntilExit()
     }
 
-    private func installWithAdminPrivileges(from source: URL, to dest: URL) throws {
-        let script = """
-        set -e
-        rm -rf '\(dest.path)'
-        ditto '\(source.path)' '\(dest.path)'
-        chmod -R 755 '\(dest.path)'
-        xattr -cr '\(dest.path)' 2>/dev/null || true
-        """
-        var error: NSDictionary?
-        let apple = NSAppleScript(source: """
-        do shell script "\(script.replacingOccurrences(of: "\"", with: "\\\""))" with administrator privileges
-        """)
-        guard apple?.executeAndReturnError(&error) != nil else {
-            if let msg = error?[NSAppleScript.errorMessage] as? String {
-                throw InstallerError.installFailed(msg)
-            }
-            throw InstallerError.installFailed("Administrator approval required.")
-        }
-    }
 }
 
 enum InstallerError: LocalizedError {
