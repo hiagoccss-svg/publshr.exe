@@ -41,7 +41,12 @@ struct ChatSidebarHubStrip: View {
             .frame(height: ChatClickUpDesign.rowHeight)
             .padding(.horizontal, LibraryGlassDesign.sidebarRowHorizontal - 2)
             .background(
-                selected ? LibraryGlassDesign.sidebarSelection.opacity(0.55) : Color.clear
+                RoundedRectangle(cornerRadius: LibraryGlassDesign.sidebarRowRadius, style: .continuous)
+                    .fill(selected ? LibraryGlassDesign.sidebarSelection : Color.clear)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: LibraryGlassDesign.sidebarRowRadius, style: .continuous)
+                    .strokeBorder(selected ? LibraryGlassDesign.sidebarSelectionStroke : Color.clear, lineWidth: 1)
             )
         }
         .buttonStyle(.plain)

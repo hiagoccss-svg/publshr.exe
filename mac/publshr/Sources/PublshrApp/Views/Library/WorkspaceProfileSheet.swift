@@ -12,7 +12,6 @@ struct WorkspaceProfileSheet: View {
     @State private var editedName = ""
     @State private var isSavingName = false
     @State private var isUploadingAvatar = false
-    @State private var showAvatarPicker = false
     @State private var errorMessage: String?
 
     private var isOwnProfile: Bool {
@@ -56,14 +55,6 @@ struct WorkspaceProfileSheet: View {
         .frame(minWidth: 420, minHeight: 480)
         .onAppear(perform: loadEditorState)
         .onChange(of: presentation) { _, _ in loadEditorState() }
-        .fileImporter(
-            isPresented: $showAvatarPicker,
-            allowedContentTypes: [.jpeg, .png],
-            allowsMultipleSelection: false
-        ) { result in
-            guard case .success(let urls) = result, let url = urls.first else { return }
-            Task { await uploadAvatar(from: url) }
-        }
     }
 
     @ViewBuilder
@@ -114,7 +105,7 @@ struct WorkspaceProfileSheet: View {
 
             HStack(spacing: 12) {
                 Button(isUploadingAvatar ? "Uploading…" : "Change photo") {
-                    showAvatarPicker = true
+                    Task { await pickAndUploadAvatar() }
                 }
                 .disabled(isUploadingAvatar)
 
@@ -311,15 +302,13 @@ struct WorkspaceProfileSheet: View {
         }
     }
 
-    private func uploadAvatar(from url: URL) async {
+    private func pickAndUploadAvatar() async {
+        guard let url = await ProfileImagePicker.pickImage() else { return }
         isUploadingAvatar = true
         errorMessage = nil
         defer { isUploadingAvatar = false }
-        let accessed = url.startAccessingSecurityScopedResource()
-        defer { if accessed { url.stopAccessingSecurityScopedResource() } }
         do {
-            let data = try Data(contentsOf: url)
-            let mime = url.pathExtension.lowercased() == "png" ? "image/png" : "image/jpeg"
+            let (data, mime) = try ProfileImagePicker.loadImageData(from: url)
             try await auth.uploadAvatar(data: data, mimeType: mime)
             if let profile = auth.profile {
                 chat.upsertProfile(profile)

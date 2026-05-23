@@ -12,17 +12,10 @@ import { EmptySpaceState } from '../spaces/EmptySpaceState'
 import { PlaceholderSection } from '../spaces/PlaceholderSection'
 import { SpacesBreadcrumb } from '../spaces/SpacesBreadcrumb'
 import { WhiteboardView } from '../whiteboard/WhiteboardView'
+import { SPACES_VIEW_TABS } from '../../../../../../shared/spaces/view-modes'
+import type { TaskViewMode } from '../../../shared/types'
 
-const VIEW_TABS: { id: 'overview' | 'list' | 'board' | 'calendar' | 'timeline' | 'workload' | 'priority' | 'whiteboard'; label: string }[] = [
-  { id: 'overview', label: 'Overview' },
-  { id: 'list', label: 'List' },
-  { id: 'board', label: 'Board' },
-  { id: 'whiteboard', label: 'Whiteboard' },
-  { id: 'calendar', label: 'Calendar' },
-  { id: 'timeline', label: 'Timeline' },
-  { id: 'workload', label: 'Workload' },
-  { id: 'priority', label: 'Priority' }
-]
+const VIEW_TABS = SPACES_VIEW_TABS as { id: TaskViewMode; label: string }[]
 
 export function WorkspaceArea(): React.ReactElement {
   const activeSection = useSpacesStore((s) => s.activeSection)

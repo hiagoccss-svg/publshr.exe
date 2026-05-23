@@ -6,7 +6,7 @@ struct SpacesViewsBar: View {
 
     var body: some View {
         HStack(spacing: 4) {
-            ForEach(SpacesViewModel.TaskViewMode.allCases) { mode in
+            ForEach(SpacesViewModes.tabOrder) { mode in
                 viewTab(mode)
             }
             Spacer(minLength: 8)

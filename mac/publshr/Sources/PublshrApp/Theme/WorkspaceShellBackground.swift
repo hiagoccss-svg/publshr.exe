@@ -21,7 +21,7 @@ struct WorkspaceDesktopBackdrop: View {
     }
 }
 
-/// First column shell — flat Cursor Mac rail (#F3F3F3), not a second glass panel.
+/// First column shell — flat Cursor Mac rail (#F3F3F3), aligned with the titlebar band.
 struct GlassPrimaryBarChrome: View {
     var body: some View {
         CursorMacShellDesign.columnChromeBackground
