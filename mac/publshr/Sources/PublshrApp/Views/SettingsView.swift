@@ -62,7 +62,7 @@ struct SettingsView: View {
             Task {
                 await auth.loadProfile()
                 await auth.refreshSupabaseConnection()
-                await updates.performLiveSync()
+                NotificationCenter.default.post(name: .publshrPerformLiveSync, object: nil)
             }
         }
     }

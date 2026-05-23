@@ -201,10 +201,22 @@ final class AppUpdateService: @unchecked Sendable {
             throw AppUpdateError.downloadFailed
         }
 
-        if let expected = update.packageDigest?.lowercased(),
-           !expected.isEmpty,
-           let actual = sha256Hex(of: tempURL)?.lowercased(),
-           actual != expected {
+        if update.tag == AppReleaseConfig.liveTag {
+            guard let expected = update.packageDigest?.lowercased(), !expected.isEmpty else {
+                appendSyncLog("download rejected: live update missing VERSION.txt digest")
+                throw AppUpdateError.downloadFailed
+            }
+            guard let actual = sha256Hex(of: tempURL)?.lowercased(), actual == expected else {
+                appendSyncLog(
+                    "download digest mismatch expected=\(expected.prefix(12)) "
+                        + "actual=\(sha256Hex(of: tempURL)?.prefix(12) ?? "nil")"
+                )
+                throw AppUpdateError.downloadFailed
+            }
+        } else if let expected = update.packageDigest?.lowercased(),
+                  !expected.isEmpty,
+                  let actual = sha256Hex(of: tempURL)?.lowercased(),
+                  actual != expected {
             appendSyncLog("download digest mismatch expected=\(expected.prefix(12)) actual=\(actual.prefix(12))")
             throw AppUpdateError.downloadFailed
         }

@@ -38,7 +38,7 @@ struct PublshrApp: App {
                     }
                 }
                 .onChange(of: auth.selectedMembership?.workspace.id) { _, _ in
-                    Task { await syncEnterpriseServices() }
+                    Task { await performCloudSync() }
                 }
                 .onReceive(NotificationCenter.default.publisher(for: .publshrPerformLiveSync)) { _ in
                     Task { await performFullSync() }
@@ -137,12 +137,16 @@ struct PublshrApp: App {
 
     @MainActor
     private func performFullSync() async {
-        await updates.performLiveSync()
+        await updates.performLiveSync(forceGitHub: true)
         await performCloudSync()
     }
 
     @MainActor
     private func performCloudSync() async {
+        guard !CloudSyncGate.inFlight else { return }
+        CloudSyncGate.inFlight = true
+        defer { CloudSyncGate.inFlight = false }
+
         guard auth.flowState == .signedIn else {
             updates.recordCloudSync(summary: "Not signed in")
             return
@@ -202,6 +206,11 @@ struct PublshrApp: App {
         }
         AppLifecycleService.shared.start()
     }
+}
+
+@MainActor
+private enum CloudSyncGate {
+    static var inFlight = false
 }
 
 final class AppDelegate: NSObject, NSApplicationDelegate {

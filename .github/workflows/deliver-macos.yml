@@ -164,9 +164,15 @@ jobs:
             REMOTE_COMMIT="$(echo "$REMOTE" | sed -n '3p' | tr -d '[:space:]')"
             REMOTE_SHELL="$(echo "$REMOTE" | sed -n '5p' | tr -d '[:space:]')"
             if [[ "$REMOTE_VER" = "$EXPECT" && "$REMOTE_BUILD" = "$BUILD" ]]; then
+              REMOTE_DIGEST="$(echo "$REMOTE" | sed -n '4p' | tr -d '[:space:]')"
+              LOCAL_TAR="mac/publshr/dist/Publshr-macos-aarch64.tar.gz"
+              LOCAL_DIGEST="$(shasum -a 256 "$LOCAL_TAR" | awk '{print $1}')"
               echo "Remote VERSION.txt: ${REMOTE_VER} build ${REMOTE_BUILD} commit ${REMOTE_COMMIT} shell ${REMOTE_SHELL}"
               test "$REMOTE_COMMIT" = "${{ github.sha }}"
               test -n "$REMOTE_SHELL"
+              test -n "$REMOTE_DIGEST"
+              test "$REMOTE_DIGEST" = "$LOCAL_DIGEST"
+              echo "Live tarball digest verified (${LOCAL_DIGEST:0:12}…)"
               echo "Live channel verified for build ${BUILD}"
               exit 0
             fi

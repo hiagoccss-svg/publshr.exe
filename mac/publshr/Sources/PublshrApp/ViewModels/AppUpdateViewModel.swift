@@ -122,8 +122,9 @@ final class AppUpdateViewModel: ObservableObject {
     }
 
     /// Background path: check, download, install in place (enterprise default).
-    func performLiveSync() async {
-        guard autoCheckEnabled else { return }
+    /// - Parameter forceGitHub: When true (Sync now / wake / sign-in), runs even if auto-check is off.
+    func performLiveSync(forceGitHub: Bool = false) async {
+        guard forceGitHub || autoCheckEnabled else { return }
         guard !syncInFlight else { return }
         if case .installing = phase { return }
         if case .downloading = phase { return }
@@ -135,7 +136,13 @@ final class AppUpdateViewModel: ObservableObject {
             return
         }
 
-        if case .available = phase {
+        if case .available(let update) = phase {
+            guard liveUpdateHasVerifiedDigest(update) else {
+                service.appendSyncLog("auto-install skipped: live update missing package digest")
+                phase = .upToDate
+                refreshGitHubStatusFromService()
+                return
+            }
             await downloadUpdate(silent: true)
         }
         if case .failed = phase {
@@ -270,6 +277,12 @@ final class AppUpdateViewModel: ObservableObject {
 
         phase = .installing
         lastSyncLine = "Installing \(update.version)…"
+        let digest = update.packageDigest ?? service.lastRemoteManifest?.packageDigest
+        AppReleaseConfig.recordInstalledLiveManifest(
+            version: update.version,
+            build: update.build,
+            digest: digest
+        )
         do {
             let updatesRoot = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
                 .appendingPathComponent("Publshr/updates", isDirectory: true)
@@ -301,5 +314,12 @@ final class AppUpdateViewModel: ObservableObject {
         formatter.timeStyle = .short
         formatter.dateStyle = .none
         return formatter.string(from: Date())
+    }
+
+    /// Live channel installs require SHA-256 from `VERSION.txt` (never API-only fallback).
+    private func liveUpdateHasVerifiedDigest(_ update: AvailableUpdate) -> Bool {
+        guard update.tag == AppReleaseConfig.liveTag else { return true }
+        guard let digest = update.packageDigest, !digest.isEmpty else { return false }
+        return true
     }
 }

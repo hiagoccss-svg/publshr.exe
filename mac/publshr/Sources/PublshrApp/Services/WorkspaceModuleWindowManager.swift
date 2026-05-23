@@ -32,7 +32,7 @@ final class WorkspaceModuleWindowManager: ObservableObject {
             updates: updates,
             enterprise: enterprise
         )
-        Task { await updates.performLiveSync() }
+        Task { await updates.performLiveSync(forceGitHub: true) }
     }
 
     func open(

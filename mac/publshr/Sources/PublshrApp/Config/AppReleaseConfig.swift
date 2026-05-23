@@ -34,9 +34,22 @@ enum AppReleaseConfig {
         Bundle.main.object(forInfoDictionaryKey: "PublshrLiveCommit") as? String ?? ""
     }
 
-    /// SHA-256 of the installed live tarball (line 4 of VERSION.txt when present), from the app bundle only.
+    /// SHA-256 of the live tarball (line 4 of VERSION.txt). Plist when CI embeds it; else last successful install.
     static var livePackageDigest: String {
-        Bundle.main.object(forInfoDictionaryKey: "PublshrLivePackageDigest") as? String ?? ""
+        if let embedded = Bundle.main.object(forInfoDictionaryKey: "PublshrLivePackageDigest") as? String,
+           !embedded.isEmpty {
+            return embedded
+        }
+        return UserDefaults.standard.string(forKey: "publshr.installedLiveDigest") ?? ""
+    }
+
+    /// Called before in-place install so post-relaunch update detection matches `live/VERSION.txt`.
+    static func recordInstalledLiveManifest(version: String, build: Int, digest: String?) {
+        UserDefaults.standard.set(version, forKey: "publshr.appliedLiveVersion")
+        UserDefaults.standard.set(build, forKey: "publshr.appliedLiveBuild")
+        if let digest, !digest.isEmpty {
+            UserDefaults.standard.set(digest, forKey: "publshr.installedLiveDigest")
+        }
     }
 
     /// Enterprise shell distribution tag baked at build time (matches `AppShellIdentity` / VERSION.txt line 5).
