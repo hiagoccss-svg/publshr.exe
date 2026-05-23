@@ -40,9 +40,10 @@ final class SpacesService {
             let name: String
             let type: String
         }
+        let dbType = SpaceTypeWire.toDatabase(type)
         let row: SpaceRecord = try await client
             .from("spaces")
-            .insert(Insert(workspace_id: workspaceId, owner_id: ownerId, name: name, type: type))
+            .insert(Insert(workspace_id: workspaceId, owner_id: ownerId, name: name, type: dbType))
             .select()
             .single()
             .execute()

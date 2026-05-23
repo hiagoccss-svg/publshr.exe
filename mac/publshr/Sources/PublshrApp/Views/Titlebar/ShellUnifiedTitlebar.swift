@@ -34,17 +34,15 @@ struct ShellUnifiedTitlebar: View {
                 .frame(width: barColumnWidth, alignment: .leading)
 
             if !submenuHidden {
-                ShellColumnVerticalRule()
+                ShellColumnVerticalRule(bandHeight: titlebarBandHeight)
                 submenuBand
                     .frame(width: submenuColumnWidth, alignment: .leading)
             }
 
-            ShellColumnVerticalRule()
+            ShellColumnVerticalRule(bandHeight: titlebarBandHeight)
             editorBand
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .frame(height: layout.rowHeight, alignment: .center)
-        .padding(.top, titlebarTopPadding)
         .frame(height: titlebarBandHeight, alignment: .top)
         .frame(maxWidth: .infinity)
         .background(TrafficLightLayoutRefreshView().frame(width: 0, height: 0))
@@ -69,6 +67,8 @@ struct ShellUnifiedTitlebar: View {
             )
         }
         .frame(height: layout.rowHeight)
+        .padding(.top, titlebarTopPadding)
+        .frame(height: titlebarBandHeight, alignment: .top)
         .clipped()
         .background { GlassPrimaryBarChrome() }
     }
@@ -80,6 +80,8 @@ struct ShellUnifiedTitlebar: View {
         UniversalSubmenuTitlebarChrome(module: module, chat: chat, spaces: spaces)
             .padding(.horizontal, 10)
             .frame(height: layout.rowHeight)
+            .padding(.top, titlebarTopPadding)
+            .frame(height: titlebarBandHeight, alignment: .top)
             .background { GlassSubmenuChrome() }
     }
 
@@ -108,17 +110,19 @@ struct ShellUnifiedTitlebar: View {
             }
         }
         .frame(height: layout.rowHeight)
+        .padding(.top, titlebarTopPadding)
+        .frame(height: titlebarBandHeight, alignment: .top)
         .background(CursorMacShellDesign.editorColumnBackground)
     }
 }
 
 /// Hairline between titlebar column bands (matches body column dividers).
 struct ShellColumnVerticalRule: View {
-    @ObservedObject private var layout = TrafficLightLayoutStore.shared
+    var bandHeight: CGFloat
 
     var body: some View {
         Rectangle()
             .fill(LibraryGlassDesign.hairline.opacity(0.85))
-            .frame(width: CursorMacShellDesign.columnDividerWidth, height: layout.rowHeight)
+            .frame(width: CursorMacShellDesign.columnDividerWidth, height: bandHeight)
     }
 }
