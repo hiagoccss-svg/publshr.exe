@@ -114,7 +114,10 @@ final class TrafficLightLayoutStore: ObservableObject {
               clusterCenterFromTop <= contentHeight * 0.25
         else { return nil }
 
-        let topPad = clampTopPadding(clusterCenterFromTop - row * 0.5)
+        // Center toolbar controls on the traffic-light cluster; nudge row up slightly so bottoms line up visually.
+        let topPad = clampTopPadding(
+            clusterCenterFromTop - row * 0.5 - AppWindowChromeMetrics.trafficToolbarRowNudge
+        )
 
         return TrafficMetrics(
             leadingInset: max(trailingX, AppWindowChromeMetrics.trafficLightLeadingInset),

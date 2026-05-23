@@ -4,11 +4,11 @@ import SwiftUI
 enum CursorMacShellDesign {
     /// Window / gutter behind the center editor box.
     static let workspaceBackground = Color(hex: 0xF3F2EF)
-    /// Left + middle sidebar columns (Cursor agent / repo list).
-    static let columnChromeBackground = Color(hex: 0xF3F3F3)
-    /// Chat / workspace editor column — solid white (matches submenu column).
+    /// Left column chrome (module rail / bar menu).
+    static let columnChromeBackground = LibraryGlassDesign.primaryBarColumnBackground
+    /// Chat / workspace editor column — solid white.
     static let editorColumnBackground = Color.white
-    static let titleBarBackground = Color(hex: 0xF3F3F3)
+    static let titleBarBackground = LibraryGlassDesign.primaryBarColumnBackground
     /// Collapsed primary bar menu (icon rail); matches `ShellColumnLayout.barCollapsedMax`.
     static let barMenuIconRailWidth: CGFloat = ShellColumnLayout.barCollapsedMax
     /// Center column content card.
