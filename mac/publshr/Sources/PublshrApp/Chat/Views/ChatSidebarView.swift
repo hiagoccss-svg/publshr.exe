@@ -71,10 +71,11 @@ struct ChatSidebarView: View {
                         filterPill(filter)
                     }
                 }
+                .padding(.vertical, 4)
             }
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 6)
+        .padding(.horizontal, LibraryGlassDesign.sidebarRowHorizontal)
+        .padding(.top, 2)
         .frame(height: ChatClickUpDesign.filterBarHeight, alignment: .center)
     }
 
@@ -450,7 +451,7 @@ struct ChatSidebarView: View {
                     .frame(minWidth: 40, alignment: .trailing)
                 }
                 .frame(height: ChatClickUpDesign.rowHeight)
-                .padding(.horizontal, 10)
+                .padding(.horizontal, LibraryGlassDesign.sidebarRowHorizontal - 2)
                 .background(
                     RoundedRectangle(cornerRadius: LibraryGlassDesign.sidebarRowRadius, style: .continuous)
                         .fill(selected ? LibraryGlassDesign.sidebarSelection : Color.clear)

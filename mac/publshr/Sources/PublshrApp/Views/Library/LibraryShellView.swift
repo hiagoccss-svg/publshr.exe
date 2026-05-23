@@ -151,6 +151,11 @@ struct LibraryShellView: View {
         .animation(.easeInOut(duration: 0.15), value: tabStore.barMenuExpanded)
     }
 
+    /// Column 3 — flat page surface (Cursor PR / chat column); gray gutter only around the Spaces card.
+    private var editorColumnBackground: Color {
+        module == .spaces ? CursorMacShellDesign.workspaceBackground : CursorMacShellDesign.editorColumnBackground
+    }
+
     private var editorColumn: some View {
         ShellColumnChromeStack(showsTitlebar: false) {
             Group {
@@ -166,7 +171,7 @@ struct LibraryShellView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(module == .chat ? CursorMacShellDesign.editorColumnBackground : CursorMacShellDesign.workspaceBackground)
+        .background(editorColumnBackground)
     }
 
     @ViewBuilder
