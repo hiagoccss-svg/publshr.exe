@@ -31,3 +31,5 @@ tauri-plugin-process = "2"
 [target.'cfg(desktop)'.dependencies]
 tauri-plugin-updater = "2"
 
+publshr-spaces = { path = "../../spaces/src-tauri" }
+

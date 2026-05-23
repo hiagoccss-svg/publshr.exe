@@ -4,6 +4,10 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --lib-bar-menu-width: 200px;
+}
+
 html,
 body,
 #root {
@@ -25,7 +29,6 @@ body {
   user-select: none;
 }
 
-/* Native desktop: no rubber-band overscroll */
 #root {
   overscroll-behavior: none;
 }

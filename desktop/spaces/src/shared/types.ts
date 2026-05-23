@@ -65,6 +65,7 @@ export type SidebarSection =
   | 'planner'
   | 'chat'
   | 'documents'
+  | 'whiteboard'
   | 'approvals'
   | 'reports'
   | 'clients'

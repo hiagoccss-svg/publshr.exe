@@ -10,6 +10,12 @@ struct SpacesEnterpriseSectionsView: View {
                 switch spaces.activeSection {
                 case .dashboard: dashboardSection
                 case .documents: documentsSection
+                case .whiteboard:
+                    if spaces.selectedSpace != nil {
+                        SpacesWhiteboardView(spaces: spaces)
+                    } else {
+                        whiteboardPickSpacePrompt
+                    }
                 case .approvals: approvalsSection
                 case .reports: reportsSection
                 case .clients: spacesByTypeSection(type: "client", title: "Clients")
@@ -27,6 +33,18 @@ struct SpacesEnterpriseSectionsView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(CursorMacShellDesign.editorColumnBackground)
+    }
+
+    private var whiteboardPickSpacePrompt: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            sectionHeader("Whiteboard", subtitle: "Pick a space in the submenu to open its canvas.")
+            if let first = spaces.spaces.first {
+                Button("Open \(first.name)") {
+                    Task { await spaces.selectSpace(first.id) }
+                }
+                .buttonStyle(.borderedProminent)
+            }
+        }
     }
 
     // MARK: - Sections

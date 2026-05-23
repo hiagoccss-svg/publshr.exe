@@ -69,6 +69,7 @@ interface SpacesState {
   setActiveFolder: (folderId: string | null) => Promise<void>
   toggleFolderExpanded: (folderId: string) => void
   setActiveSection: (section: SidebarSection) => void
+  selectEnterpriseNav: (id: SidebarSection | 'whiteboard') => void
   setTaskView: (view: TaskViewMode) => void
   setSelectedTask: (id: string | null) => Promise<void>
   setSidebarCollapsed: (v: boolean) => void
@@ -273,6 +274,19 @@ export const useSpacesStore = create<SpacesState>((set, get) => ({
   setActiveSection: (section) => {
     set({ activeSection: section })
     if (section !== 'spaces') void get().loadWorkspaceData()
+  },
+  selectEnterpriseNav: (id) => {
+    if (id === 'whiteboard') {
+      set({ activeSection: 'spaces', spacesHomeOpen: false, taskView: 'whiteboard' })
+      const spaceId = get().activeSpaceId ?? get().spaces[0]?.id ?? null
+      if (spaceId) void get().setActiveSpace(spaceId)
+      return
+    }
+    if (id === 'spaces') {
+      set({ activeSection: 'spaces', activeSpaceId: null, spacesHomeOpen: true })
+      return
+    }
+    get().setActiveSection(id)
   },
   setTaskView: (view) => set({ taskView: view }),
   setSelectedTask: async (id) => {

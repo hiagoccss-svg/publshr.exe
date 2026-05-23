@@ -7,6 +7,7 @@ enum SpacesEnterpriseSection: String, CaseIterable, Identifiable {
     case planner
     case chat
     case documents
+    case whiteboard
     case approvals
     case reports
     case clients
@@ -25,6 +26,7 @@ enum SpacesEnterpriseSection: String, CaseIterable, Identifiable {
         case .planner: return "Planner"
         case .chat: return "Chat"
         case .documents: return "Documents"
+        case .whiteboard: return "Whiteboard"
         case .approvals: return "Approvals"
         case .reports: return "Reports"
         case .clients: return "Clients"
@@ -43,6 +45,7 @@ enum SpacesEnterpriseSection: String, CaseIterable, Identifiable {
         case .planner: return "calendar"
         case .chat: return "bubble.left.and.bubble.right"
         case .documents: return "doc.text"
+        case .whiteboard: return "scribble.variable"
         case .approvals: return "checkmark.circle"
         case .reports: return "chart.bar"
         case .clients: return "briefcase"
@@ -56,7 +59,7 @@ enum SpacesEnterpriseSection: String, CaseIterable, Identifiable {
 
     /// Primary nav strip (settings pinned in footer).
     static let mainNav: [SpacesEnterpriseSection] = [
-        .dashboard, .spaces, .planner, .chat, .documents, .approvals, .reports,
+        .dashboard, .spaces, .planner, .chat, .documents, .whiteboard, .approvals, .reports,
         .clients, .campaigns, .team, .media, .files
     ]
 }
