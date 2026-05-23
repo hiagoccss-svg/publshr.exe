@@ -44,15 +44,12 @@ struct ContentView: View {
         }
         .onChange(of: auth.selectedMembership?.id) { _, _ in
             syncEnterpriseData()
+            NotificationCenter.default.post(name: .publshrPerformCloudSync, object: nil)
         }
         .onChange(of: auth.profile?.avatarUrl) { _, _ in
             if let profile = auth.profile {
                 chat.upsertProfile(profile)
             }
-        }
-        .task(id: auth.flowState) {
-            guard auth.flowState == .signedIn else { return }
-            await runPeriodicSupabaseSync()
         }
         .sheet(isPresented: $showEnterpriseOnboarding) {
             EnterpriseOnboardingView(isPresented: $showEnterpriseOnboarding)
@@ -118,14 +115,4 @@ struct ContentView: View {
         }
     }
 
-    private func runPeriodicSupabaseSync() async {
-        while !Task.isCancelled {
-            try? await Task.sleep(nanoseconds: AppReleaseConfig.livePollIntervalSeconds * 1_000_000_000)
-            guard auth.flowState == .signedIn else { continue }
-            if !auth.isCloudValidated, AppLifecycleService.shared.isNetworkReachable {
-                await auth.reconcileCloudSession(unlockMethod: nil)
-            }
-            NotificationCenter.default.post(name: .publshrPerformCloudSync, object: nil)
-        }
-    }
 }

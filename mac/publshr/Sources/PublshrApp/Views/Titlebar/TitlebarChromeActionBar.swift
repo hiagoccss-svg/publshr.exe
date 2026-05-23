@@ -41,6 +41,8 @@ struct TitlebarChromeActionBar: View {
             ) {
                 showCommandPalette = true
             }
+
+            TitlebarWorkspaceSettingsButton()
         }
     }
 }

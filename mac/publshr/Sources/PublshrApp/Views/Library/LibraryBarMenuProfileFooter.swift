@@ -49,6 +49,7 @@ struct LibraryBarMenuProfileFooter: View {
             .buttonStyle(.plain)
             .help("Your profile & workspace team")
         }
+        .frame(minHeight: ChatClickUpDesign.footerHeight, alignment: .center)
     }
 
     private var displayTitle: String {

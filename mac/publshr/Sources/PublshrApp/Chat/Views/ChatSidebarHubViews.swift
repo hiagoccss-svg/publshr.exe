@@ -1,57 +1,66 @@
 import SwiftUI
 
-/// ClickUp-style hub strip — Activity, Drafts, Sent above channel lists.
+/// ClickUp-style hub tabs — horizontal pills above channel lists (consistent across hubs).
 struct ChatSidebarHubStrip: View {
     @ObservedObject var chat: ChatViewModel
 
     var body: some View {
-        VStack(spacing: 0) {
-            ForEach(ChatSidebarHub.allCases) { hub in
-                hubRow(hub)
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 6) {
+                ForEach(ChatSidebarHub.allCases) { hub in
+                    hubPill(hub)
+                }
             }
-            LibraryUniversalSubmenu.sectionDivider()
+            .padding(.horizontal, LibraryGlassDesign.sidebarRowHorizontal)
+            .padding(.vertical, 4)
+        }
+        .frame(height: ChatClickUpDesign.filterBarHeight, alignment: .center)
+        .overlay(alignment: .bottom) {
+            Rectangle()
+                .fill(LibraryGlassDesign.contentDivider.opacity(0.55))
+                .frame(height: 1)
+                .padding(.horizontal, 12)
         }
     }
 
-    private func hubRow(_ hub: ChatSidebarHub) -> some View {
+    private func hubPill(_ hub: ChatSidebarHub) -> some View {
         let selected = chat.sidebarHub == hub
         let badge = badgeCount(for: hub)
         return Button {
             chat.setSidebarHub(hub)
         } label: {
-            HStack(spacing: 8) {
+            HStack(spacing: 5) {
                 Image(systemName: hub.icon)
-                    .font(.system(size: 12, weight: .medium))
-                    .frame(width: ChatClickUpDesign.rowIconSize)
-                    .foregroundStyle(selected ? LibraryGlassDesign.ink : LibraryGlassDesign.inkSecondary)
+                    .font(.system(size: 10, weight: .medium))
                 Text(hub.label)
-                    .font(.system(size: 13, weight: selected ? .semibold : .regular))
-                    .foregroundStyle(selected ? LibraryGlassDesign.ink : LibraryGlassDesign.inkSecondary)
+                    .font(.system(size: 11, weight: selected ? .semibold : .medium))
                     .lineLimit(1)
-                Spacer(minLength: 0)
                 if badge > 0 {
                     Text(badge > 99 ? "99+" : "\(badge)")
-                        .font(ChatClickUpDesign.unreadBadgeFont)
+                        .font(.system(size: 9, weight: .bold))
                         .foregroundStyle(.white)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
+                        .padding(.horizontal, 5)
+                        .padding(.vertical, 1)
                         .background(LibraryGlassDesign.primaryCTA)
                         .clipShape(Capsule())
                 }
             }
-            .frame(height: ChatClickUpDesign.rowHeight)
-            .padding(.horizontal, LibraryGlassDesign.sidebarRowHorizontal - 2)
+            .foregroundStyle(selected ? LibraryGlassDesign.ink : LibraryGlassDesign.inkMuted)
+            .padding(.horizontal, ChatClickUpDesign.filterPillHPadding)
+            .padding(.vertical, 5)
             .background(
-                RoundedRectangle(cornerRadius: LibraryGlassDesign.sidebarRowRadius, style: .continuous)
-                    .fill(selected ? LibraryGlassDesign.sidebarSelection : Color.clear)
+                Capsule(style: .continuous)
+                    .fill(selected ? LibraryGlassDesign.sidebarSelection : LibraryGlassDesign.filterPillInactiveFill)
             )
             .overlay(
-                RoundedRectangle(cornerRadius: LibraryGlassDesign.sidebarRowRadius, style: .continuous)
-                    .strokeBorder(selected ? LibraryGlassDesign.sidebarSelectionStroke : Color.clear, lineWidth: 1)
+                Capsule(style: .continuous)
+                    .strokeBorder(
+                        selected ? LibraryGlassDesign.sidebarSelectionStroke : LibraryGlassDesign.filterPillInactiveStroke,
+                        lineWidth: 1
+                    )
             )
         }
         .buttonStyle(.plain)
-        .padding(.horizontal, 4)
     }
 
     private func badgeCount(for hub: ChatSidebarHub) -> Int {

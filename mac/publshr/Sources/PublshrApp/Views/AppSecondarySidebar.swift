@@ -22,7 +22,9 @@ struct AppSecondarySidebar: View {
                 )
             case .spaces, .whiteboard:
                 SpacesNavSidebar(spaces: spaces, submenuWidth: submenuWidth)
-            case .mediaMonitoring, .settings:
+            case .mediaMonitoring:
+                MediaMonitoringNavSidebar(submenuWidth: submenuWidth)
+            case .settings:
                 EmptyView()
             }
         }

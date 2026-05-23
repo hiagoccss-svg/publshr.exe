@@ -15,6 +15,7 @@ struct SettingsUpdatesPane: View {
                 LabeledContent("Installed build", value: "\(AppReleaseConfig.buildNumber)")
                 LabeledContent("Installed shell", value: AppReleaseConfig.liveShellTag)
                 LabeledContent("Installed commit", value: commitLabel(AppReleaseConfig.liveCommit))
+                LabeledContent("Package digest", value: digestLabel(AppReleaseConfig.livePackageDigest))
                 LabeledContent("Remote (live)", value: remoteDetailLabel)
                 Toggle("Auto-check every 30 seconds", isOn: $updates.autoCheckEnabled)
                     .onChange(of: updates.autoCheckEnabled) { _, on in
@@ -47,9 +48,6 @@ struct SettingsUpdatesPane: View {
         .formStyle(.grouped)
         .navigationTitle("App updates")
         .onAppear {
-            if updates.autoCheckEnabled {
-                updates.startAutomaticChecks()
-            }
             NotificationCenter.default.post(name: .publshrPerformLiveSync, object: nil)
         }
     }
@@ -64,6 +62,11 @@ struct SettingsUpdatesPane: View {
     private func commitLabel(_ commit: String) -> String {
         if commit.isEmpty { return "—" }
         return String(commit.prefix(7))
+    }
+
+    private func digestLabel(_ digest: String) -> String {
+        if digest.isEmpty { return "— (recorded after next live install)" }
+        return String(digest.prefix(12)) + "…"
     }
 }
 

@@ -51,10 +51,10 @@ enum LibraryGlassDesign {
         )
         return submenuColumnWidth(for: windowWidth, barWidth: bar, submenuVisible: true)
     }
-    /// Column 2 — lighter grey than the primary bar (reads as a soft step toward the editor).
+    /// Column 2 — lighter grey step toward the white editor (main shell alignment).
     static let submenuColumnBackground = Color(hex: 0xF4F4F4)
-    /// Column 1 — light grey rail behind module icons / bar menu.
-    static let primaryBarColumnBackground = Color(hex: 0xE8E8E8)
+    /// Column 1 — warm grey tint over desktop blur (translucent rail).
+    static let primaryBarColumnBackground = Color(hex: 0xE8E8E8).opacity(0.72)
     /// Chat submenu footer strip (enterprise chrome).
     static let submenuFooterBackground = Color(hex: 0xFAFAF8)
 
@@ -62,11 +62,11 @@ enum LibraryGlassDesign {
     static let activityBarWidth: CGFloat = 48
 
     /// Selected sidebar row (reference: warm beige pill on Chat).
-    static let sidebarSelection = Color(hex: 0xE6E2DA)
-    static let sidebarSelectionStroke = Color(hex: 0xD8D4CC)
+    static let sidebarSelection = Color(hex: 0xE6E2DA).opacity(0.55)
+    static let sidebarSelectionStroke = Color(hex: 0xD8D4CC).opacity(0.65)
     static let sidebarGlassFill = Color(hex: 0xF7F6F3).opacity(0.88)
     /// Primary bar menu (~200px) — light tint so the desktop wallpaper tints through.
-    static let primaryBarGlassFill = Color(hex: 0xEBE8E3).opacity(0.55)
+    static let primaryBarGlassFill = Color(hex: 0xF3F3F3).opacity(0.42)
     static let primaryBarGlassStroke = Color.white.opacity(0.12)
     /// @deprecated Submenu uses `submenuColumnBackground` (solid white).
     static let submenuGlassFill = Color.white
