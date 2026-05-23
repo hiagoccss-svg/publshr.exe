@@ -11,9 +11,10 @@ Publshr has **no separate browser web app** in this repo. “Web” means the **
 
 1. **Views bar** — eight tabs in this order (see `shared/spaces/view-modes.ts`):
    Overview → List → Board → Whiteboard → Calendar → Timeline → Workload → Priority
-2. **Hierarchy** — Workspace → Space → Folder → List → Task
-3. **Chrome** — 272px sidebar, 340px task inspector (`SpacesClickUpDesign` / Tailwind tokens)
-4. **Supabase** — same tables and migrations under `supabase/migrations/`
+2. **Hierarchy** — Workspace → Space → Folder → List → Task (folders hold project work; no top-level Project type — see `hierarchy.ts`)
+3. **Spaces Home** — search, type filter, archived toggle, grid/list (`spaces-home.ts`, `SpacesEnterpriseHome.tsx`, `SpacesHomeView.swift`)
+4. **Chrome** — 272px sidebar, 340px task inspector (`SpacesClickUpDesign` / Tailwind tokens)
+5. **Supabase** — same tables and migrations under `supabase/migrations/`
 
 When adding a view or renaming a tab, update **both**:
 

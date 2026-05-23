@@ -62,6 +62,15 @@ export function CommandPalette(): React.ReactElement {
             <CommandItem onSelect={() => run(() => void createSpace({ name: 'New Space' }))}>
               Create Space
             </CommandItem>
+            <CommandItem
+              onSelect={() =>
+                run(() => {
+                  useSpacesStore.getState().setSpacesHomeOpen(true)
+                })
+              }
+            >
+              Open Spaces Home
+            </CommandItem>
             <CommandItem onSelect={() => run(() => setTaskView('board'))}>Open board view</CommandItem>
             <CommandItem onSelect={() => run(() => setTaskView('list'))}>Open list view</CommandItem>
             <CommandItem onSelect={() => run(() => setTaskView('timeline' as TaskViewMode))}>

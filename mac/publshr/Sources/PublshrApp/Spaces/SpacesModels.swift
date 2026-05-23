@@ -26,19 +26,42 @@ enum SpaceTaskStatus: String, Codable, CaseIterable, Identifiable {
     static let boardColumns: [SpaceTaskStatus] = [.todo, .in_progress, .review, .approved, .completed]
 }
 
+/// Top-level space kinds — no separate `project` type; use folders inside a Space (ClickUp-style).
 enum SpaceTypeOption: String, CaseIterable, Identifiable {
     case general
-    case project
+    case department
+    case client
     case campaign
+    case initiative
+    case editorial
+    case operation
+    case launch
+    case event
+    case retainer
+    case publication
 
     var id: String { rawValue }
 
     var label: String {
         switch self {
         case .general: return "General"
-        case .project: return "Project"
+        case .department: return "Department"
+        case .client: return "Client"
         case .campaign: return "Campaign"
+        case .initiative: return "Initiative"
+        case .editorial: return "Editorial"
+        case .operation: return "Operation"
+        case .launch: return "Launch"
+        case .event: return "Event"
+        case .retainer: return "Retainer"
+        case .publication: return "Publication"
         }
+    }
+
+    /// Legacy rows stored as `project` map to initiative in UI and filters.
+    static func resolved(rawType: String) -> SpaceTypeOption {
+        let normalized = SpacesHomeLogic.normalizeSpaceType(rawType)
+        return SpaceTypeOption(rawValue: normalized) ?? .general
     }
 }
 

@@ -38,6 +38,10 @@ final class SpacesViewModel: ObservableObject {
     @Published var newDocumentTitle = ""
     @Published var expandedFolderIds: Set<UUID> = []
     @Published var spacesHomeOpen = false
+    @Published var spacesHomeQuery = ""
+    @Published var spacesHomeTypeFilter = "all"
+    @Published var spacesHomeShowArchived = false
+    @Published var spacesHomeUseListLayout = false
     @Published var spaceSettingsSpaceId: UUID?
     @Published var activeSection: SpacesEnterpriseSection = .spaces
     @Published private(set) var workspaceSummary: SpacesWorkspaceSummary?

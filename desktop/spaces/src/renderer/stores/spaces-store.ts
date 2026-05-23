@@ -1,3 +1,5 @@
+import type { CanonicalSpaceType } from '@spaces-enterprise/hierarchy'
+import type { SpacesHomeLayout } from '@spaces-enterprise/spaces-home'
 import { create } from 'zustand'
 import { getSpacesAPI } from '../lib/api'
 import type {
@@ -64,6 +66,10 @@ interface SpacesState {
   newSpaceModalOpen: boolean
   spaceSettingsId: string | null
   spacesHomeOpen: boolean
+  spacesHomeQuery: string
+  spacesHomeTypeFilter: CanonicalSpaceType | 'all'
+  spacesHomeShowArchived: boolean
+  spacesHomeLayout: SpacesHomeLayout
   loadBootstrap: () => Promise<void>
   clearBootstrapError: () => void
   loadWorkspaceData: () => Promise<void>
@@ -86,6 +92,10 @@ interface SpacesState {
   setSpaceSettingsId: (id: string | null) => void
   openSpaceSettings: (id: string) => void
   setSpacesHomeOpen: (v: boolean) => void
+  setSpacesHomeQuery: (q: string) => void
+  setSpacesHomeTypeFilter: (t: CanonicalSpaceType | 'all') => void
+  setSpacesHomeShowArchived: (v: boolean) => void
+  setSpacesHomeLayout: (layout: SpacesHomeLayout) => void
   getDefaultViewForSpace: (spaceId: string) => TaskViewMode
   setDefaultViewForSpace: (spaceId: string, view: TaskViewMode) => void
   updateSpace: (id: string, patch: Partial<Space>) => Promise<void>
@@ -141,6 +151,10 @@ export const useSpacesStore = create<SpacesState>((set, get) => ({
   newSpaceModalOpen: false,
   spaceSettingsId: null,
   spacesHomeOpen: false,
+  spacesHomeQuery: '',
+  spacesHomeTypeFilter: 'all',
+  spacesHomeShowArchived: false,
+  spacesHomeLayout: 'grid',
 
   loadBootstrap: async () => {
     set({ bootstrapError: null })
@@ -342,6 +356,11 @@ export const useSpacesStore = create<SpacesState>((set, get) => ({
       set({ spacesHomeOpen: false })
     }
   },
+
+  setSpacesHomeQuery: (q) => set({ spacesHomeQuery: q }),
+  setSpacesHomeTypeFilter: (t) => set({ spacesHomeTypeFilter: t }),
+  setSpacesHomeShowArchived: (v) => set({ spacesHomeShowArchived: v }),
+  setSpacesHomeLayout: (layout) => set({ spacesHomeLayout: layout }),
 
   getDefaultViewForSpace: (spaceId) => {
     try {
