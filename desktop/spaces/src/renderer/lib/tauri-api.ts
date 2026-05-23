@@ -45,6 +45,7 @@ export function createTauriSpacesAPI(): SpacesAPI {
     listWorkspaceMembers: () => cmd('spaces_list_workspace_members'),
     listWorkspaceActivity: (limit) => cmd('spaces_list_workspace_activity', { limit }),
     listNotifications: (limit) => cmd('spaces_list_notifications', { limit }),
+    listCoverage: (limit) => cmd('spaces_list_coverage', { limit }),
     getWorkspaceSummary: () => cmd('spaces_get_workspace_summary'),
     search: (query) => cmd('spaces_search', { query }),
     getSyncStatus: () => cmd('spaces_get_sync_status'),

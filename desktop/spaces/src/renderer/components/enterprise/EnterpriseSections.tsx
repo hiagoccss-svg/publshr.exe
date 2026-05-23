@@ -8,12 +8,14 @@ import {
   FileText,
   Megaphone,
   Plus,
-  Radio
 } from 'lucide-react'
 import clsx from 'clsx'
 import { useSpacesStore } from '../../stores/spaces-store'
 import { getSpacesAPI } from '../../lib/api'
 import type { Approval, SidebarSection, Space } from '../../../shared/types'
+import { MediaMonitoringWorkspace } from './MediaMonitoringWorkspace'
+import { PlannerWorkspace } from './PlannerWorkspace'
+import { ReportsWorkspace } from './ReportsWorkspace'
 
 export function EnterpriseSectionView({ section }: { section: SidebarSection }): React.ReactElement {
   switch (section) {
@@ -32,13 +34,13 @@ export function EnterpriseSectionView({ section }: { section: SidebarSection }):
     case 'team':
       return <TeamSection />
     case 'reports':
-      return <ReportsSection />
+      return <ReportsWorkspace />
     case 'chat':
       return <ChatRedirectSection />
     case 'planner':
-      return <PlannerRedirectSection />
+      return <PlannerWorkspace />
     case 'media':
-      return <MediaSection />
+      return <MediaMonitoringWorkspace />
     case 'whiteboard':
       return <WhiteboardHubSection />
     case 'settings':
@@ -267,86 +269,6 @@ function TeamSection(): React.ReactElement {
   )
 }
 
-function ReportsSection(): React.ReactElement {
-  const summary = useSpacesStore((s) => s.workspaceSummary)
-  const tasks = useSpacesStore((s) => s.workspaceTasks)
-  const byStatus = tasks.reduce<Record<string, number>>((acc, t) => {
-    acc[t.status] = (acc[t.status] ?? 0) + 1
-    return acc
-  }, {})
-
-  return (
-    <div className="space-y-4 p-6">
-      <SectionHeader title="Reports" description="Operational metrics from local workspace data." />
-      {summary && (
-        <div className="library-card space-y-3 p-4 text-sm">
-          <Row label="Spaces" value={String(summary.spaceCount)} />
-          <Row label="Open tasks" value={String(summary.openTasks)} />
-          <Row label="Documents" value={String(summary.documentCount)} />
-          <Row label="Pending approvals" value={String(summary.pendingApprovals)} />
-        </div>
-      )}
-      <Panel title="Tasks by status">
-        {Object.keys(byStatus).length === 0 ? (
-          <p className="text-xs text-ink-muted">No task data.</p>
-        ) : (
-          <ul className="space-y-1">
-            {Object.entries(byStatus).map(([status, count]) => (
-              <li key={status} className="flex justify-between text-xs">
-                <span className="capitalize text-ink-secondary">{status.replace(/_/g, ' ')}</span>
-                <span className="font-medium text-ink">{count}</span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </Panel>
-    </div>
-  )
-}
-
-function PlannerRedirectSection(): React.ReactElement {
-  const selectEnterpriseNav = useSpacesStore((s) => s.selectEnterpriseNav)
-
-  useEffect(() => {
-    selectEnterpriseNav('planner')
-  }, [selectEnterpriseNav])
-
-  return (
-    <div className="flex h-full items-center justify-center p-6">
-      <p className="text-sm text-ink-muted">Opening Planner…</p>
-    </div>
-  )
-}
-
-function MediaSection(): React.ReactElement {
-  const spaces = useSpacesStore((s) => s.spaces)
-  const mediaSpaces = spaces.filter((s) => s.type === 'publication' || s.name.toLowerCase().includes('media'))
-
-  return (
-    <div className="space-y-4 p-6">
-      <SectionHeader
-        title="Media Monitoring"
-        description="Coverage operations linked to Spaces. Use the Media Monitoring desktop app for live feeds."
-        icon={Radio}
-      />
-      {mediaSpaces.length === 0 ? (
-        <p className="text-sm text-ink-muted">
-          No publication Spaces yet. Create a publication-type Space or open Media Monitoring.
-        </p>
-      ) : (
-        <ul className="space-y-2">
-          {mediaSpaces.map((s) => (
-            <li key={s.id} className="rounded-lg border border-surface-border px-3 py-2 text-sm">
-              <p className="font-medium text-ink">{s.name}</p>
-              <p className="text-xs capitalize text-ink-muted">{s.type}</p>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
-  )
-}
-
 function WhiteboardHubSection(): React.ReactElement {
   const spaces = useSpacesStore((s) => s.spaces)
   const setActiveSpace = useSpacesStore((s) => s.setActiveSpace)
@@ -451,24 +373,6 @@ function EntityList<T>({
 }): React.ReactElement {
   if (items.length === 0) return <p className="text-sm text-ink-muted">{empty}</p>
   return <ul className="space-y-2">{items.map((item, i) => <li key={i}>{render(item)}</li>)}</ul>
-}
-
-function Panel({ title, children }: { title: string; children: React.ReactNode }): React.ReactElement {
-  return (
-    <section className="library-card p-4">
-      <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-ink-muted">{title}</h2>
-      {children}
-    </section>
-  )
-}
-
-function Row({ label, value }: { label: string; value: string }): React.ReactElement {
-  return (
-    <div className="flex justify-between">
-      <span className="text-ink-muted">{label}</span>
-      <span className="font-medium text-ink">{value}</span>
-    </div>
-  )
 }
 
 function ApprovalBadge({

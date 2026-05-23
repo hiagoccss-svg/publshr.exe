@@ -224,6 +224,21 @@ pub struct SpaceComment {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+pub struct CoverageMention {
+    pub id: String,
+    pub space_id: Option<String>,
+    pub headline: String,
+    pub publication: String,
+    pub sentiment: String,
+    pub reach: i64,
+    pub pr_value: f64,
+    pub url: String,
+    pub saved: bool,
+    pub published_at: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct NotificationItem {
     pub id: String,
     pub space_id: Option<String>,

@@ -5,6 +5,7 @@ import { EnterpriseContextSidebar } from './EnterpriseContextSidebar'
 import { WorkspaceArea } from './WorkspaceArea'
 import { ContextPanel } from './ContextPanel'
 import { CommandPalette } from '../command/CommandPalette'
+import { NotificationsPanel } from './NotificationsPanel'
 import { NewSpaceModal } from '../spaces/NewSpaceModal'
 import { SpaceSettingsModal } from '../spaces/SpaceSettingsModal'
 import { useSpacesStore } from '../../stores/spaces-store'
@@ -32,6 +33,7 @@ export function MainShell({ embedded = false, onSignOut }: MainShellProps = {}):
         {contextOpen && <ContextPanel />}
       </div>
       <CommandPalette />
+      <NotificationsPanel />
       <NewSpaceModal />
       <SpaceSettingsModal />
     </div>

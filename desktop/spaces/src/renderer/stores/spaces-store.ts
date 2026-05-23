@@ -3,6 +3,7 @@ import { getSpacesAPI } from '../lib/api'
 import type {
   Approval,
   BootstrapPayload,
+  CoverageMention,
   NotificationItem,
   SidebarSection,
   Space,
@@ -49,6 +50,7 @@ interface SpacesState {
   workspaceMembers: WorkspaceMember[]
   workspaceActivity: WorkspaceActivity[]
   notifications: NotificationItem[]
+  coverageMentions: CoverageMention[]
   taskComments: SpaceComment[]
   currentUserId: string
   currentUserName: string
@@ -57,6 +59,7 @@ interface SpacesState {
   contextPanelOpen: boolean
   selectedTaskId: string | null
   commandOpen: boolean
+  notificationsOpen: boolean
   searchQuery: string
   newSpaceModalOpen: boolean
   spaceSettingsId: string | null
@@ -77,6 +80,7 @@ interface SpacesState {
   setSidebarCollapsed: (v: boolean) => void
   setContextPanelOpen: (v: boolean) => void
   setCommandOpen: (v: boolean) => void
+  setNotificationsOpen: (v: boolean) => void
   setSearchQuery: (q: string) => void
   setNewSpaceModalOpen: (v: boolean) => void
   setSpaceSettingsId: (id: string | null) => void
@@ -123,6 +127,7 @@ export const useSpacesStore = create<SpacesState>((set, get) => ({
   workspaceMembers: [],
   workspaceActivity: [],
   notifications: [],
+  coverageMentions: [],
   taskComments: [],
   currentUserId: '',
   currentUserName: 'You',
@@ -131,6 +136,7 @@ export const useSpacesStore = create<SpacesState>((set, get) => ({
   contextPanelOpen: true,
   selectedTaskId: null,
   commandOpen: false,
+  notificationsOpen: false,
   searchQuery: '',
   newSpaceModalOpen: false,
   spaceSettingsId: null,
@@ -176,6 +182,7 @@ export const useSpacesStore = create<SpacesState>((set, get) => ({
       workspaceMembers,
       workspaceActivity,
       notifications,
+      coverageMentions,
       syncStatus
     ] = await Promise.all([
       api.getWorkspaceSummary(),
@@ -186,6 +193,7 @@ export const useSpacesStore = create<SpacesState>((set, get) => ({
       api.listWorkspaceMembers(),
       api.listWorkspaceActivity(50),
       api.listNotifications(30),
+      api.listCoverage(100),
       api.getSyncStatus()
     ])
     set({
@@ -197,6 +205,7 @@ export const useSpacesStore = create<SpacesState>((set, get) => ({
       workspaceMembers,
       workspaceActivity,
       notifications,
+      coverageMentions,
       syncStatus
     })
   },
@@ -303,9 +312,8 @@ export const useSpacesStore = create<SpacesState>((set, get) => ({
       return
     }
     if (id === 'planner') {
-      set({ activeSection: 'spaces', spacesHomeOpen: false, taskView: 'calendar' })
-      const spaceId = get().activeSpaceId ?? get().spaces[0]?.id ?? null
-      if (spaceId) void get().setActiveSpace(spaceId)
+      set({ activeSection: 'planner', spacesHomeOpen: false })
+      void get().loadWorkspaceData()
       return
     }
     if (id === 'spaces') {
@@ -328,6 +336,7 @@ export const useSpacesStore = create<SpacesState>((set, get) => ({
   setSidebarCollapsed: (v) => set({ sidebarCollapsed: v }),
   setContextPanelOpen: (v) => set({ contextPanelOpen: v }),
   setCommandOpen: (v) => set({ commandOpen: v }),
+  setNotificationsOpen: (v) => set({ notificationsOpen: v }),
   setSearchQuery: (q) => set({ searchQuery: q }),
   setNewSpaceModalOpen: (v) => set({ newSpaceModalOpen: v }),
   setSpaceSettingsId: (id) => set({ spaceSettingsId: id }),
