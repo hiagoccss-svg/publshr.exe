@@ -11,14 +11,15 @@ struct ChatSidebarView: View {
     var body: some View {
         LibraryUniversalSubmenuContainer(width: submenuWidth) {
             VStack(spacing: 0) {
+                ChatSidebarHubStrip(chat: chat)
+
                 if chat.sidebarHub == .channels {
                     filterBar
                     submenuSoftRule
                 }
 
                 ScrollView {
-                    LazyVStack(alignment: .leading, spacing: 0) {
-                        ChatSidebarHubStrip(chat: chat)
+                    VStack(alignment: .leading, spacing: 0) {
                         hubContent
                         if chat.sidebarHub == .channels {
                             if chat.sidebarLayout == .recents {
@@ -31,15 +32,13 @@ struct ChatSidebarView: View {
                             }
                         }
                     }
-                    .padding(.bottom, chat.sidebarHub == .channels ? 6 : 4)
+                    .padding(.bottom, 6)
                 }
                 .frame(minHeight: 0, maxHeight: .infinity)
             }
             .frame(minHeight: 0, maxHeight: .infinity)
         } footer: {
-            if chat.sidebarHub == .channels {
-                layoutFooter
-            }
+            layoutFooter
         }
         .preferredColorScheme(.light)
         .onAppear { normalizeSidebarFilterIfNeeded() }
@@ -266,14 +265,17 @@ struct ChatSidebarView: View {
             .padding(.vertical, 8)
     }
 
-    /// ClickUp lower-left — icon layout toggles + compose + workspace settings (no wrapping labels).
+    /// ClickUp lower-left — icon layout toggles + compose (settings live in titlebar).
     private var layoutFooter: some View {
         HStack(alignment: .center, spacing: 6) {
-            layoutIconButton(.organized, icon: "list.bullet.rectangle", help: "Organized")
-            layoutIconButton(.recents, icon: "clock", help: "Recents")
-            Spacer(minLength: 4)
-            composeMenu
-            sidebarSettingsMenu
+            if chat.sidebarHub == .channels {
+                layoutIconButton(.organized, icon: "list.bullet.rectangle", help: "Organized")
+                layoutIconButton(.recents, icon: "clock", help: "Recents")
+                Spacer(minLength: 4)
+                composeMenu
+            } else {
+                Spacer(minLength: 0)
+            }
         }
         .padding(.horizontal, 10)
         .frame(height: ChatClickUpDesign.footerHeight, alignment: .center)
@@ -333,76 +335,6 @@ struct ChatSidebarView: View {
         }
         .buttonStyle(.plain)
         .help(help)
-    }
-
-    private var sidebarSettingsMenu: some View {
-        Menu {
-            Button {
-                NotificationCenter.default.post(
-                    name: .publshrOpenSettings,
-                    object: SettingsSection.workspace.rawValue
-                )
-            } label: {
-                Label("Workspace settings", systemImage: "building.2")
-            }
-            Button {
-                NotificationCenter.default.post(
-                    name: .publshrOpenSettings,
-                    object: SettingsSection.security.rawValue
-                )
-            } label: {
-                Label("Security", systemImage: "lock.shield")
-            }
-            Button {
-                NotificationCenter.default.post(
-                    name: .publshrOpenSettings,
-                    object: SettingsSection.billing.rawValue
-                )
-            } label: {
-                Label("Subscription", systemImage: "creditcard")
-            }
-            Divider()
-            Button {
-                chat.showNotificationSettings = true
-            } label: {
-                Label("Notification settings", systemImage: "bell.badge")
-            }
-            Button {
-                chat.markAllChannelsRead()
-            } label: {
-                Label("Mark all as read", systemImage: "checkmark.circle")
-            }
-            Button {
-                chat.openWorkspaceSearch()
-            } label: {
-                Label("Search workspace", systemImage: "magnifyingglass")
-            }
-            Divider()
-            Button {
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    chat.chatFocusMode.toggle()
-                }
-            } label: {
-                Label(
-                    chat.chatFocusMode ? "Exit focus mode" : "Focus on chat",
-                    systemImage: chat.chatFocusMode ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right"
-                )
-            }
-            Divider()
-            Button {
-                chat.showPermissionsSheet = true
-            } label: {
-                Label("Workspace chat permissions", systemImage: "lock.shield")
-            }
-        } label: {
-            Image(systemName: "gearshape")
-                .font(.system(size: 13, weight: .medium))
-                .foregroundStyle(LibraryGlassDesign.inkSecondary)
-                .frame(width: 28, height: 28)
-        }
-        .menuStyle(.borderlessButton)
-        .menuIndicator(.hidden)
-        .help("Workspace & chat settings")
     }
 
     // MARK: - Sections & rows

@@ -79,6 +79,9 @@ struct MainIDEView: View {
                 module: $module
             )
         }
+        .sheet(isPresented: $spaces.showNewSpaceSheet) {
+            SpacesNewSpaceSheet(spaces: spaces)
+        }
         .onReceive(NotificationCenter.default.publisher(for: .publshrTitlebarToggleSidebar)) { _ in
             withAnimation(.easeInOut(duration: 0.15)) { tabStore.sidebarExpanded.toggle() }
         }
@@ -140,6 +143,7 @@ struct MainIDEView: View {
         tabStore.ensureDefaultTabs(module: module)
         tabStore.openFromModule(module, activate: true)
         tabStore.sidebarExpanded = true
+        tabStore.barMenuExpanded = true
         chat.attach(auth: auth)
         chat.applyWorkspaceContext(
             workspace: auth.selectedWorkspace,
@@ -172,9 +176,6 @@ struct MainIDEView: View {
         if newModule.usesSpacesSubmenu {
             spaces.attach(auth: auth)
             applySpacesModulePresentation(newModule)
-        }
-        if newModule == .mediaMonitoring {
-            _ = DesktopCompanionAppLauncher.open(.mediaMonitoring)
         }
         tabStore.openFromModule(newModule, activate: true)
     }

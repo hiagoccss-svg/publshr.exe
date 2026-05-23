@@ -71,7 +71,7 @@ struct LibraryBarMenuColumn: View {
             .frame(height: LibraryGlassDesign.barMenuRowHeight)
             .background(
                 RoundedRectangle(cornerRadius: LibraryGlassDesign.sidebarRowRadius, style: .continuous)
-                    .fill(selected ? LibraryGlassDesign.sidebarSelection.opacity(0.72) : Color.clear)
+                    .fill(selected ? LibraryGlassDesign.sidebarSelection : Color.clear)
             )
         }
         .buttonStyle(.plain)
@@ -80,7 +80,7 @@ struct LibraryBarMenuColumn: View {
     private func switchModule(_ item: AppModule) {
         module = item
         tabStore.openFromModule(item, activate: true)
-        if item == .chat || item.usesSpacesSubmenu {
+        if item == .chat || item.usesSpacesSubmenu || item == .mediaMonitoring {
             tabStore.sidebarExpanded = true
         }
         if item == .whiteboard {
@@ -88,9 +88,6 @@ struct LibraryBarMenuColumn: View {
             if spaces.selectedSpaceId == nil, let first = spaces.spaces.first {
                 Task { await spaces.selectSpace(first.id) }
             }
-        }
-        if item == .mediaMonitoring {
-            _ = DesktopCompanionAppLauncher.open(.mediaMonitoring)
         }
     }
 }

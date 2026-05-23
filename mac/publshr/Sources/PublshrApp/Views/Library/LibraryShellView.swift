@@ -17,7 +17,6 @@ struct LibraryShellView: View {
 
     private var submenuHidden: Bool {
         module == .settings
-            || module == .mediaMonitoring
             || !tabStore.sidebarExpanded
             || (module == .chat && chat.chatFocusMode)
             || (module.usesSpacesSubmenu && spaces.spacesFocusMode)
@@ -41,6 +40,7 @@ struct LibraryShellView: View {
         .background(Color.clear)
         .onAppear {
             tabStore.sidebarExpanded = true
+            tabStore.barMenuExpanded = true
             syncModulesIfNeeded()
         }
         .onChange(of: tabStore.sidebarExpanded) { _, _ in

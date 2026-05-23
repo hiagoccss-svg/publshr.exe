@@ -63,7 +63,7 @@ struct ShellUnifiedTitlebar: View {
             )
         }
         .frame(height: layout.rowHeight)
-        .background(CursorMacShellDesign.columnChromeBackground)
+        .background { GlassPrimaryBarChrome() }
     }
 
     // MARK: - Column 2 (search — flat, no boxed field)
@@ -73,7 +73,7 @@ struct ShellUnifiedTitlebar: View {
         UniversalSubmenuTitlebarChrome(module: module, chat: chat, spaces: spaces)
             .padding(.horizontal, 10)
             .frame(height: layout.rowHeight)
-            .background(LibraryGlassDesign.submenuColumnBackground)
+            .background { GlassSubmenuChrome() }
     }
 
     // MARK: - Column 3 (channel / actions)

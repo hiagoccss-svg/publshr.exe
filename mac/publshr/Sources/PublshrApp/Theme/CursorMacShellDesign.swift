@@ -4,8 +4,8 @@ import SwiftUI
 enum CursorMacShellDesign {
     /// Window / gutter behind the center editor box.
     static let workspaceBackground = Color(hex: 0xF3F2EF)
-    /// Left + middle sidebar columns (Cursor agent / repo list).
-    static let columnChromeBackground = Color(hex: 0xF3F3F3)
+    /// Left + middle sidebar columns (Cursor agent / repo list) — used as tint over blur.
+    static let columnChromeBackground = Color(hex: 0xF3F3F3).opacity(0.55)
     /// Chat / workspace editor column — solid white (matches submenu column).
     static let editorColumnBackground = Color.white
     static let titleBarBackground = Color(hex: 0xF3F3F3)

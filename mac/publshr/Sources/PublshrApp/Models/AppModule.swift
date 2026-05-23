@@ -14,7 +14,7 @@ enum AppModule: String, CaseIterable, Identifiable {
         switch self {
         case .chat: return "Chat"
         case .spaces: return "Spaces"
-        case .whiteboard: return "Whiteboard"
+        case .whiteboard: return "White Board"
         case .mediaMonitoring: return "Media Monitoring"
         case .settings: return "Settings"
         }

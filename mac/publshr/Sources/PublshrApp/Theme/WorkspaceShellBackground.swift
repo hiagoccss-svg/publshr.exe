@@ -21,17 +21,30 @@ struct WorkspaceDesktopBackdrop: View {
     }
 }
 
-/// First column shell — flat Cursor Mac rail (#F3F3F3), aligned with the titlebar band.
+/// First column shell — translucent Cursor Mac rail (desktop tints through).
 struct GlassPrimaryBarChrome: View {
     var body: some View {
-        CursorMacShellDesign.columnChromeBackground
+        ZStack {
+            VisualEffectBlur(
+                material: .sidebar,
+                blendingMode: WorkspaceShellBackground.desktopBlurBlending
+            )
+            LibraryGlassDesign.primaryBarGlassFill
+        }
     }
 }
 
-/// Chat / Spaces submenu column — solid white (same as editor column).
+/// Chat / Spaces submenu column — soft white glass (matches editor readability).
 struct GlassSubmenuChrome: View {
     var body: some View {
-        LibraryGlassDesign.submenuColumnBackground
+        ZStack {
+            Color.white.opacity(0.92)
+            VisualEffectBlur(
+                material: .contentBackground,
+                blendingMode: .withinWindow
+            )
+            .opacity(0.35)
+        }
     }
 }
 

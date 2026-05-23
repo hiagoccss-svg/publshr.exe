@@ -103,6 +103,8 @@ struct ChatEditorToolbarContent: View {
         ) {
             showCommandPalette = true
         }
+
+        TitlebarWorkspaceSettingsButton()
     }
 
     private func channelMoreMenu(_ channel: ChatChannel) -> some View {

@@ -40,13 +40,6 @@ struct MediaMonitoringModuleView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding(32)
-        .onAppear { openCompanionIfInstalled() }
-    }
-
-    private func openCompanionIfInstalled() {
-        if DesktopCompanionAppLauncher.open(.mediaMonitoring) {
-            launchMessage = nil
-        }
     }
 
     private func openCompanion() {

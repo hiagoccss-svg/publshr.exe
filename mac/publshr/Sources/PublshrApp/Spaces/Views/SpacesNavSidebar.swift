@@ -164,31 +164,47 @@ struct SpacesNavSidebar: View {
     }
 
     private var createSpaceField: some View {
-        HStack(spacing: 8) {
-            TextField("New space", text: $spaces.newSpaceName)
-                .textFieldStyle(.plain)
-                .font(.system(size: 12))
-                .padding(.horizontal, 10)
-                .padding(.vertical, 8)
-                .background(LibraryGlassDesign.cardGlassFill)
-                .clipShape(RoundedRectangle(cornerRadius: 8))
-                .onSubmit { Task { await spaces.createSpace() } }
-
-            Button {
-                spaces.showNewSpaceSheet = true
-            } label: {
-                Image(systemName: "plus")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(LibraryGlassDesign.inkSecondary)
-                    .frame(width: 32, height: 32)
-                    .background(
-                        RoundedRectangle(cornerRadius: 8, style: .continuous)
-                            .fill(LibraryGlassDesign.filterPillInactiveFill)
-                    )
+        VStack(alignment: .leading, spacing: 6) {
+            if let err = spaces.errorMessage, !err.isEmpty {
+                Text(err)
+                    .font(.system(size: 10))
+                    .foregroundStyle(CursorTheme.error)
+                    .lineLimit(2)
+                    .padding(.horizontal, 4)
             }
-            .buttonStyle(.plain)
-            .help("New space")
+            HStack(spacing: 8) {
+                TextField("New space", text: $spaces.newSpaceName)
+                    .textFieldStyle(.plain)
+                    .font(.system(size: 12))
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 8)
+                    .background(LibraryGlassDesign.cardGlassFill)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                    .onSubmit { Task { await spaces.createSpace() } }
+
+                Button {
+                    let name = spaces.newSpaceName.trimmingCharacters(in: .whitespacesAndNewlines)
+                    if name.isEmpty {
+                        spaces.showNewSpaceSheet = true
+                    } else {
+                        Task { await spaces.createSpace() }
+                    }
+                } label: {
+                    Image(systemName: "plus")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(LibraryGlassDesign.inkSecondary)
+                        .frame(width: 32, height: 32)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                .fill(LibraryGlassDesign.filterPillInactiveFill)
+                        )
+                }
+                .buttonStyle(.plain)
+                .help("Create space")
+            }
         }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 8)
     }
 }
 
