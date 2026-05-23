@@ -24,6 +24,7 @@ import type {
 
 interface SpacesState {
   ready: boolean
+  bootstrapError: string | null
   workspace: BootstrapPayload['workspace'] | null
   spaces: Space[]
   folders: SpaceFolder[]
@@ -61,6 +62,7 @@ interface SpacesState {
   spaceSettingsId: string | null
   spacesHomeOpen: boolean
   loadBootstrap: () => Promise<void>
+  clearBootstrapError: () => void
   loadWorkspaceData: () => Promise<void>
   refreshActiveSpace: () => Promise<void>
   refreshHierarchy: () => Promise<void>
@@ -69,6 +71,7 @@ interface SpacesState {
   setActiveFolder: (folderId: string | null) => Promise<void>
   toggleFolderExpanded: (folderId: string) => void
   setActiveSection: (section: SidebarSection) => void
+  selectEnterpriseNav: (id: SidebarSection | 'whiteboard') => void
   setTaskView: (view: TaskViewMode) => void
   setSelectedTask: (id: string | null) => Promise<void>
   setSidebarCollapsed: (v: boolean) => void
@@ -95,6 +98,7 @@ interface SpacesState {
 
 export const useSpacesStore = create<SpacesState>((set, get) => ({
   ready: false,
+  bootstrapError: null,
   workspace: null,
   spaces: [],
   folders: [],
@@ -133,21 +137,32 @@ export const useSpacesStore = create<SpacesState>((set, get) => ({
   spacesHomeOpen: false,
 
   loadBootstrap: async () => {
-    const api = getSpacesAPI()
-    const data: BootstrapPayload = await api.getBootstrap()
-    const spaces = data.spaces
-    set({
-      ready: true,
-      workspace: data.workspace,
-      spaces,
-      activeSpaceId: spaces[0]?.id ?? null,
-      currentUserId: data.currentUserId,
-      currentUserName: data.currentUserName,
-      syncStatus: data.syncStatus
-    })
-    if (spaces[0]) await get().setActiveSpace(spaces[0].id)
-    await get().loadWorkspaceData()
+    set({ bootstrapError: null })
+    try {
+      const api = getSpacesAPI()
+      const data: BootstrapPayload = await api.getBootstrap()
+      const spaces = data.spaces
+      set({
+        ready: true,
+        bootstrapError: null,
+        workspace: data.workspace,
+        spaces,
+        activeSpaceId: spaces[0]?.id ?? null,
+        currentUserId: data.currentUserId,
+        currentUserName: data.currentUserName,
+        syncStatus: data.syncStatus
+      })
+      if (spaces[0]) await get().setActiveSpace(spaces[0].id)
+      await get().loadWorkspaceData()
+    } catch (e) {
+      set({
+        ready: false,
+        bootstrapError: e instanceof Error ? e.message : 'Failed to load workspace'
+      })
+    }
   },
+
+  clearBootstrapError: () => set({ bootstrapError: null }),
 
   loadWorkspaceData: async () => {
     const api = getSpacesAPI()
@@ -273,6 +288,19 @@ export const useSpacesStore = create<SpacesState>((set, get) => ({
   setActiveSection: (section) => {
     set({ activeSection: section })
     if (section !== 'spaces') void get().loadWorkspaceData()
+  },
+  selectEnterpriseNav: (id) => {
+    if (id === 'whiteboard') {
+      set({ activeSection: 'spaces', spacesHomeOpen: false, taskView: 'whiteboard' })
+      const spaceId = get().activeSpaceId ?? get().spaces[0]?.id ?? null
+      if (spaceId) void get().setActiveSpace(spaceId)
+      return
+    }
+    if (id === 'spaces') {
+      set({ activeSection: 'spaces', activeSpaceId: null, spacesHomeOpen: true })
+      return
+    }
+    get().setActiveSection(id)
   },
   setTaskView: (view) => set({ taskView: view }),
   setSelectedTask: async (id) => {

@@ -9,6 +9,7 @@ export const SPACES_SIDEBAR_SECTIONS = [
   { id: 'planner', label: 'Planner' },
   { id: 'chat', label: 'Chat' },
   { id: 'documents', label: 'Documents' },
+  { id: 'whiteboard', label: 'Whiteboard' },
   { id: 'approvals', label: 'Approvals' },
   { id: 'reports', label: 'Reports' },
   { id: 'clients', label: 'Clients' },

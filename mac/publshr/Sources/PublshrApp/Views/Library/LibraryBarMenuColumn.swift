@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Primary bar menu — app modules only (Chat, Spaces).
+/// Primary bar menu — enterprise operations (Dashboard, Spaces, Chat, Documents, …).
 struct LibraryBarMenuColumn: View {
     var barWidth: CGFloat = LibraryGlassDesign.barMenuWidth
     @EnvironmentObject private var tabStore: WorkspaceTabStore
@@ -21,14 +21,14 @@ struct LibraryBarMenuColumn: View {
     var body: some View {
         VStack(spacing: 0) {
             VStack(spacing: AppWindowChromeMetrics.toolbarItemSpacing) {
-                ForEach(AppModule.mainStrip) { item in
+                ForEach(SpacesEnterpriseSection.mainNav) { section in
                     navRow(
-                        item.label,
-                        icon: item.systemImage,
-                        badge: item == .chat ? chatUnreadBadge : 0,
-                        selected: module == item
+                        section.label,
+                        icon: section.systemImage,
+                        badge: section == .chat ? chatUnreadBadge : 0,
+                        selected: isSectionSelected(section)
                     ) {
-                        switchModule(item)
+                        selectSection(section)
                     }
                 }
             }
@@ -49,6 +49,50 @@ struct LibraryBarMenuColumn: View {
 
     private var chatUnreadBadge: Int {
         min(chat.totalUnread, 99)
+    }
+
+    private func isSectionSelected(_ section: SpacesEnterpriseSection) -> Bool {
+        switch section {
+        case .chat:
+            return module == .chat
+        case .media:
+            return module == .mediaMonitoring
+        case .whiteboard:
+            return module.usesSpacesSubmenu && spaces.activeSection == .whiteboard
+        default:
+            return module.usesSpacesSubmenu && spaces.activeSection == section
+        }
+    }
+
+    private func selectSection(_ section: SpacesEnterpriseSection) {
+        tabStore.sidebarExpanded = true
+        switch section {
+        case .chat:
+            module = .chat
+            tabStore.openFromModule(.chat, activate: true)
+        case .media:
+            module = .mediaMonitoring
+            tabStore.openFromModule(.mediaMonitoring, activate: true)
+        case .whiteboard:
+            module = .spaces
+            tabStore.openFromModule(.spaces, activate: true)
+            spaces.setActiveSection(.whiteboard)
+            if spaces.selectedSpaceId == nil, let first = spaces.spaces.first {
+                Task { await spaces.selectSpace(first.id) }
+            }
+        case .spaces:
+            module = .spaces
+            tabStore.openFromModule(.spaces, activate: true)
+            spaces.openSpacesHome()
+        case .planner:
+            module = .spaces
+            tabStore.openFromModule(.spaces, activate: true)
+            spaces.setActiveSection(.planner)
+        default:
+            module = .spaces
+            tabStore.openFromModule(.spaces, activate: true)
+            spaces.setActiveSection(section)
+        }
     }
 
     private func navRow(
@@ -87,19 +131,5 @@ struct LibraryBarMenuColumn: View {
             )
         }
         .buttonStyle(.plain)
-    }
-
-    private func switchModule(_ item: AppModule) {
-        module = item
-        tabStore.openFromModule(item, activate: true)
-        if item == .chat || item.usesSpacesSubmenu || item == .mediaMonitoring {
-            tabStore.sidebarExpanded = true
-        }
-        if item == .whiteboard {
-            spaces.taskView = .whiteboard
-            if spaces.selectedSpaceId == nil, let first = spaces.spaces.first {
-                Task { await spaces.selectSpace(first.id) }
-            }
-        }
     }
 }

@@ -18,9 +18,10 @@ interface AuthStore {
   initialize: () => Promise<void>
   signIn: (email: string, password: string) => Promise<void>
   signOut: () => Promise<void>
+  continueOffline: () => void
 }
 
-export const useAuthStore = create<AuthStore>((set) => ({
+export const useAuthStore = create<AuthStore>((set, get) => ({
   snapshot: null,
   loading: true,
   error: null,
@@ -63,7 +64,32 @@ export const useAuthStore = create<AuthStore>((set) => ({
   },
 
   signOut: async () => {
-    await supabaseSignOut()
-    set({ snapshot: await getAuthState() })
+    const isLocalOnly = get().snapshot?.user?.id === 'local-user'
+    if (isCloudConfigured() && !isLocalOnly) {
+      await supabaseSignOut()
+      set({ snapshot: await getAuthState() })
+    } else {
+      set({ snapshot: null, loading: false })
+    }
+  },
+
+  continueOffline: () => {
+    set({
+      loading: false,
+      error: null,
+      snapshot: {
+        user: {
+          id: 'local-user',
+          email: 'local@workspace',
+          displayName: 'Local workspace'
+        },
+        accessToken: null,
+        refreshToken: null,
+        expiresAt: null,
+        workspaceId: null,
+        cloudValidated: false,
+        biometricEnabled: false
+      }
+    })
   }
 }))

@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Primary column — enterprise module icons only (52px), below the traffic-light header band.
+/// Primary column — enterprise section icons (collapsed bar).
 struct LibraryBarMenuIconRail: View {
     var barWidth: CGFloat = ShellColumnLayout.barCollapsedMax
     @EnvironmentObject private var auth: AuthViewModel
@@ -20,8 +20,8 @@ struct LibraryBarMenuIconRail: View {
 
     var body: some View {
         VStack(spacing: AppWindowChromeMetrics.toolbarItemSpacing) {
-            ForEach(AppModule.mainStrip) { item in
-                moduleIcon(item)
+            ForEach(SpacesEnterpriseSection.mainNav) { section in
+                sectionIcon(section)
             }
             Spacer(minLength: 0)
 
@@ -48,24 +48,14 @@ struct LibraryBarMenuIconRail: View {
         .frame(maxHeight: .infinity)
     }
 
-    private func moduleIcon(_ item: AppModule) -> some View {
-        let selected = module == item
+    private func sectionIcon(_ section: SpacesEnterpriseSection) -> some View {
+        let selected = isSectionSelected(section)
         return Button {
-            module = item
-            tabStore.openFromModule(item, activate: true)
-            if item == .chat || item.usesSpacesSubmenu || item == .mediaMonitoring {
-                tabStore.sidebarExpanded = true
-            }
-            if item == .whiteboard {
-                spaces.taskView = .whiteboard
-                if spaces.selectedSpaceId == nil, let first = spaces.spaces.first {
-                    Task { await spaces.selectSpace(first.id) }
-                }
-            }
+            selectSection(section)
         } label: {
             TitlebarToolbarSlot {
                 ZStack(alignment: .topTrailing) {
-                    Image(systemName: item.systemImage)
+                    Image(systemName: section.systemImage)
                         .font(.system(size: AppWindowChromeMetrics.controlIconSize, weight: .medium))
                         .foregroundStyle(selected ? LibraryGlassDesign.ink : LibraryGlassDesign.inkSecondary)
                         .frame(
@@ -76,7 +66,7 @@ struct LibraryBarMenuIconRail: View {
                             RoundedRectangle(cornerRadius: AppWindowChromeMetrics.controlCornerRadius, style: .continuous)
                                 .fill(selected ? MacSystemChrome.toolbarPressedFill : Color.clear)
                         )
-                    if item == .chat, chat.totalUnread > 0 {
+                    if section == .chat, chat.totalUnread > 0 {
                         Text(chat.totalUnread > 99 ? "99+" : "\(chat.totalUnread)")
                             .font(.system(size: 8, weight: .bold))
                             .foregroundStyle(.white)
@@ -89,6 +79,43 @@ struct LibraryBarMenuIconRail: View {
             }
         }
         .buttonStyle(.plain)
-        .help(item.label)
+        .help(section.label)
+    }
+
+    private func isSectionSelected(_ section: SpacesEnterpriseSection) -> Bool {
+        switch section {
+        case .chat: return module == .chat
+        case .media: return module == .mediaMonitoring
+        case .whiteboard: return module.usesSpacesSubmenu && spaces.activeSection == .whiteboard
+        default: return module.usesSpacesSubmenu && spaces.activeSection == section
+        }
+    }
+
+    private func selectSection(_ section: SpacesEnterpriseSection) {
+        tabStore.sidebarExpanded = true
+        switch section {
+        case .chat:
+            module = .chat
+            tabStore.openFromModule(.chat, activate: true)
+        case .media:
+            module = .mediaMonitoring
+            tabStore.openFromModule(.mediaMonitoring, activate: true)
+        case .whiteboard:
+            module = .spaces
+            tabStore.openFromModule(.spaces, activate: true)
+            spaces.setActiveSection(.whiteboard)
+        case .spaces:
+            module = .spaces
+            tabStore.openFromModule(.spaces, activate: true)
+            spaces.openSpacesHome()
+        case .planner:
+            module = .spaces
+            tabStore.openFromModule(.spaces, activate: true)
+            spaces.setActiveSection(.planner)
+        default:
+            module = .spaces
+            tabStore.openFromModule(.spaces, activate: true)
+            spaces.setActiveSection(section)
+        }
     }
 }

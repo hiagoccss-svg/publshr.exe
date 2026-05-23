@@ -10,6 +10,7 @@ import { WorkloadView } from '../tasks/WorkloadView'
 import { PriorityMatrixView } from '../tasks/PriorityMatrixView'
 import { EmptySpaceState } from '../spaces/EmptySpaceState'
 import { EnterpriseSectionView } from '../enterprise/EnterpriseSections'
+import { ChatWorkspace } from '../chat/ChatWorkspace'
 import { SpacesBreadcrumb } from '../spaces/SpacesBreadcrumb'
 import { WhiteboardView } from '../whiteboard/WhiteboardView'
 import { SPACES_VIEW_TABS } from '../../../../../../shared/spaces/view-modes'
@@ -25,6 +26,14 @@ export function WorkspaceArea(): React.ReactElement {
   const taskView = useSpacesStore((s) => s.taskView)
   const setTaskView = useSpacesStore((s) => s.setTaskView)
   const createTask = useSpacesStore((s) => s.createTask)
+
+  if (activeSection === 'chat') {
+    return (
+      <main className="glass-workspace-flat flex min-w-0 flex-1 flex-col overflow-hidden">
+        <ChatWorkspace />
+      </main>
+    )
+  }
 
   if (activeSection !== 'spaces') {
     return (

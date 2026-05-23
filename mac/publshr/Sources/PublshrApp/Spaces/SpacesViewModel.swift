@@ -202,6 +202,13 @@ final class SpacesViewModel: ObservableObject {
         if section == .spaces {
             return
         }
+        if section == .whiteboard {
+            spacesHomeOpen = false
+            if selectedSpaceId == nil, let first = spaces.first {
+                Task { await selectSpace(first.id) }
+            }
+            return
+        }
         selectedSpaceId = nil
         spacesHomeOpen = false
         Task { await loadWorkspaceData() }

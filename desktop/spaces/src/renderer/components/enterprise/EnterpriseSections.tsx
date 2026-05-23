@@ -39,6 +39,8 @@ export function EnterpriseSectionView({ section }: { section: SidebarSection }):
       return <PlannerSection />
     case 'media':
       return <MediaSection />
+    case 'whiteboard':
+      return <WhiteboardHubSection />
     case 'settings':
       return <SettingsSection />
     default:
@@ -387,12 +389,12 @@ function ChatSection(): React.ReactElement {
     <div className="space-y-4 p-6">
       <SectionHeader
         title="Chat"
-        description="Recent messaging activity in this workspace. Full chat runs in the Publshr macOS IDE."
+        description="Select Chat in the main menu for channels and live messaging."
         icon={MessageSquare}
       />
       {!hasItems ? (
         <p className="text-sm text-ink-muted">
-          No chat notifications in Spaces cache. Open Publshr on macOS for live channels and threads.
+          Open the Chat module from the left navigation to send messages and create channels.
         </p>
       ) : (
         <ul className="space-y-2">
@@ -468,6 +470,42 @@ function MediaSection(): React.ReactElement {
             <li key={s.id} className="rounded-lg border border-surface-border px-3 py-2 text-sm">
               <p className="font-medium text-ink">{s.name}</p>
               <p className="text-xs capitalize text-ink-muted">{s.type}</p>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
+}
+
+function WhiteboardHubSection(): React.ReactElement {
+  const spaces = useSpacesStore((s) => s.spaces)
+  const setActiveSpace = useSpacesStore((s) => s.setActiveSpace)
+  const selectEnterpriseNav = useSpacesStore((s) => s.selectEnterpriseNav)
+
+  return (
+    <div className="space-y-4 p-6">
+      <SectionHeader
+        title="Whiteboard"
+        description="Open a Space to use the tldraw canvas. Boards sync when Supabase is connected."
+      />
+      {spaces.length === 0 ? (
+        <p className="text-sm text-ink-muted">Create a Space first, then open its Whiteboard view.</p>
+      ) : (
+        <ul className="space-y-2">
+          {spaces.map((s) => (
+            <li key={s.id}>
+              <button
+                type="button"
+                className="flex w-full items-center justify-between rounded-lg border border-surface-border px-3 py-2 text-left text-sm hover:bg-surface-muted"
+                onClick={() => {
+                  void setActiveSpace(s.id)
+                  selectEnterpriseNav('whiteboard')
+                }}
+              >
+                <span className="font-medium text-ink">{s.name}</span>
+                <span className="text-xs text-ink-muted">Open canvas</span>
+              </button>
             </li>
           ))}
         </ul>

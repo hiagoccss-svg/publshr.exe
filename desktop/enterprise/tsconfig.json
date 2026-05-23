@@ -23,7 +23,10 @@
     "paths": {
       "@/*": ["src/*"],
       "@shared/desktop": ["../../shared/desktop/index.ts"],
-      "@shared/desktop/*": ["../../shared/desktop/*"]
+      "@shared/desktop/*": ["../../shared/desktop/*"],
+      "@shared/enterprise": ["../../shared/enterprise"],
+      "@spaces/*": ["../spaces/src/renderer/*"],
+      "@spaces-shared/*": ["../spaces/src/shared/*"]
     }
   },
   "include": ["src", "../../shared/desktop"],

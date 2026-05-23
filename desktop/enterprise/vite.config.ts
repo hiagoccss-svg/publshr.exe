@@ -1,16 +1,19 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-import tailwindcss from '@tailwindcss/vite'
 import path from 'path'
 
 const host = process.env.TAURI_DEV_HOST
 
 export default defineConfig(async () => ({
-  plugins: [react(), tailwindcss()],
+  plugins: [react()],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
-      '@shared/desktop': path.resolve(__dirname, '../../shared/desktop')
+      '@shared/desktop': path.resolve(__dirname, '../../shared/desktop'),
+      '@desktop': path.resolve(__dirname, '../../shared/desktop'),
+      '@shared/enterprise': path.resolve(__dirname, '../../shared/enterprise'),
+      '@spaces': path.resolve(__dirname, '../spaces/src/renderer'),
+      '@spaces-shared': path.resolve(__dirname, '../spaces/src/shared')
     }
   },
   clearScreen: false,
