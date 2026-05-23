@@ -194,7 +194,14 @@ struct MainIDEView: View {
             if newModule != .chat { chat.chatFocusMode = false }
             if !newModule.usesSpacesSubmenu { spaces.spacesFocusMode = false }
         }
-        if newModule == .chat { chat.attach(auth: auth) }
+        if newModule == .chat {
+            chat.attach(auth: auth)
+            chat.applyWorkspaceContext(
+                workspace: auth.selectedWorkspace,
+                permissions: auth.workspaceChatPermissions,
+                auth: auth
+            )
+        }
         if newModule.usesSpacesSubmenu {
             spaces.attach(auth: auth)
             applySpacesModulePresentation(newModule)
