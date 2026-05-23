@@ -346,6 +346,20 @@ publshr_install_main() {
     log ""
     log "Launching Publshr …"
     open "$PUBLSHR_MAC_APP" 2>/dev/null || true
+    _publshr_print_next_steps
+}
+
+_publshr_print_next_steps() {
+    log ""
+    log "Next steps (native app — no npm required):"
+    log "  1. Sign in or create an account in the app window."
+    log "  2. Settings → Sync now — refreshes GitHub live build + Supabase (Chat, Spaces)."
+    log "  3. Updates: Settings → Updates (auto-check every 30s on the live channel)."
+    log ""
+    log "This installer does NOT install the separate Tauri dev app under desktop/enterprise."
+    log "To hack on that UI, clone the repo first:"
+    log "  git clone https://github.com/${PUBLSHR_REPO}.git"
+    log "  cd publshr.exe/desktop/enterprise && cp .env.example .env && npm install && npm run dev"
 }
 
 _publshr_install_only_mode() {
@@ -361,6 +375,7 @@ _publshr_install_only_mode() {
     rm -f "${PUBLSHR_PREPARED_TREE_FILE}"
     log "Opening Publshr …"
     open "$PUBLSHR_MAC_APP" 2>/dev/null || true
+    _publshr_print_next_steps
 }
 
 log "Publshr native macOS installer v${INSTALLER_VERSION}"

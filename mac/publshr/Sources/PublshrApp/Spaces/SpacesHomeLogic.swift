@@ -20,9 +20,7 @@ enum SpacesHomeLogic {
     }
 
     static func normalizeSpaceType(_ type: String) -> String {
-        let t = type.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        if t == "project" { return "initiative" }
-        return t.isEmpty ? "general" : t
+        SpaceTypeWire.fromDatabase(type)
     }
 
     static func spaceTypeLabel(_ type: String) -> String {

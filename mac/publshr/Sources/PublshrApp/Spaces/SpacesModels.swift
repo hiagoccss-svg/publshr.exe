@@ -63,6 +63,38 @@ enum SpaceTypeOption: String, CaseIterable, Identifiable {
         let normalized = SpacesHomeLogic.normalizeSpaceType(rawType)
         return SpaceTypeOption(rawValue: normalized) ?? .general
     }
+
+    /// Value sent to Supabase on insert/update (must match `spaces.type` column).
+    var wireValue: String { rawValue }
+
+    /// Map legacy Postgres `space_type` enum labels to canonical app types.
+    static func fromWire(_ wire: String) -> SpaceTypeOption {
+        resolved(rawType: wire)
+    }
+}
+
+/// Encode/decode space kinds for Supabase (legacy enum + text column).
+enum SpaceTypeWire {
+    private static let legacyToCanonical: [String: String] = [
+        "project": SpaceTypeOption.initiative.rawValue,
+        "folder": SpaceTypeOption.operation.rawValue,
+        "list": SpaceTypeOption.general.rawValue,
+        "board": SpaceTypeOption.operation.rawValue,
+        "channel": SpaceTypeOption.general.rawValue,
+    ]
+
+    static func toDatabase(_ appType: String) -> String {
+        let key = appType.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        if SpaceTypeOption(rawValue: key) != nil { return key }
+        if let mapped = legacyToCanonical[key] { return mapped }
+        return SpaceTypeOption.general.rawValue
+    }
+
+    static func fromDatabase(_ stored: String) -> String {
+        let key = stored.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        if let mapped = legacyToCanonical[key] { return mapped }
+        return SpacesHomeLogic.normalizeSpaceType(key)
+    }
 }
 
 enum SpaceTaskPriority: String, Codable, CaseIterable, Identifiable {
@@ -154,7 +186,8 @@ struct SpaceRecord: Codable, Identifiable, Equatable {
         workspaceId = try c.decode(UUID.self, forKey: .workspaceId)
         name = try c.decode(String.self, forKey: .name)
         description = try c.decodeIfPresent(String.self, forKey: .description) ?? ""
-        type = try c.decodeIfPresent(String.self, forKey: .type) ?? "general"
+        let rawType = try c.decodeIfPresent(String.self, forKey: .type) ?? "general"
+        type = SpaceTypeWire.fromDatabase(rawType)
         status = try c.decodeIfPresent(String.self, forKey: .status) ?? "active"
         color = try c.decodeIfPresent(String.self, forKey: .color) ?? "#3d5a80"
         isPinned = try c.decodeIfPresent(Bool.self, forKey: .isPinned) ?? false

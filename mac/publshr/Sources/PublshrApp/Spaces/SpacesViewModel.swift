@@ -132,7 +132,8 @@ final class SpacesViewModel: ObservableObject {
 
         do {
             if let userId {
-                try await service.seedDefaultWorkspace(workspaceId: workspaceId, ownerId: userId)
+                // Best-effort demo seed — must not block loading when DB types are misconfigured.
+                try? await service.seedDefaultWorkspace(workspaceId: workspaceId, ownerId: userId)
             }
             let loaded = try await service.fetchSpaces(workspaceId: workspaceId)
             spaces = loaded
@@ -678,7 +679,7 @@ final class SpacesViewModel: ObservableObject {
                 workspaceId: workspaceId,
                 ownerId: userId,
                 name: name,
-                type: newSpaceType.rawValue
+                type: newSpaceType.wireValue
             )
             let description = newSpaceDescription.trimmingCharacters(in: .whitespacesAndNewlines)
             if !description.isEmpty {
@@ -959,6 +960,9 @@ final class SpacesViewModel: ObservableObject {
 
     private func friendlySpacesError(_ error: Error) -> String {
         let text = error.localizedDescription.lowercased()
+        if text.contains("enum space_type") || text.contains("invalid input value for enum space_type") {
+            return "Spaces database type column is outdated. Apply migration 20260523140000_spaces_type_legacy_enum_to_text.sql in Supabase, then tap Retry (or Settings → Sync now)."
+        }
         if text.contains("is_pinned") || text.contains("pgrst") && text.contains("400") {
             return "Spaces database needs an upgrade. Your admin must apply migration 20260522100000_spaces_legacy_schema_upgrade.sql in Supabase."
         }
