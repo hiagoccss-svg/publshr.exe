@@ -1,5 +1,6 @@
 import { ipcMain, type BrowserWindow } from 'electron'
 import { getDb } from './database'
+import { registerAuthIpc } from './auth/register-auth-ipc'
 
 type Handlers = {
   getMainWindow: () => BrowserWindow | null
@@ -7,6 +8,8 @@ type Handlers = {
 }
 
 export function registerIpcHandlers({ openEditorWindow }: Handlers): void {
+  registerAuthIpc()
+
   ipcMain.handle('db:getPreference', (_, key: string) => {
     const row = getDb().prepare('SELECT value FROM user_preferences WHERE key = ?').get(key) as
       | { value: string }

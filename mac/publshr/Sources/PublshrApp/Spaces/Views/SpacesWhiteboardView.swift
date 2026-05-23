@@ -85,12 +85,17 @@ struct SpacesWhiteboardView: View {
             Text(selectedTitle)
                 .font(.system(size: 16, weight: .semibold))
             Text(
-                "The whiteboard canvas matches the Electron renderer (tldraw + Supabase). Use Spaces in desktop/spaces for editing; macOS embeds the same web bundle in Phase 2 (see shared/spaces/PARITY.md)."
+                "Board list and metadata sync live from Supabase. Edit the canvas in Publshr Spaces (tldraw)."
             )
             .font(.system(size: 12))
             .foregroundStyle(CursorTheme.foregroundMuted)
             .multilineTextAlignment(.center)
             .frame(maxWidth: 420)
+            Button("Open Publshr Spaces") {
+                _ = DesktopCompanionAppLauncher.open(.spaces)
+            }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.small)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding(24)

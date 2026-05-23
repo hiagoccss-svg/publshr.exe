@@ -19,6 +19,11 @@ struct MainIDEView: View {
     @State private var profilePresentation: WorkspaceProfilePresentation?
 
     var body: some View {
+        applyTitlebarNotifications(applySheets(applyLifecycle(shellCore)))
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private var shellCore: some View {
         LibraryShellView(
             module: $module,
             showNewChannel: $showNewChannel,
@@ -30,105 +35,126 @@ struct MainIDEView: View {
         .environmentObject(TrafficLightLayoutStore.shared)
         .background(WindowChromeConfigurator())
         .background { TitlebarChromeShortcutBridge() }
-        .onAppear(perform: onShellAppear)
-        .onChange(of: module) { _, newModule in
-            onModuleChange(newModule)
-        }
-        .onChange(of: tabStore.selectedTabId) { _, _ in
-            tabStore.applySelection(module: &module, chat: chat, spaces: spaces)
-            if let tab = tabStore.selectedTab, case .app(let m) = tab.kind {
-                storedModule = m.rawValue
+    }
+
+    private func applyLifecycle<V: View>(_ view: V) -> some View {
+        view
+            .onAppear(perform: onShellAppear)
+            .onChange(of: module) { _, newModule in
+                onModuleChange(newModule)
             }
-        }
-        .onChange(of: chat.selectedChannel?.id) { _, _ in
-            tabStore.reflectChannelSelection(chat.selectedChannel)
-            tabStore.syncTabMetadata(chat: chat, spaces: spaces)
-        }
-        .onChange(of: spaces.selectedSpaceId) { _, _ in
-            tabStore.reflectSpaceSelection(spaces.selectedSpace)
-            tabStore.syncTabMetadata(chat: chat, spaces: spaces)
-        }
-        .onChange(of: auth.selectedMembership?.workspace.id) { _, _ in
-            if module.usesSpacesSubmenu { spaces.attach(auth: auth) }
-            if module == .chat { chat.attach(auth: auth) }
-        }
-        .sheet(isPresented: $showNewChannel) { newChannelSheet }
-        .sheet(isPresented: $showNewDM) { newDMSheet }
-        .sheet(isPresented: $showCommandPalette) {
-            TitlebarCommandPaletteView(
-                items: TitlebarChromeCommands.paletteItems(
-                    tabStore: tabStore,
-                    auth: auth,
-                    chat: chat,
-                    spaces: spaces,
-                    module: $module,
-                    showNewChannel: $showNewChannel,
-                    showNewDM: $showNewDM,
-                    showCommandPalette: $showCommandPalette,
-                    showNotificationsPanel: $showNotificationsPanel
-                ),
-                isPresented: $showCommandPalette
-            )
-        }
-        .sheet(isPresented: $showNotificationsPanel) {
-            TitlebarNotificationsPanelView(chat: chat, isPresented: $showNotificationsPanel)
-        }
-        .sheet(item: $profilePresentation) { _ in
-            WorkspaceProfileSheet(
-                presentation: $profilePresentation,
-                module: $module
-            )
-        }
-        .sheet(isPresented: $spaces.showNewSpaceSheet) {
-            SpacesNewSpaceSheet(spaces: spaces)
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .publshrTitlebarToggleSidebar)) { _ in
-            withAnimation(.easeInOut(duration: 0.15)) { tabStore.sidebarExpanded.toggle() }
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .publshrTitlebarNewChat)) { _ in
-            module = .chat
-            tabStore.openFromModule(.chat, activate: true)
-            if chat.selectedChannel != nil {
-                showNewChannel = true
-            } else {
-                chat.selectedChannel = nil
+            .onChange(of: tabStore.selectedTabId) { _, _ in
+                tabStore.applySelection(module: &module, chat: chat, spaces: spaces)
+                if let tab = tabStore.selectedTab, case .app(let m) = tab.kind {
+                    storedModule = m.rawValue
+                }
             }
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .publshrTitlebarNewDM)) { _ in
-            module = .chat
-            tabStore.openFromModule(.chat, activate: true)
-            showNewDM = true
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .publshrTitlebarCommandPalette)) { _ in
-            showCommandPalette = true
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .publshrTitlebarSearch)) { _ in
-            if module == .chat { chat.openWorkspaceSearch() }
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .publshrTitlebarNotifications)) { _ in
-            showNotificationsPanel = true
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .publshrTitlebarNavigateBack)) { _ in
-            if module == .chat { chat.navigateBack() }
-            else { Task { await spaces.navigateBack() } }
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .publshrTitlebarNavigateForward)) { _ in
-            if module == .chat { chat.navigateForward() }
-            else { Task { await spaces.navigateForward() } }
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .publshrOpenSettings)) { output in
-            let section = (output.object as? String).flatMap { SettingsSection(rawValue: $0) }
-            WorkspaceModuleWindowManager.shared.openSettings(
+            .onChange(of: chat.selectedChannel?.id) { _, _ in
+                tabStore.reflectChannelSelection(chat.selectedChannel)
+                tabStore.syncTabMetadata(chat: chat, spaces: spaces)
+            }
+            .onChange(of: spaces.selectedSpaceId) { _, _ in
+                tabStore.reflectSpaceSelection(spaces.selectedSpace)
+                tabStore.syncTabMetadata(chat: chat, spaces: spaces)
+            }
+            .onChange(of: auth.selectedMembership?.workspace.id) { _, _ in
+                if module.usesSpacesSubmenu { spaces.attach(auth: auth) }
+                if module == .chat { chat.attach(auth: auth) }
+            }
+    }
+
+    private func applySheets<V: View>(_ view: V) -> some View {
+        view
+            .sheet(isPresented: $showNewChannel) { newChannelSheet }
+            .sheet(isPresented: $showNewDM) { newDMSheet }
+            .sheet(isPresented: $showCommandPalette) { commandPaletteSheet }
+            .sheet(isPresented: $showNotificationsPanel) {
+                TitlebarNotificationsPanelView(chat: chat, isPresented: $showNotificationsPanel)
+            }
+            .sheet(item: $profilePresentation) { _ in
+                WorkspaceProfileSheet(
+                    presentation: $profilePresentation,
+                    module: $module
+                )
+            }
+            .sheet(isPresented: $spaces.showNewSpaceSheet) {
+                SpacesNewSpaceSheet(spaces: spaces)
+            }
+    }
+
+    private var commandPaletteSheet: some View {
+        TitlebarCommandPaletteView(
+            items: TitlebarChromeCommands.paletteItems(
+                tabStore: tabStore,
                 auth: auth,
                 chat: chat,
                 spaces: spaces,
-                updates: updates,
-                subscription: subscription,
-                enterprise: enterprise,
-                section: section
-            )
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                module: $module,
+                showNewChannel: $showNewChannel,
+                showNewDM: $showNewDM,
+                showCommandPalette: $showCommandPalette,
+                showNotificationsPanel: $showNotificationsPanel
+            ),
+            isPresented: $showCommandPalette
+        )
+    }
+
+    private func applyTitlebarNotifications<V: View>(_ view: V) -> some View {
+        view
+            .onReceive(NotificationCenter.default.publisher(for: .publshrTitlebarToggleSidebar)) { _ in
+                withAnimation(.easeInOut(duration: 0.15)) { tabStore.sidebarExpanded.toggle() }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .publshrTitlebarNewChat)) { _ in
+                module = .chat
+                tabStore.openFromModule(.chat, activate: true)
+                if chat.selectedChannel != nil {
+                    showNewChannel = true
+                } else {
+                    chat.selectedChannel = nil
+                }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .publshrTitlebarNewDM)) { _ in
+                module = .chat
+                tabStore.openFromModule(.chat, activate: true)
+                showNewDM = true
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .publshrTitlebarCommandPalette)) { _ in
+                showCommandPalette = true
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .publshrTitlebarSearch)) { _ in
+                if module == .chat { chat.openWorkspaceSearch() }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .publshrTitlebarNotifications)) { _ in
+                showNotificationsPanel = true
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .publshrTitlebarNavigateBack)) { _ in
+                if module == .chat { chat.navigateBack() }
+                else { Task { await spaces.navigateBack() } }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .publshrTitlebarNavigateForward)) { _ in
+                if module == .chat { chat.navigateForward() }
+                else { Task { await spaces.navigateForward() } }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .publshrSelectModule)) { output in
+                guard let raw = output.object as? String,
+                      let restored = AppModule(rawValue: raw),
+                      restored != .settings else { return }
+                module = restored
+                onModuleChange(restored)
+                tabStore.openFromModule(restored, activate: true)
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .publshrOpenSettings)) { output in
+                let section = (output.object as? String).flatMap { SettingsSection(rawValue: $0) }
+                WorkspaceModuleWindowManager.shared.openSettings(
+                    auth: auth,
+                    chat: chat,
+                    spaces: spaces,
+                    updates: updates,
+                    subscription: subscription,
+                    enterprise: enterprise,
+                    section: section
+                )
+            }
     }
 
     private func onShellAppear() {

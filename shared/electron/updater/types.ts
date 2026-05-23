@@ -1,7 +1,11 @@
 /** GitHub release channel for installed desktop apps. */
 export type DesktopUpdateChannel = 'dev' | 'staging' | 'production'
 
-export type DesktopProductId = 'spaces' | 'media-monitoring' | 'planner'
+export type DesktopProductId =
+  | 'enterprise'
+  | 'spaces'
+  | 'media-monitoring'
+  | 'planner'
 
 export interface AppBundleManifestEntry {
   assetName: string
