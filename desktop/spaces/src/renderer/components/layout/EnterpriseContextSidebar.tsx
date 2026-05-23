@@ -2,6 +2,7 @@ import { ChevronLeft, LayoutDashboard, Pin, Plus, Settings, Star } from 'lucide-
 import clsx from 'clsx'
 import { useSpacesStore } from '../../stores/spaces-store'
 import { SpacesHierarchyTree } from '../spaces/SpacesHierarchyTree'
+import { ChatContextSidebar } from '../chat/ChatContextSidebar'
 
 /** Column 2 — contextual sidebar (spaces tree, chat channels placeholder, etc.). */
 export function EnterpriseContextSidebar(): React.ReactElement {
@@ -20,6 +21,22 @@ export function EnterpriseContextSidebar(): React.ReactElement {
   const pinned = spaces.filter((s) => s.isPinned)
   const recent = spaces.filter((s) => !s.isPinned && !s.isArchived).slice(0, 8)
   const showSpacesTree = activeSection === 'spaces'
+  const showChatNav = activeSection === 'chat'
+
+  if (showChatNav) {
+    return (
+      <aside
+        className={clsx(
+          'glass-sidebar flex min-h-0 w-56 shrink-0 flex-col overflow-hidden border-r border-black/5',
+          collapsed && 'w-12'
+        )}
+      >
+        <ContextHeader collapsed={collapsed} onToggle={() => setSidebarCollapsed(!collapsed)} />
+        {!collapsed && <ChatContextSidebar />}
+        <SettingsFooter collapsed={collapsed} onSettings={() => setActiveSection('settings')} />
+      </aside>
+    )
+  }
 
   if (!showSpacesTree) {
     return (

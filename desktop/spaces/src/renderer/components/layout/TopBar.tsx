@@ -24,11 +24,35 @@ const VIEW_LABELS: Record<TaskViewMode, string> = {
   document: 'Document'
 }
 
-export function TopBar(): React.ReactElement {
+const SECTION_LABELS: Record<string, string> = {
+  dashboard: 'Dashboard',
+  spaces: 'Spaces',
+  planner: 'Planner',
+  chat: 'Chat',
+  documents: 'Documents',
+  approvals: 'Approvals',
+  reports: 'Reports',
+  clients: 'Clients',
+  campaigns: 'Campaigns',
+  team: 'Team',
+  media: 'Media Monitoring',
+  files: 'Files',
+  settings: 'Settings'
+}
+
+export function TopBar({
+  embedded = false,
+  onSignOut
+}: {
+  embedded?: boolean
+  onSignOut?: () => void
+}): React.ReactElement {
   const workspace = useSpacesStore((s) => s.workspace)
   const spaces = useSpacesStore((s) => s.spaces)
+  const activeSection = useSpacesStore((s) => s.activeSection)
   const activeSpaceId = useSpacesStore((s) => s.activeSpaceId)
   const taskView = useSpacesStore((s) => s.taskView)
+  const currentUserName = useSpacesStore((s) => s.currentUserName)
   const syncStatus = useSpacesStore((s) => s.syncStatus)
   const members = useSpacesStore((s) => s.members)
   const searchQuery = useSpacesStore((s) => s.searchQuery)
@@ -39,18 +63,24 @@ export function TopBar(): React.ReactElement {
   const activeSpace = spaces.find((s) => s.id === activeSpaceId)
   const onlineCount = members.filter((m) => m.isOnline).length
 
+  const subtitle =
+    activeSection === 'spaces'
+      ? (activeSpace?.name ?? 'Select a Space')
+      : (SECTION_LABELS[activeSection] ?? 'Workspace')
+
   return (
-    <header className="glass-toolbar drag-region flex h-12 shrink-0 items-center gap-3 px-4">
-      <div className="no-drag w-14 shrink-0" aria-hidden />
+    <header
+      data-tauri-drag-region={embedded ? true : undefined}
+      className="glass-toolbar flex h-12 shrink-0 items-center gap-3 border-b border-black/5 px-4"
+    >
+      <div className={embedded ? 'w-16 shrink-0' : 'no-drag w-14 shrink-0'} aria-hidden />
       <div className="no-drag flex min-w-0 items-center gap-3">
         <div className="flex h-7 w-7 items-center justify-center rounded-md bg-accent text-xs font-semibold text-white">
           {(workspace?.name ?? 'P')[0]}
         </div>
         <div className="min-w-0 leading-tight">
-          <p className="truncate text-xs font-medium text-ink">{workspace?.name}</p>
-          <p className="truncate text-[11px] text-ink-muted">
-            {activeSpace?.name ?? 'Select a Space'}
-          </p>
+          <p className="truncate text-xs font-medium text-ink">{workspace?.name ?? 'Publshr Enterprise'}</p>
+          <p className="truncate text-[11px] text-ink-muted">{subtitle}</p>
         </div>
       </div>
 
@@ -109,12 +139,21 @@ export function TopBar(): React.ReactElement {
         <button type="button" className="rounded-lg p-1.5 text-ink-secondary hover:bg-surface-muted">
           <Sparkles className="h-4 w-4" />
         </button>
-        <button
-          type="button"
+        <span
           className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-accent-soft text-xs font-semibold text-accent"
+          title={currentUserName}
         >
-          Y
-        </button>
+          {(currentUserName || 'Y').slice(0, 1).toUpperCase()}
+        </span>
+        {onSignOut ? (
+          <button
+            type="button"
+            onClick={onSignOut}
+            className="rounded-lg px-2 py-1 text-xs text-ink-muted hover:bg-surface-muted hover:text-ink"
+          >
+            Sign out
+          </button>
+        ) : null}
       </div>
     </header>
   )

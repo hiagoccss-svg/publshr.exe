@@ -24,6 +24,7 @@ import type {
 
 interface SpacesState {
   ready: boolean
+  bootstrapError: string | null
   workspace: BootstrapPayload['workspace'] | null
   spaces: Space[]
   folders: SpaceFolder[]
@@ -61,6 +62,7 @@ interface SpacesState {
   spaceSettingsId: string | null
   spacesHomeOpen: boolean
   loadBootstrap: () => Promise<void>
+  clearBootstrapError: () => void
   loadWorkspaceData: () => Promise<void>
   refreshActiveSpace: () => Promise<void>
   refreshHierarchy: () => Promise<void>
@@ -96,6 +98,7 @@ interface SpacesState {
 
 export const useSpacesStore = create<SpacesState>((set, get) => ({
   ready: false,
+  bootstrapError: null,
   workspace: null,
   spaces: [],
   folders: [],
@@ -134,21 +137,32 @@ export const useSpacesStore = create<SpacesState>((set, get) => ({
   spacesHomeOpen: false,
 
   loadBootstrap: async () => {
-    const api = getSpacesAPI()
-    const data: BootstrapPayload = await api.getBootstrap()
-    const spaces = data.spaces
-    set({
-      ready: true,
-      workspace: data.workspace,
-      spaces,
-      activeSpaceId: spaces[0]?.id ?? null,
-      currentUserId: data.currentUserId,
-      currentUserName: data.currentUserName,
-      syncStatus: data.syncStatus
-    })
-    if (spaces[0]) await get().setActiveSpace(spaces[0].id)
-    await get().loadWorkspaceData()
+    set({ bootstrapError: null })
+    try {
+      const api = getSpacesAPI()
+      const data: BootstrapPayload = await api.getBootstrap()
+      const spaces = data.spaces
+      set({
+        ready: true,
+        bootstrapError: null,
+        workspace: data.workspace,
+        spaces,
+        activeSpaceId: spaces[0]?.id ?? null,
+        currentUserId: data.currentUserId,
+        currentUserName: data.currentUserName,
+        syncStatus: data.syncStatus
+      })
+      if (spaces[0]) await get().setActiveSpace(spaces[0].id)
+      await get().loadWorkspaceData()
+    } catch (e) {
+      set({
+        ready: false,
+        bootstrapError: e instanceof Error ? e.message : 'Failed to load workspace'
+      })
+    }
   },
+
+  clearBootstrapError: () => set({ bootstrapError: null }),
 
   loadWorkspaceData: async () => {
     const api = getSpacesAPI()

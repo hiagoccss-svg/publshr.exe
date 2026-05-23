@@ -15,6 +15,8 @@ struct SpacesNavSidebar: View {
                             minHeight: 0,
                             maxHeight: spaces.selectedSpaceId == nil ? .infinity : 200
                         )
+                } else {
+                    sectionContextHint
                 }
 
                 if spaces.activeSection == .spaces, spaces.selectedSpaceId != nil {
@@ -35,6 +37,17 @@ struct SpacesNavSidebar: View {
                     createSpaceField
                 }
             }
+        }
+    }
+
+    private var sectionContextHint: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            LibraryUniversalSubmenu.sectionHeader(spaces.activeSection.label)
+            Text("Use the workspace panel to manage \(spaces.activeSection.label.lowercased()).")
+                .font(.system(size: 11))
+                .foregroundStyle(LibraryGlassDesign.inkSecondary)
+                .padding(.horizontal, 10)
+                .padding(.bottom, 8)
         }
     }
 
