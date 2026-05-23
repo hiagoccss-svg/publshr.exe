@@ -10,7 +10,7 @@ Turning off Gatekeeper or SIP is **not** required and is unsafe for production.
 |----------|-----|
 | **Developer ID + notarization** | Production — users get seamless open/update (planned in CI) |
 | **Install to `~/Applications`** | Updates without admin password each time |
-| **Install to `/Applications`** | One admin prompt per update (existing `apply-macos-update.sh`) |
+| **Install to `/Applications`** | Avoid — live updates install to `~/Applications` instead (no admin password) |
 | **First open: Right-click → Open** | Dev/internal only, until notarized |
 
 Auto-update **replaces only** `Publshr.app`. It never deletes user data under Application Support.
@@ -108,7 +108,7 @@ flowchart LR
 Install location:
 
 - **`~/Applications/Publshr.app`** — passwordless updates (recommended for dev)
-- **`/Applications/Publshr.app`** — one admin password per update
+- **`/Applications/Publshr.app`** — not updated in place; use **Move to ~/Applications** in Settings or reinstall
 
 ## Enterprise checklist (best practices)
 

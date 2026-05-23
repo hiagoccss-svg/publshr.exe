@@ -26,8 +26,16 @@ enum InstallPathPolicy {
         return (try? Data().write(to: probe)) != nil && (try? fm.removeItem(at: probe)) != nil
     }
 
-    /// Target for in-place live updates — never requires administrator approval.
+    static func isSystemApplicationsInstall(path: String) -> Bool {
+        URL(fileURLWithPath: path, isDirectory: true).standardizedFileURL.path
+            == systemApplicationsApp.standardizedFileURL.path
+    }
+
+    /// Target for live updates — always user-writable (`~/Applications`). Never `/Applications` (macOS prompts for admin).
     static func resolvedLiveUpdateTarget(runningBundlePath: String) -> String {
+        if isSystemApplicationsInstall(path: runningBundlePath) {
+            return userApplicationsApp.path
+        }
         if isUserUpdatable(path: runningBundlePath) {
             return runningBundlePath
         }
