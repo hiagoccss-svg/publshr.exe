@@ -3,6 +3,8 @@ import SwiftUI
 /// Shared secondary sidebar chrome (Areas / Recent Notes style from the library reference).
 enum LibraryUniversalSubmenu {
     static let width: CGFloat = LibraryGlassDesign.sidebarWidthWide
+    /// Breathing room below the unified titlebar search row (Cursor Mac submenu).
+    static let contentTopInset: CGFloat = 6
 
     static func sectionHeader(_ title: String, onAdd: (() -> Void)? = nil) -> some View {
         HStack(spacing: 4) {
@@ -51,13 +53,10 @@ struct LibraryUniversalSubmenuContainer<Content: View, Footer: View>: View {
         self.footer = footer
     }
 
-    /// Breathing room below the unified titlebar search row (Cursor Mac submenu).
-    static let contentTopInset: CGFloat = 6
-
     var body: some View {
         VStack(spacing: 0) {
             content()
-                .padding(.top, Self.contentTopInset)
+                .padding(.top, LibraryUniversalSubmenu.contentTopInset)
                 .frame(minHeight: 0, maxHeight: .infinity)
 
             footer()
