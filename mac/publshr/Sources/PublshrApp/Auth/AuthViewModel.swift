@@ -256,7 +256,7 @@ final class AuthViewModel: ObservableObject {
         }
     }
 
-    private func performCloudReconcile(unlockMethod: SessionUnlockMethod?) async {
+    private func performCloudReconcile(unlockMethod: SessionUnlockMethod?) async throws {
         if let current = try? await client.auth.session, current.isExpired {
             session = try await client.auth.refreshSession()
         } else if session == nil, let stored = AuthKeychain.load() {
