@@ -92,8 +92,10 @@ enum SpaceTypeWire {
 
     static func fromDatabase(_ stored: String) -> String {
         let key = stored.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        if key.isEmpty { return SpaceTypeOption.general.rawValue }
         if let mapped = legacyToCanonical[key] { return mapped }
-        return SpacesHomeLogic.normalizeSpaceType(key)
+        if SpaceTypeOption(rawValue: key) != nil { return key }
+        return SpaceTypeOption.general.rawValue
     }
 }
 
