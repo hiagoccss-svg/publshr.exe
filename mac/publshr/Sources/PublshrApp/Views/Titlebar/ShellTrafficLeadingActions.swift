@@ -1,15 +1,50 @@
 import SwiftUI
 
-/// Controls immediately after the macOS traffic-light cluster (back / forward when the bar menu is expanded).
+/// Controls immediately after the macOS traffic-light cluster (sidebar toggles + back / forward).
 struct ShellTrafficLeadingActions: View {
+    @EnvironmentObject private var tabStore: WorkspaceTabStore
     @EnvironmentObject private var chat: ChatViewModel
     @EnvironmentObject private var spaces: SpacesViewModel
     @Binding var module: AppModule
     var compact: Bool = false
+    var submenuHidden: Bool = false
 
     var body: some View {
         HStack(alignment: .center, spacing: AppWindowChromeMetrics.toolbarItemSpacing) {
-            if !compact {
+            if submenuHidden {
+                TitlebarChromeIconButton(
+                    systemName: tabStore.sidebarExpanded ? "sidebar.left" : "sidebar.right",
+                    help: tabStore.sidebarExpanded ? "Hide submenu" : "Show submenu",
+                    isActive: !tabStore.sidebarExpanded
+                ) {
+                    withAnimation(.easeInOut(duration: 0.15)) {
+                        tabStore.sidebarExpanded.toggle()
+                    }
+                }
+            }
+
+            if compact || !tabStore.barMenuExpanded {
+                TitlebarChromeIconButton(
+                    systemName: "sidebar.leading",
+                    help: "Expand main menu",
+                    isActive: !tabStore.barMenuExpanded
+                ) {
+                    withAnimation(.easeInOut(duration: 0.15)) {
+                        tabStore.barMenuExpanded = true
+                    }
+                }
+            } else {
+                TitlebarChromeIconButton(
+                    systemName: "sidebar.trailing",
+                    help: "Collapse to icon bar"
+                ) {
+                    withAnimation(.easeInOut(duration: 0.15)) {
+                        tabStore.barMenuExpanded = false
+                    }
+                }
+            }
+
+            if !compact, tabStore.barMenuExpanded {
                 TitlebarChromeIconButton(
                     systemName: "chevron.left",
                     help: TitlebarShortcutHint.tooltip("Back", shortcut: TitlebarShortcutHint.navigateBack),

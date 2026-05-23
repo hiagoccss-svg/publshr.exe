@@ -4,6 +4,7 @@ import UniformTypeIdentifiers
 struct ChatConversationView: View {
     @ObservedObject var chat: ChatViewModel
     var onNewMessage: () -> Void = {}
+    var onCreateChannel: () -> Void = {}
     @State private var showFileImporter = false
     @State private var showVoiceSheet = false
     @State private var editText = ""
@@ -108,7 +109,7 @@ struct ChatConversationView: View {
             if chat.mainChannelMessages.isEmpty && !chat.isLoading {
                 ChatEmptyStateView(
                     onNewMessage: onNewMessage,
-                    onCreateChannel: { Task { await chat.createChannel(name: "general") } }
+                    onCreateChannel: onCreateChannel
                 )
             } else {
                 ScrollViewReader { proxy in

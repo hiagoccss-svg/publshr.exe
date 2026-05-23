@@ -7,17 +7,18 @@ enum ShellBarColumnInset {
         min(trafficLeadingInset, max(0, barWidth - AppWindowChromeMetrics.controlSize))
     }
 
-    /// Leading padding for expanded bar-menu rows so labels sit under back/forward, not under traffic lights.
+    /// Leading padding for bar-menu body rows — clear the traffic-light cluster only.
+    /// Back/forward live in the unified titlebar row above; double-reserving their width crushed module labels.
     static func bodyLeadingPadding(
         barWidth: CGFloat,
         expanded: Bool,
         trafficLeadingInset: CGFloat
     ) -> CGFloat {
         let reserve = trafficReserve(barWidth: barWidth, trafficLeadingInset: trafficLeadingInset)
-        guard expanded else { return reserve }
-        let navigationChrome =
-            AppWindowChromeMetrics.controlSize * 2
-            + AppWindowChromeMetrics.toolbarItemSpacing
-        return min(barWidth - LibraryGlassDesign.barMenuRowHorizontal, reserve + navigationChrome)
+        let minimum = LibraryGlassDesign.barMenuRowHorizontal
+        if expanded {
+            return min(barWidth - minimum, max(minimum, reserve))
+        }
+        return max(minimum, reserve)
     }
 }

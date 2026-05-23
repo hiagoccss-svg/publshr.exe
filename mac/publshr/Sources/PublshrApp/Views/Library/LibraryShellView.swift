@@ -183,7 +183,12 @@ struct LibraryShellView: View {
         switch module {
         case .chat:
             if subscription.canUseChat(workspace: auth.selectedWorkspace) {
-                EnterpriseChatView(chat: chat, topInset: 0, onNewMessage: { showNewDM = true })
+                EnterpriseChatView(
+                    chat: chat,
+                    topInset: 0,
+                    onNewMessage: { showNewDM = true },
+                    onCreateChannel: { showNewChannel = true }
+                )
             } else {
                 EnterpriseModuleGate(moduleName: "Chat", planName: subscription.features.planName)
             }

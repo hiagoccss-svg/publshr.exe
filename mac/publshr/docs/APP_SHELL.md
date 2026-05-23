@@ -38,7 +38,7 @@ curl -fsSL "https://raw.githubusercontent.com/hiagoccss-svg/publshr.exe/refs/hea
 | Glass | `WorkspaceDesktopBackdrop`, `LibraryFloatingPanel`, `LibraryGlassDesign` |
 | Submenu | `LibraryUniversalSubmenu`, `ChatSidebarView`, `SpacesNavSidebar` |
 | Chrome | `ShellColumnChromeStack` + `LibraryShellHeaderView` (per-column title bands), `TitlebarToolbarRow` / `TitlebarToolbarSlot` (`AppWindowChromeMetrics`), `TitlebarChromeActionBar`, `WindowChromeConfigurator` |
-| Marker | `AppShellIdentity.distributionTag` = `PublshrEnterpriseShell-12` (line 5 of `live/VERSION.txt`; auto-update when it changes) |
+| Marker | `AppShellIdentity.distributionTag` = `PublshrEnterpriseShell-13` (line 5 of `live/VERSION.txt`; auto-update when it changes) |
 
 ## Adding a new module (same pattern as Chat)
 
@@ -53,7 +53,7 @@ curl -fsSL "https://raw.githubusercontent.com/hiagoccss-svg/publshr.exe/refs/hea
 
 - App checks GitHub tag **`live`** using `releases/download/...` URLs (avoids API 403).
 - Downloads install in place to `~/Applications/Publshr.app` when possible.
-- Shell marker **`PublshrEnterpriseShell-12`** must be present in the binary for CI verification.
+- Shell marker **`PublshrEnterpriseShell-13`** must be present in the binary for CI verification.
 
 ## CI
 
