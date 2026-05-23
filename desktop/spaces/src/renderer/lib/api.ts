@@ -1,8 +1,12 @@
-import type { SpacesAPI } from '../../shared/types'
+import { bindTauriSpacesRefresh, resolveSpacesAPI } from './tauri-api'
 
-export function getSpacesAPI(): SpacesAPI {
-  if (!window.spaces) {
-    throw new Error('Spaces API unavailable — run inside Electron')
-  }
-  return window.spaces
+export function getSpacesAPI() {
+  return resolveSpacesAPI()
+}
+
+/** Wire refresh events when running under Tauri. */
+export function initSpacesPlatform(): void {
+  bindTauriSpacesRefresh(() => {
+    window.dispatchEvent(new CustomEvent('spaces:refresh'))
+  })
 }

@@ -58,36 +58,40 @@ curl -fsSL "https://raw.githubusercontent.com/hiagoccss-svg/publshr.exe/refs/hea
 
 Every push to `main` runs `.github/workflows/deliver-macos.yml`, publishing the **`live`** release asset `Publshr-macos-aarch64.tar.gz`. The installed app auto-updates from that channel. See `mac/publshr/docs/AUTO_UPDATE.md`.
 
-### Desktop transparency (Electron + macOS IDE)
+### Desktop transparency (Tauri / legacy Electron + macOS IDE)
 
-Translucent **shell** (wallpaper bleeds through) vs solid **content** (cards, editors, tables). Shared CSS: `shared/design/desktop-transparency.css` (via `library-glass.css`). Electron windows: `shared/electron/glass-window.ts`. Docs: `shared/design/DESKTOP_TRANSPARENCY.md`. macOS IDE: `WorkspaceDesktopBackdrop`, `MainWindowChrome`.
+Translucent **shell** (wallpaper bleeds through) vs solid **content** (cards, editors, tables). Shared CSS: `shared/design/desktop-transparency.css` (via `library-glass.css`). Tauri: `shared/desktop/TAURI_GLASS.md`. Legacy Electron: `shared/electron/glass-window.ts`. Docs: `shared/design/DESKTOP_TRANSPARENCY.md`. macOS IDE: `WorkspaceDesktopBackdrop`, `MainWindowChrome`.
 
 ### Enterprise desktop platform (Tauri — canonical target)
 
 The unified native shell lives in **`desktop/enterprise/`** (Tauri 2 + React + SQLite + keychain auth). See **`mac/publshr/docs/DESKTOP_TAURI_PLATFORM.md`**. CI: `.github/workflows/deliver-enterprise.yml`.
 
-Legacy Electron modules (`desktop/spaces`, `desktop/media-monitoring`, `planner/desktop`) are being migrated; do not add major features to Electron without a Tauri port plan.
+Legacy Electron modules (`desktop/media-monitoring`, `planner/desktop`) are being migrated; do not add new Electron surfaces unless blocked on Tauri (document in `desktop/docs/TAURI_DESKTOP.md`).
 
-### Desktop workflow (dev + installed auto-update)
+**Spaces pilot:** `desktop/spaces/` ships its own Tauri shell (`src-tauri/`, Rust SQLite) alongside the enterprise platform direction.
 
-See **`desktop/docs/DESKTOP_WORKFLOW.md`**. Summary:
+### Desktop workflow (Tauri-first)
 
-- **Dev:** `npm run dev` (or `make spaces-dev` / `planner-dev` / `media-monitoring-dev`) — native Electron window + Vite HMR; no reinstall.
-- **Installed:** Install shell once; **app bundle** updates from GitHub (`dev` / `staging` / `production`); **shell** installer only when main/preload changes.
-- Shared updater: `shared/electron/updater/`; CI: `.github/workflows/deliver-desktop.yml`.
+See **`desktop/docs/TAURI_DESKTOP.md`** and **`desktop/docs/DESKTOP_WORKFLOW.md`**. Summary:
 
-### Spaces (macOS IDE + Electron)
+- **Preferred shell:** Tauri 2 (Rust + OS webview). React / Tailwind / TypeScript UI unchanged.
+- **Enterprise app:** `cd desktop/enterprise && npm install && npm run dev`
+- **Spaces:** `cd desktop/spaces && npm run dev` (Tauri + Vite HMR). Legacy Electron: `npm run dev:electron`
+- **Legacy apps:** Media Monitoring, Planner — Electron until migrated (`make media-monitoring-dev`, `planner-dev`)
+- **Legacy Electron updater:** `shared/electron/updater/`; CI: `.github/workflows/deliver-desktop.yml` until Tauri CI fully replaces it per app
+
+### Spaces (macOS IDE + desktop)
 
 The **native Spaces** module lives in `mac/publshr/Sources/PublshrApp/Spaces/` (SwiftUI + Supabase + SQLite cache). See `mac/publshr/docs/SPACES_SYSTEM.md`. Schema: `mac/publshr/supabase/migrations/001_spaces_schema.sql`.
 
-The standalone **Spaces** Electron app lives in `desktop/spaces/` (React + TypeScript + Tailwind + SQLite + Supabase). The renderer (“web” UI) and the macOS IDE Spaces module must stay identical — see `shared/spaces/PARITY.md` and `shared/spaces/view-modes.ts`.
+The standalone **Spaces** desktop app lives in `desktop/spaces/` (Tauri + React + TypeScript + Tailwind + Rust SQLite + Supabase). The renderer (“web” UI) and the macOS IDE Spaces module must stay identical — see `shared/spaces/PARITY.md` and `shared/spaces/view-modes.ts`.
 
 ```bash
 cd desktop/spaces
 npm install
-npm run dev         # native window + hot reload
-npm run build       # production bundle
-npm run dist:shell  # installer when Electron shell changed
+npm run dev          # Tauri native window + Vite HMR (default)
+npm run tauri:build  # production installers
+npm run dev:electron # legacy Electron (maintenance only)
 npm run typecheck
 ```
 

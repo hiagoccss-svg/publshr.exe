@@ -6,16 +6,24 @@ on:
     paths:
       - 'desktop/spaces/**'
       - 'supabase/migrations/**'
+      - '.github/workflows/verify-spaces.yml'
   pull_request:
     paths:
       - 'desktop/spaces/**'
       - 'supabase/migrations/**'
+      - '.github/workflows/verify-spaces.yml'
+
+permissions:
+  contents: read
 
 jobs:
   typecheck-and-build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Avoid flaky PR merge-ref fetch; checkout the branch head directly.
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -26,4 +34,4 @@ jobs:
         run: |
           npm ci
           npm run typecheck
-          npm run build
+          npm run build:web

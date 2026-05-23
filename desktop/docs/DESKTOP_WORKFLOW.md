@@ -1,13 +1,15 @@
 # Desktop app workflow — dev hot reload + installed auto-update
 
-Enterprise Electron apps (Spaces, Media Monitoring, Planner) share one workflow. The native **Publshr macOS IDE** (`mac/publshr`) uses its own `live` channel — see [AUTO_UPDATE.md](../../mac/publshr/docs/AUTO_UPDATE.md).
+**Tauri-first:** new work uses Tauri 2 (Rust + OS webview). See [TAURI_DESKTOP.md](./TAURI_DESKTOP.md). **Spaces** ships on Tauri by default; Media Monitoring and Planner still use legacy Electron until migrated.
+
+The native **Publshr macOS IDE** (`mac/publshr`) uses its own `live` channel — see [AUTO_UPDATE.md](../../mac/publshr/docs/AUTO_UPDATE.md).
 
 ## Two modes
 
 | Mode | When | What happens |
 |------|------|----------------|
-| **Development** | Daily work in Cursor | `npm run dev` opens a **real Electron window** with Vite HMR. No install, no GitHub release. |
-| **Installed test** | QA / staging on Mac or Windows | Install the shell **once**. Frontend updates download as a small **app bundle**; shell updates only when main/preload/Electron changes. |
+| **Development** | Daily work in Cursor | `npm run dev` opens a **native window** (Tauri or legacy Electron) with Vite HMR. No install, no GitHub release. |
+| **Installed test** | QA / staging on Mac or Windows | Install once. Tauri: `tauri-plugin-updater` (planned). Legacy Electron: app bundle + shell split — see below. |
 
 Supabase handles auth, data, and realtime only — **not** desktop installation.
 
@@ -16,8 +18,9 @@ Supabase handles auth, data, and realtime only — **not** desktop installation.
 From the app directory:
 
 ```bash
-# Spaces
+# Spaces (Tauri — default)
 cd desktop/spaces && npm install && npm run dev
+# Legacy: npm run dev:electron
 
 # Media Monitoring
 cd desktop/media-monitoring && npm install && npm run dev
@@ -28,8 +31,8 @@ cd planner/desktop && npm install && npm run dev
 ```
 
 - Opens a native desktop window (not a browser tab).
-- `electron-vite dev` serves the renderer with HMR.
-- SQLite, Keychain/`safeStorage`, and Supabase sessions stay under Electron `userData` — unchanged while you edit UI code.
+- **Spaces:** `tauri dev` runs Vite + Rust; SQLite lives in app data via Rust (`spaces-cache/spaces.db`).
+- **Legacy Electron apps:** `electron-vite dev`; SQLite and sessions under `userData`.
 - Optional: `PUBLSHR_UPDATE_CHANNEL=dev` when testing update logic in a packaged build.
 
 ## Installed test (auto-update)
@@ -40,8 +43,8 @@ Build or download the installer for your product and OS:
 
 ```bash
 cd desktop/spaces
-npm run dist:shell   # local shell build
-# CI publishes to GitHub release tag: spaces-staging (etc.)
+npm run tauri:build   # Tauri installers (preferred)
+npm run dist:shell    # legacy Electron shell only
 ```
 
 Install the `.dmg` / `.exe` / `.AppImage` once. User data lives in:
@@ -120,6 +123,7 @@ Uses the **`live`** channel (full `Publshr.app` tarball). Same idea: install onc
 
 ## Related
 
+- [TAURI_DESKTOP.md](./TAURI_DESKTOP.md)
 - [ENTERPRISE_DESKTOP.md](../../mac/publshr/docs/ENTERPRISE_DESKTOP.md)
 - [AUTO_UPDATE.md](../../mac/publshr/docs/AUTO_UPDATE.md)
 - Shared updater: [`shared/electron/updater/`](../../shared/electron/updater/)

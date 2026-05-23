@@ -71,8 +71,13 @@ version: build ## Print version from built binary
 run-local: install-local ## Install locally and run help
 	$(LOCAL_BIN)/publshr
 
-spaces-dev: ## Run Spaces desktop app (native window + hot reload)
+spaces-dev: ## Run Spaces desktop app (Tauri + Vite HMR)
 	cd desktop/spaces && npm install && npm run dev
+
+spaces-tauri-dev: spaces-dev ## Alias for Spaces Tauri dev
+
+spaces-dev-electron: ## Legacy Spaces Electron dev
+	cd desktop/spaces && npm install && npm run dev:electron
 
 planner-dev: ## Run Planner desktop app (native window + hot reload)
 	cd planner/desktop && npm install && npm run dev
