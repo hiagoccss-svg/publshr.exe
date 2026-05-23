@@ -11,8 +11,9 @@ enum ShellColumnLayout {
     /// Cap collapsed column so traffic-light reserve does not waste body width.
     static let barCollapsedMax: CGFloat = 96
 
-    static let submenuWidth: CGFloat = 272
-    static let submenuMinWidth: CGFloat = 240
+    /// ClickUp-style chat submenu — wide enough for filter row + channel titles without clipping.
+    static let submenuWidth: CGFloat = 288
+    static let submenuMinWidth: CGFloat = 256
 
     static let editorMinWidth: CGFloat = 420
 

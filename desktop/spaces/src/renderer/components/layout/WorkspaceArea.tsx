@@ -34,8 +34,8 @@ export function WorkspaceArea(): React.ReactElement {
     if (spaces.length === 0) return <EmptySpaceState />
     if (spacesHomeOpen || !activeSpaceId) {
       return (
-        <main className="glass-workspace flex min-w-0 flex-1 flex-col overflow-hidden">
-          <div className="library-workspace-pad min-h-0 flex-1 overflow-auto">
+        <main className="glass-workspace-flat flex min-w-0 flex-1 flex-col overflow-hidden">
+          <div className="min-h-0 flex-1 overflow-auto">
             <SpacesHomeView />
           </div>
         </main>
@@ -45,7 +45,7 @@ export function WorkspaceArea(): React.ReactElement {
   }
 
   return (
-    <main className="glass-workspace flex min-w-0 flex-1 flex-col overflow-hidden">
+    <main className="glass-workspace-flat flex min-w-0 flex-1 flex-col overflow-hidden">
       <div className="dt-divider-h flex shrink-0 flex-wrap items-center gap-3 px-4 py-2">
         <SpacesBreadcrumb />
         <div className="ml-auto flex items-center gap-2">
@@ -70,7 +70,7 @@ export function WorkspaceArea(): React.ReactElement {
         ))}
       </div>
 
-      <div className="library-workspace-pad min-h-0 flex-1 overflow-auto">
+      <div className="min-h-0 flex-1 overflow-auto px-4 pb-4">
         {taskView === 'overview' && <SpaceOverview />}
         {taskView === 'list' && <TaskListView />}
         {taskView === 'board' && <TaskBoardView />}

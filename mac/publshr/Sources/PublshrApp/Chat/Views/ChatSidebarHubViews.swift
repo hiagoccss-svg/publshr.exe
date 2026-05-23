@@ -27,6 +27,7 @@ struct ChatSidebarHubStrip: View {
                 Text(hub.label)
                     .font(.system(size: 13, weight: selected ? .semibold : .regular))
                     .foregroundStyle(selected ? LibraryGlassDesign.ink : LibraryGlassDesign.inkSecondary)
+                    .lineLimit(1)
                 Spacer(minLength: 0)
                 if badge > 0 {
                     Text(badge > 99 ? "99+" : "\(badge)")
@@ -39,7 +40,7 @@ struct ChatSidebarHubStrip: View {
                 }
             }
             .frame(height: ChatClickUpDesign.rowHeight)
-            .padding(.horizontal, 10)
+            .padding(.horizontal, LibraryGlassDesign.sidebarRowHorizontal - 2)
             .background(
                 RoundedRectangle(cornerRadius: LibraryGlassDesign.sidebarRowRadius, style: .continuous)
                     .fill(selected ? LibraryGlassDesign.sidebarSelection : Color.clear)

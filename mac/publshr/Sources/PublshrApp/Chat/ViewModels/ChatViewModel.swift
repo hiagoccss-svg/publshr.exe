@@ -303,35 +303,41 @@ final class ChatViewModel: ObservableObject {
     }
 
     private func partitionChannels(_ all: [ChatChannel]) {
-        let unique = Self.dedupedChannels(all)
-        channels = unique
+        let deduped = deduplicatedSidebarChannels(all)
+        channels = deduped
             .filter { $0.kind == .channel }
             .sorted { $0.sidebarTitle.localizedCaseInsensitiveCompare($1.sidebarTitle) == .orderedAscending }
-        directMessages = unique
+        directMessages = deduped
             .filter { $0.kind == .dm || $0.kind == .group }
             .sorted { $0.sidebarTitle.localizedCaseInsensitiveCompare($1.sidebarTitle) == .orderedAscending }
     }
 
-    /// Collapses duplicate rows (same id, or same channel name in one workspace).
-    private static func dedupedChannels(_ all: [ChatChannel]) -> [ChatChannel] {
+    /// Collapse duplicate rows from cache/realtime (same id, or same kind+name keeping newest activity).
+    private func deduplicatedSidebarChannels(_ all: [ChatChannel]) -> [ChatChannel] {
         var byId: [UUID: ChatChannel] = [:]
         for ch in all {
             if let existing = byId[ch.id] {
-                if ch.updatedAt > existing.updatedAt { byId[ch.id] = ch }
+                byId[ch.id] = preferredChannel(existing, ch)
             } else {
                 byId[ch.id] = ch
             }
         }
-        var byName: [String: ChatChannel] = [:]
+        var byNameKey: [String: ChatChannel] = [:]
         for ch in byId.values {
             let key = "\(ch.kind.rawValue):\(ch.name.lowercased())"
-            if let existing = byName[key] {
-                if ch.updatedAt > existing.updatedAt { byName[key] = ch }
+            if let existing = byNameKey[key] {
+                byNameKey[key] = preferredChannel(existing, ch)
             } else {
-                byName[key] = ch
+                byNameKey[key] = ch
             }
         }
-        return Array(byName.values)
+        return Array(byNameKey.values)
+    }
+
+    private func preferredChannel(_ a: ChatChannel, _ b: ChatChannel) -> ChatChannel {
+        let aDate = a.lastMessageAt ?? a.updatedAt
+        let bDate = b.lastMessageAt ?? b.updatedAt
+        return bDate > aDate ? b : a
     }
 
     // MARK: - Channel selection
@@ -723,7 +729,9 @@ final class ChatViewModel: ObservableObject {
                 description: description,
                 createdBy: userId
             )
-            channels.insert(ch, at: 0)
+            if !channels.contains(where: { $0.id == ch.id }) {
+                channels.insert(ch, at: 0)
+            }
             selectChannel(ch)
         } catch {
             errorMessage = error.localizedDescription

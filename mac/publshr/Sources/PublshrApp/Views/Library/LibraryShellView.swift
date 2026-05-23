@@ -152,10 +152,15 @@ struct LibraryShellView: View {
         .animation(.easeInOut(duration: 0.15), value: tabStore.barMenuExpanded)
     }
 
+    /// Chat, Spaces, Whiteboard, and Media Monitoring use a flat, full-bleed editor column (no rounded “card” box).
+    private var usesFlatEditorColumn: Bool {
+        module == .chat || module.usesSpacesSubmenu || module == .mediaMonitoring
+    }
+
     private var editorColumn: some View {
         ShellColumnChromeStack(showsTitlebar: false) {
             Group {
-                if module == .chat {
+                if usesFlatEditorColumn {
                     moduleContent
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
@@ -168,7 +173,7 @@ struct LibraryShellView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(
-            (module == .chat || module == .mediaMonitoring)
+            usesFlatEditorColumn
                 ? CursorMacShellDesign.editorColumnBackground
                 : CursorMacShellDesign.workspaceBackground
         )
