@@ -2,6 +2,7 @@ import type { CanonicalSpaceType } from '@spaces-enterprise/hierarchy'
 import type { SpacesHomeLayout } from '@spaces-enterprise/spaces-home'
 import { create } from 'zustand'
 import { getSpacesAPI } from '../lib/api'
+import type { CloudWorkspaceSnapshot } from '../lib/cloud-live-sync'
 import type {
   Approval,
   BootstrapPayload,
@@ -73,6 +74,7 @@ interface SpacesState {
   loadBootstrap: () => Promise<void>
   clearBootstrapError: () => void
   loadWorkspaceData: () => Promise<void>
+  applyCloudSnapshot: (snapshot: CloudWorkspaceSnapshot, userId: string, userName: string) => void
   refreshActiveSpace: () => Promise<void>
   refreshHierarchy: () => Promise<void>
   setActiveSpace: (id: string | null) => Promise<void>
@@ -184,6 +186,24 @@ export const useSpacesStore = create<SpacesState>((set, get) => ({
   },
 
   clearBootstrapError: () => set({ bootstrapError: null }),
+
+  applyCloudSnapshot: (snapshot, userId, userName) => {
+    set({
+      ready: true,
+      bootstrapError: null,
+      workspace: { id: snapshot.workspaceId, name: snapshot.workspaceName },
+      spaces: snapshot.spaces,
+      workspaceTasks: snapshot.workspaceTasks,
+      activeSpaceId: snapshot.spaces[0]?.id ?? null,
+      currentUserId: userId,
+      currentUserName: userName,
+      syncStatus: 'online'
+    })
+    if (snapshot.spaces[0]) {
+      void get().setActiveSpace(snapshot.spaces[0].id)
+    }
+    void get().loadWorkspaceData()
+  },
 
   loadWorkspaceData: async () => {
     const api = getSpacesAPI()

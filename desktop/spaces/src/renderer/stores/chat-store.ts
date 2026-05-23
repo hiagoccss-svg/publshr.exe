@@ -72,6 +72,7 @@ interface ChatState {
   setDraft: (v: string) => void
   sendMessage: (authorId: string, authorName: string) => void
   createChannel: (name: string) => void
+  applyCloudSnapshot: (channels: ChatChannel[], messages: ChatMessage[]) => void
 }
 
 export const useChatStore = create<ChatState>((set, get) => ({
@@ -120,6 +121,20 @@ export const useChatStore = create<ChatState>((set, get) => ({
       const next = { channels: s.channels, messages: [...s.messages, message] }
       persist(next)
       return { ...next, draft: '' }
+    })
+  },
+
+  applyCloudSnapshot: (channels, messages) => {
+    const active = channels[0]?.id ?? 'general'
+    const next = {
+      channels: channels.length > 0 ? channels : DEFAULT_CHANNELS,
+      messages: messages.length > 0 ? messages : DEFAULT_MESSAGES
+    }
+    persist(next)
+    set({
+      hydrated: true,
+      ...next,
+      activeChannelId: active
     })
   },
 
