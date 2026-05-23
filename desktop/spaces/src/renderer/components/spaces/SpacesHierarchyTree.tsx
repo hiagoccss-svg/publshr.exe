@@ -1,3 +1,4 @@
+import { SPACES_NEW_FOLDER_PLACEHOLDER, SPACES_NEW_FOLDER_PROMPT } from '@spaces-enterprise/hierarchy'
 import { ChevronDown, ChevronRight, Folder, Inbox, List, Plus } from 'lucide-react'
 import clsx from 'clsx'
 import { useSpacesStore } from '../../stores/spaces-store'
@@ -93,7 +94,7 @@ export function SpacesHierarchyTree(): React.ReactElement {
         <button
           type="button"
           onClick={() => {
-            const name = window.prompt('Folder name', 'New Folder')
+            const name = window.prompt(SPACES_NEW_FOLDER_PROMPT, SPACES_NEW_FOLDER_PLACEHOLDER)
             if (name?.trim()) void createFolder(name.trim())
           }}
           className="flex-1 rounded border border-dashed border-surface-border py-1 text-[10px] text-ink-muted hover:border-accent/40 hover:text-accent"

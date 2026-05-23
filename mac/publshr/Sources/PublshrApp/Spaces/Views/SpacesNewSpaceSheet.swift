@@ -17,6 +17,9 @@ struct SpacesNewSpaceSheet: View {
                         Text(type.label).tag(type)
                     }
                 }
+                Text("Use folders inside the Space for project groupings (ClickUp-style).")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
                 TextField("Description (optional)", text: $spaces.newSpaceDescription, axis: .vertical)
                     .lineLimit(2...4)
             }

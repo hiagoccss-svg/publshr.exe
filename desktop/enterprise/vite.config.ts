@@ -13,7 +13,8 @@ export default defineConfig(async () => ({
       '@desktop': path.resolve(__dirname, '../../shared/desktop'),
       '@shared/enterprise': path.resolve(__dirname, '../../shared/enterprise'),
       '@spaces': path.resolve(__dirname, '../spaces/src/renderer'),
-      '@spaces-shared': path.resolve(__dirname, '../spaces/src/shared')
+      '@spaces-shared': path.resolve(__dirname, '../spaces/src/shared'),
+      '@spaces-enterprise': path.resolve(__dirname, '../../shared/spaces')
     }
   },
   clearScreen: false,

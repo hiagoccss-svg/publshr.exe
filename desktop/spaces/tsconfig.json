@@ -19,13 +19,15 @@
     "paths": {
       "@renderer/*": ["src/renderer/*"],
       "@shared/*": ["src/shared/*"],
-      "@desktop/*": ["../../shared/desktop/*"]
+      "@desktop/*": ["../../shared/desktop/*"],
+      "@spaces-enterprise/*": ["../../shared/spaces/*"]
     }
   },
   "include": [
     "src/renderer/**/*",
     "src/shared/**/*",
     "src/preload/**/*",
-    "../../shared/desktop/**/*.ts"
+    "../../shared/desktop/**/*.ts",
+    "../../shared/spaces/**/*.ts"
   ]
 }

@@ -14,7 +14,8 @@ export default defineConfig({
     alias: {
       '@renderer': resolve(__dirname, 'src/renderer'),
       '@shared': resolve(__dirname, 'src/shared'),
-      '@desktop': resolve(__dirname, '../../shared/desktop')
+      '@desktop': resolve(__dirname, '../../shared/desktop'),
+      '@spaces-enterprise': resolve(__dirname, '../../shared/spaces')
     }
   },
   plugins: [react()],

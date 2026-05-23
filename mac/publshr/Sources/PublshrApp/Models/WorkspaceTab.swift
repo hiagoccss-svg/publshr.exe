@@ -79,17 +79,14 @@ struct WorkspaceTab: Identifiable, Equatable, Hashable {
 
 extension SpaceRecord {
     var workspaceTabTypeLabel: String {
-        switch type.lowercased() {
-        case "project": return "Project space"
-        case "campaign": return "Campaign"
-        default: return "Space"
-        }
+        SpaceTypeOption.resolved(rawType: type).label
     }
 
     var workspaceTabIcon: String {
-        switch type.lowercased() {
-        case "project": return "folder"
-        case "campaign": return "megaphone"
+        switch SpaceTypeOption.resolved(rawType: type) {
+        case .campaign: return "megaphone"
+        case .client: return "briefcase"
+        case .publication: return "newspaper"
         default: return "square.grid.2x2"
         }
     }

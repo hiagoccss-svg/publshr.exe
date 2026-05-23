@@ -32,7 +32,7 @@ export function SpaceOverview(): React.ReactElement {
         <div>
           <h1 className="text-xl font-semibold tracking-tight text-ink">{space.name}</h1>
           <p className="mt-1 max-w-2xl text-sm text-ink-secondary">
-            {space.description || 'Operational workspace — projects, campaigns, and deliverables.'}
+            {space.description || 'Operational Space — folders, lists, tasks, and deliverables.'}
           </p>
           <div className="mt-2 flex gap-2 text-xs text-ink-muted">
             <span className="rounded bg-surface-muted px-2 py-0.5 capitalize">{space.type}</span>

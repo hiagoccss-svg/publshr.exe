@@ -1,15 +1,8 @@
 import { useState } from 'react'
 import { X } from 'lucide-react'
+import { SPACE_TYPE_OPTIONS } from '@spaces-enterprise/hierarchy'
 import { useSpacesStore } from '../../stores/spaces-store'
 import type { SpaceType } from '../../../shared/types'
-
-const SPACE_TYPES: { value: SpaceType; label: string }[] = [
-  { value: 'general', label: 'General' },
-  { value: 'campaign', label: 'Campaign' },
-  { value: 'client', label: 'Client' },
-  { value: 'editorial', label: 'Editorial' },
-  { value: 'operation', label: 'Operation' }
-]
 
 export function NewSpaceModal(): React.ReactElement | null {
   const open = useSpacesStore((s) => s.newSpaceModalOpen)
@@ -63,7 +56,7 @@ export function NewSpaceModal(): React.ReactElement | null {
               value={name}
               onChange={(e) => setName(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && void submit()}
-              placeholder="e.g. Q2 Campaign"
+              placeholder="e.g. Marketing team"
               className="w-full rounded-lg border border-surface-border bg-surface px-3 py-2 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-accent/20"
             />
           </div>
@@ -74,12 +67,15 @@ export function NewSpaceModal(): React.ReactElement | null {
               onChange={(e) => setType(e.target.value as SpaceType)}
               className="w-full rounded-lg border border-surface-border bg-surface px-3 py-2 text-sm text-ink"
             >
-              {SPACE_TYPES.map((t) => (
+              {SPACE_TYPE_OPTIONS.map((t) => (
                 <option key={t.value} value={t.value}>
                   {t.label}
                 </option>
               ))}
             </select>
+            <p className="mt-1 text-[10px] text-ink-muted">
+              Use folders inside the Space for project groupings (ClickUp-style).
+            </p>
           </div>
           <div>
             <label className="mb-1 block text-[10px] font-semibold uppercase text-ink-muted">
