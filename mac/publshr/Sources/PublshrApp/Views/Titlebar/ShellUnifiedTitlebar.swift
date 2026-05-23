@@ -55,19 +55,8 @@ struct ShellUnifiedTitlebar: View {
     private var leadingBand: some View {
         TitlebarToolbarRow(trailingPadding: 6) {
             Color.clear
-                .frame(width: min(layout.leadingInset, max(0, barColumnWidth - AppWindowChromeMetrics.controlSize * 2)))
+                .frame(width: min(layout.leadingInset, max(0, barColumnWidth - AppWindowChromeMetrics.controlSize)))
                 .accessibilityHidden(true)
-            TitlebarChromeIconButton(
-                systemName: tabStore.sidebarExpanded ? "sidebar.left" : "sidebar.right",
-                help: tabStore.sidebarExpanded
-                    ? "Hide submenu"
-                    : "Show submenu",
-                isActive: !tabStore.sidebarExpanded
-            ) {
-                withAnimation(.easeInOut(duration: 0.15)) {
-                    tabStore.sidebarExpanded.toggle()
-                }
-            }
             ShellTrafficLeadingActions(
                 module: $module,
                 compact: !tabStore.barMenuExpanded || barColumnCompact
