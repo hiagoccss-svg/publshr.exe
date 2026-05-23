@@ -41,6 +41,7 @@ check_table "chat_scheduled_messages"
 check_table "projects"
 check_table "planner_items"
 check_table "approvals"
+check_table "app_background_sync_tasks"
 
 echo "7. Device registration upsert"
 device_key="verify-$(date +%s)"
@@ -66,5 +67,26 @@ if [[ "$count" -lt 1 ]]; then
   exit 1
 fi
 echo "   privacy audit readable"
+
+echo "9. Background sync task upsert (30s enterprise loop)"
+curl -sf -X POST "$SUPABASE_URL/rest/v1/app_background_sync_tasks" \
+  -H "apikey: $SUPABASE_KEY" \
+  -H "Authorization: Bearer $token" \
+  -H "Content-Type: application/json" \
+  -H "Prefer: resolution=merge-duplicates" \
+  -d "{\"user_id\":\"$user_id\",\"device_key\":\"$device_key\",\"status\":\"completed\",\"current_step\":\"CI verify\",\"client_build\":0,\"client_version\":\"verify\"}" >/dev/null
+echo "   background sync task registered"
+
+echo "10. enterprise_platform_ready RPC"
+ready=$(curl -sf -X POST "$SUPABASE_URL/rest/v1/rpc/enterprise_platform_ready" \
+  -H "apikey: $SUPABASE_KEY" \
+  -H "Authorization: Bearer $token" \
+  -H "Content-Type: application/json" \
+  -d '{}' | python3 -c "import sys,json; print(json.load(sys.stdin).get('ready', False))")
+if [[ "$ready" != "True" && "$ready" != "true" ]]; then
+  echo "FAIL: enterprise_platform_ready returned ready=$ready"
+  exit 1
+fi
+echo "   enterprise platform ready"
 
 echo "ALL ENTERPRISE CHECKS PASSED"
