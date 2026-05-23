@@ -9,13 +9,16 @@ struct SpacesNavSidebar: View {
     var body: some View {
         LibraryUniversalSubmenuContainer(width: submenuWidth) {
             VStack(alignment: .leading, spacing: 0) {
-                spacesListSection
-                    .frame(
-                        minHeight: 0,
-                        maxHeight: spaces.selectedSpaceId == nil ? .infinity : 200
-                    )
+                operationsNav
+                if spaces.activeSection == .spaces {
+                    spacesListSection
+                        .frame(
+                            minHeight: 0,
+                            maxHeight: spaces.selectedSpaceId == nil ? .infinity : 200
+                        )
+                }
 
-                if spaces.selectedSpaceId != nil {
+                if spaces.activeSection == .spaces, spaces.selectedSpaceId != nil {
                     LibraryUniversalSubmenu.sectionDivider()
                     ScrollView {
                         SpacesHierarchyTreeView(spaces: spaces)
@@ -27,8 +30,80 @@ struct SpacesNavSidebar: View {
             }
             .frame(minHeight: 0, maxHeight: .infinity)
         } footer: {
-            createSpaceField
+            VStack(spacing: 0) {
+                settingsFooterRow
+                if spaces.activeSection == .spaces {
+                    createSpaceField
+                }
+            }
         }
+    }
+
+    private var operationsNav: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            LibraryUniversalSubmenu.sectionHeader("Operations")
+            ScrollView {
+                VStack(spacing: 2) {
+                    ForEach(SpacesEnterpriseSection.mainNav) { section in
+                        operationsRow(section)
+                    }
+                }
+                .padding(.horizontal, 6)
+                .padding(.bottom, 6)
+            }
+            .frame(maxHeight: spaces.activeSection == .spaces ? 220 : .infinity)
+        }
+    }
+
+    private func operationsRow(_ section: SpacesEnterpriseSection) -> some View {
+        let selected = spaces.activeSection == section
+        return Button {
+            if section == .spaces {
+                spaces.openSpacesHome()
+            } else {
+                spaces.setActiveSection(section)
+            }
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: section.systemImage)
+                    .font(.system(size: 12))
+                    .frame(width: 16)
+                Text(section.label)
+                    .font(.system(size: 12, weight: selected ? .semibold : .regular))
+                    .lineLimit(1)
+                Spacer(minLength: 0)
+            }
+            .foregroundStyle(selected ? LibraryGlassDesign.ink : LibraryGlassDesign.inkSecondary)
+            .padding(.horizontal, LibraryGlassDesign.sidebarRowHorizontal)
+            .padding(.vertical, LibraryGlassDesign.sidebarRowVertical)
+            .background(
+                RoundedRectangle(cornerRadius: LibraryGlassDesign.sidebarRowRadius, style: .continuous)
+                    .fill(selected ? LibraryGlassDesign.sidebarSelection : Color.clear)
+            )
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var settingsFooterRow: some View {
+        Button {
+            spaces.setActiveSection(.settings)
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: SpacesEnterpriseSection.settings.systemImage)
+                    .font(.system(size: 12))
+                Text("Settings")
+                    .font(.system(size: 12, weight: spaces.activeSection == .settings ? .semibold : .regular))
+                Spacer(minLength: 0)
+            }
+            .foregroundStyle(
+                spaces.activeSection == .settings ? LibraryGlassDesign.ink : LibraryGlassDesign.inkSecondary
+            )
+            .padding(.horizontal, LibraryGlassDesign.sidebarRowHorizontal)
+            .padding(.vertical, LibraryGlassDesign.sidebarRowVertical + 2)
+        }
+        .buttonStyle(.plain)
+        .padding(.horizontal, 6)
+        .padding(.top, 4)
     }
 
     private var spacesListSection: some View {

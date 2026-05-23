@@ -1,6 +1,6 @@
 import { create } from 'zustand'
+import type { Session, User } from '@supabase/supabase-js'
 import { getSupabase } from '@/lib/supabase'
-import type { User, Session } from '@supabase/supabase-js'
 
 interface AuthState {
   user: User | null
@@ -13,6 +13,10 @@ interface AuthState {
   signOut: () => Promise<void>
 }
 
+async function loadSessionFromMain(): Promise<Session | null> {
+  return window.planner.getAuthSession()
+}
+
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   session: null,
@@ -21,12 +25,22 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   initialize: async () => {
     try {
-      const supabase = getSupabase()
-      const { data } = await supabase.auth.getSession()
-      set({ session: data.session, user: data.session?.user ?? null, loading: false })
-      supabase.auth.onAuthStateChange((_event, session) => {
-        set({ session, user: session?.user ?? null })
-      })
+      const session = await loadSessionFromMain()
+      if (session) {
+        const supabase = getSupabase()
+        await supabase.auth.setSession({
+          access_token: session.access_token,
+          refresh_token: session.refresh_token
+        })
+        set({ session, user: session.user, loading: false })
+        supabase.auth.onAuthStateChange(async (_event, next) => {
+          if (next) await window.planner.setAuthSession(next)
+          else await window.planner.clearAuthSession()
+          set({ session: next, user: next?.user ?? null })
+        })
+      } else {
+        set({ loading: false })
+      }
     } catch (e) {
       set({ loading: false, error: e instanceof Error ? e.message : 'Auth init failed' })
     }
@@ -34,23 +48,46 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   signIn: async (email, password) => {
     set({ error: null, loading: true })
-    const { error } = await getSupabase().auth.signInWithPassword({ email, password })
-    if (error) set({ error: error.message, loading: false })
-    else set({ loading: false })
+    try {
+      const session = await window.planner.signIn(email, password)
+      const supabase = getSupabase()
+      await supabase.auth.setSession({
+        access_token: session.access_token,
+        refresh_token: session.refresh_token
+      })
+      set({ session, user: session.user, loading: false })
+    } catch (e) {
+      set({
+        error: e instanceof Error ? e.message : 'Sign in failed',
+        loading: false
+      })
+    }
   },
 
   signUp: async (email, password, displayName) => {
     set({ error: null, loading: true })
-    const { error } = await getSupabase().auth.signUp({
-      email,
-      password,
-      options: { data: { display_name: displayName ?? email.split('@')[0] } }
-    })
-    if (error) set({ error: error.message, loading: false })
-    else set({ loading: false })
+    try {
+      const session = await window.planner.signUp(email, password, displayName)
+      if (session) {
+        const supabase = getSupabase()
+        await supabase.auth.setSession({
+          access_token: session.access_token,
+          refresh_token: session.refresh_token
+        })
+        set({ session, user: session.user, loading: false })
+      } else {
+        set({ loading: false })
+      }
+    } catch (e) {
+      set({
+        error: e instanceof Error ? e.message : 'Sign up failed',
+        loading: false
+      })
+    }
   },
 
   signOut: async () => {
+    await window.planner.signOut()
     await getSupabase().auth.signOut()
     set({ user: null, session: null })
   }

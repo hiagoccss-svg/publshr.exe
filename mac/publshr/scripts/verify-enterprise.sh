@@ -40,6 +40,7 @@ check_table "whiteboards"
 check_table "chat_scheduled_messages"
 check_table "projects"
 check_table "planner_items"
+check_table "approvals"
 
 echo "7. Device registration upsert"
 device_key="verify-$(date +%s)"

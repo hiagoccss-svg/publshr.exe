@@ -15,7 +15,12 @@ export function initDatabase(): Database.Database {
 
   db = new Database(getDbPath())
   db.exec(SCHEMA_SQL)
-  seedPublications(db)
+  const supabaseConfigured = Boolean(
+    process.env.VITE_SUPABASE_URL?.trim() || process.env.SUPABASE_URL?.trim()
+  )
+  if (!supabaseConfigured) {
+    seedPublications(db)
+  }
   return db
 }
 

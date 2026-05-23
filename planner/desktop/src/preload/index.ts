@@ -1,6 +1,14 @@
 import { contextBridge, ipcRenderer } from 'electron'
+import type { Session } from '@supabase/supabase-js'
 
 export type PlannerAPI = {
+  getAuthSession: () => Promise<Session | null>
+  signIn: (email: string, password: string) => Promise<Session>
+  signUp: (email: string, password: string, displayName?: string) => Promise<Session | null>
+  signOut: () => Promise<boolean>
+  setAuthSession: (session: Session) => Promise<boolean>
+  clearAuthSession: () => Promise<boolean>
+  refreshAuthSession: () => Promise<Session | null>
   getPreference: (key: string) => Promise<string | null>
   setPreference: (key: string, value: string) => Promise<boolean>
   getPlannerItemsCache: (workspaceId: string) => Promise<unknown[]>
@@ -38,6 +46,14 @@ const editorDocumentId = getArg('editor-document-id')
 const plannerItemId = getArg('planner-item-id')
 
 const api: PlannerAPI = {
+  getAuthSession: () => ipcRenderer.invoke('auth:getSession'),
+  signIn: (email, password) => ipcRenderer.invoke('auth:signIn', email, password),
+  signUp: (email, password, displayName) =>
+    ipcRenderer.invoke('auth:signUp', email, password, displayName),
+  signOut: () => ipcRenderer.invoke('auth:signOut'),
+  setAuthSession: (session) => ipcRenderer.invoke('auth:setSession', session),
+  clearAuthSession: () => ipcRenderer.invoke('auth:clearSession'),
+  refreshAuthSession: () => ipcRenderer.invoke('auth:refreshSession'),
   getPreference: (key) => ipcRenderer.invoke('db:getPreference', key),
   setPreference: (key, value) => ipcRenderer.invoke('db:setPreference', key, value),
   getPlannerItemsCache: (workspaceId) => ipcRenderer.invoke('cache:getPlannerItems', workspaceId),

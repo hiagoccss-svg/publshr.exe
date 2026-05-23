@@ -1,0 +1,84 @@
+name: Deliver Enterprise (Tauri)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'desktop/enterprise/**'
+      - 'shared/desktop/**'
+      - 'shared/design/**'
+      - '.github/workflows/deliver-enterprise.yml'
+  workflow_dispatch:
+    inputs:
+      channel:
+        description: 'Release channel tag suffix'
+        required: false
+        default: staging
+        type: choice
+        options:
+          - dev
+          - staging
+          - production
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: macos-14
+            target: darwin
+            arch: aarch64
+          - platform: ubuntu-22.04
+            target: linux
+            arch: x86_64
+          - platform: windows-latest
+            target: windows
+            arch: x86_64
+
+    runs-on: ${{ matrix.platform }}
+    env:
+      CHANNEL: ${{ github.event.inputs.channel || 'staging' }}
+      RELEASE_TAG: enterprise-${{ matrix.target }}-${{ matrix.arch }}-${{ github.event.inputs.channel || 'staging' }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Linux dependencies
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev librsvg2-dev patchelf libssl-dev
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: desktop/enterprise/package-lock.json
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Install frontend
+        working-directory: desktop/enterprise
+        run: npm ci
+
+      - name: Build Tauri app
+        working-directory: desktop/enterprise
+        run: npm run dist
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_ENTERPRISE_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_ENTERPRISE_SIGNING_KEY_PASSWORD }}
+
+      - name: Upload release artifacts
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.RELEASE_TAG }}
+          name: Publshr Enterprise (${{ matrix.target }}-${{ matrix.arch }}) — ${{ env.CHANNEL }}
+          draft: false
+          prerelease: ${{ env.CHANNEL != 'production' }}
+          files: |
+            desktop/enterprise/src-tauri/target/release/bundle/**/*
+        continue-on-error: true

@@ -62,6 +62,12 @@ Every push to `main` runs `.github/workflows/deliver-macos.yml`, publishing the 
 
 Translucent **shell** (wallpaper bleeds through) vs solid **content** (cards, editors, tables). Shared CSS: `shared/design/desktop-transparency.css` (via `library-glass.css`). Electron windows: `shared/electron/glass-window.ts`. Docs: `shared/design/DESKTOP_TRANSPARENCY.md`. macOS IDE: `WorkspaceDesktopBackdrop`, `MainWindowChrome`.
 
+### Enterprise desktop platform (Tauri — canonical target)
+
+The unified native shell lives in **`desktop/enterprise/`** (Tauri 2 + React + SQLite + keychain auth). See **`mac/publshr/docs/DESKTOP_TAURI_PLATFORM.md`**. CI: `.github/workflows/deliver-enterprise.yml`.
+
+Legacy Electron modules (`desktop/spaces`, `desktop/media-monitoring`, `planner/desktop`) are being migrated; do not add major features to Electron without a Tauri port plan.
+
 ### Desktop workflow (dev + installed auto-update)
 
 See **`desktop/docs/DESKTOP_WORKFLOW.md`**. Summary:
