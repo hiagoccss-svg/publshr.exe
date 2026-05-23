@@ -24,7 +24,21 @@ const api: SpacesAPI = {
   listMembers: (spaceId) => ipcRenderer.invoke('spaces:listMembers', spaceId),
   listApprovals: (spaceId) => ipcRenderer.invoke('spaces:listApprovals', spaceId),
   listDocuments: (spaceId) => ipcRenderer.invoke('spaces:listDocuments', spaceId),
+  getDocument: (id) => ipcRenderer.invoke('spaces:getDocument', id),
+  createDocument: (spaceId, title, content) =>
+    ipcRenderer.invoke('spaces:createDocument', spaceId, title, content),
+  updateDocument: (id, patch) => ipcRenderer.invoke('spaces:updateDocument', id, patch),
   listFiles: (spaceId) => ipcRenderer.invoke('spaces:listFiles', spaceId),
+  createFile: (spaceId, fileName, fileUrl) =>
+    ipcRenderer.invoke('spaces:createFile', spaceId, fileName, fileUrl),
+  listWorkspaceDocuments: () => ipcRenderer.invoke('spaces:listWorkspaceDocuments'),
+  listWorkspaceApprovals: () => ipcRenderer.invoke('spaces:listWorkspaceApprovals'),
+  listWorkspaceFiles: () => ipcRenderer.invoke('spaces:listWorkspaceFiles'),
+  listWorkspaceTasks: () => ipcRenderer.invoke('spaces:listWorkspaceTasks'),
+  listWorkspaceMembers: () => ipcRenderer.invoke('spaces:listWorkspaceMembers'),
+  listWorkspaceActivity: (limit) => ipcRenderer.invoke('spaces:listWorkspaceActivity', limit),
+  listNotifications: (limit) => ipcRenderer.invoke('spaces:listNotifications', limit),
+  getWorkspaceSummary: () => ipcRenderer.invoke('spaces:getWorkspaceSummary'),
   search: (query) => ipcRenderer.invoke('spaces:search', query),
   getSyncStatus: () => ipcRenderer.invoke('spaces:getSyncStatus'),
   openDocumentWindow: (documentId, title) =>

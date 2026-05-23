@@ -112,7 +112,7 @@ export default function EditorWindow() {
             </button>
             <SourceSection title="Brief" placeholder="Paste client brief…" />
             <SourceSection title="PR email" placeholder="Original pitch email…" />
-            <SourceSection title="Attachments" placeholder="Drag files here (Phase 3)" />
+            <SourceSection title="Attachments" placeholder="Paste attachment URLs or notes…" />
           </aside>
         )}
 

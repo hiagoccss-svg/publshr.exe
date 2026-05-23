@@ -14,12 +14,14 @@ export default function App(): React.ReactElement {
   const route = useRoute()
   const loadBootstrap = useSpacesStore((s) => s.loadBootstrap)
   const refreshActiveSpace = useSpacesStore((s) => s.refreshActiveSpace)
+  const loadWorkspaceData = useSpacesStore((s) => s.loadWorkspaceData)
   const ready = useSpacesStore((s) => s.ready)
 
   useEffect(() => {
     void loadBootstrap()
     const onRefresh = (): void => {
       void refreshActiveSpace()
+      void loadWorkspaceData()
     }
     window.addEventListener('spaces:refresh', onRefresh)
     return () => window.removeEventListener('spaces:refresh', onRefresh)

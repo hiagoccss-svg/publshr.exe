@@ -32,7 +32,27 @@ export function registerIpcHandlers(db: SpacesDatabase): void {
   ipcMain.handle('spaces:listMembers', (_e, spaceId: string) => db.listMembers(spaceId))
   ipcMain.handle('spaces:listApprovals', (_e, spaceId: string) => db.listApprovals(spaceId))
   ipcMain.handle('spaces:listDocuments', (_e, spaceId: string) => db.listDocuments(spaceId))
+  ipcMain.handle('spaces:getDocument', (_e, id: string) => db.getDocument(id))
+  ipcMain.handle('spaces:createDocument', (_e, spaceId: string, title: string, content?: string) =>
+    db.createDocument(spaceId, title, content)
+  )
+  ipcMain.handle('spaces:updateDocument', (_e, id: string, patch: { title?: string; content?: string }) =>
+    db.updateDocument(id, patch)
+  )
   ipcMain.handle('spaces:listFiles', (_e, spaceId: string) => db.listFiles(spaceId))
+  ipcMain.handle('spaces:createFile', (_e, spaceId: string, fileName: string, fileUrl: string) =>
+    db.createFile(spaceId, fileName, fileUrl)
+  )
+  ipcMain.handle('spaces:listWorkspaceDocuments', () => db.listWorkspaceDocuments())
+  ipcMain.handle('spaces:listWorkspaceApprovals', () => db.listWorkspaceApprovals())
+  ipcMain.handle('spaces:listWorkspaceFiles', () => db.listWorkspaceFiles())
+  ipcMain.handle('spaces:listWorkspaceTasks', () => db.listWorkspaceTasks())
+  ipcMain.handle('spaces:listWorkspaceMembers', () => db.listWorkspaceMembers())
+  ipcMain.handle('spaces:listWorkspaceActivity', (_e, limit?: number) =>
+    db.listWorkspaceActivity(limit)
+  )
+  ipcMain.handle('spaces:listNotifications', (_e, limit?: number) => db.listNotifications(limit))
+  ipcMain.handle('spaces:getWorkspaceSummary', () => db.getWorkspaceSummary())
   ipcMain.handle('spaces:search', (_e, query: string) => db.search(query))
   ipcMain.handle('spaces:getSyncStatus', () => db.getSyncStatus())
 

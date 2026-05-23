@@ -4,6 +4,7 @@ import { DashboardView } from './DashboardView'
 import { CoverageView } from './CoverageView'
 import { ReportsView } from '@/components/reports/ReportsView'
 import { SettingsPanel } from '@/components/settings/SettingsPanel'
+import { SavedSearchesView } from '@/components/monitoring/SavedSearchesView'
 import { useMonitoringStore } from '@/store/monitoringStore'
 
 export function MonitoringWorkspace() {
@@ -17,13 +18,15 @@ export function MonitoringWorkspace() {
       {section === 'coverage' && <CoverageView />}
       {section === 'publications' && <PublicationsView />}
       {section === 'settings' && <SettingsPanel />}
+      {section === 'saved-searches' && <SavedSearchesView />}
       {![
         'reports',
         'dashboard',
         'monitoring',
         'coverage',
         'publications',
-        'settings'
+        'settings',
+        'saved-searches'
       ].includes(section) && <ComingSoon name={section} />}
     </div>
   )
