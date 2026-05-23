@@ -43,9 +43,16 @@ Plans live in Supabase `subscription_plans`. Apply migrations from `supabase/mig
 
 ## Database
 
-Canonical chain: `supabase/migrations/` (see `mac/publshr/docs/ENTERPRISE_CHAT_SPACES.md`). Enterprise tables and server-side scheduled chat dispatch ship in `20260523100000_enterprise_hardening.sql`.
+Canonical chain: `supabase/migrations/` (see [ENTERPRISE_SUPABASE.md](./ENTERPRISE_SUPABASE.md) and [ENTERPRISE_CHAT_SPACES.md](./ENTERPRISE_CHAT_SPACES.md)).
 
-CI smoke test: `bash mac/publshr/scripts/verify-enterprise.sh`
+| Migration | Purpose |
+|-----------|---------|
+| `20260522000000_enterprise_foundation.sql` | Profiles, chat core, workspaces |
+| `20260523100000_enterprise_hardening.sql` | Subscriptions, devices, privacy, calls, scheduled chat cron |
+| `20260523150000_app_background_sync_tasks.sql` | 30s background sync state per Mac |
+| `20260523160000_enterprise_platform_complete.sql` | Idempotent ensure-all + `enterprise_platform_ready()` RPC |
+
+CI smoke test: `bash mac/publshr/scripts/verify-all-connections.sh`
 
 ## Swift modules
 

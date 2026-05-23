@@ -34,7 +34,17 @@ struct PublshrApp: App {
                 }
                 .task {
                     configureLifecycle()
-                    cloudHealth.startPolling(intervalSeconds: AppReleaseConfig.livePollIntervalSeconds)
+                    updates.configureBackgroundSync(
+                        performCloudDataSync: { await performCloudSync() },
+                        reportSupabaseSyncTask: { running, step, needsAppUpdate, error in
+                            await reportBackgroundSyncTask(
+                                running: running,
+                                step: step,
+                                needsAppUpdate: needsAppUpdate,
+                                error: error
+                            )
+                        }
+                    )
                     updates.startAutomaticChecks()
                 }
                 .onChange(of: auth.flowState) { _, state in
@@ -150,8 +160,36 @@ struct PublshrApp: App {
 
     @MainActor
     private func performFullSync() async {
-        await updates.performLiveSync(forceGitHub: true)
-        await performCloudSync()
+        await updates.performUnifiedBackgroundSync(force: true)
+    }
+
+    @MainActor
+    private func reportBackgroundSyncTask(
+        running: Bool,
+        step: String,
+        needsAppUpdate: Bool,
+        error: String?
+    ) async {
+        guard auth.flowState == .signedIn, let userId = auth.profile?.id else { return }
+        let remote = CloudPlatformHealth.shared.liveVersionLine
+        if running {
+            await AppBackgroundSyncTaskService.reportRunning(
+                client: auth.client,
+                userId: userId,
+                step: step,
+                remoteLiveVersion: remote,
+                needsAppUpdate: needsAppUpdate
+            )
+        } else {
+            await AppBackgroundSyncTaskService.reportCompleted(
+                client: auth.client,
+                userId: userId,
+                step: step,
+                remoteLiveVersion: remote,
+                needsAppUpdate: needsAppUpdate,
+                error: error
+            )
+        }
     }
 
     @MainActor

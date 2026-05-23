@@ -124,7 +124,15 @@ struct SettingsView: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
 
-            Text("GitHub and Supabase sync every 30 seconds. Updates install in place — build \(AppReleaseConfig.buildNumber).")
+            if updates.backgroundSyncRunning {
+                HStack(spacing: 6) {
+                    ProgressView().controlSize(.mini)
+                    Text(updates.backgroundSyncStep)
+                        .font(.system(size: 10))
+                        .foregroundStyle(CursorTheme.foregroundDim)
+                }
+            }
+            Text("GitHub + Supabase background sync every 30s (no tap required). Build \(AppReleaseConfig.buildNumber).")
                 .font(.system(size: 10))
                 .foregroundStyle(CursorTheme.foregroundDim)
                 .fixedSize(horizontal: false, vertical: true)

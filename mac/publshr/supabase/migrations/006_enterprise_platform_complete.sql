@@ -1,0 +1,2 @@
+-- Canonical: supabase/migrations/20260523160000_enterprise_platform_complete.sql
+-- Idempotent enterprise schema + background sync + enterprise_platform_ready() RPC.

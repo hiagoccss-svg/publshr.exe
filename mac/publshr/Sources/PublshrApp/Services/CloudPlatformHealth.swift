@@ -97,23 +97,48 @@ final class CloudPlatformHealth: ObservableObject {
     }
 
     private func checkSupabase() async -> ProbeResult {
-        var request = URLRequest(url: SupabaseConfig.url)
-        request.httpMethod = "HEAD"
-        request.timeoutInterval = 8
-        request.setValue(SupabaseConfig.publishableKey, forHTTPHeaderField: "apikey")
+        var head = URLRequest(url: SupabaseConfig.url)
+        head.httpMethod = "HEAD"
+        head.timeoutInterval = 8
+        head.setValue(SupabaseConfig.publishableKey, forHTTPHeaderField: "apikey")
         do {
-            let (_, response) = try await URLSession.shared.data(for: request)
+            let (_, response) = try await URLSession.shared.data(for: head)
             guard let http = response as? HTTPURLResponse else {
                 return ProbeResult(reachable: false, liveVersion: nil, message: "Supabase: bad response")
             }
             let ok = (200 ... 499).contains(http.statusCode)
-            return ProbeResult(
-                reachable: ok,
-                liveVersion: nil,
-                message: ok ? nil : "Supabase HTTP \(http.statusCode)"
-            )
+            if !ok {
+                return ProbeResult(reachable: false, liveVersion: nil, message: "Supabase HTTP \(http.statusCode)")
+            }
         } catch {
             return ProbeResult(reachable: false, liveVersion: nil, message: "Supabase: \(error.localizedDescription)")
+        }
+
+        guard let rpcURL = URL(string: "\(SupabaseConfig.url.absoluteString)/rest/v1/rpc/enterprise_platform_ready") else {
+            return ProbeResult(reachable: true, liveVersion: nil, message: nil)
+        }
+        var rpc = URLRequest(url: rpcURL)
+        rpc.httpMethod = "POST"
+        rpc.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        rpc.setValue(SupabaseConfig.publishableKey, forHTTPHeaderField: "apikey")
+        rpc.httpBody = "{}".data(using: .utf8)
+        rpc.timeoutInterval = 12
+        do {
+            let (data, response) = try await URLSession.shared.data(for: rpc)
+            guard let http = response as? HTTPURLResponse, (200 ... 299).contains(http.statusCode) else {
+                return ProbeResult(
+                    reachable: true,
+                    liveVersion: nil,
+                    message: "Enterprise schema RPC unavailable (apply 20260523160000 migration)"
+                )
+            }
+            if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+               let ready = json["ready"] as? Bool, !ready {
+                return ProbeResult(reachable: true, liveVersion: nil, message: "Enterprise schema incomplete")
+            }
+            return ProbeResult(reachable: true, liveVersion: nil, message: nil)
+        } catch {
+            return ProbeResult(reachable: true, liveVersion: nil, message: nil)
         }
     }
 }

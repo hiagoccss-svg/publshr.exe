@@ -9,23 +9,60 @@ struct SettingsUpdatesPane: View {
 
     var body: some View {
         Form {
+            Section("Background sync (every 30 seconds)") {
+                HStack(spacing: 10) {
+                    if updates.backgroundSyncRunning {
+                        ProgressView()
+                            .controlSize(.small)
+                        Text("Running")
+                            .fontWeight(.medium)
+                            .foregroundStyle(.primary)
+                    } else {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundStyle(.green)
+                        Text("Idle")
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    if updates.autoCheckEnabled {
+                        Text("Auto")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                LabeledContent("Current step", value: updates.backgroundSyncStep)
+                if let completed = updates.lastBackgroundSyncCompletedAt {
+                    LabeledContent("Last completed", value: Self.formatSyncTime(completed))
+                }
+                if let next = updates.nextBackgroundSyncAt, !updates.backgroundSyncRunning {
+                    LabeledContent("Next check", value: Self.formatSyncTime(next))
+                }
+                Text(updates.backgroundSyncLogExcerpt)
+                    .font(.system(.caption, design: .monospaced))
+                    .foregroundStyle(.secondary)
+                    .textSelection(.enabled)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                Text("Reads ~/Library/Application Support/Publshr/updates logs. If GitHub has a newer build, the app downloads and installs automatically (when enabled below). Supabase data refreshes in the same cycle.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
             Section("Cloud platform (required)") {
                 LabeledContent("GitHub live", value: cloudHealth.isGitHubReachable ? "Reachable" : "Unreachable")
                 LabeledContent("Supabase API", value: cloudHealth.isSupabaseReachable ? "Reachable" : "Unreachable")
                 if let live = cloudHealth.liveVersionLine {
                     LabeledContent("Remote build", value: live)
                 }
+                if let checked = cloudHealth.lastCheckedAt {
+                    LabeledContent("Health checked", value: Self.formatSyncTime(checked))
+                }
                 if let err = cloudHealth.lastErrorLine {
                     Text(err)
                         .font(.caption)
                         .foregroundStyle(.red)
                 }
-                Text("Publshr runs on GitHub (app updates) and Supabase (your data). Nothing on this Mac is required except the installed app binary and your sign-in session.")
+                Text("Publshr runs on GitHub (app updates) and Supabase (your data). Background sync runs both without opening this screen.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                Button("Check GitHub + Supabase now") {
-                    Task { await cloudHealth.refresh() }
-                }
             }
             Section("GitHub live channel") {
                 LabeledContent("Status", value: updates.githubStatusLine)
@@ -57,7 +94,9 @@ struct SettingsUpdatesPane: View {
             }
             Section {
                 Button(updates.settingsActionTitle) {
-                    NotificationCenter.default.post(name: .publshrPerformLiveSync, object: nil)
+                    Task {
+                        await updates.performUnifiedBackgroundSync(force: true)
+                    }
                 }
                 .disabled(updates.isActivelyUpdating)
                 if let err = updates.settingsErrorMessage {
@@ -70,8 +109,15 @@ struct SettingsUpdatesPane: View {
         .formStyle(.grouped)
         .navigationTitle("App updates")
         .onAppear {
-            NotificationCenter.default.post(name: .publshrPerformLiveSync, object: nil)
+            Task { await updates.performUnifiedBackgroundSync(force: true) }
         }
+    }
+
+    private static func formatSyncTime(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.timeStyle = .medium
+        formatter.dateStyle = .short
+        return formatter.string(from: date)
     }
 
     private var remoteDetailLabel: String {
