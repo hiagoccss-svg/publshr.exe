@@ -47,11 +47,17 @@ set -euo pipefail
 DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$DIR"
 APP_DEST="${HOME}/Applications/Publshr.app"
+SOURCE_MARKER="${HOME}/Library/Application Support/Publshr/install-source.tree"
 
 echo ""
 echo "  Publshr — Install"
 echo "  -----------------"
 echo ""
+
+register_bundled_source() {
+    mkdir -p "$(dirname "$SOURCE_MARKER")"
+    printf '%s\n' "$DIR" >"$SOURCE_MARKER"
+}
 
 install_bundled_app() {
     [[ -d "$DIR/Publshr.app" ]] || return 1
@@ -72,12 +78,14 @@ install_bundled_app() {
     return 0
 }
 
-if install_bundled_app; then
+if [[ -d "$DIR/PublshrInstaller.app" ]]; then
+    register_bundled_source
+    echo "Opening Publshr Installer …"
+    open "$DIR/PublshrInstaller.app"
     exit 0
 fi
 
-if [[ -d "$DIR/PublshrInstaller.app" ]]; then
-    open "$DIR/PublshrInstaller.app"
+if install_bundled_app; then
     exit 0
 fi
 
@@ -85,7 +93,7 @@ if [[ -f "$DIR/install-macos.sh" ]]; then
     exec bash "$DIR/install-macos.sh"
 fi
 
-echo "ERROR: Publshr.app missing from this folder. Re-download Publshr-Install-macos.zip from GitHub." >&2
+echo "ERROR: Publshr.app missing from this folder. Re-download from GitHub Releases (live)." >&2
 exit 1
 EOF
 chmod 755 "$STAGE/Publshr Install.command"
@@ -114,18 +122,18 @@ if [[ -f "$DIST/VERSION.txt" ]]; then
 fi
 
 cat >"$STAGE/README.txt" <<'EOF'
-Publshr for macOS — ONE-FILE INSTALLER
-======================================
+Publshr for macOS — INSTALLER PACKAGE
+=====================================
 
-This zip IS the app. Everything in main on GitHub is built into Publshr.app here.
+Recommended download: Publshr-Install-macos.dmg (disk image) from GitHub Releases → live.
 
-INSTALL (30 seconds)
-  1. Unzip Publshr-Install-macos.zip
-  2. Double-click "Publshr Install.command"
+INSTALL (GUI — recommended)
+  1. Open Publshr-Install-macos.dmg OR unzip Publshr-Install-macos.zip
+  2. Double-click "PublshrInstaller.app" (or "Publshr Install.command" in the zip)
   3. If macOS blocks it: right-click → Open → Open
-  4. Publshr installs to ~/Applications/Publshr.app and opens
+  4. Click Install — app goes to ~/Applications/Publshr.app and opens
 
-No Terminal required. No second download.
+No Terminal required. No second download when using the release zip or dmg.
 
 SUPABASE (already configured in the app)
   • Sign in with your email

@@ -65,6 +65,28 @@ jobs:
           fi
           rm -rf "$TMP"
 
+      - name: Sign release bundles (optional)
+        env:
+          DEVELOPER_ID_APPLICATION: ${{ secrets.DEVELOPER_ID_APPLICATION }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          STAGE_DIR="$(find mac/publshr/dist -maxdepth 1 -type d -name 'publshr-*-macos-aarch64' | head -1)"
+          test -n "$STAGE_DIR"
+          if [[ -n "${DEVELOPER_ID_APPLICATION:-}" ]]; then
+            chmod +x mac/publshr/scripts/sign-macos-release.sh
+            bash mac/publshr/scripts/sign-macos-release.sh "${STAGE_DIR}/Publshr.app" --notarize-app
+            if [[ -d "${STAGE_DIR}/PublshrInstaller.app" ]]; then
+              bash mac/publshr/scripts/sign-macos-release.sh "${STAGE_DIR}/PublshrInstaller.app"
+            fi
+            FULL="${{ steps.ver.outputs.full }}"
+            tar -czf "mac/publshr/dist/publshr-${FULL}-macos-aarch64.tar.gz" -C mac/publshr/dist "$(basename "$STAGE_DIR")"
+            cp "mac/publshr/dist/publshr-${FULL}-macos-aarch64.tar.gz" mac/publshr/dist/Publshr-macos-aarch64.tar.gz
+          else
+            echo "No Developer ID secret — shipping ad-hoc signed build (Right-click → Open on first launch)."
+          fi
+
       - name: Prepare stable live asset names
         run: |
           FULL="${{ steps.ver.outputs.full }}"
@@ -82,16 +104,26 @@ jobs:
             "${SHA}" \
             "${SHELL_TAG}" > mac/publshr/dist/VERSION.txt
 
-      - name: Package one-file macOS installer zip
+      - name: Package macOS installer zip and disk image
+        env:
+          DEVELOPER_ID_APPLICATION: ${{ secrets.DEVELOPER_ID_APPLICATION }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
-          chmod +x mac/publshr/scripts/package-install-download.sh
+          chmod +x mac/publshr/scripts/package-install-download.sh mac/publshr/scripts/package-macos-dmg.sh
           bash mac/publshr/scripts/package-install-download.sh
+          bash mac/publshr/scripts/package-macos-dmg.sh
           test -f mac/publshr/dist/Publshr-Install-macos.zip
           test -f mac/publshr/dist/Publshr-install-macos.sh
+          test -f mac/publshr/dist/Publshr-Install-macos.dmg
           unzip -l mac/publshr/dist/Publshr-Install-macos.zip | grep -q 'Publshr.app/Contents/MacOS/Publshr'
+          unzip -l mac/publshr/dist/Publshr-Install-macos.zip | grep -q 'PublshrInstaller.app'
           SIZE="$(wc -c < mac/publshr/dist/Publshr-Install-macos.zip | tr -d ' ')"
           echo "Install zip size: $SIZE bytes"
           test "$SIZE" -gt 4000000
+          DMG_SIZE="$(wc -c < mac/publshr/dist/Publshr-Install-macos.dmg | tr -d ' ')"
+          test "$DMG_SIZE" -gt 4000000
 
       - name: Write release notes
         run: |
@@ -106,11 +138,15 @@ jobs:
 
           ## Download Publshr for Mac
 
-          **Publshr-Install-macos.zip** — unzip, double-click **Publshr Install.command**.
+          **Publshr-Install-macos.dmg** — open the disk image, double-click **PublshrInstaller.app** (recommended).
 
-          Direct link: https://github.com/${REPO}/releases/download/${{ steps.ver.outputs.tag }}/Publshr-Install-macos.zip
+          **Publshr-Install-macos.zip** — unzip, double-click **Publshr Install.command** (same GUI installer).
 
-          The zip contains the full Publshr.app (Chat, Spaces, Supabase). Fixed URL (live channel): https://github.com/${REPO}/releases/download/live/Publshr-Install-macos.zip
+          Direct links (live channel):
+          - https://github.com/${REPO}/releases/download/live/Publshr-Install-macos.dmg
+          - https://github.com/${REPO}/releases/download/live/Publshr-Install-macos.zip
+
+          Includes full Publshr.app + native installer UI. Updates apply automatically after install.
           NOTES
 
       - name: Publish versioned release (shows on Releases page)
@@ -122,14 +158,15 @@ jobs:
           REPO="${{ github.repository }}"
           VERSIONED="mac/publshr/dist/publshr-${FULL}-macos-aarch64.tar.gz"
           INSTALL_ZIP="mac/publshr/dist/Publshr-Install-macos.zip"
+          INSTALL_DMG="mac/publshr/dist/Publshr-Install-macos.dmg"
           INSTALL_SH="mac/publshr/dist/Publshr-install-macos.sh"
           if gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
-            gh release upload "$TAG" "$INSTALL_ZIP" "$INSTALL_SH" "$VERSIONED" --repo "$REPO" --clobber
+            gh release upload "$TAG" "$INSTALL_DMG" "$INSTALL_ZIP" "$INSTALL_SH" "$VERSIONED" --repo "$REPO" --clobber
             gh release edit "$TAG" --repo "$REPO" --title "Publshr ${FULL} — Mac download" --notes-file /tmp/publshr-release-notes.md
           else
             gh release create "$TAG" --repo "$REPO" --title "Publshr ${FULL} — Mac download" \
               --notes-file /tmp/publshr-release-notes.md \
-              "$INSTALL_ZIP" "$INSTALL_SH" "$VERSIONED"
+              "$INSTALL_DMG" "$INSTALL_ZIP" "$INSTALL_SH" "$VERSIONED"
           fi
           echo "Published ${TAG} with Publshr-Install-macos.zip (visible on Releases page)"
 
@@ -141,6 +178,7 @@ jobs:
           REPO="${{ github.repository }}"
           LIVE="mac/publshr/dist/Publshr-macos-aarch64.tar.gz"
           INSTALL_ZIP="mac/publshr/dist/Publshr-Install-macos.zip"
+          INSTALL_DMG="mac/publshr/dist/Publshr-Install-macos.dmg"
           INSTALL_SH="mac/publshr/dist/Publshr-install-macos.sh"
           VERSION_TXT="mac/publshr/dist/VERSION.txt"
           if gh release view "live" --repo "$REPO" >/dev/null 2>&1; then
@@ -148,8 +186,8 @@ jobs:
           else
             gh release create "live" --repo "$REPO" --title "Publshr live (${FULL})" --notes-file /tmp/publshr-release-notes.md
           fi
-          gh release upload "live" "$INSTALL_ZIP" "$INSTALL_SH" "$LIVE" "$VERSION_TXT" --repo "$REPO" --clobber
-          echo "Published live → Publshr-Install-macos.zip"
+          gh release upload "live" "$INSTALL_DMG" "$INSTALL_ZIP" "$INSTALL_SH" "$LIVE" "$VERSION_TXT" --repo "$REPO" --clobber
+          echo "Published live → Publshr-Install-macos.dmg + zip"
 
       - name: Verify live channel metadata
         env:

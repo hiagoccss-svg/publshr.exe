@@ -21,8 +21,8 @@ check_url() {
 echo "GitHub repo: $REPO (tag: $TAG)"
 check_url "VERSION.txt" "${BASE}/VERSION.txt"
 check_url "Publshr-macos tarball" "${BASE}/Publshr-macos-aarch64.tar.gz"
+check_url "Install DMG" "${BASE}/Publshr-Install-macos.dmg"
 check_url "Install zip" "${BASE}/Publshr-Install-macos.zip"
-check_url "install-macos.sh (main)" "https://raw.githubusercontent.com/${REPO}/refs/heads/main/install-macos.sh"
 
 ver="$(curl -fsSL "${BASE}/VERSION.txt" 2>/dev/null | head -1 || true)"
 echo "Live build: ${ver:-unknown}"
