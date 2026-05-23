@@ -71,7 +71,6 @@ struct SettingsUpdatesPane: View {
 
 struct SettingsAccountPane: View {
     @EnvironmentObject private var auth: AuthViewModel
-    @State private var showAvatarPicker = false
     @State private var isUploadingAvatar = false
     @State private var avatarError: String?
 
@@ -87,7 +86,7 @@ struct SettingsAccountPane: View {
                     )
                     VStack(alignment: .leading, spacing: 6) {
                         Button(isUploadingAvatar ? "Uploading…" : "Upload photo") {
-                            showAvatarPicker = true
+                            Task { await pickAndUploadAvatar() }
                         }
                         .disabled(isUploadingAvatar)
                         Text("Shown in chat and spaces.")
@@ -113,25 +112,15 @@ struct SettingsAccountPane: View {
         }
         .formStyle(.grouped)
         .navigationTitle("Account")
-        .fileImporter(
-            isPresented: $showAvatarPicker,
-            allowedContentTypes: [.jpeg, .png],
-            allowsMultipleSelection: false
-        ) { result in
-            guard case .success(let urls) = result, let url = urls.first else { return }
-            Task { await uploadAvatar(from: url) }
-        }
     }
 
-    private func uploadAvatar(from url: URL) async {
+    private func pickAndUploadAvatar() async {
+        guard let url = await ProfileImagePicker.pickImage() else { return }
         isUploadingAvatar = true
         avatarError = nil
         defer { isUploadingAvatar = false }
-        let accessed = url.startAccessingSecurityScopedResource()
-        defer { if accessed { url.stopAccessingSecurityScopedResource() } }
         do {
-            let data = try Data(contentsOf: url)
-            let mime = url.pathExtension.lowercased() == "png" ? "image/png" : "image/jpeg"
+            let (data, mime) = try ProfileImagePicker.loadImageData(from: url)
             try await auth.uploadAvatar(data: data, mimeType: mime)
         } catch {
             avatarError = error.localizedDescription

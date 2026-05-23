@@ -26,6 +26,8 @@ final class AuthViewModel: ObservableObject {
     @Published var infoMessage: String?
     @Published var session: Session?
     @Published var profile: Profile?
+    /// Bumps when avatar storage path changes so `ChatProfileAvatar` reloads signed URLs.
+    @Published private(set) var avatarDisplayToken = UUID()
 
     @Published var flowState: AuthFlowState = .bootstrapping
     @Published var workspaceMemberships: [WorkspaceMembership] = []
@@ -675,6 +677,7 @@ final class AuthViewModel: ObservableObject {
             mimeType: mimeType
         )
         profile = updated
+        avatarDisplayToken = UUID()
     }
 
     func updateDisplayName(_ name: String) async throws {
