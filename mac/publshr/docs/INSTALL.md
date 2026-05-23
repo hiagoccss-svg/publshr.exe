@@ -6,9 +6,9 @@ Publshr is a **native Swift/SwiftUI desktop app**. Users install once; updates a
 
 | File | Purpose | URL pattern |
 |------|---------|-------------|
-| **Publshr-Install-macos.zip** | Lightweight installer for your team (script + double-click) | `https://github.com/hiagoccss-svg/publshr.exe/releases/download/live/Publshr-Install-macos.zip` |
-| **Publshr-install-macos.sh** | Shell script only | `https://github.com/hiagoccss-svg/publshr.exe/releases/download/live/Publshr-install-macos.sh` |
-| **Publshr-macos-aarch64.tar.gz** | Full app bundle (advanced / IT) | `https://github.com/hiagoccss-svg/publshr.exe/releases/download/live/Publshr-macos-aarch64.tar.gz` |
+| **Publshr-Install-macos.dmg** | Recommended — disk image + GUI installer | `https://github.com/hiagoccss-svg/publshr.exe/releases/download/live/Publshr-Install-macos.dmg` |
+| **Publshr-Install-macos.zip** | Same payload as DMG | `https://github.com/hiagoccss-svg/publshr.exe/releases/download/live/Publshr-Install-macos.zip` |
+| **Publshr-macos-aarch64.tar.gz** | In-app updater / IT | `https://github.com/hiagoccss-svg/publshr.exe/releases/download/live/Publshr-macos-aarch64.tar.gz` |
 
 If the app opens like a broken web/CLI bundle, the `live` release may be outdated. Re-run the installer (it will rebuild a correct native app from source), or merge latest `main` and wait for CI to republish `live`.
 
