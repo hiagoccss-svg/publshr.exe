@@ -26,9 +26,6 @@ struct ChatSidebarView: View {
                             } else {
                                 organizedContent
                             }
-                            if !chat.filteredProjects.isEmpty || chat.sidebarSearchQuery.isEmpty {
-                                plannerSection
-                            }
                         }
                     }
                     .padding(.bottom, chat.sidebarHub == .channels ? 6 : 4)
@@ -177,23 +174,26 @@ struct ChatSidebarView: View {
     private var organizedContent: some View {
         Group {
             if chat.sidebarFilter == .pinned {
-                sidebarSection("Pinned", items: chat.filteredChannels + chat.filteredDMs, onAdd: nil)
+                collapsibleChannelSection(
+                    .favorites,
+                    items: chat.filteredChannels + chat.filteredDMs,
+                    onAdd: nil
+                )
             } else {
+                projectsSection
                 if chat.sidebarFilter == .all, !chat.pinnedSidebarChannels.isEmpty {
-                    sidebarSection("Pinned", items: chat.pinnedSidebarChannels, onAdd: nil)
-                    LibraryUniversalSubmenu.sectionDivider()
+                    collapsibleChannelSection(.favorites, items: chat.pinnedSidebarChannels, onAdd: nil)
                 }
                 if chat.sidebarFilter != .dms {
-                    sidebarSection(
-                        "Channels",
+                    collapsibleChannelSection(
+                        .channels,
                         items: chat.filteredChannels.filter { !chat.isSidebarPinned($0) },
                         onAdd: { showNewChannel = true }
                     )
-                    LibraryUniversalSubmenu.sectionDivider()
                 }
                 if chat.sidebarFilter != .channels {
-                    sidebarSection(
-                        "Direct Messages",
+                    collapsibleChannelSection(
+                        .directMessages,
                         items: chat.filteredDMs.filter { !chat.isSidebarPinned($0) },
                         onAdd: { showNewDM = true }
                     )
@@ -204,24 +204,25 @@ struct ChatSidebarView: View {
 
     private var recentsContent: some View {
         VStack(alignment: .leading, spacing: 0) {
-            LibraryUniversalSubmenu.sectionHeader("Recent")
-            if chat.sidebarRecentsList.isEmpty {
-                emptyHint
-            } else {
-                ForEach(chat.sidebarRecentsList) { channel in
-                    channelRow(channel)
+            collapsibleSectionHeader(.recents, onAdd: nil)
+            if chat.isSidebarSectionExpanded(.recents) {
+                if chat.sidebarRecentsList.isEmpty {
+                    emptyHint
+                } else {
+                    ForEach(chat.sidebarRecentsList) { channel in
+                        channelRow(channel)
+                    }
                 }
             }
         }
     }
 
-    private var plannerSection: some View {
-        Group {
-            LibraryUniversalSubmenu.sectionDivider()
-            VStack(alignment: .leading, spacing: 0) {
-                LibraryUniversalSubmenu.sectionHeader("Planner")
+    private var projectsSection: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            collapsibleSectionHeader(.projects, onAdd: nil)
+            if chat.isSidebarSectionExpanded(.projects) {
                 if chat.filteredProjects.isEmpty {
-                    Text("No planner tasks")
+                    Text("No projects yet")
                         .font(.system(size: 11))
                         .foregroundStyle(LibraryGlassDesign.inkMuted)
                         .padding(.horizontal, 16)
@@ -232,7 +233,7 @@ struct ChatSidebarView: View {
                             Task { await chat.sharePlannerTask(task) }
                         } label: {
                             HStack(spacing: 8) {
-                                Image(systemName: "checklist")
+                                Image(systemName: "folder")
                                     .font(.system(size: 11, weight: .medium))
                                     .foregroundStyle(LibraryGlassDesign.inkSecondary)
                                     .frame(width: ChatClickUpDesign.rowIconSize)
@@ -380,27 +381,84 @@ struct ChatSidebarView: View {
         .help("Chat settings")
     }
 
-    // MARK: - Sections & rows
+    // MARK: - Collapsible sections & rows
 
-    private func sidebarSection(
-        _ title: String,
+    private func collapsibleChannelSection(
+        _ section: ChatSidebarSection,
         items: [ChatChannel],
         onAdd: (() -> Void)?
     ) -> some View {
         VStack(alignment: .leading, spacing: 0) {
-            LibraryUniversalSubmenu.sectionHeader(title, onAdd: onAdd)
-            if items.isEmpty {
-                Text("None yet")
-                    .font(.system(size: 11))
-                    .foregroundStyle(LibraryGlassDesign.inkMuted)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 6)
-            } else {
-                ForEach(items) { channel in
-                    channelRow(channel)
+            collapsibleSectionHeader(section, onAdd: onAdd)
+            if chat.isSidebarSectionExpanded(section) {
+                if items.isEmpty {
+                    sectionEmptyHint(section)
+                } else {
+                    ForEach(items) { channel in
+                        channelRow(channel)
+                    }
                 }
             }
         }
+    }
+
+    private func collapsibleSectionHeader(
+        _ section: ChatSidebarSection,
+        titleOverride: String? = nil,
+        onAdd: (() -> Void)?
+    ) -> some View {
+        let expanded = chat.isSidebarSectionExpanded(section)
+        let title = titleOverride ?? section.title
+        return HStack(spacing: 4) {
+            Button {
+                withAnimation(.easeInOut(duration: 0.18)) {
+                    chat.toggleSidebarSection(section)
+                }
+            } label: {
+                HStack(spacing: 4) {
+                    Image(systemName: expanded ? "chevron.down" : "chevron.right")
+                        .font(.system(size: 9, weight: .bold))
+                        .foregroundStyle(LibraryGlassDesign.inkMuted)
+                        .frame(width: 12)
+                    Text(title.uppercased())
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundStyle(LibraryGlassDesign.inkMuted)
+                        .tracking(0.6)
+                        .lineLimit(1)
+                }
+            }
+            .buttonStyle(.plain)
+            Spacer(minLength: 0)
+            if expanded, let onAdd {
+                Button(action: onAdd) {
+                    Image(systemName: "plus")
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundStyle(LibraryGlassDesign.inkSecondary)
+                        .frame(width: 20, height: 20)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(.horizontal, LibraryGlassDesign.sidebarRowHorizontal)
+        .padding(.top, LibraryGlassDesign.sectionLabelTop)
+        .padding(.bottom, LibraryGlassDesign.sectionLabelBottom)
+    }
+
+    private func sectionEmptyHint(_ section: ChatSidebarSection) -> some View {
+        let message: String = {
+            switch section {
+            case .projects: "No projects yet"
+            case .favorites: "None pinned yet"
+            case .channels: "No channels yet"
+            case .directMessages: "No messages yet"
+            case .recents: "No recent conversations"
+            }
+        }()
+        return Text(message)
+            .font(.system(size: 11))
+            .foregroundStyle(LibraryGlassDesign.inkMuted)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 6)
     }
 
     private func channelRow(_ channel: ChatChannel) -> some View {
@@ -412,8 +470,8 @@ struct ChatSidebarView: View {
 
         return HStack(spacing: 0) {
             Button {
-                tabStore.openFromChannel(channel)
                 chat.selectChannel(channel)
+                tabStore.openFromChannel(channel)
             } label: {
                 HStack(spacing: 8) {
                     ChatChannelIconView(channel: channel, size: ChatClickUpDesign.rowIconSize)

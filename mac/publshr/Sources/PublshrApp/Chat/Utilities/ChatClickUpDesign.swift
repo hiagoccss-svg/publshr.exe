@@ -92,3 +92,24 @@ enum ChatSidebarLayout: String, CaseIterable {
         }
     }
 }
+
+/// Collapsible sidebar groups — expansion persisted per workspace.
+enum ChatSidebarSection: String, CaseIterable, Identifiable {
+    case projects
+    case favorites
+    case channels
+    case directMessages
+    case recents
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .projects: "Your projects"
+        case .favorites: "Favorites"
+        case .channels: "Channels"
+        case .directMessages: "Direct messages"
+        case .recents: "Recent"
+        }
+    }
+}
