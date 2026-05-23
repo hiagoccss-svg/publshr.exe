@@ -136,7 +136,7 @@ struct ChatMessageBubbleView: View {
             Text(authorName)
                 .font(.system(size: 13, weight: .semibold))
                 .foregroundStyle(CursorTheme.foreground)
-            Text(message.createdAt, style: .time)
+            Text(ChatPresenceFormatter.formatMessageTime(message.createdAt))
                 .font(.system(size: 11))
                 .foregroundStyle(CursorTheme.foregroundDim)
             if message.isEdited {

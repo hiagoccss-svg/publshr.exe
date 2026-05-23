@@ -838,6 +838,35 @@ final class ChatViewModel: ObservableObject {
         return presence[userId]?.status ?? .offline
     }
 
+    func presenceDetail(for userId: UUID) -> String {
+        if userId == currentUserId { return myStatus.label }
+        let status = presence(for: userId)
+        return ChatPresenceFormatter.statusLine(for: presence[userId], status: status)
+    }
+
+    var macNotificationsEnabled: Bool {
+        get { ChatUserPreferences.macNotificationsEnabled }
+        set { ChatUserPreferences.macNotificationsEnabled = newValue }
+    }
+
+    var showIncomingMessagePopup: Bool {
+        get { ChatUserPreferences.showIncomingMessagePopup }
+        set { ChatUserPreferences.showIncomingMessagePopup = newValue }
+    }
+
+    var popupOpensChannelWindow: Bool {
+        get { ChatUserPreferences.popupOpensChannelWindow }
+        set { ChatUserPreferences.popupOpensChannelWindow = newValue }
+    }
+
+    var showTimestampsInLocalTimeZone: Bool {
+        get { ChatUserPreferences.showTimestampsInLocalTimeZone }
+        set { ChatUserPreferences.showTimestampsInLocalTimeZone = newValue }
+    }
+
+    @Published var conversationFilterQuery = ""
+    @Published var showConversationSearch = false
+
     func displayName(for userId: UUID) -> String {
         if userId == currentUserId { return "You" }
         return profiles[userId]?.displayName ?? profiles[userId]?.email ?? "Member"
@@ -1012,14 +1041,40 @@ final class ChatViewModel: ObservableObject {
         )
 
         let deliverBanner = !ChatNotificationFocusState.shared.isViewingChannel(message.channelId)
-        ChatNotificationService.shared.notify(
-            title: category == .mention ? "Mention in \(channelName)" : channelName,
-            body: "\(author): \(preview)",
-            channelId: message.channelId,
-            messageId: message.id,
-            category: category,
-            deliverBanner: deliverBanner
-        )
+        if ChatUserPreferences.macNotificationsEnabled {
+            ChatNotificationService.shared.notify(
+                title: category == .mention ? "Mention in \(channelName)" : channelName,
+                body: "\(author): \(preview)",
+                channelId: message.channelId,
+                messageId: message.id,
+                category: category,
+                deliverBanner: deliverBanner
+            )
+        }
+
+        if ChatUserPreferences.showIncomingMessagePopup, deliverBanner {
+            ChatIncomingMessagePopupManager.shared.present(
+                ChatIncomingPopupPayload(
+                    messageId: message.id,
+                    channelId: message.channelId,
+                    channelTitle: channelName,
+                    authorName: author,
+                    preview: preview,
+                    isMention: category == .mention
+                )
+            )
+        }
+    }
+
+    var filteredMainChannelMessages: [ChatMessage] {
+        let q = conversationFilterQuery.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard !q.isEmpty else { return mainChannelMessages }
+        return mainChannelMessages.filter { msg in
+            if msg.isDeleted { return false }
+            if (msg.body ?? "").lowercased().contains(q) { return true }
+            if displayName(for: msg.userId).lowercased().contains(q) { return true }
+            return msg.attachments.contains { ($0.name ?? "").lowercased().contains(q) }
+        }
     }
 
     private func shouldNotify(for message: ChatMessage) -> Bool {

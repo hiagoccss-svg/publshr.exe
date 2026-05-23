@@ -12,6 +12,46 @@ enum ChatUserPreferences {
     private static let lastChannelPrefix = "publshr.chat.lastChannel."
     private static let defaultNotificationKey = "publshr.chat.defaultNotificationLevel"
     private static let pinnedChannelsPrefix = "publshr.chat.pinnedChannels."
+    private static let macNotificationsKey = "publshr.chat.macNotificationsEnabled"
+    private static let incomingPopupKey = "publshr.chat.incomingMessagePopup"
+    private static let popupOpensChannelKey = "publshr.chat.popupOpensChannelWindow"
+    private static let localTimeZoneKey = "publshr.chat.timestampsLocalTimeZone"
+
+    /// macOS Notification Center alerts for chat.
+    static var macNotificationsEnabled: Bool {
+        get {
+            if UserDefaults.standard.object(forKey: macNotificationsKey) == nil { return true }
+            return UserDefaults.standard.bool(forKey: macNotificationsKey)
+        }
+        set { UserDefaults.standard.set(newValue, forKey: macNotificationsKey) }
+    }
+
+    /// Teams-style floating preview when a message arrives in another channel.
+    static var showIncomingMessagePopup: Bool {
+        get {
+            if UserDefaults.standard.object(forKey: incomingPopupKey) == nil { return true }
+            return UserDefaults.standard.bool(forKey: incomingPopupKey)
+        }
+        set { UserDefaults.standard.set(newValue, forKey: incomingPopupKey) }
+    }
+
+    /// When opening from the popup, also pop the channel into its own window.
+    static var popupOpensChannelWindow: Bool {
+        get {
+            if UserDefaults.standard.object(forKey: popupOpensChannelKey) == nil { return true }
+            return UserDefaults.standard.bool(forKey: popupOpensChannelKey)
+        }
+        set { UserDefaults.standard.set(newValue, forKey: popupOpensChannelKey) }
+    }
+
+    /// Show message and last-seen times in the Mac's local timezone (with abbreviation).
+    static var showTimestampsInLocalTimeZone: Bool {
+        get {
+            if UserDefaults.standard.object(forKey: localTimeZoneKey) == nil { return true }
+            return UserDefaults.standard.bool(forKey: localTimeZoneKey)
+        }
+        set { UserDefaults.standard.set(newValue, forKey: localTimeZoneKey) }
+    }
 
     /// Default notify level for new channel memberships (ClickUp: All / Mentions / Mute).
     static func loadDefaultNotificationLevel() -> String {

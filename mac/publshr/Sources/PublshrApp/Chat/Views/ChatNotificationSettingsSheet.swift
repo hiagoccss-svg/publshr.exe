@@ -61,6 +61,17 @@ struct ChatNotificationSettingsSheet: View {
                     }
 
                     VStack(alignment: .leading, spacing: 8) {
+                        Text("Desktop alerts")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundStyle(CursorTheme.foregroundMuted)
+                        Toggle("macOS Notification Center", isOn: macNotificationsBinding)
+                        Toggle("Floating message preview (Teams-style)", isOn: incomingPopupBinding)
+                        Toggle("Open channel window from preview", isOn: popupOpensWindowBinding)
+                            .disabled(!chat.showIncomingMessagePopup)
+                        Toggle("Timestamps in my local timezone", isOn: localTimeZoneBinding)
+                    }
+
+                    VStack(alignment: .leading, spacing: 8) {
                         Text("Inbox")
                             .font(.system(size: 11, weight: .semibold))
                             .foregroundStyle(CursorTheme.foregroundMuted)
@@ -84,7 +95,35 @@ struct ChatNotificationSettingsSheet: View {
             }
             .padding(16)
         }
-        .frame(width: 420, height: 400)
+        .frame(width: 440, height: 480)
+    }
+
+    private var macNotificationsBinding: Binding<Bool> {
+        Binding(
+            get: { chat.macNotificationsEnabled },
+            set: { chat.macNotificationsEnabled = $0 }
+        )
+    }
+
+    private var incomingPopupBinding: Binding<Bool> {
+        Binding(
+            get: { chat.showIncomingMessagePopup },
+            set: { chat.showIncomingMessagePopup = $0 }
+        )
+    }
+
+    private var popupOpensWindowBinding: Binding<Bool> {
+        Binding(
+            get: { chat.popupOpensChannelWindow },
+            set: { chat.popupOpensChannelWindow = $0 }
+        )
+    }
+
+    private var localTimeZoneBinding: Binding<Bool> {
+        Binding(
+            get: { chat.showTimestampsInLocalTimeZone },
+            set: { chat.showTimestampsInLocalTimeZone = $0 }
+        )
     }
 
     private func notificationQuickButton(

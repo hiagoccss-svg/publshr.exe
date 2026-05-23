@@ -17,7 +17,8 @@ Real-time workspace communication integrated into the Publshr macOS IDE.
 
 ## Phase 3
 
-- **Voice notes** — `AVAudioRecorder`, waveform preview, upload + `chat_voice_transcripts`
+- **Voice notes** — `AVAudioRecorder`, inline composer bar (no sheet), waveform preview, upload + `chat_voice_transcripts`
+- **Incoming message popup** — `ChatIncomingMessagePopupManager` (Teams-style); prefs in Notification settings
 - **Multi-window** — `ChatWindowManager` pops channel into `NSWindow`
 - **Permissions UI** — workspace `settings.chat` toggles (local + model)
 - **Planner integration** — share `tasks` into chat with link preview cards

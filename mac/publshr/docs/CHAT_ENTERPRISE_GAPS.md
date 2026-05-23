@@ -16,6 +16,10 @@ What is **implemented** vs what still needs work for production-grade enterprise
 | Notification click | Opens dedicated window for that channel |
 | Permissions UI | Persisted to `workspaces.settings.chat` via Supabase PATCH |
 | Threads, reactions, files, voice, AI, search | Phases 2–4 |
+| **Teams-style message popup** | Floating preview + quick reply; toggles in Notification settings |
+| **Inline voice notes** | Record in composer (no modal sheet) — IDE + pop-out |
+| **In-conversation search** | Filter bar in channel toolbar |
+| **Presence + last seen** | Local timezone labels in DM inspector and message times |
 
 ## Pop-out window (Slack-style)
 

@@ -1,5 +1,66 @@
 import SwiftUI
 
+/// Inline voice capture in the composer — no modal sheet (enterprise desktop UX).
+struct ChatInlineVoiceRecorderBar: View {
+    @ObservedObject var recorder: ChatVoiceRecorder
+    var onSend: (URL, Int, [Double]) -> Void
+    var onCancel: () -> Void
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: recorder.isRecording ? "mic.fill" : "mic")
+                .font(.system(size: 16))
+                .foregroundStyle(recorder.isRecording ? CursorTheme.error : CursorTheme.accent)
+
+            WaveformPreview(samples: recorder.waveformSamples)
+                .frame(maxWidth: .infinity)
+                .frame(height: 36)
+
+            Text(formatDuration(recorder.elapsedMs))
+                .font(.system(size: 12, weight: .medium, design: .monospaced))
+                .foregroundStyle(CursorTheme.foregroundMuted)
+                .frame(width: 44, alignment: .trailing)
+
+            if recorder.isRecording {
+                Button(recorder.isPaused ? "Resume" : "Pause") {
+                    recorder.isPaused ? recorder.resumeRecording() : recorder.pauseRecording()
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+            }
+
+            Button("Cancel", action: onCancel)
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+
+            Button(recorder.isRecording ? "Send" : "Record") {
+                if recorder.isRecording {
+                    finish()
+                } else {
+                    Task { try? await recorder.startRecording() }
+                }
+            }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.small)
+            .disabled(recorder.permissionDenied)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(CursorTheme.inputBackground.opacity(0.6))
+        .clipShape(RoundedRectangle(cornerRadius: 10))
+    }
+
+    private func finish() {
+        guard let result = recorder.stopRecording() else { return }
+        onSend(result.url, result.durationMs, result.waveform)
+    }
+
+    private func formatDuration(_ ms: Int) -> String {
+        let s = ms / 1000
+        return String(format: "%d:%02d", s / 60, s % 60)
+    }
+}
+
 struct ChatVoiceRecorderSheet: View {
     @ObservedObject var chat: ChatViewModel
     @StateObject private var recorder = ChatVoiceRecorder()
