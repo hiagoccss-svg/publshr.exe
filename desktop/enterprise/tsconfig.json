@@ -25,10 +25,18 @@
       "@shared/desktop": ["../../shared/desktop/index.ts"],
       "@shared/desktop/*": ["../../shared/desktop/*"],
       "@shared/enterprise": ["../../shared/enterprise"],
+      "@desktop/platform": ["../../shared/desktop/platform.ts"],
+      "@desktop/*": ["../../shared/desktop/*"],
       "@spaces/*": ["../spaces/src/renderer/*"],
-      "@spaces-shared/*": ["../spaces/src/shared/*"]
+      "@spaces-shared/*": ["../spaces/src/shared/*"],
+      "@spaces-enterprise/*": ["../../shared/spaces/*"]
     }
   },
-  "include": ["src", "../../shared/desktop"],
+  "include": [
+    "src",
+    "../../shared/desktop",
+    "../../shared/spaces",
+    "../spaces/src/renderer/env.d.ts"
+  ],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

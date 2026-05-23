@@ -5,11 +5,15 @@ on:
     branches: [main]
     paths:
       - 'desktop/spaces/**'
+      - 'desktop/enterprise/**'
+      - 'shared/desktop/**'
       - 'supabase/migrations/**'
       - '.github/workflows/verify-spaces.yml'
   pull_request:
     paths:
       - 'desktop/spaces/**'
+      - 'desktop/enterprise/**'
+      - 'shared/desktop/**'
       - 'supabase/migrations/**'
       - '.github/workflows/verify-spaces.yml'
 
@@ -29,9 +33,16 @@ jobs:
           node-version: '22'
           cache: npm
           cache-dependency-path: desktop/spaces/package-lock.json
-      - name: Install and verify
+      - name: Install and verify Spaces
         working-directory: desktop/spaces
         run: |
           npm ci
           npm run typecheck
           npm run build:web
+
+      - name: Install and verify Enterprise
+        working-directory: desktop/enterprise
+        run: |
+          npm ci
+          npm run typecheck
+          npm run build

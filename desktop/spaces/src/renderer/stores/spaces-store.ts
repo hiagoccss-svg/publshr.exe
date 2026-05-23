@@ -207,7 +207,7 @@ export const useSpacesStore = create<SpacesState>((set, get) => ({
       api.listWorkspaceMembers(),
       api.listWorkspaceActivity(50),
       api.listNotifications(30),
-      api.listCoverage(100),
+      api.listCoverage(100).catch(() => [] as CoverageMention[]),
       api.getSyncStatus()
     ])
     set({

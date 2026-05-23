@@ -81,6 +81,7 @@ pub fn run() {
             publshr_spaces_lib::commands::spaces_list_workspace_members,
             publshr_spaces_lib::commands::spaces_list_workspace_activity,
             publshr_spaces_lib::commands::spaces_list_notifications,
+            publshr_spaces_lib::commands::spaces_list_coverage,
             publshr_spaces_lib::commands::spaces_get_workspace_summary,
             publshr_spaces_lib::commands::spaces_list_comments,
             publshr_spaces_lib::commands::spaces_create_comment,

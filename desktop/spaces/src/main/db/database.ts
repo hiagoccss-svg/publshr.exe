@@ -20,6 +20,7 @@ import type {
   WorkspaceSummary,
   WorkspaceTask,
   NotificationItem,
+  CoverageMention,
   SpaceFolder,
   SpaceList,
   SpaceMember,
@@ -120,6 +121,7 @@ export class SpacesDatabase {
     this.db.exec(SCHEMA_SQL)
     this.runMigrations()
     this.ensureSeed()
+    this.ensureCoverageSeed()
   }
 
   private runMigrations(): void {
@@ -164,6 +166,74 @@ export class SpacesDatabase {
            ON CONFLICT(key) DO UPDATE SET value = excluded.value`
         )
         .run()
+    }
+
+    const versionNowRow = this.db
+      .prepare(`SELECT value FROM meta WHERE key = 'schema_version'`)
+      .get() as { value: string } | undefined
+    const versionNow = Number(versionNowRow?.value ?? version)
+
+    if (versionNow < 3) {
+      this.db.exec(`
+        CREATE TABLE IF NOT EXISTS coverage_mentions (
+          id TEXT PRIMARY KEY,
+          space_id TEXT,
+          headline TEXT NOT NULL,
+          publication TEXT NOT NULL,
+          sentiment TEXT NOT NULL DEFAULT 'neutral',
+          reach INTEGER NOT NULL DEFAULT 0,
+          pr_value REAL NOT NULL DEFAULT 0,
+          url TEXT NOT NULL DEFAULT '',
+          saved INTEGER NOT NULL DEFAULT 0,
+          published_at TEXT NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS idx_coverage_published ON coverage_mentions(published_at);
+      `)
+      this.db
+        .prepare(
+          `INSERT INTO meta (key, value) VALUES ('schema_version', '3')
+           ON CONFLICT(key) DO UPDATE SET value = excluded.value`
+        )
+        .run()
+    }
+  }
+
+  private ensureCoverageSeed(): void {
+    const count = this.db.prepare('SELECT COUNT(*) as c FROM coverage_mentions').get() as {
+      c: number
+    }
+    if (count.c > 0) return
+
+    const spaceRow = this.db
+      .prepare(
+        `SELECT id FROM spaces WHERE type = 'publication' AND is_archived = 0 LIMIT 1`
+      )
+      .get() as { id: string } | undefined
+    const fallback = this.db
+      .prepare(`SELECT id FROM spaces WHERE is_archived = 0 ORDER BY updated_at DESC LIMIT 1`)
+      .get() as { id: string } | undefined
+    const spaceId = spaceRow?.id ?? fallback?.id
+    if (!spaceId) return
+
+    const published = new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString()
+    const rows: Array<[string, string, string, number, number]> = [
+      [
+        'Brand launches sustainability pledge ahead of summit',
+        'Reuters',
+        'positive',
+        4_200_000,
+        18500
+      ],
+      ['Analysts question timing of Q2 campaign spend', 'Financial Times', 'neutral', 890_000, 6200],
+      ['Social backlash after influencer partnership', 'The Guardian', 'negative', 1_100_000, 9400]
+    ]
+    const insert = this.db.prepare(
+      `INSERT INTO coverage_mentions
+       (id, space_id, headline, publication, sentiment, reach, pr_value, url, saved, published_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, '', 0, ?)`
+    )
+    for (const [headline, publication, sentiment, reach, prValue] of rows) {
+      insert.run(uuid(), spaceId, headline, publication, sentiment, reach, prValue, published)
     }
   }
 
@@ -877,7 +947,7 @@ export class SpacesDatabase {
     })
   }
 
-  listCoverage(limit = 100): import('../../shared/types').CoverageMention[] {
+  listCoverage(limit = 100): CoverageMention[] {
     const rows = this.db
       .prepare(`SELECT * FROM coverage_mentions ORDER BY published_at DESC LIMIT ?`)
       .all(limit)
@@ -888,7 +958,7 @@ export class SpacesDatabase {
         spaceId: (row.space_id as string) || null,
         headline: row.headline as string,
         publication: row.publication as string,
-        sentiment: row.sentiment as import('../../shared/types').CoverageSentiment,
+        sentiment: row.sentiment as CoverageMention['sentiment'],
         reach: Number(row.reach),
         prValue: Number(row.pr_value),
         url: (row.url as string) || '',
