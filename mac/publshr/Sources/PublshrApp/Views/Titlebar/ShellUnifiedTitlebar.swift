@@ -63,7 +63,7 @@ struct ShellUnifiedTitlebar: View {
             )
         }
         .frame(height: layout.rowHeight)
-        .background(CursorMacShellDesign.columnChromeBackground)
+        .background(LibraryGlassDesign.primaryBarColumnBackground)
     }
 
     // MARK: - Column 2 (search — flat, no boxed field)
