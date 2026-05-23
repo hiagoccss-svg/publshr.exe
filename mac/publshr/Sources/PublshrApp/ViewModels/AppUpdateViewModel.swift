@@ -20,12 +20,19 @@ final class AppUpdateViewModel: ObservableObject {
     @Published private(set) var githubStatusLine: String = "Waiting for first GitHub check…"
     @Published private(set) var cloudSyncLine: String = "Sign in to sync Chat and Spaces from Supabase"
     @Published private(set) var remoteManifest: LiveChannelManifest?
+    @Published private(set) var backgroundSyncRunning = false
+    @Published private(set) var backgroundSyncStep = "Waiting for first cycle…"
+    @Published private(set) var backgroundSyncLogExcerpt = "No sync logs yet."
+    @Published private(set) var lastBackgroundSyncCompletedAt: Date?
+    @Published private(set) var nextBackgroundSyncAt: Date?
     @AppStorage("publshr.autoCheckUpdates") var autoCheckEnabled = true
     @AppStorage("publshr.autoInstallUpdates") var autoInstallEnabled = true
 
     private let service = AppUpdateService.shared
     private var checkTask: Task<Void, Never>?
     private var syncInFlight = false
+    private var performCloudDataSync: (() async -> Void)?
+    private var reportSupabaseSyncTask: ((_ running: Bool, _ step: String, _ needsAppUpdate: Bool, _ error: String?) async -> Void)?
 
     /// Poll interval for GitHub `live` channel (every push to main publishes there).
     private static let livePollSeconds: UInt64 = AppReleaseConfig.livePollIntervalSeconds
@@ -40,6 +47,7 @@ final class AppUpdateViewModel: ObservableObject {
     }
 
     var isActivelyUpdating: Bool {
+        if backgroundSyncRunning { return true }
         switch phase {
         case .checking, .downloading, .installing:
             return true
@@ -102,18 +110,31 @@ final class AppUpdateViewModel: ObservableObject {
         }
     }
 
+    func configureBackgroundSync(
+        performCloudDataSync: @escaping () async -> Void,
+        reportSupabaseSyncTask: @escaping (_ running: Bool, _ step: String, _ needsAppUpdate: Bool, _ error: String?) async -> Void
+    ) {
+        self.performCloudDataSync = performCloudDataSync
+        self.reportSupabaseSyncTask = reportSupabaseSyncTask
+    }
+
     func startAutomaticChecks() {
         AppReleaseConfig.reconcileAppliedManifestWithBundle()
         checkTask?.cancel()
+        scheduleNextBackgroundSync(after: 0)
         checkTask = Task {
-            await performLiveSync()
-            NotificationCenter.default.post(name: .publshrPerformCloudSync, object: nil)
+            await performUnifiedBackgroundSync(force: true)
             while !Task.isCancelled {
-                try? await Task.sleep(nanoseconds: Self.livePollSeconds * 1_000_000_000)
-                await performLiveSync()
-                NotificationCenter.default.post(name: .publshrPerformCloudSync, object: nil)
+                let interval = Self.livePollSeconds
+                scheduleNextBackgroundSync(after: interval)
+                try? await Task.sleep(nanoseconds: interval * 1_000_000_000)
+                await performUnifiedBackgroundSync(force: false)
             }
         }
+    }
+
+    private func scheduleNextBackgroundSync(after seconds: UInt64) {
+        nextBackgroundSyncAt = Date().addingTimeInterval(TimeInterval(seconds))
     }
 
     func stopAutomaticChecks() {
@@ -121,8 +142,7 @@ final class AppUpdateViewModel: ObservableObject {
         checkTask = nil
     }
 
-    /// Background path: check, download, install in place (enterprise default).
-    /// - Parameter forceGitHub: When true (Sync now / wake / sign-in), runs even if auto-check is off.
+    /// GitHub live channel only (check → download → install). Prefer `performUnifiedBackgroundSync` for the 30s loop.
     func performLiveSync(forceGitHub: Bool = false) async {
         guard forceGitHub || autoCheckEnabled else { return }
         guard !syncInFlight else { return }
@@ -159,6 +179,55 @@ final class AppUpdateViewModel: ObservableObject {
         }
     }
 
+    /// Every 30s: GitHub health + live update + Supabase data pull — no Settings tap required.
+    func performUnifiedBackgroundSync(force: Bool) async {
+        guard force || autoCheckEnabled else { return }
+        guard !backgroundSyncRunning else { return }
+        backgroundSyncRunning = true
+        defer {
+            backgroundSyncRunning = false
+            lastBackgroundSyncCompletedAt = Date()
+            refreshLogExcerpt()
+        }
+
+        var cycleError: String?
+        let logSummary = LocalSyncLogReader.summarize()
+        backgroundSyncLogExcerpt = logSummary.excerpt
+
+        func report(running: Bool, step: String, needsUpdate: Bool, error: String?) async {
+            backgroundSyncStep = step
+            await reportSupabaseSyncTask?(running, step, needsUpdate, error)
+        }
+
+        await report(running: true, step: "Checking GitHub + Supabase reachability", needsUpdate: logSummary.suggestsAppUpdate, error: nil)
+        await CloudPlatformHealth.shared.refresh()
+
+        await report(running: true, step: "GitHub live (check · download · install)", needsUpdate: logSummary.suggestsAppUpdate, error: nil)
+        await performLiveSync(forceGitHub: force)
+
+        await report(running: true, step: "Supabase (Chat · Spaces · enterprise)", needsUpdate: hasPendingUpdate, error: nil)
+        if let performCloudDataSync {
+            await performCloudDataSync()
+        } else {
+            NotificationCenter.default.post(name: .publshrPerformCloudSync, object: nil)
+        }
+
+        refreshLogExcerpt()
+        let afterLogs = LocalSyncLogReader.summarize()
+        if afterLogs.suggestsFailure, cycleError == nil {
+            cycleError = "See sync log below"
+        }
+        let needsUpdate = hasPendingUpdate || afterLogs.suggestsAppUpdate
+        let outcome = needsUpdate ? "Update available or in progress" : "Up to date"
+        backgroundSyncStep = "Idle · \(outcome) · \(Self.timeStamp())"
+        await report(running: false, step: backgroundSyncStep, needsUpdate: needsUpdate, error: cycleError)
+        lastSyncLine = "Background sync · \(outcome) · \(Self.timeStamp())"
+    }
+
+    private func refreshLogExcerpt() {
+        backgroundSyncLogExcerpt = LocalSyncLogReader.summarize().excerpt
+    }
+
     func recordCloudSync(summary: String) {
         cloudSyncLine = "\(summary) · \(Self.timeStamp())"
     }
@@ -178,11 +247,11 @@ final class AppUpdateViewModel: ObservableObject {
         if case .installing = phase { return }
         phase = .idle
         lastSyncLine = "Syncing live channel…"
-        await updateNow()
+        await performUnifiedBackgroundSync(force: true)
     }
 
     func syncLiveBuildIfNeeded() async {
-        await performLiveSync()
+        await performUnifiedBackgroundSync(force: false)
     }
 
     func checkForUpdates(silent: Bool = false) async {
