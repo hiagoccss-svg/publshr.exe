@@ -26,18 +26,68 @@ final class InstallerViewModel: ObservableObject {
     @Published var phase: Phase = .welcome
     @Published var progress: Double = 0
     @Published var statusLine = ""
+    @Published private(set) var releaseVersion: String?
+    @Published private(set) var hasBundledApp = false
 
     private let repo = ProcessInfo.processInfo.environment["PUBLSHR_REPO"] ?? "hiagoccss-svg/publshr.exe"
     private let liveURL: URL
-    private var appDest: URL {
-        FileManager.default.homeDirectoryForCurrentUser
-            .appendingPathComponent("Applications/Publshr.app", isDirectory: true)
-    }
+    let appDest: URL
+    private let bundledSourceTree: URL?
     private let sourceMarker = FileManager.default.homeDirectoryForCurrentUser
         .appendingPathComponent("Library/Application Support/Publshr/install-source.tree")
 
     init() {
         liveURL = URL(string: "https://github.com/\(repo)/releases/download/live/Publshr-macos-aarch64.tar.gz")!
+        appDest = FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent("Applications/Publshr.app", isDirectory: true)
+        bundledSourceTree = Self.discoverBundledSourceTree(marker: sourceMarker)
+        hasBundledApp = bundledSourceTree != nil
+        releaseVersion = Self.readReleaseVersion(near: bundledSourceTree)
+    }
+
+    private static func discoverBundledSourceTree(marker: URL) -> URL? {
+        if let raw = try? String(contentsOf: marker, encoding: .utf8) {
+            let path = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !path.isEmpty {
+                let tree = URL(fileURLWithPath: path)
+                if validateAppTree(tree) { return tree }
+            }
+        }
+        let installFolder = Bundle.main.bundleURL.deletingLastPathComponent()
+        if validateAppTree(installFolder) { return installFolder }
+        return nil
+    }
+
+    private static func readReleaseVersion(near tree: URL?) -> String? {
+        var candidates: [URL] = []
+        if let tree {
+            candidates.append(tree.appendingPathComponent("VERSION.txt"))
+        }
+        candidates.append(Bundle.main.bundleURL.deletingLastPathComponent().appendingPathComponent("VERSION.txt"))
+        for url in candidates {
+            guard let raw = try? String(contentsOf: url, encoding: .utf8) else { continue }
+            let line = raw.split(separator: "\n", omittingEmptySubsequences: true).first.map(String.init) ?? ""
+            let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !trimmed.isEmpty { return trimmed }
+        }
+        if let short = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String,
+           let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String {
+            return "\(short) (\(build))"
+        }
+        return nil
+    }
+
+    private static func validateAppTree(_ tree: URL) -> Bool {
+        repairAppTreeIfNeeded(tree)
+        let gui = tree.appendingPathComponent("Publshr.app/Contents/MacOS/Publshr")
+        guard FileManager.default.fileExists(atPath: gui.path) else { return false }
+        let stale = tree.appendingPathComponent("Publshr.app/Contents/MacOS/PublshrApp")
+        if FileManager.default.fileExists(atPath: stale.path) { return false }
+        if let attrs = try? FileManager.default.attributesOfItem(atPath: gui.path),
+           let size = attrs[.size] as? Int, size < 500_000 {
+            return false
+        }
+        return true
     }
 
     func startInstall() {
@@ -50,10 +100,10 @@ final class InstallerViewModel: ObservableObject {
             try FileManager.default.createDirectory(at: tmp, withIntermediateDirectories: true)
 
             let tree: URL
-            if let bundled = loadBundledSourceTree() {
+            if let bundled = bundledSourceTree {
                 phase = .installing
                 progress = 0.5
-                statusLine = "Installing from downloaded package…"
+                statusLine = "Installing from package…"
                 tree = bundled
             } else {
                 phase = .downloading
@@ -102,28 +152,7 @@ final class InstallerViewModel: ObservableObject {
         }
     }
 
-    private func loadBundledSourceTree() -> URL? {
-        guard let raw = try? String(contentsOf: sourceMarker, encoding: .utf8) else { return nil }
-        let path = raw.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !path.isEmpty else { return nil }
-        let tree = URL(fileURLWithPath: path)
-        return validateAppTree(tree) ? tree : nil
-    }
-
-    private func validateAppTree(_ tree: URL) -> Bool {
-        repairAppTreeIfNeeded(tree)
-        let gui = tree.appendingPathComponent("Publshr.app/Contents/MacOS/Publshr")
-        guard FileManager.default.fileExists(atPath: gui.path) else { return false }
-        let stale = tree.appendingPathComponent("Publshr.app/Contents/MacOS/PublshrApp")
-        if FileManager.default.fileExists(atPath: stale.path) { return false }
-        if let attrs = try? FileManager.default.attributesOfItem(atPath: gui.path),
-           let size = attrs[.size] as? Int, size < 500_000 {
-            return false
-        }
-        return true
-    }
-
-    private func repairAppTreeIfNeeded(_ tree: URL) {
+    private static func repairAppTreeIfNeeded(_ tree: URL) {
         let app = tree.appendingPathComponent("Publshr.app")
         let gui = app.appendingPathComponent("Contents/MacOS/Publshr")
         let legacy = app.appendingPathComponent("Contents/MacOS/PublshrApp")
@@ -145,7 +174,7 @@ final class InstallerViewModel: ObservableObject {
             return nil
         }
         for item in items where item.hasDirectoryPath {
-            if validateAppTree(item) { return item }
+            if Self.validateAppTree(item) { return item }
         }
         return nil
     }
@@ -279,10 +308,26 @@ struct InstallerRootView: View {
         VStack(alignment: .leading, spacing: 16) {
             switch model.phase {
             case .welcome:
-                Text("Publshr installs to ~/Applications (no admin password for live updates). Sign in, create a workspace, and use Touch ID on later launches.")
-                    .font(.system(size: 13))
-                    .foregroundStyle(InstallerTheme.muted)
-                    .fixedSize(horizontal: false, vertical: true)
+                VStack(alignment: .leading, spacing: 8) {
+                    if let version = model.releaseVersion {
+                        Text("Build \(version)")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundStyle(InstallerTheme.foreground)
+                    }
+                    if model.hasBundledApp {
+                        Text("This package includes the full app — no extra download during install.")
+                            .font(.system(size: 13))
+                            .foregroundStyle(InstallerTheme.muted)
+                    } else {
+                        Text("The installer will download the latest build from GitHub, then install it.")
+                            .font(.system(size: 13))
+                            .foregroundStyle(InstallerTheme.muted)
+                    }
+                    Text("Install location: ~/Applications/Publshr.app (recommended for automatic updates without an admin password).")
+                        .font(.system(size: 13))
+                        .foregroundStyle(InstallerTheme.muted)
+                }
+                .fixedSize(horizontal: false, vertical: true)
             case .downloading, .installing:
                 ProgressView(value: model.progress)
                     .progressViewStyle(.linear)
@@ -323,7 +368,7 @@ struct InstallerRootView: View {
                     .buttonStyle(InstallerPrimaryButtonStyle())
             case .done:
                 Button("Open Publshr") {
-                    NSWorkspace.shared.open(URL(fileURLWithPath: "/Applications/Publshr.app"))
+                    NSWorkspace.shared.open(model.appDest)
                     NSApp.terminate(nil)
                 }
                 .buttonStyle(InstallerPrimaryButtonStyle())

@@ -21,9 +21,9 @@ Every push to **`main`** publishes these **fixed URLs** on the `live` release:
 
 | Asset | Audience | Contents |
 |-------|----------|----------|
-| **Publshr-Install-macos.zip** | End users / IT | `Publshr Install.command`, install script, full `Publshr.app` |
-| **Publshr-install-macos.sh** | Power users / curl | Same flow as zip |
-| **Publshr-macos-aarch64.tar.gz** | MDM / advanced | App bundle only |
+| **Publshr-Install-macos.dmg** | End users (recommended) | `PublshrInstaller.app`, `Publshr.app`, Applications alias |
+| **Publshr-Install-macos.zip** | End users / IT | Same payload as DMG |
+| **Publshr-macos-aarch64.tar.gz** | MDM / in-app updater | App bundle only |
 | **VERSION.txt** | Auto-updater | Version, build, commit, SHA-256, shell tag |
 
 **Include in the app bundle (CI already does):**
@@ -118,8 +118,8 @@ Install location:
 - [x] PR + `main` compile check before publish
 - [x] Transactional update with rollback
 - [x] SHA-256 verify before install
-- [ ] Apple Developer ID sign + notarize in CI
-- [ ] Staple notarization ticket to `Publshr.app`
+- [x] CI hooks for Developer ID sign + DMG notarize (`DEVELOPER_ID_APPLICATION`, `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD`, `APPLE_TEAM_ID` secrets)
+- [ ] Configure Apple secrets on the repo (until then: Right-click → Open on first launch)
 - [ ] Remote crash reporting (Sentry / App Insights)
 
 ### Identity & compliance

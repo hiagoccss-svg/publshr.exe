@@ -1,32 +1,25 @@
 # Install Publshr on Mac
 
-## Download (click this)
+## Download (recommended)
 
-Go to **Releases** and open the **latest** release (top of the list):
+**[Publshr-Install-macos.dmg](https://github.com/hiagoccss-svg/publshr.exe/releases/download/live/Publshr-Install-macos.dmg)**
 
-https://github.com/hiagoccss-svg/publshr.exe/releases/latest
+Fixed **live** channel (~15–20 MB — full app + installer).
 
-Download the file named:
-
-### **Publshr-Install-macos.zip**
-
-(About 15 MB — contains the full app.)
-
----
-
-**If you do not see the zip on the latest release**, use the fixed **live** link:
-
-https://github.com/hiagoccss-svg/publshr.exe/releases/download/live/Publshr-Install-macos.zip
-
-Or open the **live** release page:
+If the DMG is not on the latest release page, open the **live** tag directly:
 
 https://github.com/hiagoccss-svg/publshr.exe/releases/tag/live
+
+**Zip alternative:** [Publshr-Install-macos.zip](https://github.com/hiagoccss-svg/publshr.exe/releases/download/live/Publshr-Install-macos.zip)
 
 ---
 
 ## Install steps
 
-1. Unzip **Publshr-Install-macos.zip**
-2. Double-click **Publshr Install.command**
+1. Open **Publshr-Install-macos.dmg**
+2. Double-click **PublshrInstaller.app**
 3. If macOS blocks it: right-click → **Open** → **Open**
-4. Sign in when Publshr opens
+4. Click **Install** — app installs to **~/Applications/Publshr.app** and opens
+5. Sign in when Publshr launches
+
+Updates apply automatically from the same **live** release after install.
