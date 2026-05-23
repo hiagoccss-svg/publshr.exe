@@ -1,0 +1,40 @@
+name: Verify enterprise Supabase
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/migrations/**'
+      - 'mac/publshr/scripts/verify-*.sh'
+      - 'mac/publshr/Sources/PublshrApp/**'
+  pull_request:
+    paths:
+      - 'supabase/migrations/**'
+      - 'mac/publshr/scripts/verify-*.sh'
+      - 'mac/publshr/Sources/PublshrApp/**'
+
+jobs:
+  supabase-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Enterprise API smoke test
+        run: bash mac/publshr/scripts/verify-enterprise.sh
+        env:
+          SUPABASE_URL: https://lboesdtsrqfvosznjpdy.supabase.co
+          SUPABASE_KEY: sb_publishable_mHARlRkK4iHkkn9wn_-uAw_EkW-jRXP
+
+  spaces-typecheck:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: desktop/spaces
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: desktop/spaces/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck

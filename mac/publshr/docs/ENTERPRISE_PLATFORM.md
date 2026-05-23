@@ -13,7 +13,7 @@ Steps: privacy → device acknowledgment → plan summary. Completing setup regi
 
 ## Subscription plans
 
-Plans live in Supabase `subscription_plans` (see migration `002_enterprise_platform.sql`). Each workspace has `plan_id` (default `trial`).
+Plans live in Supabase `subscription_plans`. Apply migrations from `supabase/migrations/` (final step: `20260523100000_enterprise_hardening.sql`). Legacy copies under `mac/publshr/supabase/migrations/` mirror the same schema. Each workspace has `plan_id` (default `trial`).
 
 | Plan       | Chat | Spaces | Seats |
 |------------|------|--------|-------|
@@ -43,11 +43,9 @@ Plans live in Supabase `subscription_plans` (see migration `002_enterprise_platf
 
 ## Database
 
-Apply migrations in order:
+Canonical chain: `supabase/migrations/` (see `mac/publshr/docs/ENTERPRISE_CHAT_SPACES.md`). Enterprise tables and server-side scheduled chat dispatch ship in `20260523100000_enterprise_hardening.sql`.
 
-1. Chat migrations under `mac/publshr/supabase/migrations/` (presence, phases)
-2. `001_spaces_schema.sql` (if using Spaces)
-3. `002_enterprise_platform.sql`
+CI smoke test: `bash mac/publshr/scripts/verify-enterprise.sh`
 
 ## Swift modules
 
