@@ -2,8 +2,6 @@ import Foundation
 
 /// Last-known profile, workspaces, and permissions for offline biometric entry.
 enum AuthOfflineSessionCache {
-    private static let fileName = "auth-offline-snapshot.json"
-
     struct MembershipRow: Codable {
         let workspace: Workspace
         let role: String
@@ -17,10 +15,8 @@ enum AuthOfflineSessionCache {
     }
 
     private static var fileURL: URL {
-        let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-        let dir = base.appendingPathComponent("Publshr", isDirectory: true)
-        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-        return dir.appendingPathComponent(fileName)
+        LocalDataLayout.ensureRootExists()
+        return LocalDataLayout.authOfflineSnapshot
     }
 
     static func save(

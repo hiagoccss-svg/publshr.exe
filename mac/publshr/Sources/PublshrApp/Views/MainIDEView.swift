@@ -159,12 +159,8 @@ struct MainIDEView: View {
 
     private func onShellAppear() {
         _ = AppShellIdentity.distributionTag
-        if let restored = AppModule(rawValue: storedModule), restored != .settings {
-            module = restored
-        } else {
-            module = .chat
-            storedModule = AppModule.chat.rawValue
-        }
+        module = .chat
+        storedModule = AppModule.chat.rawValue
         tabStore.removeSettingsTabs()
         tabStore.ensureDefaultTabs(module: module)
         tabStore.openFromModule(module, activate: true)

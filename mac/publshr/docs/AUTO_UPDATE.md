@@ -1,14 +1,17 @@
 # Install once · auto-update forever
 
-## Stable install (always the same command)
+## Install (download, not curl)
+
+Use the **`live`** release disk image or zip — see [INSTALL.md](./INSTALL.md) and [DATA_ARCHITECTURE.md](./DATA_ARCHITECTURE.md).
+
+- **DMG:** `Publshr-Install-macos.dmg` → open → **PublshrInstaller.app**
+- **Zip:** `Publshr-Install-macos.zip` → **Publshr Install.command**
+
+Terminal helper (downloads DMG, opens installer):
 
 ```bash
-curl -fsSL "https://raw.githubusercontent.com/hiagoccss-svg/publshr.exe/refs/heads/main/install-macos.sh" | bash
+./install-macos.sh
 ```
-
-- **One file** at a fixed URL: `install-publshr.sh` on branch `main` (logic is not split across moving scripts).
-- Downloads the **`live`** release: `Publshr-macos-aarch64.tar.gz` (fixed asset name).
-- If `live` is not ready yet, builds from GitHub `main` (requires Xcode).
 
 ## Push to GitHub → your live app updates
 
@@ -23,11 +26,11 @@ flowchart LR
 1. Every push to **`main`** runs `.github/workflows/deliver-macos.yml`.
 2. CI builds `Publshr.app` and uploads to the **`live`** release (same filenames every time).
 3. Your installed app checks the `live` channel every **30 seconds** via `VERSION.txt` (and when the app becomes active or wakes from sleep). It compares **build number**, **full version**, **git commit**, **enterprise shell tag** (`PublshrEnterpriseShell-N`, line 5), and **package digest**, verifies the tarball **SHA-256** against `VERSION.txt` line 4, then downloads the complete app bundle (icons, colors, Swift UI, shell, features). **Settings → Updates** shows installed vs remote detail and toggles check/auto-install; when auto-install is off, the build is downloaded but you choose when to install. Installs to `~/Applications/Publshr.app` are **passwordless**; system `/Applications` uses **one** administrator prompt per update (not three).
-4. **Settings** (bottom panel): **Download and install latest** runs the same full check → download → install → restart flow manually.
+4. **Settings** (bottom panel): **Sync now** runs GitHub + Supabase together.
 5. Every push to **`main`** publishes a new `live` build (monotonic CI build number). Icon changes at repo root are synced before packaging.
 6. CI runs **macOS compile check** on every PR and `main` push so broken builds do not block the `live` channel.
 
-Chat and Spaces data load from Supabase on sign-in and refresh every **30 seconds** with the live channel poll (plus on wake/network restore and **Sync now**).
+Chat and Spaces data load from **Supabase** on sign-in and refresh every **30 seconds** in parallel with the GitHub poll (plus on wake/network restore and **Sync now**). GitHub never stores your messages.
 
 See [ENTERPRISE_INSTALL_AND_LIVE.md](./ENTERPRISE_INSTALL_AND_LIVE.md) for installer contents, per-user data, and enterprise checklist.
 
@@ -50,8 +53,8 @@ See [ENTERPRISE_INSTALL_AND_LIVE.md](./ENTERPRISE_INSTALL_AND_LIVE.md) for insta
 
 ## Requirements
 
-- Mac with network access to `github.com`
-- App in `/Applications/Publshr.app`
+- Mac with network access to `github.com` and your Supabase project
+- Installed app at `~/Applications/Publshr.app` (recommended) or `/Applications/Publshr.app`
 - For source fallback: Xcode + Swift
 
 ## Transactional install
@@ -59,7 +62,7 @@ See [ENTERPRISE_INSTALL_AND_LIVE.md](./ENTERPRISE_INSTALL_AND_LIVE.md) for insta
 `apply-macos-update.sh` (bundled in the app) performs:
 
 1. Wait for the running app to exit
-2. **Backup** the current `/Applications/Publshr.app` to Application Support
+2. **Backup** the current app bundle to Application Support
 3. **Replace** the app with `ditto`
 4. **Verify** the new binary exists; **rollback** from backup on failure
 5. Relaunch Publshr
@@ -68,4 +71,7 @@ User data (`~/Library/Application Support/Publshr/`) is never modified during up
 
 ## Logs
 
-`~/Library/Application Support/Publshr/updates/last-update.log`
+| File | Purpose |
+|------|---------|
+| `~/Library/Application Support/Publshr/updates/last-update.log` | In-place install / rollback |
+| `~/Library/Application Support/Publshr/updates/last-sync.log` | GitHub `VERSION.txt` checks |

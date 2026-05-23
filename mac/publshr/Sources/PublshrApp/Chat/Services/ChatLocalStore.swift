@@ -19,13 +19,12 @@ final class ChatLocalStore {
     }
 
     private func openDatabase() {
-        let dir = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-            .appendingPathComponent("Publshr", isDirectory: true)
-        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-        let path = dir.appendingPathComponent("chat-cache.sqlite").path
+        LocalDataLayout.ensureRootExists()
+        let path = LocalDataLayout.chatDatabase.path
         if sqlite3_open(path, &db) != SQLITE_OK {
             db = nil
         }
+        LocalDataLayout.configureSQLitePerformance(db)
     }
 
     private func migrate() {

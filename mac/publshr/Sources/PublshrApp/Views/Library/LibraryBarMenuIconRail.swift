@@ -111,7 +111,7 @@ struct LibraryBarMenuIconRail: View {
         case .planner:
             module = .spaces
             tabStore.openFromModule(.spaces, activate: true)
-            spaces.setActiveSection(.planner)
+            spaces.openPlannerCalendar()
         default:
             module = .spaces
             tabStore.openFromModule(.spaces, activate: true)

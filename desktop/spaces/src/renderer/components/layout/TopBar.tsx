@@ -25,7 +25,6 @@ const VIEW_LABELS: Record<TaskViewMode, string> = {
 }
 
 const SECTION_LABELS: Record<string, string> = {
-  dashboard: 'Dashboard',
   spaces: 'Spaces',
   planner: 'Planner',
   chat: 'Chat',

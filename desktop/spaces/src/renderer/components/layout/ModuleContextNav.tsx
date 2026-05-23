@@ -5,11 +5,6 @@ import type { SidebarSection } from '../../../shared/types'
 const SECTION_LINKS: Partial<
   Record<SidebarSection, { id: string; label: string; section?: SidebarSection }[]>
 > = {
-  dashboard: [
-    { id: 'overview', label: 'Overview' },
-    { id: 'activity', label: 'Recent activity' },
-    { id: 'tasks', label: 'Open tasks' }
-  ],
   documents: [{ id: 'all', label: 'All documents' }],
   approvals: [
     { id: 'pending', label: 'Pending' },
@@ -121,7 +116,6 @@ export function ModuleContextNav({ section }: { section: SidebarSection }): Reac
 
 function sectionLabel(section: SidebarSection): string {
   const map: Record<string, string> = {
-    dashboard: 'Dashboard',
     documents: 'Documents',
     approvals: 'Approvals',
     planner: 'Planner',
