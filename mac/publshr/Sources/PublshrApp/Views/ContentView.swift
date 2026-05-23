@@ -44,7 +44,6 @@ struct ContentView: View {
         }
         .onChange(of: auth.selectedMembership?.id) { _, _ in
             syncEnterpriseData()
-            NotificationCenter.default.post(name: .publshrPerformCloudSync, object: nil)
         }
         .onChange(of: auth.profile?.avatarUrl) { _, _ in
             if let profile = auth.profile {
