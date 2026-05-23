@@ -6,8 +6,8 @@ Publshr Chat follows [ClickUp Chat Sidebar](https://help.clickup.com/hc/en-us/ar
 
 | Zone | Width | Contents |
 |------|-------|----------|
-| **Bar menu** | 200pt expanded / ~56–96pt icon rail · glass tint | **Chat** · **Spaces** (modules); profile in footer |
-| **Universal submenu** | 272pt fixed · **#FFFFFF** | Search in unified titlebar row (Chat + Spaces); filters, lists, footer (flat, no boxed chrome) |
+| **Bar menu** | 228pt fixed · glass tint (no icon-rail collapse) | **Chat** · **Spaces** (modules); profile in footer; traffic lights in column title band |
+| **Universal submenu** | 304pt fixed · **#FFFFFF** | Search in column title band (Chat + Spaces); filters, lists, footer (flat, no boxed chrome) |
 | **Your projects** | submenu section | `projects` + `planner_items` in Supabase — **+** creates projects; menu adds tasks / share to channel |
 | **Main column** | ~50% remainder · **#FFFFFF** | Full-bleed flat column (Chat + Spaces — no rounded editor “card” box). Titlebar: 32×32 icon slots, 8pt gaps, aligned with columns 1–2 |
 | **Thread panel** (optional) | ~320px | Right-side thread replies |
@@ -115,7 +115,7 @@ Per [Notification settings](https://help.clickup.com/hc/en-us/articles/632591895
 | `Chat/Utilities/ChatClickUpDesign.swift` | Layout tokens, filter/layout enums |
 | `Chat/Views/ChatSidebarTitlebarChrome.swift` | Search in submenu titlebar row |
 | `Chat/Views/ChatSidebarView.swift` | Filters, sections, flat footer + settings gear |
-| `Views/Titlebar/ShellUnifiedTitlebar.swift` | Full-width titlebar (traffic-light alignment) |
+| `Views/Library/LibraryShellColumnLayout.swift` | Per-column title bands (traffic lights in column 1) |
 | `Views/Titlebar/TrafficLightLayoutStore.swift` | Measures system close/minimize/zoom geometry |
 | `Views/Titlebar/ChatEditorHeaderBar.swift` | `ChatEditorToolbarContent` for chat column |
 | `Theme/AppWindowChrome.swift` | `TitlebarToolbarRow` / `TitlebarToolbarSlot` alignment |

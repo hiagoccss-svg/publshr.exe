@@ -1,6 +1,7 @@
 import SwiftUI
 
-/// One full-width titlebar row — column bands match the shell below; controls share one baseline (Cursor Mac).
+/// Legacy full-width titlebar row — superseded by `LibraryShellColumnLayout` per-column bands.
+@available(*, deprecated, message: "Use LibraryShellBarColumn / LibraryShellSubmenuColumn / LibraryShellEditorColumn")
 struct ShellUnifiedTitlebar: View {
     @EnvironmentObject private var tabStore: WorkspaceTabStore
     @EnvironmentObject private var chat: ChatViewModel

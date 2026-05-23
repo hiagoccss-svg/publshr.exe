@@ -4,34 +4,27 @@ import SwiftUI
 enum ShellColumnLayout {
     static let referenceWindowWidth: CGFloat = 1280
 
-    /// Primary bar menu (Chat / Spaces labels) — Cursor Mac ~200pt, not a % of window.
-    static let barExpandedWidth: CGFloat = 200
-    /// Icon-only bar column (content below titlebar; traffic lights live in titlebar band).
-    static let barCollapsedMin: CGFloat = 56
-    /// Cap collapsed column so traffic-light reserve does not waste body width.
-    static let barCollapsedMax: CGFloat = 96
+    /// Primary bar menu (Chat / Spaces labels) — Cursor Mac sidebar (~228pt).
+    static let barExpandedWidth: CGFloat = 228
+    @available(*, deprecated, message: "Bar menu no longer collapses to icon rail")
+    static let barCollapsedMin: CGFloat = barExpandedWidth
+    @available(*, deprecated, message: "Bar menu no longer collapses to icon rail")
+    static let barCollapsedMax: CGFloat = barExpandedWidth
 
-    /// ClickUp-style chat submenu — matches `CHAT_CLICKUP_UI.md` and `shared/design/library-glass.css` (272pt).
-    static let submenuWidth: CGFloat = 272
-    static let submenuMinWidth: CGFloat = 248
+    /// Universal submenu — wider for filters + channel titles (Cursor / ClickUp parity).
+    static let submenuWidth: CGFloat = 304
+    static let submenuMinWidth: CGFloat = 280
 
     static let editorMinWidth: CGFloat = 420
 
     static var dividerWidth: CGFloat { CursorMacShellDesign.columnDividerWidth }
 
+    /// Primary column is always the full labeled bar menu (no icon-rail collapse).
     static func barMenuColumnWidth(
-        expanded: Bool,
         windowWidth: CGFloat,
-        trafficInset: CGFloat,
         submenuVisible: Bool
     ) -> CGFloat {
-        if expanded {
-            return fittedBarExpanded(windowWidth: windowWidth, submenuVisible: submenuVisible)
-        }
-        let minForTraffic = trafficInset + AppWindowChromeMetrics.afterTrafficLightGap
-        let iconLed = AppWindowChromeMetrics.controlSize + 12
-        let compact = max(minForTraffic, max(barCollapsedMin, iconLed))
-        return min(barCollapsedMax, max(barCollapsedMin, compact))
+        fittedBarExpanded(windowWidth: windowWidth, submenuVisible: submenuVisible)
     }
 
     static func submenuColumnWidth(
@@ -65,7 +58,7 @@ enum ShellColumnLayout {
         let fixedPeer = submenuVisible ? submenuWidth : 0
         let reserved = fixedPeer + dividers + editorMinWidth
         let availableForBar = windowWidth - reserved
-        let minBarForLabels: CGFloat = 168
+        let minBarForLabels: CGFloat = 200
         return min(barExpandedWidth, max(minBarForLabels, availableForBar))
     }
 }

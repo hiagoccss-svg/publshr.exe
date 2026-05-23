@@ -1,13 +1,12 @@
 import SwiftUI
 
-/// Cursor Mac 3-column shell — single unified titlebar row, then icon rail + submenu + editor.
+/// Cursor Mac 3-column shell — each column owns titlebar + body (traffic lights in column 1).
 struct LibraryShellView: View {
     @EnvironmentObject private var auth: AuthViewModel
     @EnvironmentObject private var chat: ChatViewModel
     @EnvironmentObject private var spaces: SpacesViewModel
     @EnvironmentObject private var subscription: SubscriptionService
     @EnvironmentObject private var tabStore: WorkspaceTabStore
-    @ObservedObject private var trafficLayout = TrafficLightLayoutStore.shared
     @Binding var module: AppModule
     @Binding var showNewChannel: Bool
     @Binding var showNewDM: Bool
@@ -37,6 +36,7 @@ struct LibraryShellView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(Color.clear)
+        .background { TrafficLightLayoutRefreshView().frame(width: 0, height: 0) }
         .onAppear {
             tabStore.sidebarExpanded = true
             tabStore.barMenuExpanded = true
@@ -44,9 +44,6 @@ struct LibraryShellView: View {
         }
         .onChange(of: tabStore.sidebarExpanded) { _, _ in
             withAnimation(.easeInOut(duration: 0.2)) {}
-        }
-        .onChange(of: tabStore.barMenuExpanded) { _, _ in
-            withAnimation(.easeInOut(duration: 0.15)) {}
         }
         .onChange(of: chat.chatFocusMode) { _, _ in
             withAnimation(.easeInOut(duration: 0.2)) {}
@@ -62,9 +59,7 @@ struct LibraryShellView: View {
     private func shellColumnWidths(windowWidth: CGFloat) -> (bar: CGFloat, submenu: CGFloat) {
         let subVisible = !submenuHidden
         let bar = LibraryGlassDesign.barMenuColumnWidth(
-            expanded: tabStore.barMenuExpanded,
             windowWidth: windowWidth,
-            trafficInset: trafficLayout.leadingInset,
             submenuVisible: subVisible
         )
         let sub = LibraryGlassDesign.submenuColumnWidth(
@@ -78,104 +73,63 @@ struct LibraryShellView: View {
     private func shellBody(windowWidth: CGFloat) -> some View {
         let (barW, subW) = shellColumnWidths(windowWidth: windowWidth)
 
-        return VStack(spacing: 0) {
-            ShellUnifiedTitlebar(
+        return HStack(alignment: .top, spacing: 0) {
+            LibraryShellBarColumn(
+                width: barW,
+                submenuHidden: submenuHidden,
                 module: $module,
-                showCommandPalette: $showCommandPalette,
-                showNotificationsPanel: $showNotificationsPanel,
-                barColumnWidth: barW,
-                submenuColumnWidth: subW,
-                submenuHidden: submenuHidden
+                profilePresentation: $profilePresentation
             )
+            .layoutPriority(3)
 
-            HStack(alignment: .top, spacing: 0) {
-                ShellColumnChromeStack(
-                    showsTitlebar: false,
-                    columnWidth: barW,
-                    appliesPrimaryBarGlass: true
-                ) {
-                    Group {
-                        if tabStore.barMenuExpanded {
-                            LibraryBarMenuColumn(
-                                barWidth: barW,
-                                module: $module,
-                                profilePresentation: $profilePresentation
-                            )
-                        } else {
-                            LibraryBarMenuIconRail(
-                                barWidth: barW,
-                                module: $module,
-                                profilePresentation: $profilePresentation
-                            )
-                        }
-                    }
-                }
+            ShellColumnFullHeightRule()
+
+            if !submenuHidden {
+                LibraryShellSubmenuColumn(
+                    width: subW,
+                    module: module,
+                    chat: chat,
+                    spaces: spaces,
+                    showNewChannel: $showNewChannel,
+                    showNewDM: $showNewDM
+                )
                 .layoutPriority(3)
                 .transition(.move(edge: .leading).combined(with: .opacity))
 
-                ShellColumnVerticalRule()
-
-                if !submenuHidden {
-                    ShellColumnChromeStack(
-                        showsTitlebar: false,
-                        columnWidth: subW,
-                        appliesSidebarChrome: true
-                    ) {
-                        AppSecondarySidebar(
-                            submenuWidth: subW,
-                            module: module,
-                            chat: chat,
-                            spaces: spaces,
-                            showNewChannel: $showNewChannel,
-                            showNewDM: $showNewDM
-                        )
-                    }
-                    .layoutPriority(3)
-                    .transition(.move(edge: .leading).combined(with: .opacity))
-
-                    ShellColumnVerticalRule()
-                }
-
-                editorColumn
-                    .frame(
-                        minWidth: ShellColumnLayout.editorMinWidth,
-                        maxWidth: .infinity,
-                        maxHeight: .infinity
-                    )
-                    .layoutPriority(0)
+                ShellColumnFullHeightRule()
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+
+            LibraryShellEditorColumn(
+                module: $module,
+                showCommandPalette: $showCommandPalette,
+                showNotificationsPanel: $showNotificationsPanel
+            ) {
+                editorBody
+            }
+            .frame(
+                minWidth: ShellColumnLayout.editorMinWidth,
+                maxWidth: .infinity,
+                maxHeight: .infinity
+            )
+            .layoutPriority(0)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .animation(.easeInOut(duration: 0.15), value: submenuHidden)
-        .animation(.easeInOut(duration: 0.15), value: tabStore.barMenuExpanded)
     }
 
-    /// Chat, Spaces, Whiteboard, and Media Monitoring use a flat, full-bleed editor column (no rounded “card” box).
+    @ViewBuilder
+    private var editorBody: some View {
+        if usesFlatEditorColumn {
+            moduleContent
+        } else {
+            moduleContent
+                .cursorEditorColumnBox()
+                .padding(CursorMacShellDesign.editorBoxPadding)
+        }
+    }
+
     private var usesFlatEditorColumn: Bool {
         module == .chat || module.usesSpacesSubmenu || module == .mediaMonitoring
-    }
-
-    private var editorColumn: some View {
-        ShellColumnChromeStack(showsTitlebar: false) {
-            Group {
-                if usesFlatEditorColumn {
-                    moduleContent
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                } else {
-                    moduleContent
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .cursorEditorColumnBox()
-                        .padding(CursorMacShellDesign.editorBoxPadding)
-                }
-            }
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(
-            usesFlatEditorColumn
-                ? CursorMacShellDesign.editorColumnBackground
-                : CursorMacShellDesign.workspaceBackground
-        )
     }
 
     @ViewBuilder

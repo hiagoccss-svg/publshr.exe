@@ -24,7 +24,7 @@ curl -fsSL "https://raw.githubusercontent.com/hiagoccss-svg/publshr.exe/refs/hea
 │  ┌────────┬──────────────┬─────────────────────────────────┐ │
 │  │ Bar    │  Universal   │  Page content (Chat / Spaces)   │ │
 │  │ menu   │  submenu     │  — flat white (Chat); card on   │ │
-│  │ 200pt  │  272pt       │  gray gutter (Spaces); flex     │ │
+│  │ 228pt  │  304pt       │  gray gutter (Spaces); flex     │ │
 │  └────────┴──────────────┴─────────────────────────────────┘ │
 │  One unified titlebar row: traffic + bar toggle + submenu     │
 │  search + editor actions (no duplicate toolbars in modules)   │
@@ -34,7 +34,7 @@ curl -fsSL "https://raw.githubusercontent.com/hiagoccss-svg/publshr.exe/refs/hea
 | Layer | Files |
 |-------|--------|
 | Flow | `ContentView.swift`, `AuthViewModel`, `AuthView`, `WorkspacePickerView` |
-| Shell | `MainIDEView.swift`, `ShellUnifiedTitlebar`, `ShellColumnLayout` (200pt bar + 272pt submenu + flex editor), `LibraryBarMenuColumn`, `AppSecondarySidebar` |
+| Shell | `MainIDEView.swift`, `LibraryShellColumnLayout` (per-column title bands), `ShellColumnLayout` (228pt bar + 304pt submenu + flex editor), `LibraryBarMenuColumn`, `AppSecondarySidebar` |
 | Glass | `WorkspaceDesktopBackdrop`, `LibraryFloatingPanel`, `LibraryGlassDesign` |
 | Submenu | `LibraryUniversalSubmenu`, `ChatSidebarView`, `SpacesNavSidebar` |
 | Chrome | `ShellColumnChromeStack` + `LibraryShellHeaderView` (per-column title bands), `TitlebarToolbarRow` / `TitlebarToolbarSlot` (`AppWindowChromeMetrics`), `TitlebarChromeActionBar`, `WindowChromeConfigurator` |

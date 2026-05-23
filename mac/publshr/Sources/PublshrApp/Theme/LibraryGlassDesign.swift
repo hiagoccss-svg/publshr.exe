@@ -15,15 +15,11 @@ enum LibraryGlassDesign {
 
     /// Column 1 — fixed expanded width; compact icon rail capped below titlebar traffic reserve.
     static func barMenuColumnWidth(
-        expanded: Bool,
         windowWidth: CGFloat,
-        trafficInset: CGFloat,
         submenuVisible: Bool = true
     ) -> CGFloat {
         ShellColumnLayout.barMenuColumnWidth(
-            expanded: expanded,
             windowWidth: windowWidth,
-            trafficInset: trafficInset,
             submenuVisible: submenuVisible
         )
     }
@@ -43,12 +39,7 @@ enum LibraryGlassDesign {
 
     /// Backward-compatible submenu width (assumes default bar + visible submenu).
     static func submenuColumnWidth(for windowWidth: CGFloat) -> CGFloat {
-        let bar = barMenuColumnWidth(
-            expanded: true,
-            windowWidth: windowWidth,
-            trafficInset: AppWindowChromeMetrics.trafficLightLeadingInset,
-            submenuVisible: true
-        )
+        let bar = barMenuColumnWidth(windowWidth: windowWidth, submenuVisible: true)
         return submenuColumnWidth(for: windowWidth, barWidth: bar, submenuVisible: true)
     }
     /// Column 2 — lighter grey step toward the white editor (main shell alignment).
